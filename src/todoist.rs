@@ -3,11 +3,19 @@ use serde::Deserialize;
 
 const BASE_URL: &str = "https://todoist.com/api/v1";
 
-pub struct Task {}
+pub struct Task {
+    pub id: String,
+    pub text: String,
+}
 
 pub struct Project {
     pub id: String,
     pub name: String,
+}
+
+#[derive(Debug)]
+pub struct TaskFilter {
+    pub project: Option<String>,
 }
 
 pub struct Todoist {
@@ -28,18 +36,36 @@ impl Todoist {
         }
     }
 
-    pub async fn tasks(&self) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
-        let tasks: Vec<Task> = Vec::new();
-        let resp = self
-            .client
-            .get(format!("{BASE_URL}/tasks"))
-            .headers(self.default_header.clone())
-            .send()
-            .await?
-            .json::<get_tasks::Response>()
-            .await?;
-        println!("{resp:#?}");
-        Ok(tasks)
+    pub async fn tasks(&self, filter: TaskFilter) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+        let mut result: Vec<Task> = Vec::new();
+
+        let mut cursor = None;
+
+        loop {
+            let resp = self
+                .client
+                .get(format!("{BASE_URL}/tasks{}", task_query(&filter, &cursor)))
+                .headers(self.default_header.clone())
+                .send()
+                .await?
+                .json::<get_tasks::Response>()
+                .await?;
+
+            for t in resp.results {
+                result.push(Task {
+                    id: t.id,
+                    text: t.content,
+                })
+            }
+
+            if resp.next_cursor.is_none() {
+                break;
+            }
+
+            cursor = resp.next_cursor;
+        }
+
+        Ok(result)
     }
 
     pub async fn projects(&self) -> Result<Vec<Project>, Box<dyn std::error::Error>> {
@@ -80,50 +106,64 @@ impl Todoist {
     }
 }
 
+fn task_query(filter: &TaskFilter, cursor: &Option<String>) -> String {
+    let mut query: Vec<String> = Vec::new();
+    query.push(String::from("limit=200"));
+
+    if let Some(p) = &filter.project {
+        query.push(format!("project_id={p}"));
+    }
+    if let Some(c) = cursor {
+        query.push(format!("cursor={c}"));
+    }
+
+    format!("?{}", query.join("&"))
+}
+
 mod get_tasks {
     use super::*;
 
     #[allow(dead_code)]
     #[derive(Deserialize, Debug)]
     pub struct Duration {
-        property1: String,
-        property2: String,
+        property1: Option<String>,
+        property2: Option<String>,
     }
 
     #[allow(dead_code)]
     #[derive(Deserialize, Debug)]
     pub struct Task {
-        id: String,
-        user_id: String,
-        project_id: String,
-        section_id: Option<String>,
-        parent_id: Option<String>,
-        added_by_uid: Option<String>,
-        assigned_by_uid: Option<String>,
-        responsible_uid: Option<String>,
-        labels: Vec<String>,
-        deadline: Option<Duration>,
-        duration: Option<Duration>,
-        checked: bool,
-        is_deleted: bool,
-        added_at: Option<String>,
-        completed_at: Option<String>,
-        updated_at: Option<String>,
+        pub id: String,
+        pub user_id: String,
+        pub project_id: String,
+        pub section_id: Option<String>,
+        pub parent_id: Option<String>,
+        pub added_by_uid: Option<String>,
+        pub assigned_by_uid: Option<String>,
+        pub responsible_uid: Option<String>,
+        pub labels: Vec<String>,
+        pub deadline: Option<Duration>,
+        pub duration: Option<Duration>,
+        pub checked: bool,
+        pub is_deleted: bool,
+        pub added_at: Option<String>,
+        pub completed_at: Option<String>,
+        pub updated_at: Option<String>,
         // due: ???,
-        priority: i32,
-        child_order: i32,
-        content: String,
-        description: String,
-        note_count: i32,
-        day_order: i32,
-        is_collapsed: bool,
+        pub priority: i32,
+        pub child_order: i32,
+        pub content: String,
+        pub description: String,
+        pub note_count: i32,
+        pub day_order: i32,
+        pub is_collapsed: bool,
     }
 
     #[allow(dead_code)]
     #[derive(Deserialize, Debug)]
     pub struct Response {
-        results: Vec<Task>,
-        next_cursor: String,
+        pub results: Vec<Task>,
+        pub next_cursor: Option<String>,
     }
 }
 

@@ -37,7 +37,7 @@ enum ObsidianCommands {
 enum TodoistCommands {
     Tasks {
         #[arg(short, long)]
-        state: Option<Vec<ListState>>,
+        project: Option<String>,
     },
     Projects {},
 }
@@ -87,11 +87,15 @@ async fn print_obsidian_task_list(
 
 async fn print_todoist_task_list(
     cfg: Settings,
-    states: Vec<ListState>,
+    project: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let td = todoist::Todoist::new(&cfg.todoist.api_key);
-    let tasks = td.tasks().await?;
-    _ = tasks;
+    let filter = todoist::TaskFilter { project };
+    let tasks = td.tasks(filter).await?;
+    for t in tasks {
+        println!("- [ ] {}", t.text);
+    }
+
     Ok(())
 }
 
@@ -129,14 +133,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         },
         Commands::Todoist { command } => match command {
-            TodoistCommands::Tasks { state } => {
-                let mut states: Vec<ListState> = Vec::new();
-                if let Some(st) = state {
-                    for s in st {
-                        states.push(*s);
-                    }
-                }
-                print_todoist_task_list(cfg, states).await?
+            TodoistCommands::Tasks { project } => {
+                let p = project.clone();
+                print_todoist_task_list(cfg, p).await?
             }
             TodoistCommands::Projects {} => print_todoist_project_list(cfg).await?,
         },
