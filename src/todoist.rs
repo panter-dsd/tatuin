@@ -1,3 +1,4 @@
+use crate::task;
 use reqwest::header::HeaderMap;
 use serde::Deserialize;
 
@@ -6,6 +7,25 @@ const BASE_URL: &str = "https://todoist.com/api/v1";
 pub struct Task {
     pub id: String,
     pub text: String,
+    pub checked: bool,
+}
+
+impl task::Task for Task {
+    fn id(&self) -> String {
+        self.id.to_string()
+    }
+
+    fn text(&self) -> String {
+        self.text.to_string()
+    }
+
+    fn state(&self) -> task::State {
+        if self.checked {
+            task::State::Completed
+        } else {
+            task::State::Uncompleted
+        }
+    }
 }
 
 pub struct Project {
@@ -55,6 +75,7 @@ impl Todoist {
                 result.push(Task {
                     id: t.id,
                     text: t.content,
+                    checked: t.checked,
                 })
             }
 

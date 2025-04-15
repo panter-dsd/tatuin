@@ -1,5 +1,6 @@
 mod obsidian;
 mod settings;
+mod task;
 mod todoist;
 use clap::{Parser, Subcommand, ValueEnum};
 use colored::Colorize;
@@ -59,6 +60,12 @@ fn state_to_list_state(s: &State) -> ListState {
     }
 }
 
+fn print_tasks<T: task::Task>(tasks: &Vec<T>) {
+    for t in tasks {
+        println!("- [{}] {}", t.state(), t.text());
+    }
+}
+
 async fn print_obsidian_task_list(
     cfg: Settings,
     states: Vec<ListState>,
@@ -92,9 +99,7 @@ async fn print_todoist_task_list(
     let td = todoist::Todoist::new(&cfg.todoist.api_key);
     let filter = todoist::TaskFilter { project };
     let tasks = td.tasks(filter).await?;
-    for t in tasks {
-        println!("- [ ] {}", t.text);
-    }
+    print_tasks(&tasks);
 
     Ok(())
 }
