@@ -1,5 +1,6 @@
 mod obsidian;
 mod settings;
+mod todoist;
 use clap::{Parser, Subcommand, ValueEnum};
 use colored::Colorize;
 use obsidian::task::State;
@@ -16,12 +17,24 @@ struct Cli {
 enum Commands {
     ObsidianTasks {
         #[command(subcommand)]
-        command: TaskCommands,
+        command: ObsidianTaskCommands,
+    },
+    TodoistTasks {
+        #[command(subcommand)]
+        command: TodoistTaskCommands,
     },
 }
 
 #[derive(Subcommand, Debug)]
-enum TaskCommands {
+enum ObsidianTaskCommands {
+    List {
+        #[arg(short, long)]
+        state: Option<Vec<ListState>>,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum TodoistTaskCommands {
     List {
         #[arg(short, long)]
         state: Option<Vec<ListState>>,
@@ -45,7 +58,7 @@ fn state_to_list_state(s: &State) -> ListState {
     }
 }
 
-async fn print_task_list(
+async fn print_obsidian_task_list(
     cfg: Settings,
     states: Vec<ListState>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -71,6 +84,16 @@ async fn print_task_list(
     Ok(())
 }
 
+async fn print_todoist_task_list(
+    cfg: Settings,
+    states: Vec<ListState>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let td = todoist::Todoist::new(&cfg.todoist.api_key);
+    let tasks = td.tasks().await?;
+    _ = tasks;
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Settings::load("settings.toml")?;
@@ -78,14 +101,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     match &cli.command {
         Commands::ObsidianTasks { command } => match command {
-            TaskCommands::List { state } => {
+            ObsidianTaskCommands::List { state } => {
                 let mut states: Vec<ListState> = Vec::new();
                 if let Some(st) = state {
                     for s in st {
                         states.push(*s);
                     }
                 }
-                print_task_list(cfg, states).await?
+                print_obsidian_task_list(cfg, states).await?
+            }
+        },
+        Commands::TodoistTasks { command } => match command {
+            TodoistTaskCommands::List { state } => {
+                let mut states: Vec<ListState> = Vec::new();
+                if let Some(st) = state {
+                    for s in st {
+                        states.push(*s);
+                    }
+                }
+                print_todoist_task_list(cfg, states).await?
             }
         },
     };

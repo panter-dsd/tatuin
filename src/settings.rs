@@ -7,8 +7,14 @@ pub struct Obsidian {
 }
 
 #[derive(Deserialize)]
+pub struct Todoist {
+    pub api_key: String,
+}
+
+#[derive(Deserialize)]
 pub struct Settings {
     pub obsidian: Obsidian,
+    pub todoist: Todoist,
 }
 
 impl Settings {

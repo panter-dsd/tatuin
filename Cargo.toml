@@ -8,5 +8,6 @@ clap = { version = "4.5.36", features = ["derive"] }
 colored = "3.0.0"
 config = "0.15.11"
 regex = "1.11.1"
+reqwest = { version = "0.12.15", features = ["json"] }
 serde = "1.0.219"
 tokio = { version = "1.44.2", features = ["full"] }
