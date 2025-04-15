@@ -1,4 +1,5 @@
 use crate::task;
+use chrono::prelude::*;
 use std::fmt::{self, Write};
 
 #[derive(Debug)]
@@ -38,6 +39,7 @@ pub struct Task {
     pub pos: u64,
     pub state: State,
     pub text: String,
+    pub due: Option<task::DateTimeUtc>,
 }
 
 impl Task {
@@ -68,5 +70,9 @@ impl task::Task for Task {
                 .unwrap_or_default(),
             self.pos,
         )
+    }
+
+    fn due(&self) -> Option<DateTime<Utc>> {
+        self.due
     }
 }

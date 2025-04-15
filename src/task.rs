@@ -1,6 +1,9 @@
+use chrono::DateTime;
+use chrono::prelude::*;
 use std::fmt;
 use std::fmt::Write;
-use time::PrimitiveDateTime;
+
+pub type DateTimeUtc = DateTime<Utc>;
 
 #[derive(Debug)]
 pub enum State {
@@ -33,16 +36,16 @@ pub trait Task {
         0
     }
     fn state(&self) -> State;
-    fn created_at(&self) -> Option<PrimitiveDateTime> {
+    fn created_at(&self) -> Option<DateTimeUtc> {
         None
     }
-    fn updated_at(&self) -> Option<PrimitiveDateTime> {
+    fn updated_at(&self) -> Option<DateTimeUtc> {
         None
     }
-    fn completed_at(&self) -> Option<PrimitiveDateTime> {
+    fn completed_at(&self) -> Option<DateTimeUtc> {
         None
     }
-    fn due(&self) -> Option<PrimitiveDateTime> {
+    fn due(&self) -> Option<DateTimeUtc> {
         None
     }
     fn place(&self) -> String {

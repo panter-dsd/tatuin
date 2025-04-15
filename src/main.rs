@@ -60,9 +60,23 @@ const fn state_to_list_state(s: &State) -> ListState {
     }
 }
 
+fn due_to_str(t: Option<task::DateTimeUtc>) -> String {
+    if let Some(d) = t {
+        return d.format("%Y-%m-%d").to_string();
+    }
+
+    String::from("-")
+}
+
 fn print_tasks<T: task::Task>(tasks: &Vec<T>) {
     for t in tasks {
-        println!("- [{}] {} ({})", t.state(), t.text(), t.place().green());
+        println!(
+            "- [{}] {} ({}) ({})",
+            t.state(),
+            t.text(),
+            format!("due: {}", due_to_str(t.due())).blue(),
+            t.place().green()
+        );
     }
 }
 

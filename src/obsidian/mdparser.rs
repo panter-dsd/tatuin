@@ -1,4 +1,6 @@
 use crate::obsidian::task::{State, Task};
+use crate::task::DateTimeUtc;
+use chrono::{NaiveDate, Utc};
 use regex::Regex;
 use std::fs;
 use std::sync::LazyLock;
@@ -21,6 +23,30 @@ impl Parser {
         self.tasks_from_content(content)
     }
 
+    fn try_parse_task(&self, line: &str, pos: u64) -> Option<Task> {
+        if let Some(caps) = TASK_RE.captures(line) {
+            let task_text = String::from(&caps[2]);
+            return Some(Task {
+                root_path: String::new(),
+                file_path: self.file_path.to_string(),
+                pos,
+                state: {
+                    let cap: &str = &caps[1];
+                    match cap.chars().next() {
+                        Some(x) => State::new(x),
+                        None => panic!(
+                            "Something wronng with regexp parsing of '{line}' because state shouldn't be empty"
+                        ),
+                    }
+                },
+                text: task_text.to_string(),
+                due: try_parse_due(task_text.as_str()),
+            });
+        }
+
+        None
+    }
+
     fn tasks_from_content(&self, content: String) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
         let mut result: Vec<Task> = Vec::new();
 
@@ -29,24 +55,11 @@ impl Parser {
         let mut pos: u64 = 0;
 
         for l in content.split(SPLIT_TERMINATOR) {
-            if let Some(caps) = TASK_RE.captures(l) {
-                let t = Task {
-                    root_path: String::new(),
-                    file_path: String::from(self.file_path.as_str()),
-                    pos,
-                    state: {
-                        let cap: &str = &caps[1];
-                        match cap.chars().next() {
-                            Some(x) => State::new(x),
-                            None => panic!(
-                                "Something wronng with regexp parsing of '{l}' because state shouldn't be empty"
-                            ),
-                        }
-                    },
-                    text: String::from(&caps[2]),
-                };
-                result.push(t);
+            if let Some(t) = self.try_parse_task(l, pos) {
+                let tt = t;
+                result.push(tt);
             }
+
             pos += (l.len() + SPLIT_TERMINATOR.len()) as u64;
         }
 
@@ -54,8 +67,23 @@ impl Parser {
     }
 }
 
+fn try_parse_due(text: &str) -> Option<DateTimeUtc> {
+    const PATTERN: &str = "📅 ";
+    let idx = text.rfind(PATTERN)?;
+    println!("HERE {}", &text[idx + PATTERN.len()..]);
+
+    match NaiveDate::parse_from_str(&text[idx + PATTERN.len()..], "%Y-%m-%d") {
+        Ok(d) => {
+            let dt = d.and_hms_opt(0, 0, 0)?;
+            Some(DateTimeUtc::from_naive_utc_and_offset(dt, Utc))
+        }
+        Err(_) => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
+
     use super::*;
 
     #[tokio::test]
@@ -68,8 +96,9 @@ mod tests {
             panic!("Expected an IoError, but got a different error.");
         }
     }
+
     #[test]
-    fn parse_empty_content() {
+    fn parse_content() {
         struct Case<'a> {
             name: &'a str,
             file_content: &'a str,
@@ -122,6 +151,38 @@ some another text
         for c in CASES {
             let tasks = p.tasks_from_content(String::from(c.file_content)).unwrap();
             assert_eq!(tasks.len(), c.count, "Test '{}' was failed", c.name);
+        }
+    }
+
+    #[test]
+    fn parse_due() {
+        struct Case<'a> {
+            name: &'a str,
+            line: &'a str,
+            expected: Option<DateTimeUtc>,
+        }
+        let cases: &[Case] = &[
+            Case {
+                name: "empty string",
+                line: "",
+                expected: None,
+            },
+            Case {
+                name: "correct string",
+                line: "Some text ⏫ 📅 2025-01-27",
+                expected: Some(DateTimeUtc::from_naive_utc_and_offset(
+                    NaiveDate::parse_from_str("2025-01-27", "%Y-%m-%d")
+                        .unwrap()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap(),
+                    Utc,
+                )),
+            },
+        ];
+
+        for c in cases {
+            let dt = try_parse_due(c.line);
+            assert_eq!(dt, c.expected, "Test {} was failed", c.name);
         }
     }
 }
