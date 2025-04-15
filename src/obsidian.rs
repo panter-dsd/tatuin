@@ -3,6 +3,7 @@ use std::path::Path;
 use std::sync::Arc;
 mod mdparser;
 pub mod task;
+use crate::filter::{Filter, FilterState};
 use task::Task;
 use tokio::sync::Semaphore;
 
@@ -19,16 +20,11 @@ impl Obsidian {
         }
     }
 
-    pub fn count(&self) -> Result<u64, Box<dyn std::error::Error>> {
-        let files = self.all_supported_files()?;
-        Ok(files.len() as u64)
-    }
-
     pub fn all_supported_files(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         supported_files(Path::new(self.path.as_str()))
     }
 
-    pub async fn tasks(&self) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+    pub async fn tasks(&self, f: &Filter) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
         let files = self.all_supported_files()?;
 
         let mut tasks: Vec<Task> = Vec::new();
@@ -57,12 +53,47 @@ impl Obsidian {
         }
 
         for job in jobs {
-            let mut response = job.await.unwrap();
+            let mut response = job
+                .await
+                .unwrap()
+                .iter()
+                .filter(|t| accept_filter(t, f))
+                .cloned()
+                .collect::<Vec<Task>>();
+
             tasks.append(&mut response);
         }
 
         Ok(tasks)
     }
+}
+
+const fn state_to_list_state(s: &task::State) -> FilterState {
+    match s {
+        task::State::Completed => FilterState::Completed,
+        task::State::Uncompleted => FilterState::Uncompleted,
+        task::State::InProgress => FilterState::InProgress,
+        task::State::Unknown(_) => FilterState::Unknown,
+    }
+}
+
+fn accept_filter(t: &Task, f: &Filter) -> bool {
+    if !f.states.contains(&state_to_list_state(&t.state)) {
+        return false;
+    }
+
+    if f.today {
+        if let Some(d) = t.due {
+            let now = chrono::Utc::now().date_naive();
+            if d.date_naive() != now {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    true
 }
 
 fn supported_files(p: &Path) -> Result<Vec<String>, Box<dyn std::error::Error>> {

@@ -1,11 +1,11 @@
+mod filter;
 mod obsidian;
 mod settings;
 mod task;
 mod todoist;
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{Parser, Subcommand};
 use colored::Colorize;
 use settings::Settings;
-use task::State;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -30,7 +30,7 @@ enum Commands {
 enum ObsidianCommands {
     Tasks {
         #[arg(short, long)]
-        state: Option<Vec<ListState>>,
+        state: Option<Vec<filter::FilterState>>,
 
         #[arg(short, long)]
         today: bool,
@@ -44,23 +44,6 @@ enum TodoistCommands {
         project: Option<String>,
     },
     Projects {},
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-enum ListState {
-    Completed,
-    Uncompleted,
-    InProgress,
-    Unknown,
-}
-
-const fn state_to_list_state(s: &State) -> ListState {
-    match s {
-        State::Completed => ListState::Completed,
-        State::Uncompleted => ListState::Uncompleted,
-        State::InProgress => ListState::InProgress,
-        State::Unknown(_) => ListState::Unknown,
-    }
 }
 
 fn due_to_str(t: Option<task::DateTimeUtc>) -> String {
@@ -87,45 +70,13 @@ fn print_tasks<T: task::Task>(tasks: &Vec<T>) {
     }
 }
 
-fn filter_task<T: task::Task>(t: &T, states: &[ListState], today: bool) -> bool {
-    if !states.contains(&state_to_list_state(&t.state())) {
-        return false;
-    }
-
-    if today {
-        if let Some(d) = t.due() {
-            let now = chrono::Utc::now().date_naive();
-            if d.date_naive() != now {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
-
-    true
-}
-
-fn filter_tasks<T: task::Task + Clone>(tasks: &[T], states: &[ListState], today: bool) -> Vec<T> {
-    tasks
-        .iter()
-        .filter(|t| filter_task(*t, states, today))
-        .cloned()
-        .collect()
-}
-
 async fn print_obsidian_task_list(
     cfg: Settings,
-    states: Vec<ListState>,
-    today: bool,
+    f: &filter::Filter,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("Open obsidian in path: {}", cfg.obsidian.path);
     let obs = obsidian::Obsidian::new(cfg.obsidian.path.as_str());
-    println!("Supported documents count: {}", obs.count()?);
-
-    let tasks = obs.tasks().await?;
-    let filtered_tasks = filter_tasks(&tasks, &states, today);
-    print_tasks(&filtered_tasks);
+    let tasks = obs.tasks(f).await?;
+    print_tasks(&tasks);
 
     Ok(())
 }
@@ -153,6 +104,13 @@ async fn print_todoist_project_list(cfg: Settings) -> Result<(), Box<dyn std::er
     Ok(())
 }
 
+fn state_to_filter(state: &Option<Vec<filter::FilterState>>) -> Vec<filter::FilterState> {
+    match state {
+        Some(st) => st.to_vec(),
+        None => vec![filter::FilterState::Uncompleted],
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Settings::load("settings.toml")?;
@@ -161,18 +119,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match &cli.command {
         Commands::Obsidian { command } => match command {
             ObsidianCommands::Tasks { state, today } => {
-                let mut states: Vec<ListState> = Vec::new();
-                match state {
-                    Some(st) => {
-                        for s in st {
-                            states.push(*s);
-                        }
-                    }
-                    None => {
-                        states.push(ListState::Uncompleted);
-                    }
-                }
-                print_obsidian_task_list(cfg, states, *today).await?
+                print_obsidian_task_list(
+                    cfg,
+                    &filter::Filter {
+                        states: state_to_filter(state),
+                        today: *today,
+                    },
+                )
+                .await?
             }
         },
         Commands::Todoist { command } => match command {
