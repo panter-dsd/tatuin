@@ -39,6 +39,7 @@ enum TodoistCommands {
         #[arg(short, long)]
         state: Option<Vec<ListState>>,
     },
+    Projects {},
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -94,6 +95,17 @@ async fn print_todoist_task_list(
     Ok(())
 }
 
+async fn print_todoist_project_list(cfg: Settings) -> Result<(), Box<dyn std::error::Error>> {
+    let td = todoist::Todoist::new(&cfg.todoist.api_key);
+    let projects = td.projects().await?;
+
+    for p in projects {
+        println!("{}: {}", p.id, p.name);
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Settings::load("settings.toml")?;
@@ -126,6 +138,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 print_todoist_task_list(cfg, states).await?
             }
+            TodoistCommands::Projects {} => print_todoist_project_list(cfg).await?,
         },
     };
     Ok(())
