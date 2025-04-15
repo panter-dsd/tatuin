@@ -70,7 +70,6 @@ impl Parser {
 fn try_parse_due(text: &str) -> Option<DateTimeUtc> {
     const PATTERN: &str = "📅 ";
     let idx = text.rfind(PATTERN)?;
-    println!("HERE {}", &text[idx + PATTERN.len()..]);
 
     match NaiveDate::parse_from_str(&text[idx + PATTERN.len()..], "%Y-%m-%d") {
         Ok(d) => {
