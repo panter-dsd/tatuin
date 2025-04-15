@@ -46,8 +46,8 @@ impl Obsidian {
 
                 let parser = mdparser::Parser::new(f.as_str());
                 let mut tasks = parser.tasks().await.unwrap();
-                for i in 0..tasks.len() {
-                    tasks[i].set_root_path(p.to_string());
+                for t in &mut tasks {
+                    t.set_root_path(p.to_string());
                 }
                 drop(_permit);
                 tasks
