@@ -1,8 +1,7 @@
 use crate::task;
-use chrono::prelude::*;
 use std::fmt::{self, Write};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum State {
     Unknown(char),
     Uncompleted,
@@ -32,7 +31,7 @@ impl fmt::Display for State {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Task {
     pub root_path: String,
     pub file_path: String,

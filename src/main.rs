@@ -4,8 +4,8 @@ mod task;
 mod todoist;
 use clap::{Parser, Subcommand, ValueEnum};
 use colored::Colorize;
-use obsidian::task::State;
 use settings::Settings;
+use task::State;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -31,6 +31,9 @@ enum ObsidianCommands {
     Tasks {
         #[arg(short, long)]
         state: Option<Vec<ListState>>,
+
+        #[arg(short, long)]
+        today: bool,
     },
 }
 
@@ -84,21 +87,44 @@ fn print_tasks<T: task::Task>(tasks: &Vec<T>) {
     }
 }
 
+fn filter_task<T: task::Task>(t: &T, states: &[ListState], today: bool) -> bool {
+    if !states.contains(&state_to_list_state(&t.state())) {
+        return false;
+    }
+
+    if today {
+        if let Some(d) = t.due() {
+            let now = chrono::Utc::now().date_naive();
+            if d.date_naive() != now {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn filter_tasks<T: task::Task + Clone>(tasks: &[T], states: &[ListState], today: bool) -> Vec<T> {
+    tasks
+        .iter()
+        .filter(|t| filter_task(*t, states, today))
+        .cloned()
+        .collect()
+}
+
 async fn print_obsidian_task_list(
     cfg: Settings,
     states: Vec<ListState>,
+    today: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("Open obsidian in path: {}", cfg.obsidian.path);
     let obs = obsidian::Obsidian::new(cfg.obsidian.path.as_str());
     println!("Supported documents count: {}", obs.count()?);
 
     let tasks = obs.tasks().await?;
-    let mut filtered_tasks: Vec<obsidian::task::Task> = Vec::new();
-    for t in tasks {
-        if states.contains(&state_to_list_state(&t.state)) {
-            filtered_tasks.push(t);
-        }
-    }
+    let filtered_tasks = filter_tasks(&tasks, &states, today);
     print_tasks(&filtered_tasks);
 
     Ok(())
@@ -134,7 +160,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     match &cli.command {
         Commands::Obsidian { command } => match command {
-            ObsidianCommands::Tasks { state } => {
+            ObsidianCommands::Tasks { state, today } => {
                 let mut states: Vec<ListState> = Vec::new();
                 match state {
                     Some(st) => {
@@ -146,7 +172,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         states.push(ListState::Uncompleted);
                     }
                 }
-                print_obsidian_task_list(cfg, states).await?
+                print_obsidian_task_list(cfg, states, *today).await?
             }
         },
         Commands::Todoist { command } => match command {
