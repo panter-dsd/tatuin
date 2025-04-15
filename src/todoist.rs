@@ -5,11 +5,9 @@ use task::Task;
 mod project;
 use project::Project;
 
-const BASE_URL: &str = "https://todoist.com/api/v1";
+use crate::filter;
 
-pub struct TaskFilter {
-    pub project: Option<String>,
-}
+const BASE_URL: &str = "https://todoist.com/api/v1";
 
 pub struct Todoist {
     default_header: HeaderMap,
@@ -29,7 +27,11 @@ impl Todoist {
         }
     }
 
-    pub async fn tasks(&self, filter: TaskFilter) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+    pub async fn tasks(
+        &self,
+        project: &Option<String>,
+        _f: &filter::Filter,
+    ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
         let mut result: Vec<Task> = Vec::new();
 
         let mut cursor = None;
@@ -37,7 +39,7 @@ impl Todoist {
         loop {
             let mut resp = self
                 .client
-                .get(format!("{BASE_URL}/tasks{}", task_query(&filter, &cursor)))
+                .get(format!("{BASE_URL}/tasks{}", task_query(project, &cursor)))
                 .headers(self.default_header.clone())
                 .send()
                 .await?
@@ -51,10 +53,6 @@ impl Todoist {
             }
 
             cursor = resp.next_cursor;
-        }
-
-        for t in &result {
-            dbg!(t);
         }
 
         Ok(result)
@@ -93,11 +91,11 @@ impl Todoist {
     }
 }
 
-fn task_query(filter: &TaskFilter, cursor: &Option<String>) -> String {
+fn task_query(project: &Option<String>, cursor: &Option<String>) -> String {
     let mut query: Vec<String> = Vec::new();
     query.push(String::from("limit=200"));
 
-    if let Some(p) = &filter.project {
+    if let Some(p) = project {
         query.push(format!("project_id={p}"));
     }
     if let Some(c) = cursor {

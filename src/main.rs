@@ -42,6 +42,9 @@ enum TodoistCommands {
     Tasks {
         #[arg(short, long)]
         project: Option<String>,
+
+        #[arg(short, long)]
+        today: bool,
     },
     Projects {},
 }
@@ -83,11 +86,11 @@ async fn print_obsidian_task_list(
 
 async fn print_todoist_task_list(
     cfg: Settings,
-    project: Option<String>,
+    project: &Option<String>,
+    f: &filter::Filter,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let td = todoist::Todoist::new(&cfg.todoist.api_key);
-    let filter = todoist::TaskFilter { project };
-    let tasks = td.tasks(filter).await?;
+    let tasks = td.tasks(project, f).await?;
     print_tasks(&tasks);
 
     Ok(())
@@ -130,9 +133,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         },
         Commands::Todoist { command } => match command {
-            TodoistCommands::Tasks { project } => {
-                let p = project.clone();
-                print_todoist_task_list(cfg, p).await?
+            TodoistCommands::Tasks { project, today } => {
+                print_todoist_task_list(
+                    cfg,
+                    project,
+                    &filter::Filter {
+                        states: vec![],
+                        today: *today,
+                    },
+                )
+                .await?
             }
             TodoistCommands::Projects {} => print_todoist_project_list(cfg).await?,
         },
