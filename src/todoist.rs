@@ -53,6 +53,10 @@ impl Todoist {
             cursor = resp.next_cursor;
         }
 
+        for t in &result {
+            dbg!(t);
+        }
+
         Ok(result)
     }
 

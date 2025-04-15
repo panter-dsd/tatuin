@@ -72,7 +72,7 @@ impl task::Task for Task {
         )
     }
 
-    fn due(&self) -> Option<DateTime<Utc>> {
+    fn due(&self) -> Option<task::DateTimeUtc> {
         self.due
     }
 }

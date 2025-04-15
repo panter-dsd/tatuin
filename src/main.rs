@@ -62,7 +62,11 @@ const fn state_to_list_state(s: &State) -> ListState {
 
 fn due_to_str(t: Option<task::DateTimeUtc>) -> String {
     if let Some(d) = t {
-        return d.format("%Y-%m-%d").to_string();
+        if d.time() == chrono::NaiveTime::default() {
+            return d.format("%Y-%m-%d").to_string();
+        }
+
+        return d.format("%Y-%m-%d %H:%M:%S").to_string();
     }
 
     String::from("-")
