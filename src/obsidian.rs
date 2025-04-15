@@ -1,8 +1,12 @@
 use std::fs;
 use std::path::Path;
+use std::sync::Arc;
 mod mdparser;
 pub mod task;
 use task::Task;
+use tokio::sync::Semaphore;
+
+const SIMULTANEOUS_JOB_COUNT: usize = 10;
 
 pub struct Obsidian {
     path: String,
@@ -24,15 +28,30 @@ impl Obsidian {
         supported_files(Path::new(self.path.as_str()))
     }
 
-    pub fn tasks(&self) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+    pub async fn tasks(&self) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
         let files = self.all_supported_files()?;
 
         let mut tasks: Vec<Task> = Vec::new();
 
+        let semaphore = Arc::new(Semaphore::new(SIMULTANEOUS_JOB_COUNT));
+
+        let mut jobs = Vec::new();
         for f in files {
-            let parser = mdparser::Parser::new(f.as_str());
-            let mut t = parser.tasks()?;
-            tasks.append(&mut t);
+            let semaphore = semaphore.clone();
+            let file_name = String::from(f.as_str());
+            let job = tokio::spawn(async move {
+                let _permit = semaphore.acquire().await.unwrap();
+                let parser = mdparser::Parser::new(file_name.as_str());
+                let tasks = parser.tasks().await.unwrap();
+                drop(_permit);
+                tasks
+            });
+            jobs.push(job);
+        }
+
+        for job in jobs {
+            let mut response = job.await.unwrap();
+            tasks.append(&mut response);
         }
         Ok(tasks)
     }

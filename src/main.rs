@@ -53,7 +53,7 @@ async fn print_task_list(
     let obs = obsidian::Obsidian::new(cfg.obsidian.path.as_str());
     println!("Supported documents count: {}", obs.count()?);
 
-    let tasks = obs.tasks()?;
+    let tasks = obs.tasks().await?;
     for t in tasks {
         if states.contains(&state_to_list_state(&t.state)) {
             println!(

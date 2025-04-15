@@ -16,7 +16,7 @@ impl Parser {
         }
     }
 
-    pub fn tasks(&self) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+    pub async fn tasks(&self) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
         let content = fs::read_to_string(self.file_path.as_str())?;
         self.tasks_from_content(content)
     }
