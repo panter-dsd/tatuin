@@ -51,7 +51,7 @@ enum ListState {
     Unknown,
 }
 
-fn state_to_list_state(s: &State) -> ListState {
+const fn state_to_list_state(s: &State) -> ListState {
     match s {
         State::Completed => ListState::Completed,
         State::Uncompleted => ListState::Uncompleted,
@@ -62,7 +62,7 @@ fn state_to_list_state(s: &State) -> ListState {
 
 fn print_tasks<T: task::Task>(tasks: &Vec<T>) {
     for t in tasks {
-        println!("- [{}] {}", t.state(), t.text());
+        println!("- [{}] {} ({})", t.state(), t.text(), t.place().green());
     }
 }
 
@@ -75,20 +75,14 @@ async fn print_obsidian_task_list(
     println!("Supported documents count: {}", obs.count()?);
 
     let tasks = obs.tasks().await?;
+    let mut filtered_tasks: Vec<obsidian::task::Task> = Vec::new();
     for t in tasks {
         if states.contains(&state_to_list_state(&t.state)) {
-            println!(
-                "- [{}] {} ({}:{})",
-                t.state,
-                t.text,
-                t.file_path
-                    .strip_prefix(cfg.obsidian.path.as_str())
-                    .unwrap_or_default()
-                    .green(),
-                t.pos.to_string().green(),
-            );
+            filtered_tasks.push(t);
         }
     }
+    print_tasks(&filtered_tasks);
+
     Ok(())
 }
 

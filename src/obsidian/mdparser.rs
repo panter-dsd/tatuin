@@ -31,6 +31,7 @@ impl Parser {
         for l in content.split(SPLIT_TERMINATOR) {
             if let Some(caps) = TASK_RE.captures(l) {
                 let t = Task {
+                    root_path: String::new(),
                     file_path: String::from(self.file_path.as_str()),
                     pos,
                     state: {

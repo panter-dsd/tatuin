@@ -1,3 +1,4 @@
+use crate::task;
 use std::fmt::{self, Write};
 
 #[derive(Debug)]
@@ -32,8 +33,40 @@ impl fmt::Display for State {
 
 #[derive(Debug)]
 pub struct Task {
+    pub root_path: String,
     pub file_path: String,
     pub pos: u64,
     pub state: State,
     pub text: String,
+}
+
+impl Task {
+    pub fn set_root_path(&mut self, p: String) {
+        self.root_path = p;
+    }
+}
+
+impl task::Task for Task {
+    fn text(&self) -> String {
+        self.text.to_string()
+    }
+
+    fn state(&self) -> task::State {
+        match self.state {
+            State::Completed => task::State::Completed,
+            State::Uncompleted => task::State::Uncompleted,
+            State::InProgress => task::State::InProgress,
+            State::Unknown(x) => task::State::Unknown(x),
+        }
+    }
+
+    fn place(&self) -> String {
+        format!(
+            "{}:{}",
+            self.file_path
+                .strip_prefix(self.root_path.as_str())
+                .unwrap_or_default(),
+            self.pos,
+        )
+    }
 }

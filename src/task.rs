@@ -45,4 +45,7 @@ pub trait Task {
     fn due(&self) -> Option<PrimitiveDateTime> {
         None
     }
+    fn place(&self) -> String {
+        String::new()
+    }
 }

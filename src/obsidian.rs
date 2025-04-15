@@ -39,12 +39,16 @@ impl Obsidian {
 
         for f in files {
             let semaphore = semaphore.clone();
+            let p = self.path.clone();
 
             let job = tokio::spawn(async move {
                 let _permit = semaphore.acquire().await.unwrap();
 
                 let parser = mdparser::Parser::new(f.as_str());
-                let tasks = parser.tasks().await.unwrap();
+                let mut tasks = parser.tasks().await.unwrap();
+                for i in 0..tasks.len() {
+                    tasks[i].set_root_path(p.to_string());
+                }
                 drop(_permit);
                 tasks
             });

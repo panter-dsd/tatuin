@@ -53,4 +53,8 @@ impl task::Task for Task {
             task::State::Uncompleted
         }
     }
+
+    fn place(&self) -> String {
+        self.id.to_string()
+    }
 }
