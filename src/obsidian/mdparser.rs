@@ -68,10 +68,15 @@ impl Parser {
 }
 
 fn try_parse_due(text: &str) -> Option<DateTimeUtc> {
-    const PATTERN: &str = "📅 ";
-    let idx = text.rfind(PATTERN)?;
+    const DUE_START: &str = "📅 ";
+    let idx = text.rfind(DUE_START)?;
 
-    match NaiveDate::parse_from_str(&text[idx + PATTERN.len()..], "%Y-%m-%d") {
+    const DUE_PATTERN: &str = "0000-00-00";
+
+    match NaiveDate::parse_from_str(
+        &text[idx + DUE_START.len()..idx + DUE_START.len() + DUE_PATTERN.len()],
+        "%Y-%m-%d",
+    ) {
         Ok(d) => {
             let dt = d.and_hms_opt(0, 0, 0)?;
             Some(DateTimeUtc::from_naive_utc_and_offset(dt, Utc))
@@ -169,6 +174,17 @@ some another text
             Case {
                 name: "correct string",
                 line: "Some text ⏫ 📅 2025-01-27",
+                expected: Some(DateTimeUtc::from_naive_utc_and_offset(
+                    NaiveDate::parse_from_str("2025-01-27", "%Y-%m-%d")
+                        .unwrap()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap(),
+                    Utc,
+                )),
+            },
+            Case {
+                name: "spaces after date",
+                line: "Some text ⏫ 📅 2025-01-27  ",
                 expected: Some(DateTimeUtc::from_naive_utc_and_offset(
                     NaiveDate::parse_from_str("2025-01-27", "%Y-%m-%d")
                         .unwrap()
