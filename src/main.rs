@@ -15,27 +15,27 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    ObsidianTasks {
+    Obsidian {
         #[command(subcommand)]
-        command: ObsidianTaskCommands,
+        command: ObsidianCommands,
     },
-    TodoistTasks {
+    Todoist {
         #[command(subcommand)]
-        command: TodoistTaskCommands,
+        command: TodoistCommands,
     },
 }
 
 #[derive(Subcommand, Debug)]
-enum ObsidianTaskCommands {
-    List {
+enum ObsidianCommands {
+    Tasks {
         #[arg(short, long)]
         state: Option<Vec<ListState>>,
     },
 }
 
 #[derive(Subcommand, Debug)]
-enum TodoistTaskCommands {
-    List {
+enum TodoistCommands {
+    Tasks {
         #[arg(short, long)]
         state: Option<Vec<ListState>>,
     },
@@ -100,19 +100,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cli = Cli::parse();
     match &cli.command {
-        Commands::ObsidianTasks { command } => match command {
-            ObsidianTaskCommands::List { state } => {
+        Commands::Obsidian { command } => match command {
+            ObsidianCommands::Tasks { state } => {
                 let mut states: Vec<ListState> = Vec::new();
-                if let Some(st) = state {
-                    for s in st {
-                        states.push(*s);
+                match state {
+                    Some(st) => {
+                        for s in st {
+                            states.push(*s);
+                        }
+                    }
+                    None => {
+                        states.push(ListState::Uncompleted);
                     }
                 }
                 print_obsidian_task_list(cfg, states).await?
             }
         },
-        Commands::TodoistTasks { command } => match command {
-            TodoistTaskCommands::List { state } => {
+        Commands::Todoist { command } => match command {
+            TodoistCommands::Tasks { state } => {
                 let mut states: Vec<ListState> = Vec::new();
                 if let Some(st) = state {
                     for s in st {
