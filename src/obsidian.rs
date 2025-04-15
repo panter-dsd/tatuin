@@ -36,16 +36,19 @@ impl Obsidian {
         let semaphore = Arc::new(Semaphore::new(SIMULTANEOUS_JOB_COUNT));
 
         let mut jobs = Vec::new();
+
         for f in files {
             let semaphore = semaphore.clone();
-            let file_name = String::from(f.as_str());
+
             let job = tokio::spawn(async move {
                 let _permit = semaphore.acquire().await.unwrap();
-                let parser = mdparser::Parser::new(file_name.as_str());
+
+                let parser = mdparser::Parser::new(f.as_str());
                 let tasks = parser.tasks().await.unwrap();
                 drop(_permit);
                 tasks
             });
+
             jobs.push(job);
         }
 
@@ -53,6 +56,7 @@ impl Obsidian {
             let mut response = job.await.unwrap();
             tasks.append(&mut response);
         }
+
         Ok(tasks)
     }
 }

@@ -57,10 +57,10 @@ impl Parser {
 mod tests {
     use super::*;
 
-    #[test]
-    fn parse_not_exists_file() {
+    #[tokio::test]
+    async fn parse_not_exists_file() {
         let p = Parser::new("/etc/file/not/exists");
-        let err = p.tasks().unwrap_err();
+        let err = p.tasks().await.unwrap_err();
         if let Some(error) = err.downcast_ref::<std::io::Error>() {
             assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
         } else {
