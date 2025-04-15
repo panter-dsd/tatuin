@@ -1,0 +1,5 @@
+[obsidian]
+path = "/path/to/vault/root"
+
+[todoist]
+api_key = "api_key"
