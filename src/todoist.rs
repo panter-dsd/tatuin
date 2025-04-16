@@ -191,20 +191,6 @@ impl Todoist {
     }
 }
 
-fn task_query(project: &Option<String>, cursor: &Option<String>) -> String {
-    let mut query: Vec<String> = Vec::new();
-    query.push(String::from("limit=200"));
-
-    if let Some(p) = project {
-        query.push(format!("project_id={p}"));
-    }
-    if let Some(c) = cursor {
-        query.push(format!("cursor={c}"));
-    }
-
-    format!("?{}", query.join("&"))
-}
-
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 struct TaskResponse {
