@@ -27,19 +27,33 @@ impl Todoist {
         }
     }
 
-    pub async fn tasks(
+    async fn uncompleted_tasks(
         &self,
         project: &Option<String>,
-        _f: &filter::Filter,
     ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
         let mut result: Vec<Task> = Vec::new();
 
         let mut cursor = None;
 
+        let query = {
+            let mut v = vec![String::from("limit=200")];
+
+            if let Some(p) = project {
+                v.push(format!("project_id={p}"));
+            }
+
+            v
+        };
+
         loop {
+            let mut q = query.clone();
+            if let Some(c) = cursor {
+                q.push(format!("cursor={c}"));
+            }
+
             let mut resp = self
                 .client
-                .get(format!("{BASE_URL}/tasks{}", task_query(project, &cursor)))
+                .get(format!("{BASE_URL}/tasks?{}", q.join("&")))
                 .headers(self.default_header.clone())
                 .send()
                 .await?
@@ -53,6 +67,92 @@ impl Todoist {
             }
 
             cursor = resp.next_cursor;
+        }
+
+        Ok(result)
+    }
+
+    async fn completed_tasks(
+        &self,
+        project: &Option<String>,
+    ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+        let mut result: Vec<Task> = Vec::new();
+
+        let mut cursor = None;
+
+        let query = {
+            let mut v = vec![
+                String::from("limit=200"),
+                format!(
+                    "since={}",
+                    chrono::Utc::now()
+                        .checked_sub_days(chrono::Days::new(7))
+                        .unwrap()
+                        .format("%Y-%m-%dT%H:%M:%SZ")
+                ),
+                format!("until={}", chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ")),
+            ];
+
+            if let Some(p) = project {
+                v.push(format!("project_id={p}"));
+            }
+
+            v
+        };
+
+        #[allow(dead_code)]
+        #[derive(Deserialize, Debug)]
+        struct Response {
+            pub items: Vec<Task>,
+            pub next_cursor: Option<String>,
+        }
+
+        loop {
+            let mut q = query.clone();
+            if let Some(c) = cursor {
+                q.push(format!("cursor={c}"));
+            }
+            println!(
+                "{BASE_URL}/tasks/completed/by_completion_date?{}",
+                &q.join("&")
+            );
+            let mut resp = self
+                .client
+                .get(format!(
+                    "{BASE_URL}/tasks/completed/by_due_date?{}",
+                    &q.join("&")
+                ))
+                .headers(self.default_header.clone())
+                .send()
+                .await?
+                .json::<Response>()
+                .await?;
+
+            result.append(&mut resp.items);
+
+            if resp.next_cursor.is_none() {
+                break;
+            }
+
+            cursor = resp.next_cursor;
+        }
+
+        Ok(result)
+    }
+
+    pub async fn tasks(
+        &self,
+        project: &Option<String>,
+        f: &filter::Filter,
+    ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+        let mut result: Vec<Task> = Vec::new();
+
+        if f.states.contains(&filter::FilterState::Uncompleted) {
+            result.append(&mut self.uncompleted_tasks(project).await?);
+        }
+
+        if f.states.contains(&filter::FilterState::Completed) {
+            result.append(&mut self.completed_tasks(project).await?);
         }
 
         Ok(result)

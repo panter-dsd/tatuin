@@ -8,6 +8,7 @@ pub enum FilterState {
     Unknown,
 }
 
+#[derive(Debug)]
 pub struct Filter {
     pub states: Vec<FilterState>,
     pub today: bool,

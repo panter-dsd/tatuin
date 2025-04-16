@@ -44,6 +44,9 @@ enum TodoistCommands {
         project: Option<String>,
 
         #[arg(short, long)]
+        state: Option<Vec<filter::FilterState>>,
+
+        #[arg(short, long)]
         today: bool,
     },
     Projects {},
@@ -133,12 +136,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         },
         Commands::Todoist { command } => match command {
-            TodoistCommands::Tasks { project, today } => {
+            TodoistCommands::Tasks {
+                project,
+                state,
+                today,
+            } => {
                 print_todoist_task_list(
                     cfg,
                     project,
                     &filter::Filter {
-                        states: vec![],
+                        states: state_to_filter(state),
                         today: *today,
                     },
                 )
