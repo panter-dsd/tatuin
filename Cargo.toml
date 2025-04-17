@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+async-trait = "0.1.88"
 chrono = "0.4.40"
 clap = { version = "4.5.36", features = ["derive"] }
 colored = "3.0.0"

@@ -1,4 +1,5 @@
 use crate::task;
+use crate::todoist::PROVIDER_NAME;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::Deserialize;
 
@@ -86,5 +87,9 @@ impl task::Task for Task {
         }
 
         None
+    }
+
+    fn provider(&self) -> String {
+        PROVIDER_NAME.to_string()
     }
 }

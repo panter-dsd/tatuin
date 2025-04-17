@@ -6,8 +6,12 @@ mod project;
 use project::Project;
 
 use crate::filter;
+use crate::task::Provider;
+use crate::task::Task as TaskTrait;
+use async_trait::async_trait;
 
 const BASE_URL: &str = "https://todoist.com/api/v1";
+const PROVIDER_NAME: &str = "Todoist";
 
 pub struct Todoist {
     default_header: HeaderMap,
@@ -140,6 +144,62 @@ impl Todoist {
         Ok(result)
     }
 
+    async fn tasks_by_filter(
+        &self,
+        project: &Option<String>,
+        f: &filter::Filter,
+    ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+        let mut result: Vec<Task> = Vec::new();
+
+        let mut cursor = None;
+
+        let mut todoist_query = String::new();
+        if f.today {
+            todoist_query.push_str("today")
+        }
+
+        let query = {
+            let mut v = vec![String::from("limit=200"), format!("query={todoist_query}")];
+
+            if let Some(p) = project {
+                v.push(format!("project_id={p}"));
+            }
+
+            v
+        };
+
+        #[allow(dead_code)]
+        #[derive(Deserialize, Debug)]
+        struct Response {
+            pub results: Vec<Task>,
+            pub next_cursor: Option<String>,
+        }
+
+        loop {
+            let mut q = query.clone();
+            if let Some(c) = cursor {
+                q.push(format!("cursor={c}"));
+            }
+            let mut resp = self
+                .client
+                .get(format!("{BASE_URL}/tasks/filter?{}", &q.join("&")))
+                .headers(self.default_header.clone())
+                .send()
+                .await?
+                .json::<Response>()
+                .await?;
+
+            result.append(&mut resp.results);
+
+            if resp.next_cursor.is_none() {
+                break;
+            }
+
+            cursor = resp.next_cursor;
+        }
+
+        Ok(result)
+    }
     pub async fn tasks(
         &self,
         project: &Option<String>,
@@ -203,4 +263,33 @@ struct TaskResponse {
 struct ProjectResponse {
     pub results: Vec<Project>,
     pub next_cursor: Option<String>,
+}
+
+pub struct TodoistProvider {
+    t: Todoist,
+}
+
+impl TodoistProvider {
+    pub fn new(t: Todoist) -> Self {
+        Self { t }
+    }
+}
+
+#[async_trait]
+impl Provider for TodoistProvider {
+    fn name(&self) -> String {
+        PROVIDER_NAME.to_string()
+    }
+
+    async fn tasks(
+        &self,
+        f: &filter::Filter,
+    ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn std::error::Error>> {
+        let tasks = self.t.tasks_by_filter(&None, f).await?;
+        let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
+        for t in tasks {
+            result.push(Box::new(t));
+        }
+        Ok(result)
+    }
 }

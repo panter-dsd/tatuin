@@ -24,6 +24,13 @@ enum Commands {
         #[command(subcommand)]
         command: TodoistCommands,
     },
+    Tasks {
+        #[arg(short, long)]
+        state: Option<Vec<filter::FilterState>>,
+
+        #[arg(short, long)]
+        today: bool,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -76,6 +83,19 @@ fn print_tasks<T: task::Task>(tasks: &Vec<T>) {
     }
 }
 
+fn print_boxed_tasks(tasks: &[Box<dyn task::Task>]) {
+    for t in tasks {
+        println!(
+            "- [{}] {} ({}) ({} => {})",
+            t.state(),
+            t.text(),
+            format!("due: {}", due_to_str(t.due())).blue(),
+            t.provider().purple(),
+            t.place().green()
+        );
+    }
+}
+
 async fn print_obsidian_task_list(
     cfg: Settings,
     f: &filter::Filter,
@@ -121,6 +141,24 @@ fn state_to_filter(state: &Option<Vec<filter::FilterState>>) -> Vec<filter::Filt
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Settings::load("settings.toml")?;
 
+    let providers: Vec<Box<dyn task::Provider>> = vec![
+        Box::new(obsidian::ObsidianProvider::new(obsidian::Obsidian::new(
+            &cfg.obsidian.path,
+        ))),
+        Box::new(todoist::TodoistProvider::new(todoist::Todoist::new(
+            &cfg.todoist.api_key,
+        ))),
+    ];
+
+    println!(
+        "Available providers: {}",
+        providers
+            .iter()
+            .map(|p| p.name())
+            .collect::<Vec<String>>()
+            .join(", ")
+    );
+
     let cli = Cli::parse();
     match &cli.command {
         Commands::Obsidian { command } => match command {
@@ -153,6 +191,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             TodoistCommands::Projects {} => print_todoist_project_list(cfg).await?,
         },
+        Commands::Tasks { state, today } => {
+            let f = filter::Filter {
+                states: state_to_filter(state),
+                today: *today,
+            };
+
+            let mut tasks = Vec::new();
+            for p in providers {
+                tasks.append(&mut p.tasks(&f).await?);
+            }
+            print_boxed_tasks(&tasks);
+        }
     };
     Ok(())
 }

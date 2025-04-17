@@ -1,3 +1,4 @@
+use crate::obsidian::PROVIDER_NAME;
 use crate::task;
 use std::fmt::{self, Write};
 
@@ -73,5 +74,9 @@ impl task::Task for Task {
 
     fn due(&self) -> Option<task::DateTimeUtc> {
         self.due
+    }
+
+    fn provider(&self) -> String {
+        PROVIDER_NAME.to_string()
     }
 }

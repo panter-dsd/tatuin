@@ -7,7 +7,12 @@ use crate::filter::{Filter, FilterState};
 use task::Task;
 use tokio::sync::Semaphore;
 
+use crate::task::Provider;
+use crate::task::Task as TaskTrait;
+use async_trait::async_trait;
+
 const SIMULTANEOUS_JOB_COUNT: usize = 10;
+const PROVIDER_NAME: &str = "Obsidian";
 
 pub struct Obsidian {
     path: String,
@@ -118,4 +123,33 @@ fn supported_files(p: &Path) -> Result<Vec<String>, Box<dyn std::error::Error>> 
     }
 
     Ok(result)
+}
+
+pub struct ObsidianProvider {
+    obs: Obsidian,
+}
+
+impl ObsidianProvider {
+    pub fn new(obs: Obsidian) -> Self {
+        Self { obs }
+    }
+}
+
+#[async_trait]
+impl Provider for ObsidianProvider {
+    fn name(&self) -> String {
+        PROVIDER_NAME.to_string()
+    }
+
+    async fn tasks(
+        &self,
+        f: &Filter,
+    ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn std::error::Error>> {
+        let tasks = self.obs.tasks(f).await?;
+        let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
+        for t in tasks {
+            result.push(Box::new(t));
+        }
+        Ok(result)
+    }
 }

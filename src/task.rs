@@ -1,3 +1,5 @@
+use crate::filter;
+use async_trait::async_trait;
 use chrono::DateTime;
 use chrono::prelude::*;
 use std::fmt;
@@ -51,4 +53,14 @@ pub trait Task {
     fn place(&self) -> String {
         String::new()
     }
+    fn provider(&self) -> String;
+}
+
+#[async_trait]
+pub trait Provider {
+    fn name(&self) -> String;
+    async fn tasks(
+        &self,
+        f: &filter::Filter,
+    ) -> Result<Vec<Box<dyn Task>>, Box<dyn std::error::Error>>;
 }

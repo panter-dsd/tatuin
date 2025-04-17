@@ -1019,6 +1019,7 @@ dependencies = [
 name = "obsidian-todoist-sync"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "clap",
  "colored",
