@@ -158,6 +158,10 @@ impl Todoist {
             todoist_query.push_str("today")
         }
 
+        if todoist_query.is_empty() {
+            todoist_query = "all".to_string();
+        }
+
         let query = {
             let mut v = vec![String::from("limit=200"), format!("query={todoist_query}")];
 
