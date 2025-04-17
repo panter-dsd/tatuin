@@ -84,7 +84,7 @@ fn print_tasks<T: task::Task>(tasks: &Vec<T>) {
 }
 
 fn print_boxed_tasks(tasks: &[Box<dyn task::Task>]) {
-    // Rewrite with map/filter AI!
+    // Rewrite the loop with map/filter AI!
     for t in tasks {
         println!(
             "- [{}] {} ({}) ({} => {})",
