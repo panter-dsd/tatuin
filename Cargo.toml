@@ -7,8 +7,11 @@ edition = "2024"
 async-trait = "0.1.88"
 chrono = "0.4.40"
 clap = { version = "4.5.36", features = ["derive"] }
+color-eyre = "0.6.3"
 colored = "3.0.0"
 config = "0.15.11"
+crossterm = "0.29.0"
+ratatui = "0.29.0"
 regex = "1.11.1"
 reqwest = { version = "0.12.15", features = ["json"] }
 serde = "1.0.219"

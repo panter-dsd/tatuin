@@ -4,6 +4,7 @@ mod project;
 mod settings;
 mod task;
 mod todoist;
+mod ui;
 use clap::{Parser, Subcommand};
 use colored::Colorize;
 use settings::Settings;
@@ -17,6 +18,7 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
+    Tui {},
     Obsidian {
         #[command(subcommand)]
         command: ObsidianCommands,
@@ -243,6 +245,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             print_projects(&projects);
         }
+        Commands::Tui {} => ui::run().await?,
     };
     Ok(())
 }
