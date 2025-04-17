@@ -30,6 +30,9 @@ enum Commands {
 
         #[arg(short, long)]
         today: bool,
+
+        #[arg(short, long)]
+        provider: Option<String>,
     },
 }
 
@@ -192,7 +195,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             TodoistCommands::Projects {} => print_todoist_project_list(cfg).await?,
         },
-        Commands::Tasks { state, today } => {
+        Commands::Tasks {
+            state,
+            today,
+            provider,
+        } => {
             let f = filter::Filter {
                 states: state_to_filter(state),
                 today: *today,
@@ -200,6 +207,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut tasks = Vec::new();
             for p in providers {
+                if let Some(provider_name) = provider {
+                    if p.name() != *provider_name {
+                        continue;
+                    }
+                }
+
                 tasks.append(&mut p.tasks(&f).await?);
             }
             print_boxed_tasks(&tasks);
