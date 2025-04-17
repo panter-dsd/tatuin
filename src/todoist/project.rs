@@ -1,3 +1,5 @@
+use crate::project::Project as ProjectTrait;
+use crate::todoist::PROVIDER_NAME;
 use serde::Deserialize;
 
 #[allow(dead_code)]
@@ -21,4 +23,28 @@ pub struct Project {
     pub inbox_project: bool,
     pub is_collapsed: bool,
     pub is_shared: bool,
+}
+
+impl ProjectTrait for Project {
+    fn id(&self) -> String {
+        self.id.to_string()
+    }
+    fn name(&self) -> String {
+        self.name.to_string()
+    }
+    fn provider(&self) -> String {
+        PROVIDER_NAME.to_string()
+    }
+    fn description(&self) -> String {
+        self.description.to_string()
+    }
+    fn parent_id(&self) -> Option<String> {
+        self.parent_id.clone()
+    }
+    fn is_inbox(&self) -> bool {
+        self.inbox_project
+    }
+    fn is_favorite(&self) -> bool {
+        self.is_favorite
+    }
 }

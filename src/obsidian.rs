@@ -7,6 +7,7 @@ use crate::filter::{Filter, FilterState};
 use task::Task;
 use tokio::sync::Semaphore;
 
+use crate::project::Project as ProjectTrait;
 use crate::task::Provider;
 use crate::task::Task as TaskTrait;
 use async_trait::async_trait;
@@ -151,5 +152,8 @@ impl Provider for ObsidianProvider {
             result.push(Box::new(t));
         }
         Ok(result)
+    }
+    async fn projects(&self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn std::error::Error>> {
+        Ok(Vec::new())
     }
 }

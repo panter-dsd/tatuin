@@ -6,8 +6,10 @@ mod project;
 use project::Project;
 
 use crate::filter;
+use crate::project::Project as ProjectTrait;
 use crate::task::Provider;
 use crate::task::Task as TaskTrait;
+
 use async_trait::async_trait;
 
 const BASE_URL: &str = "https://todoist.com/api/v1";
@@ -294,6 +296,16 @@ impl Provider for TodoistProvider {
         for t in tasks {
             result.push(Box::new(t));
         }
+        Ok(result)
+    }
+
+    async fn projects(&self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn std::error::Error>> {
+        let projects = self.t.projects().await?;
+        let mut result: Vec<Box<dyn ProjectTrait>> = Vec::new();
+        for p in projects {
+            result.push(Box::new(p));
+        }
+
         Ok(result)
     }
 }

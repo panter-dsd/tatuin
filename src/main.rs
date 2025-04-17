@@ -1,5 +1,6 @@
 mod filter;
 mod obsidian;
+mod project;
 mod settings;
 mod task;
 mod todoist;
@@ -31,6 +32,10 @@ enum Commands {
         #[arg(short, long)]
         today: bool,
 
+        #[arg(short, long)]
+        provider: Option<String>,
+    },
+    Projects {
         #[arg(short, long)]
         provider: Option<String>,
     },
@@ -97,6 +102,12 @@ fn print_boxed_tasks(tasks: &[Box<dyn task::Task>]) {
             t.provider().purple(),
             t.place().green()
         );
+    }
+}
+
+fn print_projects(projects: &[Box<dyn project::Project>]) {
+    for p in projects {
+        println!("{}: {} ({})", p.id(), p.name(), p.provider().purple());
     }
 }
 
@@ -216,6 +227,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 tasks.append(&mut p.tasks(&f).await?);
             }
             print_boxed_tasks(&tasks);
+        }
+        Commands::Projects { provider } => {
+            let mut projects = Vec::new();
+
+            for p in providers {
+                if let Some(provider_name) = provider {
+                    if p.name() != *provider_name {
+                        continue;
+                    }
+                }
+
+                projects.append(&mut p.projects().await?);
+            }
+
+            print_projects(&projects);
         }
     };
     Ok(())

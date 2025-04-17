@@ -1,4 +1,5 @@
 use crate::filter;
+use crate::project;
 use async_trait::async_trait;
 use chrono::DateTime;
 use chrono::prelude::*;
@@ -63,4 +64,5 @@ pub trait Provider {
         &self,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn Task>>, Box<dyn std::error::Error>>;
+    async fn projects(&self) -> Result<Vec<Box<dyn project::Project>>, Box<dyn std::error::Error>>;
 }
