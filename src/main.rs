@@ -245,7 +245,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             print_projects(&projects);
         }
-        Commands::Tui {} => ui::run().await?,
+        Commands::Tui {} => {
+            color_eyre::install()?;
+            let terminal = ratatui::init();
+            let _app_result = ui::App::default().run(terminal);
+            ratatui::restore();
+        }
     };
     Ok(())
 }
