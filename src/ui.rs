@@ -1,3 +1,4 @@
+use crate::filter;
 use crate::{project, task};
 /// A Ratatui example that demonstrates how to create a todo list with selectable items.
 ///
@@ -35,29 +36,17 @@ enum AppBlock {
     TaskDescription,
 }
 
-pub struct App {
-    should_exit: bool,
-    providers: SelectableList<Box<dyn task::Provider>>,
-    projects: SelectableList<Box<dyn project::Project>>,
-    tasks: SelectableList<Box<dyn task::Task>>,
-    current_block: AppBlock,
-}
-
 struct SelectableList<T> {
     items: Vec<T>,
     state: ListState,
 }
 
 impl<T> SelectableList<T> {
-    fn new(v: Vec<T>) -> Self {
+    fn new(v: Vec<T>, selected: Option<usize>) -> Self {
         Self {
             items: v,
-            state: ListState::default(),
+            state: ListState::default().with_selected(selected),
         }
-    }
-
-    fn is_empty(&self) -> bool {
-        self.items.is_empty()
     }
 }
 
@@ -83,12 +72,24 @@ enum Status {
     Completed,
 }
 
+pub struct App {
+    should_exit: bool,
+    reload_projects: bool,
+    reload_tasks: bool,
+    providers: SelectableList<Box<dyn task::Provider>>,
+    projects: SelectableList<Box<dyn project::Project>>,
+    tasks: SelectableList<Box<dyn task::Task>>,
+    current_block: AppBlock,
+}
+
 impl App {
     pub fn new(providers: Vec<Box<dyn task::Provider>>) -> Self {
         Self {
             should_exit: false,
+            reload_projects: true,
+            reload_tasks: true,
             current_block: AppBlock::Providers,
-            providers: SelectableList::new(providers),
+            providers: SelectableList::new(providers, Some(0)),
             projects: SelectableList::default(),
             tasks: SelectableList::default(),
         }
@@ -98,7 +99,16 @@ impl App {
 impl App {
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         while !self.should_exit {
-            self.load_projects().await;
+            if self.reload_projects {
+                self.load_projects().await;
+                self.reload_projects = false
+            }
+
+            if self.reload_tasks {
+                self.load_tasks().await;
+                self.reload_tasks = false;
+            }
+
             terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
             if let Event::Key(key) = event::read()? {
                 self.handle_key(key);
@@ -108,13 +118,15 @@ impl App {
     }
 
     async fn load_projects(&mut self) {
-        if !self.projects.is_empty() {
-            return; // TODO: update it every few minutes
-        }
-
         let mut projects: Vec<Box<dyn project::Project>> = Vec::new();
+        let is_all = self.providers.state.selected().unwrap_or_default() == 0;
 
-        for p in &self.providers.items {
+        for (i, p) in self.providers.items.iter().enumerate() {
+            // -1 because of All
+            if !is_all && i != self.providers.state.selected().unwrap_or_default() - 1 {
+                continue;
+            }
+
             let result = p.projects().await;
             if let Ok(mut prj) = result {
                 projects.append(&mut prj);
@@ -122,6 +134,30 @@ impl App {
         }
 
         self.projects.items = projects;
+    }
+
+    async fn load_tasks(&mut self) {
+        let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
+        let is_all = self.providers.state.selected().unwrap_or_default() == 0;
+
+        let f = filter::Filter {
+            today: false,
+            states: vec![filter::FilterState::Uncompleted],
+        };
+
+        for (i, p) in self.providers.items.iter().enumerate() {
+            // -1 because of All
+            if !is_all && i != self.providers.state.selected().unwrap_or_default() - 1 {
+                continue;
+            }
+
+            let result = p.tasks(&f).await;
+            if let Ok(mut prj) = result {
+                tasks.append(&mut prj);
+            }
+        }
+
+        self.tasks.items = tasks;
     }
 
     fn handle_key(&mut self, key: KeyEvent) {
@@ -152,6 +188,20 @@ impl App {
         }
     }
 
+    fn set_reload(&mut self) {
+        match self.current_block {
+            AppBlock::Providers => {
+                self.reload_projects = true;
+                self.reload_tasks = true;
+            }
+            AppBlock::Projects => {
+                self.reload_tasks = true;
+            }
+            AppBlock::TaskList => {}
+            AppBlock::TaskDescription => {}
+        }
+    }
+
     fn select_none(&mut self) {
         match self.current_block {
             AppBlock::Providers => self.providers.state.select(None),
@@ -159,6 +209,7 @@ impl App {
             AppBlock::TaskList => self.tasks.state.select(None),
             AppBlock::TaskDescription => {}
         }
+        self.set_reload();
     }
 
     fn select_next(&mut self) {
@@ -168,7 +219,9 @@ impl App {
             AppBlock::TaskList => self.tasks.state.select_next(),
             AppBlock::TaskDescription => {}
         }
+        self.set_reload();
     }
+
     fn select_previous(&mut self) {
         match self.current_block {
             AppBlock::Providers => self.providers.state.select_previous(),
@@ -176,6 +229,7 @@ impl App {
             AppBlock::TaskList => self.tasks.state.select_previous(),
             AppBlock::TaskDescription => {}
         }
+        self.set_reload();
     }
 
     fn select_first(&mut self) {
@@ -185,6 +239,7 @@ impl App {
             AppBlock::TaskList => self.tasks.state.select_first(),
             AppBlock::TaskDescription => {}
         }
+        self.set_reload();
     }
 
     fn select_last(&mut self) {
@@ -194,6 +249,7 @@ impl App {
             AppBlock::TaskList => self.tasks.state.select_last(),
             AppBlock::TaskDescription => {}
         }
+        self.set_reload();
     }
 
     /// Changes the status of the selected list item
@@ -220,7 +276,7 @@ impl Widget for &mut App {
             Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(main_area);
 
         let [providers_and_projects_area, list_area] =
-            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)])
+            Layout::horizontal([Constraint::Percentage(20), Constraint::Fill(1)])
                 .areas(list_and_providers_area);
         let [providers_area, projects_area] =
             Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)])
@@ -228,10 +284,10 @@ impl Widget for &mut App {
 
         App::render_header(header_area, buf);
         App::render_footer(footer_area, buf);
-        self.render_list(list_area, buf);
+        self.render_tasks(list_area, buf);
         self.render_providers(providers_area, buf);
         self.render_projects(projects_area, buf);
-        self.render_selected_item(item_area, buf);
+        self.render_task_description(item_area, buf);
     }
 }
 
@@ -316,9 +372,9 @@ impl App {
         StatefulWidget::render(list, area, buf, &mut self.projects.state);
     }
 
-    fn render_list(&mut self, area: Rect, buf: &mut Buffer) {
+    fn render_tasks(&mut self, area: Rect, buf: &mut Buffer) {
         let block = Block::new()
-            .title(Line::raw("TODO List").centered())
+            .title(Line::raw("Tasks").centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
             .border_style(self.block_style(AppBlock::TaskList))
@@ -348,7 +404,7 @@ impl App {
         StatefulWidget::render(list, area, buf, &mut self.tasks.state);
     }
 
-    fn render_selected_item(&self, area: Rect, buf: &mut Buffer) {
+    fn render_task_description(&self, area: Rect, buf: &mut Buffer) {
         // We get the info depending on the item's state.
         let info = if let Some(i) = self.tasks.state.selected() {
             self.tasks.items[i].text()
