@@ -287,6 +287,10 @@ impl Provider for TodoistProvider {
         PROVIDER_NAME.to_string()
     }
 
+    fn type_name(&self) -> String {
+        PROVIDER_NAME.to_string()
+    }
+
     async fn tasks(
         &self,
         f: &filter::Filter,

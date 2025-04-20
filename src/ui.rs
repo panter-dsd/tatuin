@@ -1,3 +1,4 @@
+use crate::{project, task};
 /// A Ratatui example that demonstrates how to create a todo list with selectable items.
 ///
 /// This example runs with the Ratatui library code in the branch that you are currently
@@ -19,21 +20,28 @@ use ratatui::widgets::{
 use ratatui::{DefaultTerminal, symbols};
 
 const TODO_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
+const ACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(GREEN.c800);
+const INACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = SLATE.c950;
 const ALT_ROW_BG_COLOR: Color = SLATE.c900;
 const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
 const TEXT_FG_COLOR: Color = SLATE.c200;
 const COMPLETED_TEXT_FG_COLOR: Color = GREEN.c500;
 
-/// This struct holds the current state of the app. In particular, it has the `todo_list` field
-/// which is a wrapper around `ListState`. Keeping track of the state lets us render the
-/// associated widget with its state and have access to features such as natural scrolling.
-///
-/// Check the event handling at the bottom to see how to change the state on incoming events. Check
-/// the drawing logic for items on how to specify the highlighting style for selected items.
+#[derive(Eq, PartialEq)]
+enum AppBlock {
+    Providers,
+    Projects,
+    TaskList,
+    TaskDescription,
+}
+
 pub struct App {
     should_exit: bool,
     todo_list: TodoList,
+    providers: Vec<Box<dyn task::Provider>>,
+    projects: Vec<Box<dyn project::Project>>,
+    current_block: AppBlock,
 }
 
 struct TodoList {
@@ -54,10 +62,13 @@ enum Status {
     Completed,
 }
 
-impl Default for App {
-    fn default() -> Self {
+impl App {
+    pub fn new(providers: Vec<Box<dyn task::Provider>>) -> Self {
         Self {
             should_exit: false,
+            providers,
+            projects: Vec::new(),
+            current_block: AppBlock::Providers,
             todo_list: TodoList::from_iter([
                 (
                     Status::Todo,
@@ -116,14 +127,32 @@ impl TodoItem {
 }
 
 impl App {
-    pub fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+    pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         while !self.should_exit {
+            self.load_projects().await;
             terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
             if let Event::Key(key) = event::read()? {
                 self.handle_key(key);
             }
         }
         Ok(())
+    }
+
+    async fn load_projects(&mut self) {
+        if !self.projects.is_empty() {
+            return; // TODO: update it every few minutes
+        }
+
+        let mut projects: Vec<Box<dyn project::Project>> = Vec::new();
+
+        for p in &self.providers {
+            let result = p.projects().await;
+            if let Ok(mut prj) = result {
+                projects.append(&mut prj);
+            }
+        }
+
+        self.projects = projects;
     }
 
     fn handle_key(&mut self, key: KeyEvent) {
@@ -140,7 +169,17 @@ impl App {
             KeyCode::Char('l') | KeyCode::Right | KeyCode::Enter => {
                 self.toggle_status();
             }
+            KeyCode::Tab => self.select_next_block(),
             _ => {}
+        }
+    }
+
+    fn select_next_block(&mut self) {
+        match self.current_block {
+            AppBlock::Providers => self.current_block = AppBlock::Projects,
+            AppBlock::Projects => self.current_block = AppBlock::TaskList,
+            AppBlock::TaskList => self.current_block = AppBlock::TaskDescription,
+            AppBlock::TaskDescription => self.current_block = AppBlock::Providers,
         }
     }
 
@@ -183,12 +222,21 @@ impl Widget for &mut App {
         ])
         .areas(area);
 
-        let [list_area, item_area] =
+        let [list_and_providers_area, item_area] =
             Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(main_area);
+
+        let [providers_and_projects_area, list_area] =
+            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)])
+                .areas(list_and_providers_area);
+        let [providers_area, projects_area] =
+            Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)])
+                .areas(providers_and_projects_area);
 
         App::render_header(header_area, buf);
         App::render_footer(footer_area, buf);
         self.render_list(list_area, buf);
+        self.render_providers(providers_area, buf);
+        self.render_projects(projects_area, buf);
         self.render_selected_item(item_area, buf);
     }
 }
@@ -208,12 +256,76 @@ impl App {
             .render(area, buf);
     }
 
+    fn block_style(&self, b: AppBlock) -> Style {
+        if self.current_block == b {
+            return ACTIVE_BLOCK_STYLE;
+        }
+
+        INACTIVE_BLOCK_STYLE
+    }
+
+    fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
+        let block = Block::new()
+            .title(Line::raw("Providers").centered())
+            .borders(Borders::TOP)
+            .border_set(symbols::border::EMPTY)
+            .border_style(self.block_style(AppBlock::Providers))
+            .bg(NORMAL_ROW_BG);
+
+        // Iterate through all elements in the `items` and stylize them.
+        let mut items: Vec<ListItem> = self
+            .providers
+            .iter()
+            .map(|p| ListItem::from(format!("{} ({})", p.name(), p.type_name())))
+            .collect();
+
+        items.insert(0, ListItem::from("All"));
+
+        // Create a List from all list items and highlight the currently selected one
+        let list = List::new(items)
+            .block(block)
+            .highlight_style(SELECTED_STYLE)
+            .highlight_symbol(">")
+            .highlight_spacing(HighlightSpacing::Always);
+
+        // We need to disambiguate this trait method as both `Widget` and `StatefulWidget` share the
+        // same method name `render`.
+        StatefulWidget::render(list, area, buf, &mut self.todo_list.state);
+    }
+
+    fn render_projects(&mut self, area: Rect, buf: &mut Buffer) {
+        let block = Block::new()
+            .title(Line::raw("Projects").centered())
+            .borders(Borders::TOP)
+            .border_set(symbols::border::EMPTY)
+            .border_style(self.block_style(AppBlock::Projects))
+            .bg(NORMAL_ROW_BG);
+
+        // Iterate through all elements in the `items` and stylize them.
+        let items: Vec<ListItem> = self
+            .projects
+            .iter()
+            .map(|p| ListItem::from(format!("{} ({})", p.name(), p.provider())))
+            .collect();
+
+        // Create a List from all list items and highlight the currently selected one
+        let list = List::new(items)
+            .block(block)
+            .highlight_style(SELECTED_STYLE)
+            .highlight_symbol(">")
+            .highlight_spacing(HighlightSpacing::Always);
+
+        // We need to disambiguate this trait method as both `Widget` and `StatefulWidget` share the
+        // same method name `render`.
+        StatefulWidget::render(list, area, buf, &mut self.todo_list.state);
+    }
+
     fn render_list(&mut self, area: Rect, buf: &mut Buffer) {
         let block = Block::new()
             .title(Line::raw("TODO List").centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
-            .border_style(TODO_HEADER_STYLE)
+            .border_style(self.block_style(AppBlock::TaskList))
             .bg(NORMAL_ROW_BG);
 
         // Iterate through all elements in the `items` and stylize them.
@@ -256,7 +368,7 @@ impl App {
             .title(Line::raw("TODO Info").centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
-            .border_style(TODO_HEADER_STYLE)
+            .border_style(self.block_style(AppBlock::TaskDescription))
             .bg(NORMAL_ROW_BG)
             .padding(Padding::horizontal(1));
 

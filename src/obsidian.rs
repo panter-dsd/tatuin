@@ -139,6 +139,10 @@ impl ObsidianProvider {
 #[async_trait]
 impl Provider for ObsidianProvider {
     fn name(&self) -> String {
+        self.obs.path.to_string()
+    }
+
+    fn type_name(&self) -> String {
         PROVIDER_NAME.to_string()
     }
 

@@ -60,6 +60,7 @@ pub trait Task {
 #[async_trait]
 pub trait Provider {
     fn name(&self) -> String;
+    fn type_name(&self) -> String;
     async fn tasks(
         &self,
         f: &filter::Filter,
