@@ -19,7 +19,6 @@ use ratatui::widgets::{
 };
 use ratatui::{DefaultTerminal, symbols};
 
-const TODO_HEADER_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 const ACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(GREEN.c800);
 const INACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = SLATE.c950;
@@ -38,15 +37,37 @@ enum AppBlock {
 
 pub struct App {
     should_exit: bool,
-    todo_list: TodoList,
-    providers: Vec<Box<dyn task::Provider>>,
-    projects: Vec<Box<dyn project::Project>>,
+    providers: SelectableList<Box<dyn task::Provider>>,
+    projects: SelectableList<Box<dyn project::Project>>,
+    tasks: SelectableList<Box<dyn task::Task>>,
     current_block: AppBlock,
 }
 
-struct TodoList {
-    items: Vec<TodoItem>,
+struct SelectableList<T> {
+    items: Vec<T>,
     state: ListState,
+}
+
+impl<T> SelectableList<T> {
+    fn new(v: Vec<T>) -> Self {
+        Self {
+            items: v,
+            state: ListState::default(),
+        }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+}
+
+impl<T> Default for SelectableList<T> {
+    fn default() -> Self {
+        Self {
+            items: Vec::new(),
+            state: ListState::default(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -66,62 +87,10 @@ impl App {
     pub fn new(providers: Vec<Box<dyn task::Provider>>) -> Self {
         Self {
             should_exit: false,
-            providers,
-            projects: Vec::new(),
             current_block: AppBlock::Providers,
-            todo_list: TodoList::from_iter([
-                (
-                    Status::Todo,
-                    "Rewrite everything with Rust!",
-                    "I can't hold my inner voice. He tells me to rewrite the complete universe with Rust",
-                ),
-                (
-                    Status::Completed,
-                    "Rewrite all of your tui apps with Ratatui",
-                    "Yes, you heard that right. Go and replace your tui with Ratatui.",
-                ),
-                (
-                    Status::Todo,
-                    "Pet your cat",
-                    "Minnak loves to be pet by you! Don't forget to pet and give some treats!",
-                ),
-                (
-                    Status::Todo,
-                    "Walk with your dog",
-                    "Max is bored, go walk with him!",
-                ),
-                (
-                    Status::Completed,
-                    "Pay the bills",
-                    "Pay the train subscription!!!",
-                ),
-                (
-                    Status::Completed,
-                    "Refactor list example",
-                    "If you see this info that means I completed this task!",
-                ),
-            ]),
-        }
-    }
-}
-
-impl FromIterator<(Status, &'static str, &'static str)> for TodoList {
-    fn from_iter<I: IntoIterator<Item = (Status, &'static str, &'static str)>>(iter: I) -> Self {
-        let items = iter
-            .into_iter()
-            .map(|(status, todo, info)| TodoItem::new(status, todo, info))
-            .collect();
-        let state = ListState::default();
-        Self { items, state }
-    }
-}
-
-impl TodoItem {
-    fn new(status: Status, todo: &str, info: &str) -> Self {
-        Self {
-            status,
-            todo: todo.to_string(),
-            info: info.to_string(),
+            providers: SelectableList::new(providers),
+            projects: SelectableList::default(),
+            tasks: SelectableList::default(),
         }
     }
 }
@@ -145,14 +114,14 @@ impl App {
 
         let mut projects: Vec<Box<dyn project::Project>> = Vec::new();
 
-        for p in &self.providers {
+        for p in &self.providers.items {
             let result = p.projects().await;
             if let Ok(mut prj) = result {
                 projects.append(&mut prj);
             }
         }
 
-        self.projects = projects;
+        self.projects.items = projects;
     }
 
     fn handle_key(&mut self, key: KeyEvent) {
@@ -184,31 +153,56 @@ impl App {
     }
 
     fn select_none(&mut self) {
-        self.todo_list.state.select(None);
+        match self.current_block {
+            AppBlock::Providers => self.providers.state.select(None),
+            AppBlock::Projects => self.projects.state.select(None),
+            AppBlock::TaskList => self.tasks.state.select(None),
+            AppBlock::TaskDescription => {}
+        }
     }
 
     fn select_next(&mut self) {
-        self.todo_list.state.select_next();
+        match self.current_block {
+            AppBlock::Providers => self.providers.state.select_next(),
+            AppBlock::Projects => self.projects.state.select_next(),
+            AppBlock::TaskList => self.tasks.state.select_next(),
+            AppBlock::TaskDescription => {}
+        }
     }
     fn select_previous(&mut self) {
-        self.todo_list.state.select_previous();
+        match self.current_block {
+            AppBlock::Providers => self.providers.state.select_previous(),
+            AppBlock::Projects => self.projects.state.select_previous(),
+            AppBlock::TaskList => self.tasks.state.select_previous(),
+            AppBlock::TaskDescription => {}
+        }
     }
 
     fn select_first(&mut self) {
-        self.todo_list.state.select_first();
+        match self.current_block {
+            AppBlock::Providers => self.providers.state.select_first(),
+            AppBlock::Projects => self.projects.state.select_first(),
+            AppBlock::TaskList => self.tasks.state.select_first(),
+            AppBlock::TaskDescription => {}
+        }
     }
 
     fn select_last(&mut self) {
-        self.todo_list.state.select_last();
+        match self.current_block {
+            AppBlock::Providers => self.providers.state.select_last(),
+            AppBlock::Projects => self.projects.state.select_last(),
+            AppBlock::TaskList => self.tasks.state.select_last(),
+            AppBlock::TaskDescription => {}
+        }
     }
 
     /// Changes the status of the selected list item
     fn toggle_status(&mut self) {
-        if let Some(i) = self.todo_list.state.selected() {
-            self.todo_list.items[i].status = match self.todo_list.items[i].status {
-                Status::Completed => Status::Todo,
-                Status::Todo => Status::Completed,
-            }
+        if let Some(i) = self.tasks.state.selected() {
+            // self.tasks.items[i].status = match self.tasks.items[i].status {
+            //     Status::Completed => Status::Todo,
+            //     Status::Todo => Status::Completed,
+            // }
         }
     }
 }
@@ -275,6 +269,7 @@ impl App {
         // Iterate through all elements in the `items` and stylize them.
         let mut items: Vec<ListItem> = self
             .providers
+            .items
             .iter()
             .map(|p| ListItem::from(format!("{} ({})", p.name(), p.type_name())))
             .collect();
@@ -290,7 +285,7 @@ impl App {
 
         // We need to disambiguate this trait method as both `Widget` and `StatefulWidget` share the
         // same method name `render`.
-        StatefulWidget::render(list, area, buf, &mut self.todo_list.state);
+        StatefulWidget::render(list, area, buf, &mut self.providers.state);
     }
 
     fn render_projects(&mut self, area: Rect, buf: &mut Buffer) {
@@ -304,6 +299,7 @@ impl App {
         // Iterate through all elements in the `items` and stylize them.
         let items: Vec<ListItem> = self
             .projects
+            .items
             .iter()
             .map(|p| ListItem::from(format!("{} ({})", p.name(), p.provider())))
             .collect();
@@ -317,7 +313,7 @@ impl App {
 
         // We need to disambiguate this trait method as both `Widget` and `StatefulWidget` share the
         // same method name `render`.
-        StatefulWidget::render(list, area, buf, &mut self.todo_list.state);
+        StatefulWidget::render(list, area, buf, &mut self.projects.state);
     }
 
     fn render_list(&mut self, area: Rect, buf: &mut Buffer) {
@@ -330,13 +326,13 @@ impl App {
 
         // Iterate through all elements in the `items` and stylize them.
         let items: Vec<ListItem> = self
-            .todo_list
+            .tasks
             .items
             .iter()
             .enumerate()
-            .map(|(i, todo_item)| {
+            .map(|(i, t)| {
                 let color = alternate_colors(i);
-                ListItem::from(todo_item).bg(color)
+                ListItem::from(task::format(t.as_ref())).bg(color)
             })
             .collect();
 
@@ -349,16 +345,17 @@ impl App {
 
         // We need to disambiguate this trait method as both `Widget` and `StatefulWidget` share the
         // same method name `render`.
-        StatefulWidget::render(list, area, buf, &mut self.todo_list.state);
+        StatefulWidget::render(list, area, buf, &mut self.tasks.state);
     }
 
     fn render_selected_item(&self, area: Rect, buf: &mut Buffer) {
         // We get the info depending on the item's state.
-        let info = if let Some(i) = self.todo_list.state.selected() {
-            match self.todo_list.items[i].status {
-                Status::Completed => format!("✓ DONE: {}", self.todo_list.items[i].info),
-                Status::Todo => format!("☐ TODO: {}", self.todo_list.items[i].info),
-            }
+        let info = if let Some(i) = self.tasks.state.selected() {
+            self.tasks.items[i].text()
+            // match self.tasks.items[i].status {
+            //     Status::Completed => format!("✓ DONE: {}", self.tasks.items[i].info),
+            //     Status::Todo => format!("☐ TODO: {}", self.tasks.items[i].info),
+            // }
         } else {
             "Nothing selected...".to_string()
         };

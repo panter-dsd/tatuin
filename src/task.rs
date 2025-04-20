@@ -3,6 +3,7 @@ use crate::project;
 use async_trait::async_trait;
 use chrono::DateTime;
 use chrono::prelude::*;
+use colored::Colorize;
 use std::fmt;
 use std::fmt::Write;
 
@@ -55,6 +56,28 @@ pub trait Task {
         String::new()
     }
     fn provider(&self) -> String;
+}
+
+fn due_to_str(t: Option<DateTimeUtc>) -> String {
+    if let Some(d) = t {
+        if d.time() == chrono::NaiveTime::default() {
+            return d.format("%Y-%m-%d").to_string();
+        }
+
+        return d.format("%Y-%m-%d %H:%M:%S").to_string();
+    }
+
+    String::from("-")
+}
+
+pub fn format(t: &dyn Task) -> String {
+    format!(
+        "- [{}] {} ({}) ({})",
+        t.state(),
+        t.text(),
+        format!("due: {}", due_to_str(t.due())).blue(),
+        t.place().green()
+    )
 }
 
 #[async_trait]
