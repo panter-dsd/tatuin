@@ -141,7 +141,7 @@ impl App {
         let is_all = self.providers.state.selected().unwrap_or_default() == 0;
 
         let f = filter::Filter {
-            today: false,
+            today: true,
             states: vec![filter::FilterState::Uncompleted],
         };
 
