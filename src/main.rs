@@ -1,6 +1,7 @@
 mod filter;
 mod obsidian;
 mod project;
+mod provider;
 mod settings;
 mod task;
 mod todoist;
