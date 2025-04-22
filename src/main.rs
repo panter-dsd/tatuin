@@ -122,7 +122,7 @@ async fn print_todoist_task_list(
     project: &Option<String>,
     f: &filter::Filter,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let td = todoist::Client::new(&cfg.todoist.api_key);
+    let td = todoist::client::Client::new(&cfg.todoist.api_key);
     let tasks = td.tasks(project, f).await?;
     print_tasks(&tasks);
 
@@ -130,7 +130,7 @@ async fn print_todoist_task_list(
 }
 
 async fn print_todoist_project_list(cfg: Settings) -> Result<(), Box<dyn std::error::Error>> {
-    let td = todoist::Client::new(&cfg.todoist.api_key);
+    let td = todoist::client::Client::new(&cfg.todoist.api_key);
     let projects = td.projects().await?;
 
     for p in projects {
@@ -155,9 +155,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Box::new(obsidian::Provider::new(obsidian::Client::new(
             &cfg.obsidian.path,
         ))),
-        Box::new(todoist::Provider::new(todoist::Client::new(
-            &cfg.todoist.api_key,
-        ))),
+        Box::new(todoist::Provider::new(&cfg.todoist.api_key)),
     ];
 
     println!(
