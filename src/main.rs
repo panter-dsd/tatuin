@@ -110,7 +110,7 @@ async fn print_obsidian_task_list(
     cfg: Settings,
     f: &filter::Filter,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let obs = obsidian::Obsidian::new(cfg.obsidian.path.as_str());
+    let obs = obsidian::Client::new(cfg.obsidian.path.as_str());
     let tasks = obs.tasks(f).await?;
     print_tasks(&tasks);
 
@@ -122,7 +122,7 @@ async fn print_todoist_task_list(
     project: &Option<String>,
     f: &filter::Filter,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let td = todoist::Todoist::new(&cfg.todoist.api_key);
+    let td = todoist::Client::new(&cfg.todoist.api_key);
     let tasks = td.tasks(project, f).await?;
     print_tasks(&tasks);
 
@@ -130,7 +130,7 @@ async fn print_todoist_task_list(
 }
 
 async fn print_todoist_project_list(cfg: Settings) -> Result<(), Box<dyn std::error::Error>> {
-    let td = todoist::Todoist::new(&cfg.todoist.api_key);
+    let td = todoist::Client::new(&cfg.todoist.api_key);
     let projects = td.projects().await?;
 
     for p in projects {
@@ -152,10 +152,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Settings::load("settings.toml")?;
 
     let providers: Vec<Box<dyn task::Provider>> = vec![
-        Box::new(obsidian::ObsidianProvider::new(obsidian::Obsidian::new(
+        Box::new(obsidian::Provider::new(obsidian::Client::new(
             &cfg.obsidian.path,
         ))),
-        Box::new(todoist::TodoistProvider::new(todoist::Todoist::new(
+        Box::new(todoist::Provider::new(todoist::Client::new(
             &cfg.todoist.api_key,
         ))),
     ];

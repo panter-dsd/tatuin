@@ -7,7 +7,7 @@ use project::Project;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::task::Provider;
+use crate::task::Provider as ProviderTrait;
 use crate::task::Task as TaskTrait;
 
 use async_trait::async_trait;
@@ -15,12 +15,12 @@ use async_trait::async_trait;
 const BASE_URL: &str = "https://todoist.com/api/v1";
 const PROVIDER_NAME: &str = "Todoist";
 
-pub struct Todoist {
+pub struct Client {
     default_header: HeaderMap,
     client: reqwest::Client,
 }
 
-impl Todoist {
+impl Client {
     pub fn new(api_key: &str) -> Self {
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -271,18 +271,18 @@ struct ProjectResponse {
     pub next_cursor: Option<String>,
 }
 
-pub struct TodoistProvider {
-    t: Todoist,
+pub struct Provider {
+    c: Client,
 }
 
-impl TodoistProvider {
-    pub fn new(t: Todoist) -> Self {
-        Self { t }
+impl Provider {
+    pub fn new(c: Client) -> Self {
+        Self { c }
     }
 }
 
 #[async_trait]
-impl Provider for TodoistProvider {
+impl ProviderTrait for Provider {
     fn name(&self) -> String {
         PROVIDER_NAME.to_string()
     }
@@ -295,7 +295,7 @@ impl Provider for TodoistProvider {
         &self,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn std::error::Error>> {
-        let tasks = self.t.tasks_by_filter(&None, f).await?;
+        let tasks = self.c.tasks_by_filter(&None, f).await?;
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
         for t in tasks {
             result.push(Box::new(t));
@@ -304,7 +304,7 @@ impl Provider for TodoistProvider {
     }
 
     async fn projects(&self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn std::error::Error>> {
-        let projects = self.t.projects().await?;
+        let projects = self.c.projects().await?;
         let mut result: Vec<Box<dyn ProjectTrait>> = Vec::new();
         for p in projects {
             result.push(Box::new(p));

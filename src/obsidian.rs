@@ -8,18 +8,18 @@ use task::Task;
 use tokio::sync::Semaphore;
 
 use crate::project::Project as ProjectTrait;
-use crate::task::Provider;
+use crate::task::Provider as ProviderTrait;
 use crate::task::Task as TaskTrait;
 use async_trait::async_trait;
 
 const SIMULTANEOUS_JOB_COUNT: usize = 10;
 const PROVIDER_NAME: &str = "Obsidian";
 
-pub struct Obsidian {
+pub struct Client {
     path: String,
 }
 
-impl Obsidian {
+impl Client {
     pub fn new(path: &str) -> Self {
         Self {
             path: String::from(path),
@@ -126,20 +126,20 @@ fn supported_files(p: &Path) -> Result<Vec<String>, Box<dyn std::error::Error>> 
     Ok(result)
 }
 
-pub struct ObsidianProvider {
-    obs: Obsidian,
+pub struct Provider {
+    c: Client,
 }
 
-impl ObsidianProvider {
-    pub fn new(obs: Obsidian) -> Self {
-        Self { obs }
+impl Provider {
+    pub fn new(c: Client) -> Self {
+        Self { c }
     }
 }
 
 #[async_trait]
-impl Provider for ObsidianProvider {
+impl ProviderTrait for Provider {
     fn name(&self) -> String {
-        self.obs.path.to_string()
+        self.c.path.to_string()
     }
 
     fn type_name(&self) -> String {
@@ -150,7 +150,7 @@ impl Provider for ObsidianProvider {
         &self,
         f: &Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn std::error::Error>> {
-        let tasks = self.obs.tasks(f).await?;
+        let tasks = self.c.tasks(f).await?;
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
         for t in tasks {
             result.push(Box::new(t));
