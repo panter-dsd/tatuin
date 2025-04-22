@@ -110,7 +110,7 @@ async fn print_obsidian_task_list(
     cfg: Settings,
     f: &filter::Filter,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let obs = obsidian::Client::new(cfg.obsidian.path.as_str());
+    let obs = obsidian::client::Client::new(cfg.obsidian.path.as_str());
     let tasks = obs.tasks(f).await?;
     print_tasks(&tasks);
 
@@ -152,9 +152,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Settings::load("settings.toml")?;
 
     let providers: Vec<Box<dyn task::Provider>> = vec![
-        Box::new(obsidian::Provider::new(obsidian::Client::new(
-            &cfg.obsidian.path,
-        ))),
+        Box::new(obsidian::Provider::new(&cfg.obsidian.path)),
         Box::new(todoist::Provider::new(&cfg.todoist.api_key)),
     ];
 
