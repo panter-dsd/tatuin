@@ -1,6 +1,3 @@
-use crate::filter;
-use crate::project;
-use async_trait::async_trait;
 use chrono::DateTime;
 use chrono::prelude::*;
 use colored::Colorize;
@@ -78,15 +75,4 @@ pub fn format(t: &dyn Task) -> String {
         format!("due: {}", due_to_str(t.due())).blue(),
         t.place().green()
     )
-}
-
-#[async_trait]
-pub trait Provider {
-    fn name(&self) -> String;
-    fn type_name(&self) -> String;
-    async fn tasks(
-        &self,
-        f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn Task>>, Box<dyn std::error::Error>>;
-    async fn projects(&self) -> Result<Vec<Box<dyn project::Project>>, Box<dyn std::error::Error>>;
 }

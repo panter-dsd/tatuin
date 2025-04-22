@@ -152,7 +152,7 @@ fn state_to_filter(state: &Option<Vec<filter::FilterState>>) -> Vec<filter::Filt
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Settings::load("settings.toml")?;
 
-    let providers: Vec<Box<dyn task::Provider>> = vec![
+    let providers: Vec<Box<dyn provider::Provider>> = vec![
         Box::new(obsidian::Provider::new(&cfg.obsidian.path)),
         Box::new(todoist::Provider::new(&cfg.todoist.api_key)),
     ];
@@ -209,7 +209,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             let mut tasks = Vec::new();
-            for p in providers {
+            for mut p in providers {
                 if let Some(provider_name) = provider {
                     if p.name() != *provider_name {
                         continue;
@@ -223,7 +223,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Projects { provider } => {
             let mut projects = Vec::new();
 
-            for p in providers {
+            for mut p in providers {
                 if let Some(provider_name) = provider {
                     if p.name() != *provider_name {
                         continue;

@@ -4,7 +4,7 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::task::Provider as ProviderTrait;
+use crate::provider::Provider as ProviderTrait;
 use crate::task::Task as TaskTrait;
 
 use async_trait::async_trait;
@@ -34,7 +34,7 @@ impl ProviderTrait for Provider {
     }
 
     async fn tasks(
-        &self,
+        &mut self,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn std::error::Error>> {
         let tasks = self.c.tasks_by_filter(&None, f).await?;
@@ -45,7 +45,7 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn projects(&self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn std::error::Error>> {
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn std::error::Error>> {
         let projects = self.c.projects().await?;
         let mut result: Vec<Box<dyn ProjectTrait>> = Vec::new();
         for p in projects {

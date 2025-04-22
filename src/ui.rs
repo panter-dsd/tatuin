@@ -1,5 +1,5 @@
 use crate::filter;
-use crate::{project, task};
+use crate::{project, provider, task};
 /// A Ratatui example that demonstrates how to create a todo list with selectable items.
 ///
 /// This example runs with the Ratatui library code in the branch that you are currently
@@ -76,14 +76,14 @@ pub struct App {
     should_exit: bool,
     reload_projects: bool,
     reload_tasks: bool,
-    providers: SelectableList<Box<dyn task::Provider>>,
+    providers: SelectableList<Box<dyn provider::Provider>>,
     projects: SelectableList<Box<dyn project::Project>>,
     tasks: SelectableList<Box<dyn task::Task>>,
     current_block: AppBlock,
 }
 
 impl App {
-    pub fn new(providers: Vec<Box<dyn task::Provider>>) -> Self {
+    pub fn new(providers: Vec<Box<dyn provider::Provider>>) -> Self {
         Self {
             should_exit: false,
             reload_projects: true,
@@ -121,7 +121,7 @@ impl App {
         let mut projects: Vec<Box<dyn project::Project>> = Vec::new();
         let is_all = self.providers.state.selected().unwrap_or_default() == 0;
 
-        for (i, p) in self.providers.items.iter().enumerate() {
+        for (i, p) in self.providers.items.iter_mut().enumerate() {
             // -1 because of All
             if !is_all && i != self.providers.state.selected().unwrap_or_default() - 1 {
                 continue;
@@ -145,7 +145,7 @@ impl App {
             states: vec![filter::FilterState::Uncompleted],
         };
 
-        for (i, p) in self.providers.items.iter().enumerate() {
+        for (i, p) in self.providers.items.iter_mut().enumerate() {
             // -1 because of All
             if !is_all && i != self.providers.state.selected().unwrap_or_default() - 1 {
                 continue;
