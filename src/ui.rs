@@ -254,12 +254,12 @@ impl App {
 
     /// Changes the status of the selected list item
     fn toggle_status(&mut self) {
-        if let Some(i) = self.tasks.state.selected() {
-            // self.tasks.items[i].status = match self.tasks.items[i].status {
-            //     Status::Completed => Status::Todo,
-            //     Status::Todo => Status::Completed,
-            // }
-        }
+        // if let Some(i) = self.tasks.state.selected() {
+        // self.tasks.items[i].status = match self.tasks.items[i].status {
+        //     Status::Completed => Status::Todo,
+        //     Status::Todo => Status::Completed,
+        // }
+        // }
     }
 }
 
