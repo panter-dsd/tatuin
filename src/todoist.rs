@@ -13,12 +13,16 @@ const PROVIDER_NAME: &str = "Todoist";
 
 pub struct Provider {
     c: client::Client,
+    projects: Vec<project::Project>,
+    tasks: Vec<task::Task>,
 }
 
 impl Provider {
     pub fn new(api_key: &str) -> Self {
         Self {
             c: client::Client::new(api_key),
+            projects: Vec::new(),
+            tasks: Vec::new(),
         }
     }
 }
@@ -37,19 +41,23 @@ impl ProviderTrait for Provider {
         &mut self,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn std::error::Error>> {
-        let tasks = self.c.tasks_by_filter(&None, f).await?;
+        if self.tasks.is_empty() {
+            self.tasks = self.c.tasks_by_filter(&None, f).await?;
+        }
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
-        for t in tasks {
-            result.push(Box::new(t));
+        for t in &self.tasks {
+            result.push(Box::new(t.clone()));
         }
         Ok(result)
     }
 
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn std::error::Error>> {
-        let projects = self.c.projects().await?;
+        if self.projects.is_empty() {
+            self.projects = self.c.projects().await?;
+        }
         let mut result: Vec<Box<dyn ProjectTrait>> = Vec::new();
-        for p in projects {
-            result.push(Box::new(p));
+        for p in &self.projects {
+            result.push(Box::new(p.clone()));
         }
 
         Ok(result)

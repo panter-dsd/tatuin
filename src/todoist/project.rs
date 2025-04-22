@@ -3,7 +3,7 @@ use crate::todoist::PROVIDER_NAME;
 use serde::Deserialize;
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Project {
     pub id: String,
     pub can_assign_tasks: bool,

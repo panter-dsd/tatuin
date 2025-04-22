@@ -4,14 +4,14 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::Deserialize;
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Duration {
     property1: Option<String>,
     property2: Option<String>,
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Due {
     date: String,
     timezone: Option<String>,
@@ -21,7 +21,7 @@ pub struct Due {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Task {
     pub id: String,
     pub user_id: String,
