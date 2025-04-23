@@ -13,7 +13,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::palette::tailwind::{BLUE, GREEN, SLATE};
 use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::text::Line;
+use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{
     Block, Borders, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph,
     StatefulWidget, Widget, Wrap,
@@ -134,6 +134,7 @@ impl App {
         }
 
         self.projects.items = projects;
+        self.projects.state = ListState::default().with_selected(Some(0));
     }
 
     async fn load_tasks(&mut self) {
@@ -141,7 +142,7 @@ impl App {
         let is_all = self.providers.state.selected().unwrap_or_default() == 0;
 
         let f = filter::Filter {
-            today: true,
+            today: false,
             states: vec![filter::FilterState::Uncompleted],
         };
 
@@ -158,6 +159,7 @@ impl App {
         }
 
         self.tasks.items = tasks;
+        self.tasks.state = ListState::default().with_selected(None);
     }
 
     fn handle_key(&mut self, key: KeyEvent) {
@@ -353,12 +355,14 @@ impl App {
             .bg(NORMAL_ROW_BG);
 
         // Iterate through all elements in the `items` and stylize them.
-        let items: Vec<ListItem> = self
+        let mut items: Vec<ListItem> = self
             .projects
             .items
             .iter()
             .map(|p| ListItem::from(format!("{} ({})", p.name(), p.provider())))
             .collect();
+
+        items.insert(0, ListItem::from("All"));
 
         // Create a List from all list items and highlight the currently selected one
         let list = List::new(items)
@@ -387,8 +391,21 @@ impl App {
             .iter()
             .enumerate()
             .map(|(i, t)| {
-                let color = alternate_colors(i);
-                ListItem::from(task::format(t.as_ref())).bg(color)
+                let mixed_line = Line::from(vec![
+                    Span::styled(
+                        format!("- [{}] {} (", t.state(), t.text()),
+                        Style::default(),
+                    ),
+                    Span::styled(
+                        format!("due: {}", task::due_to_str(t.due())),
+                        Style::default().fg(Color::Blue),
+                    ),
+                    Span::from(") ("),
+                    Span::styled(t.place(), Style::default().fg(Color::Green)),
+                    Span::from(")"),
+                ]);
+
+                ListItem::from(mixed_line)
             })
             .collect();
 

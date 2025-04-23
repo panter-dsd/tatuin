@@ -55,7 +55,7 @@ pub trait Task {
     fn provider(&self) -> String;
 }
 
-fn due_to_str(t: Option<DateTimeUtc>) -> String {
+pub fn due_to_str(t: Option<DateTimeUtc>) -> String {
     if let Some(d) = t {
         if d.time() == chrono::NaiveTime::default() {
             return d.format("%Y-%m-%d").to_string();
