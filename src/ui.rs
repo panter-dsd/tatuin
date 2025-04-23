@@ -143,7 +143,7 @@ impl App {
 
         let f = filter::Filter {
             states: vec![filter::FilterState::Uncompleted],
-            due: vec![filter::Due::Today],
+            due: vec![filter::Due::Today, filter::Due::Overdue],
         };
 
         for (i, p) in self.providers.items.iter_mut().enumerate() {
