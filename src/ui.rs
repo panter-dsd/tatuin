@@ -253,29 +253,27 @@ impl Widget for &mut App {
         ])
         .areas(area);
 
-        let [list_and_providers_area, item_area] =
-            Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(main_area);
+        let [left_area, right_area] =
+            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(main_area);
 
-        let [providers_and_projects_area, list_area] =
-            Layout::horizontal([Constraint::Percentage(20), Constraint::Fill(1)])
-                .areas(list_and_providers_area);
         let [providers_area, projects_area] =
-            Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)])
-                .areas(providers_and_projects_area);
+            Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(left_area);
+        let [list_area, task_description_area] =
+            Layout::vertical([Constraint::Fill(1), Constraint::Percentage(20)]).areas(right_area);
 
         App::render_header(header_area, buf);
         App::render_footer(footer_area, buf);
         self.render_tasks(list_area, buf);
         self.render_providers(providers_area, buf);
         self.render_projects(projects_area, buf);
-        self.render_task_description(item_area, buf);
+        self.render_task_description(task_description_area, buf);
     }
 }
 
 /// Rendering logic for the app
 impl App {
     fn render_header(area: Rect, buf: &mut Buffer) {
-        Paragraph::new("Ratatui Todo List Example")
+        Paragraph::new("Task Aggregator TUI")
             .bold()
             .centered()
             .render(area, buf);
