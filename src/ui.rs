@@ -452,14 +452,6 @@ impl App {
     }
 }
 
-const fn alternate_colors(i: usize) -> Color {
-    if i % 2 == 0 {
-        NORMAL_ROW_BG
-    } else {
-        ALT_ROW_BG_COLOR
-    }
-}
-
 impl From<&TodoItem> for ListItem<'_> {
     fn from(value: &TodoItem) -> Self {
         let line = match value.status {

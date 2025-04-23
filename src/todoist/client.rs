@@ -97,11 +97,10 @@ impl Client {
             v
         };
 
-        #[allow(dead_code)]
-        #[derive(Deserialize, Debug)]
+        #[derive(Deserialize)]
         struct Response {
-            pub items: Vec<Task>,
-            pub next_cursor: Option<String>,
+            items: Vec<Task>,
+            next_cursor: Option<String>,
         }
 
         loop {
@@ -109,10 +108,6 @@ impl Client {
             if let Some(c) = cursor {
                 q.push(format!("cursor={c}"));
             }
-            println!(
-                "{BASE_URL}/tasks/completed/by_completion_date?{}",
-                &q.join("&")
-            );
             let mut resp = self
                 .client
                 .get(format!(
@@ -177,9 +172,6 @@ impl Client {
             v
         };
 
-        println!("HERE {}", query.join("&"));
-
-        #[allow(dead_code)]
         #[derive(Deserialize, Debug)]
         struct Response {
             pub results: Vec<Task>,
