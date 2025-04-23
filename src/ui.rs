@@ -1,19 +1,12 @@
 use crate::filter;
 use crate::{project, provider, task};
-/// A Ratatui example that demonstrates how to create a todo list with selectable items.
-///
-/// This example runs with the Ratatui library code in the branch that you are currently
-/// reading. See the [`latest`] branch for the code which works with the most recent Ratatui
-/// release.
-///
-/// [`latest`]: https://github.com/ratatui/ratatui/tree/latest
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::style::palette::tailwind::{BLUE, GREEN, SLATE};
 use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::text::{Line, Span, Text};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{
     Block, Borders, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph,
     StatefulWidget, Widget, Wrap,
@@ -23,10 +16,8 @@ use ratatui::{DefaultTerminal, symbols};
 const ACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(GREEN.c800);
 const INACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 const NORMAL_ROW_BG: Color = SLATE.c950;
-const ALT_ROW_BG_COLOR: Color = SLATE.c900;
 const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
 const TEXT_FG_COLOR: Color = SLATE.c200;
-const COMPLETED_TEXT_FG_COLOR: Color = GREEN.c500;
 
 #[derive(Eq, PartialEq)]
 enum AppBlock {
@@ -57,19 +48,6 @@ impl<T> Default for SelectableList<T> {
             state: ListState::default(),
         }
     }
-}
-
-#[derive(Debug)]
-struct TodoItem {
-    todo: String,
-    info: String,
-    status: Status,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum Status {
-    Todo,
-    Completed,
 }
 
 pub struct App {
@@ -390,8 +368,7 @@ impl App {
             .tasks
             .items
             .iter()
-            .enumerate()
-            .map(|(i, t)| {
+            .map(|t| {
                 let mixed_line = Line::from(vec![
                     Span::styled(
                         format!("- [{}] {} (", t.state(), t.text()),
@@ -449,17 +426,5 @@ impl App {
             .fg(TEXT_FG_COLOR)
             .wrap(Wrap { trim: false })
             .render(area, buf);
-    }
-}
-
-impl From<&TodoItem> for ListItem<'_> {
-    fn from(value: &TodoItem) -> Self {
-        let line = match value.status {
-            Status::Todo => Line::styled(format!(" ☐ {}", value.todo), TEXT_FG_COLOR),
-            Status::Completed => {
-                Line::styled(format!(" ✓ {}", value.todo), COMPLETED_TEXT_FG_COLOR)
-            }
-        };
-        ListItem::new(line)
     }
 }
