@@ -158,6 +158,7 @@ impl App {
             }
         }
 
+        tasks.sort_by_key(|k| k.due());
         self.tasks.items = tasks;
         self.tasks.state = ListState::default().with_selected(None);
     }
