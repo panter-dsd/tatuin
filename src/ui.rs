@@ -23,6 +23,8 @@ const TEXT_FG_COLOR: Color = SLATE.c200;
 enum AppBlock {
     Providers,
     Projects,
+    FilterState,
+    FilterDue,
     TaskList,
     TaskDescription,
 }
@@ -58,6 +60,8 @@ pub struct App {
     projects: SelectableList<Box<dyn project::Project>>,
     tasks: SelectableList<Box<dyn task::Task>>,
     current_block: AppBlock,
+    f: filter::Filter,
+    f_state: ListState,
 }
 
 impl App {
@@ -70,6 +74,11 @@ impl App {
             providers: SelectableList::new(providers, Some(0)),
             projects: SelectableList::default(),
             tasks: SelectableList::default(),
+            f: filter::Filter {
+                states: vec![filter::FilterState::Uncompleted],
+                due: vec![filter::Due::Today, filter::Due::Overdue],
+            },
+            f_state: ListState::default(),
         }
     }
 }
@@ -119,18 +128,13 @@ impl App {
         let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
         let is_all = self.providers.state.selected().unwrap_or_default() == 0;
 
-        let f = filter::Filter {
-            states: vec![filter::FilterState::Uncompleted],
-            due: vec![filter::Due::Today, filter::Due::Overdue],
-        };
-
         for (i, p) in self.providers.items.iter_mut().enumerate() {
             // -1 because of All
             if !is_all && i != self.providers.state.selected().unwrap_or_default() - 1 {
                 continue;
             }
 
-            let result = p.tasks(&f).await;
+            let result = p.tasks(&self.f).await;
             if let Ok(mut prj) = result {
                 tasks.append(&mut prj);
             }
@@ -163,7 +167,9 @@ impl App {
     fn select_next_block(&mut self) {
         match self.current_block {
             AppBlock::Providers => self.current_block = AppBlock::Projects,
-            AppBlock::Projects => self.current_block = AppBlock::TaskList,
+            AppBlock::Projects => self.current_block = AppBlock::FilterState,
+            AppBlock::FilterState => self.current_block = AppBlock::FilterDue,
+            AppBlock::FilterDue => self.current_block = AppBlock::TaskList,
             AppBlock::TaskList => self.current_block = AppBlock::TaskDescription,
             AppBlock::TaskDescription => self.current_block = AppBlock::Providers,
         }
@@ -178,6 +184,12 @@ impl App {
             AppBlock::Projects => {
                 self.reload_tasks = true;
             }
+            AppBlock::FilterState => {
+                self.reload_tasks = true;
+            }
+            AppBlock::FilterDue => {
+                self.reload_tasks = true;
+            }
             AppBlock::TaskList => {}
             AppBlock::TaskDescription => {}
         }
@@ -187,6 +199,8 @@ impl App {
         match self.current_block {
             AppBlock::Providers => self.providers.state.select(None),
             AppBlock::Projects => self.projects.state.select(None),
+            AppBlock::FilterState => self.f_state.select(None),
+            AppBlock::FilterDue => self.f_state.select(None),
             AppBlock::TaskList => self.tasks.state.select(None),
             AppBlock::TaskDescription => {}
         }
@@ -197,6 +211,8 @@ impl App {
         match self.current_block {
             AppBlock::Providers => self.providers.state.select_next(),
             AppBlock::Projects => self.projects.state.select_next(),
+            AppBlock::FilterState => self.f_state.select_next(),
+            AppBlock::FilterDue => self.f_state.select_next(),
             AppBlock::TaskList => self.tasks.state.select_next(),
             AppBlock::TaskDescription => {}
         }
@@ -207,6 +223,8 @@ impl App {
         match self.current_block {
             AppBlock::Providers => self.providers.state.select_previous(),
             AppBlock::Projects => self.projects.state.select_previous(),
+            AppBlock::FilterState => self.f_state.select_previous(),
+            AppBlock::FilterDue => self.f_state.select_previous(),
             AppBlock::TaskList => self.tasks.state.select_previous(),
             AppBlock::TaskDescription => {}
         }
@@ -217,6 +235,8 @@ impl App {
         match self.current_block {
             AppBlock::Providers => self.providers.state.select_first(),
             AppBlock::Projects => self.projects.state.select_first(),
+            AppBlock::FilterState => self.f_state.select_first(),
+            AppBlock::FilterDue => self.f_state.select_first(),
             AppBlock::TaskList => self.tasks.state.select_first(),
             AppBlock::TaskDescription => {}
         }
@@ -227,6 +247,8 @@ impl App {
         match self.current_block {
             AppBlock::Providers => self.providers.state.select_last(),
             AppBlock::Projects => self.projects.state.select_last(),
+            AppBlock::FilterState => self.f_state.select_last(),
+            AppBlock::FilterDue => self.f_state.select_last(),
             AppBlock::TaskList => self.tasks.state.select_last(),
             AppBlock::TaskDescription => {}
         }
@@ -254,18 +276,26 @@ impl Widget for &mut App {
         .areas(area);
 
         let [left_area, right_area] =
-            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(main_area);
+            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(3)]).areas(main_area);
 
-        let [providers_area, projects_area] =
-            Layout::vertical([Constraint::Fill(1), Constraint::Fill(1)]).areas(left_area);
+        let [providers_area, projects_area, filter_area] = Layout::vertical([
+            Constraint::Fill(1),
+            Constraint::Fill(3),
+            Constraint::Fill(1),
+        ])
+        .areas(left_area);
         let [list_area, task_description_area] =
             Layout::vertical([Constraint::Fill(1), Constraint::Percentage(20)]).areas(right_area);
+        let [filter_state_area, filter_due_area] =
+            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(filter_area);
 
         App::render_header(header_area, buf);
         App::render_footer(footer_area, buf);
         self.render_tasks(list_area, buf);
         self.render_providers(providers_area, buf);
         self.render_projects(projects_area, buf);
+        self.render_filter_state(filter_state_area, buf);
+        self.render_filter_due(filter_due_area, buf);
         self.render_task_description(task_description_area, buf);
     }
 }
@@ -353,6 +383,68 @@ impl App {
         StatefulWidget::render(list, area, buf, &mut self.projects.state);
     }
 
+    fn render_filter_state(&mut self, area: Rect, buf: &mut Buffer) {
+        let block = Block::new()
+            .title(Line::raw("Task state").centered())
+            .borders(Borders::TOP)
+            .border_set(symbols::border::EMPTY)
+            .border_style(self.block_style(AppBlock::FilterState))
+            .bg(NORMAL_ROW_BG);
+
+        // Iterate through all elements in the `items` and stylize them.
+        let items: Vec<ListItem> = vec![
+            ListItem::from(filter_element_to_text(
+                filter::FilterState::Completed,
+                &self.f.states,
+            )),
+            ListItem::from(filter_element_to_text(
+                filter::FilterState::Uncompleted,
+                &self.f.states,
+            )),
+            ListItem::from(filter_element_to_text(
+                filter::FilterState::InProgress,
+                &self.f.states,
+            )),
+            ListItem::from(filter_element_to_text(
+                filter::FilterState::Unknown,
+                &self.f.states,
+            )),
+        ];
+
+        let list = List::new(items)
+            .block(block)
+            .highlight_style(SELECTED_STYLE)
+            .highlight_symbol(">")
+            .highlight_spacing(HighlightSpacing::Always);
+
+        StatefulWidget::render(list, area, buf, &mut self.f_state);
+    }
+
+    fn render_filter_due(&mut self, area: Rect, buf: &mut Buffer) {
+        let block = Block::new()
+            .title(Line::raw("Task due").centered())
+            .borders(Borders::TOP)
+            .border_set(symbols::border::EMPTY)
+            .border_style(self.block_style(AppBlock::FilterDue))
+            .bg(NORMAL_ROW_BG);
+
+        // Iterate through all elements in the `items` and stylize them.
+        let items: Vec<ListItem> = vec![
+            ListItem::from(filter_element_to_text(filter::Due::Overdue, &self.f.due)),
+            ListItem::from(filter_element_to_text(filter::Due::Today, &self.f.due)),
+            ListItem::from(filter_element_to_text(filter::Due::NoDate, &self.f.due)),
+            ListItem::from(filter_element_to_text(filter::Due::Future, &self.f.due)),
+        ];
+
+        let list = List::new(items)
+            .block(block)
+            .highlight_style(SELECTED_STYLE)
+            .highlight_symbol(">")
+            .highlight_spacing(HighlightSpacing::Always);
+
+        StatefulWidget::render(list, area, buf, &mut self.f_state);
+    }
+
     fn render_tasks(&mut self, area: Rect, buf: &mut Buffer) {
         let block = Block::new()
             .title(Line::raw("Tasks").centered())
@@ -425,4 +517,8 @@ impl App {
             .wrap(Wrap { trim: false })
             .render(area, buf);
     }
+}
+
+fn filter_element_to_text<T: PartialEq + std::fmt::Display>(e: T, v: &[T]) -> String {
+    format!("[{}] {}", if v.contains(&e) { "x" } else { " " }, e)
 }
