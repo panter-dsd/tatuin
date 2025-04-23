@@ -8,8 +8,16 @@ pub enum FilterState {
     Unknown,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+pub enum Due {
+    Overdue,
+    Today,
+    Future,
+    NoDate,
+}
+
 #[derive(Debug)]
 pub struct Filter {
     pub states: Vec<FilterState>,
-    pub today: bool,
+    pub due: Vec<Due>,
 }

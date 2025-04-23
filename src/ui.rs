@@ -142,8 +142,8 @@ impl App {
         let is_all = self.providers.state.selected().unwrap_or_default() == 0;
 
         let f = filter::Filter {
-            today: false,
             states: vec![filter::FilterState::Uncompleted],
+            due: vec![filter::Due::Today],
         };
 
         for (i, p) in self.providers.items.iter_mut().enumerate() {

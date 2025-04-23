@@ -1,6 +1,7 @@
 use crate::filter;
 use crate::obsidian::mdparser;
 use crate::obsidian::task::{State, Task};
+use std::cmp::Ordering;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
@@ -109,15 +110,20 @@ fn accept_filter(t: &Task, f: &filter::Filter) -> bool {
         return false;
     }
 
-    if f.today {
-        if let Some(d) = t.due {
+    let due = match t.due {
+        Some(d) => {
             let now = chrono::Utc::now().date_naive();
-            if d.date_naive() != now {
-                return false;
+            match d.date_naive().cmp(&now) {
+                Ordering::Less => filter::Due::Overdue,
+                Ordering::Equal => filter::Due::Today,
+                Ordering::Greater => filter::Due::Future,
             }
-        } else {
-            return false;
         }
+        None => filter::Due::NoDate,
+    };
+
+    if !f.due.contains(&due) {
+        return false;
     }
 
     true

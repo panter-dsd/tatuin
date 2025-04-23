@@ -146,17 +146,29 @@ impl Client {
 
         let mut cursor = None;
 
-        let mut todoist_query = String::new();
-        if f.today {
-            todoist_query.push_str("today")
+        let mut todoist_query: Vec<&str> = Vec::new();
+
+        if f.due.contains(&filter::Due::Today) {
+            todoist_query.push("today");
+        }
+
+        if f.due.contains(&filter::Due::Overdue) {
+            todoist_query.push("overdue");
+        }
+
+        if f.due.contains(&filter::Due::NoDate) {
+            todoist_query.push("no date");
         }
 
         if todoist_query.is_empty() {
-            todoist_query = "all".to_string();
+            todoist_query.push("all");
         }
 
         let query = {
-            let mut v = vec![String::from("limit=200"), format!("query={todoist_query}")];
+            let mut v = vec![
+                String::from("limit=200"),
+                format!("query={}", todoist_query.join("|")),
+            ];
 
             if let Some(p) = project {
                 v.push(format!("project_id={p}"));
@@ -164,6 +176,8 @@ impl Client {
 
             v
         };
+
+        println!("HERE {}", query.join("&"));
 
         #[allow(dead_code)]
         #[derive(Deserialize, Debug)]

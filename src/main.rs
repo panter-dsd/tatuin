@@ -33,7 +33,7 @@ enum Commands {
         state: Option<Vec<filter::FilterState>>,
 
         #[arg(short, long)]
-        today: bool,
+        due: Option<Vec<filter::Due>>,
 
         #[arg(short, long)]
         provider: Option<String>,
@@ -51,7 +51,7 @@ enum ObsidianCommands {
         state: Option<Vec<filter::FilterState>>,
 
         #[arg(short, long)]
-        today: bool,
+        due: Option<Vec<filter::Due>>,
     },
 }
 
@@ -65,7 +65,7 @@ enum TodoistCommands {
         state: Option<Vec<filter::FilterState>>,
 
         #[arg(short, long)]
-        today: bool,
+        due: Option<Vec<filter::Due>>,
     },
     Projects {},
 }
@@ -124,7 +124,7 @@ async fn print_todoist_task_list(
     f: &filter::Filter,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let td = todoist::client::Client::new(&cfg.todoist.api_key);
-    let tasks = td.tasks(project, f).await?;
+    let tasks = td.tasks_by_filter(project, f).await?;
     print_tasks(&tasks);
 
     Ok(())
@@ -145,6 +145,13 @@ fn state_to_filter(state: &Option<Vec<filter::FilterState>>) -> Vec<filter::Filt
     match state {
         Some(st) => st.to_vec(),
         None => vec![filter::FilterState::Uncompleted],
+    }
+}
+
+fn due_to_filter(due: &Option<Vec<filter::Due>>) -> Vec<filter::Due> {
+    match due {
+        Some(d) => d.to_vec(),
+        None => vec![filter::Due::Today],
     }
 }
 
@@ -169,12 +176,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     match &cli.command {
         Commands::Obsidian { command } => match command {
-            ObsidianCommands::Tasks { state, today } => {
+            ObsidianCommands::Tasks { state, due } => {
                 print_obsidian_task_list(
                     cfg,
                     &filter::Filter {
                         states: state_to_filter(state),
-                        today: *today,
+                        due: due_to_filter(due),
                     },
                 )
                 .await?
@@ -184,14 +191,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             TodoistCommands::Tasks {
                 project,
                 state,
-                today,
+                due,
             } => {
                 print_todoist_task_list(
                     cfg,
                     project,
                     &filter::Filter {
                         states: state_to_filter(state),
-                        today: *today,
+                        due: due_to_filter(due),
                     },
                 )
                 .await?
@@ -200,12 +207,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         Commands::Tasks {
             state,
-            today,
+            due,
             provider,
         } => {
             let f = filter::Filter {
                 states: state_to_filter(state),
-                today: *today,
+                due: due_to_filter(due),
             };
 
             let mut tasks = Vec::new();
