@@ -24,54 +24,10 @@ impl Client {
         }
     }
 
-    async fn uncompleted_tasks(
-        &self,
-        project: &Option<String>,
-    ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
-        let mut result: Vec<Task> = Vec::new();
-
-        let mut cursor = None;
-
-        let query = {
-            let mut v = vec![String::from("limit=200")];
-
-            if let Some(p) = project {
-                v.push(format!("project_id={p}"));
-            }
-
-            v
-        };
-
-        loop {
-            let mut q = query.clone();
-            if let Some(c) = cursor {
-                q.push(format!("cursor={c}"));
-            }
-
-            let mut resp = self
-                .client
-                .get(format!("{BASE_URL}/tasks?{}", q.join("&")))
-                .headers(self.default_header.clone())
-                .send()
-                .await?
-                .json::<TaskResponse>()
-                .await?;
-
-            result.append(&mut resp.results);
-
-            if resp.next_cursor.is_none() {
-                break;
-            }
-
-            cursor = resp.next_cursor;
-        }
-
-        Ok(result)
-    }
-
     async fn completed_tasks(
         &self,
         project: &Option<String>,
+        f: &filter::Filter,
     ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
         let mut result: Vec<Task> = Vec::new();
 
@@ -88,6 +44,7 @@ impl Client {
                         .format("%Y-%m-%dT%H:%M:%SZ")
                 ),
                 format!("until={}", chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ")),
+                format!("filter_query={}", filter_to_query(f)),
             ];
 
             if let Some(p) = project {
@@ -111,7 +68,7 @@ impl Client {
             let mut resp = self
                 .client
                 .get(format!(
-                    "{BASE_URL}/tasks/completed/by_due_date?{}",
+                    "{BASE_URL}/tasks/completed/by_completion_date?{}",
                     &q.join("&")
                 ))
                 .headers(self.default_header.clone())
@@ -141,28 +98,10 @@ impl Client {
 
         let mut cursor = None;
 
-        let mut todoist_query: Vec<&str> = Vec::new();
-
-        if f.due.contains(&filter::Due::Today) {
-            todoist_query.push("today");
-        }
-
-        if f.due.contains(&filter::Due::Overdue) {
-            todoist_query.push("overdue");
-        }
-
-        if f.due.contains(&filter::Due::NoDate) {
-            todoist_query.push("no date");
-        }
-
-        if todoist_query.is_empty() {
-            todoist_query.push("all");
-        }
-
         let query = {
             let mut v = vec![
                 String::from("limit=200"),
-                format!("query={}", todoist_query.join("|")),
+                format!("query={}", filter_to_query(f)),
             ];
 
             if let Some(p) = project {
@@ -211,11 +150,11 @@ impl Client {
         let mut result: Vec<Task> = Vec::new();
 
         if f.states.contains(&filter::FilterState::Uncompleted) {
-            result.append(&mut self.uncompleted_tasks(project).await?);
+            result.append(&mut self.tasks_by_filter(project, f).await?);
         }
 
         if f.states.contains(&filter::FilterState::Completed) {
-            result.append(&mut self.completed_tasks(project).await?);
+            result.append(&mut self.completed_tasks(project, f).await?);
         }
 
         Ok(result)
@@ -266,4 +205,22 @@ struct TaskResponse {
 struct ProjectResponse {
     pub results: Vec<Project>,
     pub next_cursor: Option<String>,
+}
+
+fn filter_to_query(f: &filter::Filter) -> String {
+    let mut todoist_query: Vec<&str> = Vec::new();
+
+    if f.due.contains(&filter::Due::Today) {
+        todoist_query.push("today");
+    }
+
+    if f.due.contains(&filter::Due::Overdue) {
+        todoist_query.push("overdue");
+    }
+
+    if f.due.contains(&filter::Due::NoDate) {
+        todoist_query.push("no date");
+    }
+
+    todoist_query.join("|")
 }

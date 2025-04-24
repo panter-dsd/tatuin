@@ -50,7 +50,7 @@ impl ProviderTrait for Provider {
         }
 
         if self.tasks.is_empty() {
-            self.tasks = self.c.tasks_by_filter(&None, f).await?;
+            self.tasks = self.c.tasks(&None, f).await?;
         }
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
         for t in &self.tasks {
