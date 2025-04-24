@@ -1,5 +1,3 @@
-use core::fmt;
-
 use clap::ValueEnum;
 
 #[derive(Clone, PartialEq, Eq, ValueEnum, Debug)]
