@@ -140,7 +140,7 @@ impl App {
 
         tasks.sort_by_key(|k| k.due());
         self.tasks.items = tasks;
-        self.tasks.state = ListState::default().with_selected(None);
+        self.tasks.state = ListState::default().with_selected(Some(0));
     }
 
     fn handle_key(&mut self, key: KeyEvent) {
