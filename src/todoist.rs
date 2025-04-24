@@ -15,6 +15,7 @@ pub struct Provider {
     c: client::Client,
     projects: Vec<project::Project>,
     tasks: Vec<task::Task>,
+    last_filter: Option<filter::Filter>,
 }
 
 impl Provider {
@@ -23,6 +24,7 @@ impl Provider {
             c: client::Client::new(api_key),
             projects: Vec::new(),
             tasks: Vec::new(),
+            last_filter: None,
         }
     }
 }
@@ -41,6 +43,12 @@ impl ProviderTrait for Provider {
         &mut self,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn std::error::Error>> {
+        if let Some(last_filter) = self.last_filter.as_mut() {
+            if last_filter != f {
+                self.tasks.clear();
+            }
+        }
+
         if self.tasks.is_empty() {
             self.tasks = self.c.tasks_by_filter(&None, f).await?;
         }
@@ -48,6 +56,9 @@ impl ProviderTrait for Provider {
         for t in &self.tasks {
             result.push(Box::new(t.clone()));
         }
+
+        self.last_filter = Some(f.clone());
+
         Ok(result)
     }
 

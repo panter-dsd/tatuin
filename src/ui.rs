@@ -166,7 +166,10 @@ impl App {
     fn change_check_state(&mut self) {
         match self.current_block {
             AppBlock::Providers | AppBlock::Projects | AppBlock::TaskList => {} //TODO: implement
-            AppBlock::Filter => self.filter_widget.change_check_state(),
+            AppBlock::Filter => {
+                self.filter_widget.change_check_state();
+                self.reload_tasks = true;
+            }
             AppBlock::TaskDescription => { /*nothing to do here */ }
         }
     }

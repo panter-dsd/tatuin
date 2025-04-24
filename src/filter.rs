@@ -28,7 +28,7 @@ impl std::fmt::Display for Due {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Filter {
     pub states: Vec<FilterState>,
     pub due: Vec<Due>,
