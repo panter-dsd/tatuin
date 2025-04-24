@@ -323,15 +323,27 @@ impl App {
         INACTIVE_BLOCK_STYLE
     }
 
-    fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
+    fn prepare_render_list<'a>(
+        &self,
+        title: &'a str,
+        block: AppBlock,
+        items: &'a [ListItem],
+    ) -> List<'a> {
         let block = Block::new()
-            .title(Line::raw("Providers").centered())
+            .title(Line::raw(title).centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(AppBlock::Providers))
+            .border_style(self.block_style(block))
             .bg(NORMAL_ROW_BG);
 
-        // Iterate through all elements in the `items` and stylize them.
+        List::new(items.to_vec())
+            .block(block)
+            .highlight_style(SELECTED_STYLE)
+            .highlight_symbol(">")
+            .highlight_spacing(HighlightSpacing::Always)
+    }
+
+    fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
         let mut items: Vec<ListItem> = self
             .providers
             .items
@@ -340,28 +352,15 @@ impl App {
             .collect();
 
         items.insert(0, ListItem::from("All"));
-
-        // Create a List from all list items and highlight the currently selected one
-        let list = List::new(items)
-            .block(block)
-            .highlight_style(SELECTED_STYLE)
-            .highlight_symbol(">")
-            .highlight_spacing(HighlightSpacing::Always);
-
-        // We need to disambiguate this trait method as both `Widget` and `StatefulWidget` share the
-        // same method name `render`.
-        StatefulWidget::render(list, area, buf, &mut self.providers.state);
+        StatefulWidget::render(
+            self.prepare_render_list("Providers", AppBlock::Providers, &items),
+            area,
+            buf,
+            &mut self.providers.state,
+        );
     }
 
     fn render_projects(&mut self, area: Rect, buf: &mut Buffer) {
-        let block = Block::new()
-            .title(Line::raw("Projects").centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(AppBlock::Projects))
-            .bg(NORMAL_ROW_BG);
-
-        // Iterate through all elements in the `items` and stylize them.
         let mut items: Vec<ListItem> = self
             .projects
             .items
@@ -370,17 +369,12 @@ impl App {
             .collect();
 
         items.insert(0, ListItem::from("All"));
-
-        // Create a List from all list items and highlight the currently selected one
-        let list = List::new(items)
-            .block(block)
-            .highlight_style(SELECTED_STYLE)
-            .highlight_symbol(">")
-            .highlight_spacing(HighlightSpacing::Always);
-
-        // We need to disambiguate this trait method as both `Widget` and `StatefulWidget` share the
-        // same method name `render`.
-        StatefulWidget::render(list, area, buf, &mut self.projects.state);
+        StatefulWidget::render(
+            self.prepare_render_list("Projects", AppBlock::Projects, &items),
+            area,
+            buf,
+            &mut self.projects.state,
+        );
     }
 
     fn render_filter(&mut self, header_area: Rect, area: Rect, buf: &mut Buffer) {
@@ -395,14 +389,6 @@ impl App {
     }
 
     fn render_tasks(&mut self, area: Rect, buf: &mut Buffer) {
-        let block = Block::new()
-            .title(Line::raw("Tasks").centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(AppBlock::TaskList))
-            .bg(NORMAL_ROW_BG);
-
-        // Iterate through all elements in the `items` and stylize them.
         let items: Vec<ListItem> = self
             .tasks
             .items
@@ -426,16 +412,12 @@ impl App {
             })
             .collect();
 
-        // Create a List from all list items and highlight the currently selected one
-        let list = List::new(items)
-            .block(block)
-            .highlight_style(SELECTED_STYLE)
-            .highlight_symbol(">")
-            .highlight_spacing(HighlightSpacing::Always);
-
-        // We need to disambiguate this trait method as both `Widget` and `StatefulWidget` share the
-        // same method name `render`.
-        StatefulWidget::render(list, area, buf, &mut self.tasks.state);
+        StatefulWidget::render(
+            self.prepare_render_list("Tasks", AppBlock::TaskList, &items),
+            area,
+            buf,
+            &mut self.tasks.state,
+        );
     }
 
     fn render_task_description(&self, area: Rect, buf: &mut Buffer) {
