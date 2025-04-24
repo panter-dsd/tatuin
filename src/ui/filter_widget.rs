@@ -11,6 +11,15 @@ use ratatui::widgets::{
 
 use crate::ui::{ACTIVE_BLOCK_STYLE, INACTIVE_BLOCK_STYLE, NORMAL_ROW_BG, SELECTED_STYLE};
 
+const POSSIBLE_STATES: [FilterState; 4] = [
+    FilterState::Completed,
+    FilterState::Uncompleted,
+    FilterState::InProgress,
+    FilterState::Unknown,
+];
+
+const POSSIBLE_DUE: [Due; 4] = [Due::NoDate, Due::Overdue, Due::Today, Due::Future];
+
 #[derive(Eq, PartialEq)]
 enum FilterBlock {
     State,
@@ -40,6 +49,31 @@ impl FilterWidget {
         self.is_active = is_active;
         if !is_active {
             self.current_block = FilterBlock::State;
+        }
+    }
+
+    pub fn change_check_state(&mut self) {
+        match self.current_block {
+            FilterBlock::State => {
+                if let Some(idx) = self.filter_state_state.selected() {
+                    let st = &POSSIBLE_STATES[idx];
+                    if let Some(i) = self.filter.states.iter().position(|s| s == st) {
+                        self.filter.states.remove(i);
+                    } else {
+                        self.filter.states.push(st.clone());
+                    }
+                }
+            }
+            FilterBlock::Due => {
+                if let Some(idx) = self.filter_due_state.selected() {
+                    let due = &POSSIBLE_DUE[idx];
+                    if let Some(i) = self.filter.due.iter().position(|d| d == due) {
+                        self.filter.due.remove(i);
+                    } else {
+                        self.filter.due.push(due.clone());
+                    }
+                }
+            }
         }
     }
 
@@ -108,25 +142,13 @@ impl FilterWidget {
             .border_style(self.block_style(FilterBlock::State))
             .bg(NORMAL_ROW_BG);
 
-        // Iterate through all elements in the `items` and stylize them.
-        let items: Vec<ListItem> = vec![
-            ListItem::from(filter_element_to_text(
-                FilterState::Completed,
-                &self.filter.states,
-            )),
-            ListItem::from(filter_element_to_text(
-                FilterState::Uncompleted,
-                &self.filter.states,
-            )),
-            ListItem::from(filter_element_to_text(
-                FilterState::InProgress,
-                &self.filter.states,
-            )),
-            ListItem::from(filter_element_to_text(
-                FilterState::Unknown,
-                &self.filter.states,
-            )),
-        ];
+        let items = POSSIBLE_STATES
+            .iter()
+            .map(|s| {
+                let t = filter_element_to_text(s.clone(), &self.filter.states);
+                ListItem::from(t)
+            })
+            .collect::<Vec<ListItem>>();
 
         let list = List::new(items)
             .block(block)
@@ -145,13 +167,13 @@ impl FilterWidget {
             .border_style(self.block_style(FilterBlock::Due))
             .bg(NORMAL_ROW_BG);
 
-        // Iterate through all elements in the `items` and stylize them.
-        let items: Vec<ListItem> = vec![
-            ListItem::from(filter_element_to_text(Due::Overdue, &self.filter.due)),
-            ListItem::from(filter_element_to_text(Due::Today, &self.filter.due)),
-            ListItem::from(filter_element_to_text(Due::NoDate, &self.filter.due)),
-            ListItem::from(filter_element_to_text(Due::Future, &self.filter.due)),
-        ];
+        let items = POSSIBLE_DUE
+            .iter()
+            .map(|s| {
+                let t = filter_element_to_text(s.clone(), &self.filter.due);
+                ListItem::from(t)
+            })
+            .collect::<Vec<ListItem>>();
 
         let list = List::new(items)
             .block(block)

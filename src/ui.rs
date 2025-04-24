@@ -158,7 +158,16 @@ impl App {
                 self.toggle_status();
             }
             KeyCode::Tab => self.select_next_block(),
+            KeyCode::Char(' ') => self.change_check_state(),
             _ => {}
+        }
+    }
+
+    fn change_check_state(&mut self) {
+        match self.current_block {
+            AppBlock::Providers | AppBlock::Projects | AppBlock::TaskList => {} //TODO: implement
+            AppBlock::Filter => self.filter_widget.change_check_state(),
+            AppBlock::TaskDescription => { /*nothing to do here */ }
         }
     }
 
