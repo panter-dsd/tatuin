@@ -34,6 +34,7 @@ impl ProviderTrait for Provider {
 
     async fn tasks(
         &mut self,
+        _project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn std::error::Error>> {
         let tasks = self.c.tasks(f).await?;
@@ -43,6 +44,7 @@ impl ProviderTrait for Provider {
         }
         Ok(result)
     }
+
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn std::error::Error>> {
         Ok(Vec::new())
     }

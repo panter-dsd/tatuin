@@ -127,12 +127,22 @@ impl App {
         let is_all = self.providers.state.selected().unwrap_or_default() == 0;
 
         for (i, p) in self.providers.items.iter_mut().enumerate() {
+            let project = if let Some(idx) = self.projects.state.selected() {
+                if idx < 1 {
+                    None
+                } else {
+                    Some(self.projects.items[idx - 1].as_ref().clone_boxed())
+                }
+            } else {
+                None
+            };
+
             // -1 because of All
             if !is_all && i != self.providers.state.selected().unwrap_or_default() - 1 {
                 continue;
             }
 
-            let result = p.tasks(&self.filter_widget.filter()).await;
+            let result = p.tasks(project, &self.filter_widget.filter()).await;
             if let Ok(mut prj) = result {
                 tasks.append(&mut prj);
             }

@@ -3,6 +3,8 @@ use crate::todoist::PROVIDER_NAME;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::Deserialize;
 
+use super::project::Project;
+
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone)]
 pub struct Duration {
@@ -47,6 +49,8 @@ pub struct Task {
     pub note_count: i32,
     pub day_order: i32,
     pub is_collapsed: bool,
+
+    pub project: Option<Project>,
 }
 
 impl task::Task for Task {
@@ -67,7 +71,11 @@ impl task::Task for Task {
     }
 
     fn place(&self) -> String {
-        self.id.to_string()
+        if let Some(p) = &self.project {
+            format!("project: {}", p.name)
+        } else {
+            "".to_string()
+        }
     }
 
     fn due(&self) -> Option<task::DateTimeUtc> {

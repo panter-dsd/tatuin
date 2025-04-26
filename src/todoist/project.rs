@@ -3,7 +3,7 @@ use crate::todoist::PROVIDER_NAME;
 use serde::Deserialize;
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct Project {
     pub id: String,
     pub can_assign_tasks: bool,
@@ -46,5 +46,8 @@ impl ProjectTrait for Project {
     }
     fn is_favorite(&self) -> bool {
         self.is_favorite
+    }
+    fn clone_boxed(&self) -> Box<dyn ProjectTrait> {
+        Box::new(self.clone())
     }
 }

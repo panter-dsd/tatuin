@@ -26,7 +26,7 @@ impl fmt::Display for State {
 }
 
 #[allow(dead_code)]
-pub trait Task {
+pub trait Task: Send {
     fn id(&self) -> String {
         String::new()
     }

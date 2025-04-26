@@ -6,6 +6,7 @@ use crate::filter;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
 use crate::task::Task as TaskTrait;
+use std::cmp::Ordering;
 
 use async_trait::async_trait;
 
@@ -16,6 +17,7 @@ pub struct Provider {
     projects: Vec<project::Project>,
     tasks: Vec<task::Task>,
     last_filter: Option<filter::Filter>,
+    last_project: Option<Box<dyn ProjectTrait>>,
 }
 
 impl Provider {
@@ -25,7 +27,30 @@ impl Provider {
             projects: Vec::new(),
             tasks: Vec::new(),
             last_filter: None,
+            last_project: None,
         }
+    }
+
+    async fn load_projects(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        if self.projects.is_empty() {
+            self.projects = self.c.projects().await?;
+        }
+        Ok(())
+    }
+
+    async fn project_by_id(
+        &mut self,
+        id: &str,
+    ) -> Result<project::Project, Box<dyn std::error::Error>> {
+        self.load_projects().await?;
+        let project = self.projects.iter().find(|p| p.id() == id);
+        if let Some(p) = project {
+            return Ok(p.clone());
+        }
+        Ok(project::Project {
+            id: id.to_string(),
+            ..project::Project::default()
+        })
     }
 }
 
@@ -41,19 +66,59 @@ impl ProviderTrait for Provider {
 
     async fn tasks(
         &mut self,
+        project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn std::error::Error>> {
+        let mut should_clear = false;
         if let Some(last_filter) = self.last_filter.as_mut() {
-            if last_filter != f {
-                self.tasks.clear();
+            should_clear = last_filter != f;
+        }
+
+        match &project {
+            Some(p) => {
+                if let Some(pp) = self.last_project.as_mut() {
+                    should_clear = p.id().cmp(&pp.id()) != Ordering::Equal;
+                } else {
+                    should_clear = true
+                }
+            }
+            None => {
+                if self.last_project.is_some() {
+                    should_clear = true
+                }
             }
         }
 
+        if should_clear {
+            self.tasks.clear();
+        }
+
         if self.tasks.is_empty() {
-            self.tasks = self.c.tasks(&None, f).await?;
+            if f.states.contains(&filter::FilterState::Uncompleted) {
+                self.tasks.append(
+                    &mut self
+                        .c
+                        .tasks_by_filter(&project.as_ref().map(|p| p.name()), f)
+                        .await?,
+                );
+            }
+
+            if f.states.contains(&filter::FilterState::Completed) {
+                self.tasks.append(
+                    &mut self
+                        .c
+                        .completed_tasks(&project.as_ref().map(|p| p.id()), f)
+                        .await?,
+                );
+            }
+            self.last_project = project;
         }
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
-        for t in &self.tasks {
+
+        for t in &mut self.tasks.to_vec() {
+            let p = self.project_by_id(t.project_id.as_str()).await?;
+
+            t.project = Some(p);
             result.push(Box::new(t.clone()));
         }
 
@@ -63,9 +128,7 @@ impl ProviderTrait for Provider {
     }
 
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn std::error::Error>> {
-        if self.projects.is_empty() {
-            self.projects = self.c.projects().await?;
-        }
+        self.load_projects().await?;
         let mut result: Vec<Box<dyn ProjectTrait>> = Vec::new();
         for p in &self.projects {
             result.push(Box::new(p.clone()));

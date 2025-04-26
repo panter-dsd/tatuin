@@ -7,4 +7,5 @@ pub trait Project: Send {
     fn parent_id(&self) -> Option<String>;
     fn is_inbox(&self) -> bool;
     fn is_favorite(&self) -> bool;
+    fn clone_boxed(&self) -> Box<dyn Project>;
 }

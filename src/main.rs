@@ -151,7 +151,7 @@ fn state_to_filter(state: &Option<Vec<filter::FilterState>>) -> Vec<filter::Filt
 fn due_to_filter(due: &Option<Vec<filter::Due>>) -> Vec<filter::Due> {
     match due {
         Some(d) => d.to_vec(),
-        None => vec![filter::Due::Today],
+        None => vec![],
     }
 }
 
@@ -223,7 +223,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
 
-                tasks.append(&mut p.tasks(&f).await?);
+                tasks.append(&mut p.tasks(None, &f).await?);
             }
             print_boxed_tasks(&tasks);
         }

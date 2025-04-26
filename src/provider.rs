@@ -9,6 +9,7 @@ pub trait Provider {
     fn type_name(&self) -> String;
     async fn tasks(
         &mut self,
+        project: Option<Box<dyn project::Project>>,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn task::Task>>, Box<dyn std::error::Error>>;
     async fn projects(
