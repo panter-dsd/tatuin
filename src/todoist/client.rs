@@ -1,4 +1,7 @@
+use std::collections::HashMap;
+
 use crate::filter;
+use crate::project::Project as ProjectTrait;
 use crate::todoist::project::Project;
 use crate::todoist::task::Task;
 use reqwest::header::HeaderMap;
@@ -94,13 +97,18 @@ impl Client {
 
     pub async fn tasks_by_filter(
         &self,
-        project_name: &Option<String>,
+        project: &Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
     ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
         let mut result: Vec<Task> = Vec::new();
 
         let u = Url::parse(BASE_URL).unwrap();
         let mut cursor: Option<String> = None;
+
+        let mut project_name = None;
+        if let Some(p) = project {
+            project_name = Some(p.name())
+        }
 
         #[derive(Deserialize, Debug)]
         struct Response {
@@ -115,7 +123,7 @@ impl Client {
                 .set_port(u.port().unwrap_or_default())
                 .add_route("api/v1/tasks/filter")
                 .add_param("limit", "200")
-                .add_param("query", filter_to_query(project_name, f).as_str());
+                .add_param("query", filter_to_query(&project_name, f).as_str());
 
             if let Some(c) = cursor {
                 url.add_param("cursor", c.as_str());
@@ -131,7 +139,17 @@ impl Client {
                 .json::<Response>()
                 .await?;
 
-            result.append(&mut resp.results);
+            let mut projects: HashMap<String, Project> = HashMap::new();
+            for t in &mut resp.results {
+                if let Some(p) = projects.get(&t.project_id) {
+                    t.project = Some(p.clone());
+                } else {
+                    let p = self.project(&t.project_id).await?;
+                    t.project = Some(p.clone());
+                    projects.insert(t.project_id.to_string(), p);
+                }
+                result.push(t.clone());
+            }
 
             if resp.next_cursor.is_none() {
                 break;

@@ -95,12 +95,8 @@ impl ProviderTrait for Provider {
 
         if self.tasks.is_empty() {
             if f.states.contains(&filter::FilterState::Uncompleted) {
-                self.tasks.append(
-                    &mut self
-                        .c
-                        .tasks_by_filter(&project.as_ref().map(|p| p.name()), f)
-                        .await?,
-                );
+                self.tasks
+                    .append(&mut self.c.tasks_by_filter(&project, f).await?);
             }
 
             if f.states.contains(&filter::FilterState::Completed) {
@@ -116,9 +112,11 @@ impl ProviderTrait for Provider {
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
 
         for t in &mut self.tasks.to_vec() {
-            let p = self.project_by_id(t.project_id.as_str()).await?;
-
-            t.project = Some(p);
+            if t.project.is_none() {
+                // TODO: add project to completed_tasks and remove this
+                let p = self.project_by_id(t.project_id.as_str()).await?;
+                t.project = Some(p);
+            }
             result.push(Box::new(t.clone()));
         }
 

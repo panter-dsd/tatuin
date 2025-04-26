@@ -1,5 +1,5 @@
 #[allow(dead_code)]
-pub trait Project: Send {
+pub trait Project: Send + Sync {
     fn id(&self) -> String;
     fn name(&self) -> String;
     fn provider(&self) -> String;

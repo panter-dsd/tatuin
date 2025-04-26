@@ -124,10 +124,10 @@ async fn print_todoist_task_list(
     f: &filter::Filter,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let td = todoist::client::Client::new(&cfg.todoist.api_key);
-    let mut project_name = None;
+    let mut project_name: Option<Box<dyn project::Project>> = None;
     if let Some(id) = project {
         let project = td.project(id).await?;
-        project_name = Some(project.name);
+        project_name = Some(Box::new(project));
     }
     let tasks = td.tasks_by_filter(&project_name, f).await?;
 
