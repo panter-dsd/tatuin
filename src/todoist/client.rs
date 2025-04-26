@@ -121,7 +121,6 @@ impl Client {
                 url.add_param("cursor", c.as_str());
             }
             let built_url = url.build();
-            println!("HERE: {}", built_url);
 
             let mut resp = self
                 .client
@@ -208,7 +207,7 @@ fn filter_to_query(project_name: &Option<String>, f: &filter::Filter) -> String 
     }
 
     if !todoist_query.is_empty() {
-        and_filter.push(todoist_query.join("|"));
+        and_filter.push(format!("({})", todoist_query.join("|")));
     }
 
     if let Some(p) = project_name {

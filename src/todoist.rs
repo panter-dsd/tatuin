@@ -77,7 +77,7 @@ impl ProviderTrait for Provider {
         match &project {
             Some(p) => {
                 if let Some(pp) = self.last_project.as_mut() {
-                    should_clear = p.id().cmp(&pp.id()) != Ordering::Equal;
+                    should_clear |= p.id().cmp(&pp.id()) != Ordering::Equal;
                 } else {
                     should_clear = true
                 }
