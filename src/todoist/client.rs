@@ -143,23 +143,6 @@ impl Client {
 
         Ok(result)
     }
-    pub async fn tasks(
-        &self,
-        project: &Option<String>,
-        f: &filter::Filter,
-    ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
-        let mut result: Vec<Task> = Vec::new();
-
-        if f.states.contains(&filter::FilterState::Uncompleted) {
-            result.append(&mut self.tasks_by_filter(project, f).await?);
-        }
-
-        if f.states.contains(&filter::FilterState::Completed) {
-            result.append(&mut self.completed_tasks(project, f).await?);
-        }
-
-        Ok(result)
-    }
 
     pub async fn projects(&self) -> Result<Vec<Project>, Box<dyn std::error::Error>> {
         let mut result: Vec<Project> = Vec::new();
