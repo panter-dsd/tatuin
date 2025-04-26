@@ -174,6 +174,19 @@ impl Client {
 
         Ok(result)
     }
+
+    pub async fn project(&self, id: &str) -> Result<Project, Box<dyn std::error::Error>> {
+        let resp = self
+            .client
+            .get(format!("{BASE_URL}/projects/{id}"))
+            .headers(self.default_header.clone())
+            .send()
+            .await?
+            .json::<Project>()
+            .await?;
+
+        Ok(resp)
+    }
 }
 
 #[allow(dead_code)]
