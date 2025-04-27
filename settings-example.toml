@@ -2,11 +2,11 @@
 
 [providers.obsidian_work]
 type = "Obsidian"
-path = "/path/to/vault"
+path = "/path/to/work_vault"
 
 [providers.obsidian_personal]
 type = "Obsidian"
-path = "/path/to/vault"
+path = "/path/to/personal_vault"
 
 [providers.personal]
 type = "Todoist"
