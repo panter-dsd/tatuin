@@ -55,7 +55,7 @@ impl ProviderTrait for Provider {
 
     async fn change_task_state(
         &mut self,
-        _task: &Box<dyn TaskTrait>,
+        _task: &dyn TaskTrait,
         _state: State,
     ) -> Result<(), Box<dyn Error>> {
         Ok(())

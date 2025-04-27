@@ -202,7 +202,7 @@ impl App {
                     task::State::Uncompleted | task::State::InProgress => task::State::Completed,
                     task::State::Unknown(_) => task::State::Completed,
                 };
-                if let Err(e) = provider.change_task_state(t, st).await {
+                if let Err(e) = provider.change_task_state(t.as_ref(), st).await {
                     self.alert = Some(format!("Change state error: {e}"))
                 }
                 self.reload_tasks = true;
