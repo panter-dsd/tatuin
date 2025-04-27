@@ -20,14 +20,6 @@ struct Cli {
 #[derive(Subcommand, Debug)]
 enum Commands {
     Tui {},
-    Obsidian {
-        #[command(subcommand)]
-        command: ObsidianCommands,
-    },
-    Todoist {
-        #[command(subcommand)]
-        command: TodoistCommands,
-    },
     Tasks {
         #[arg(short, long)]
         state: Option<Vec<filter::FilterState>>,
@@ -70,30 +62,6 @@ enum TodoistCommands {
     Projects {},
 }
 
-fn due_to_str(t: Option<task::DateTimeUtc>) -> String {
-    if let Some(d) = t {
-        if d.time() == chrono::NaiveTime::default() {
-            return d.format("%Y-%m-%d").to_string();
-        }
-
-        return d.format("%Y-%m-%d %H:%M:%S").to_string();
-    }
-
-    String::from("-")
-}
-
-fn print_tasks<T: task::Task>(tasks: &[T]) {
-    for t in tasks {
-        println!(
-            "- [{}] {} ({}) ({})",
-            t.state(),
-            t.text(),
-            format!("due: {}", due_to_str(t.due())).blue(),
-            t.place().green()
-        );
-    }
-}
-
 fn print_boxed_tasks(tasks: &[Box<dyn task::Task>]) {
     // Rewrite the loop with map/filter AI!
     for t in tasks {
@@ -105,49 +73,6 @@ fn print_projects(projects: &[Box<dyn project::Project>]) {
     for p in projects {
         println!("{}: {} ({})", p.id(), p.name(), p.provider().purple());
     }
-}
-
-async fn print_obsidian_task_list(
-    cfg: Settings,
-    f: &filter::Filter,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let obs = obsidian::client::Client::new(cfg.obsidian.path.as_str());
-    let tasks = obs.tasks(f).await?;
-    print_tasks(&tasks);
-
-    Ok(())
-}
-
-async fn print_todoist_task_list(
-    cfg: Settings,
-    project_id: &Option<String>,
-    f: &filter::Filter,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut td = todoist::Provider::new(&cfg.todoist.api_key);
-    let mut project: Option<Box<dyn project::Project>> = None;
-    if let Some(id) = project_id {
-        let prj: &dyn project::Project = &td.project_by_id(id).await? as &dyn project::Project;
-        project = Some(prj.clone_boxed());
-    }
-
-    let tasks = (&mut td as &mut dyn provider::Provider)
-        .tasks(project, f)
-        .await?;
-
-    print_boxed_tasks(&tasks);
-
-    Ok(())
-}
-
-async fn print_todoist_project_list(cfg: Settings) -> Result<(), Box<dyn std::error::Error>> {
-    let td = todoist::client::Client::new(&cfg.todoist.api_key);
-    let projects = td.projects().await?;
-
-    for p in projects {
-        println!("{}: {}", p.id, p.name);
-    }
-
-    Ok(())
 }
 
 fn state_to_filter(state: &Option<Vec<filter::FilterState>>) -> Vec<filter::FilterState> {
@@ -168,10 +93,25 @@ fn due_to_filter(due: &Option<Vec<filter::Due>>) -> Vec<filter::Due> {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Settings::load("settings.toml")?;
 
-    let providers: Vec<Box<dyn provider::Provider>> = vec![
-        Box::new(obsidian::Provider::new(&cfg.obsidian.path)),
-        Box::new(todoist::Provider::new(&cfg.todoist.api_key)),
-    ];
+    let mut providers: Vec<Box<dyn provider::Provider>> = Vec::new();
+
+    for (name, config) in &cfg.providers {
+        match config.get("type").unwrap().as_str() {
+            obsidian::PROVIDER_NAME => {
+                let mut path = config.get("path").unwrap().to_string();
+                if !path.ends_with('/') {
+                    path.push('/');
+                }
+
+                providers.push(Box::new(obsidian::Provider::new(name, path.as_str())));
+            }
+            todoist::PROVIDER_NAME => providers.push(Box::new(todoist::Provider::new(
+                name,
+                config.get("api_key").unwrap().as_str(),
+            ))),
+            _ => panic!("Unknown provider configuration for section: {name}"),
+        }
+    }
 
     println!(
         "Available providers: {}",
@@ -184,36 +124,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cli = Cli::parse();
     match &cli.command {
-        Commands::Obsidian { command } => match command {
-            ObsidianCommands::Tasks { state, due } => {
-                print_obsidian_task_list(
-                    cfg,
-                    &filter::Filter {
-                        states: state_to_filter(state),
-                        due: due_to_filter(due),
-                    },
-                )
-                .await?
-            }
-        },
-        Commands::Todoist { command } => match command {
-            TodoistCommands::Tasks {
-                project,
-                state,
-                due,
-            } => {
-                print_todoist_task_list(
-                    cfg,
-                    project,
-                    &filter::Filter {
-                        states: state_to_filter(state),
-                        due: due_to_filter(due),
-                    },
-                )
-                .await?
-            }
-            TodoistCommands::Projects {} => print_todoist_project_list(cfg).await?,
-        },
         Commands::Tasks {
             state,
             due,

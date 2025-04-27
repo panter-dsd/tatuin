@@ -6,7 +6,6 @@ use std::error::Error;
 
 #[async_trait]
 pub trait Provider {
-    fn id(&self) -> String;
     fn name(&self) -> String;
     fn type_name(&self) -> String;
     async fn tasks(

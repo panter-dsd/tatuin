@@ -9,15 +9,17 @@ use crate::task::{State, Task as TaskTrait};
 use async_trait::async_trait;
 use std::error::Error;
 
-const PROVIDER_NAME: &str = "Obsidian";
+pub const PROVIDER_NAME: &str = "Obsidian";
 
 pub struct Provider {
+    name: String,
     c: client::Client,
 }
 
 impl Provider {
-    pub fn new(path: &str) -> Self {
+    pub fn new(name: &str, path: &str) -> Self {
         Self {
+            name: name.to_string(),
             c: client::Client::new(path),
         }
     }
@@ -25,12 +27,8 @@ impl Provider {
 
 #[async_trait]
 impl ProviderTrait for Provider {
-    fn id(&self) -> String {
-        todo!("implement me")
-    }
-
     fn name(&self) -> String {
-        self.c.path()
+        self.name.to_string()
     }
 
     fn type_name(&self) -> String {

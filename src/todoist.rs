@@ -11,9 +11,10 @@ use std::error::Error;
 
 use async_trait::async_trait;
 
-const PROVIDER_NAME: &str = "Todoist";
+pub const PROVIDER_NAME: &str = "Todoist";
 
 pub struct Provider {
+    name: String,
     c: client::Client,
     projects: Vec<project::Project>,
     tasks: Vec<task::Task>,
@@ -22,8 +23,9 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(api_key: &str) -> Self {
+    pub fn new(name: &str, api_key: &str) -> Self {
         Self {
+            name: name.to_string(),
             c: client::Client::new(api_key),
             projects: Vec::new(),
             tasks: Vec::new(),
@@ -54,12 +56,8 @@ impl Provider {
 
 #[async_trait]
 impl ProviderTrait for Provider {
-    fn id(&self) -> String {
-        todo!("implement me")
-    }
-
     fn name(&self) -> String {
-        PROVIDER_NAME.to_string()
+        self.name.to_string()
     }
 
     fn type_name(&self) -> String {

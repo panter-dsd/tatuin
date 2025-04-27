@@ -20,10 +20,6 @@ impl Client {
         }
     }
 
-    pub fn path(&self) -> String {
-        self.path.to_string()
-    }
-
     pub fn all_supported_files(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         supported_files(Path::new(self.path.as_str()))
     }

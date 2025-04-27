@@ -1,20 +1,10 @@
 use config::{Config, ConfigError, File, FileFormat};
 use serde::Deserialize;
-
-#[derive(Deserialize)]
-pub struct Obsidian {
-    pub path: String,
-}
-
-#[derive(Deserialize)]
-pub struct Todoist {
-    pub api_key: String,
-}
+use std::collections::HashMap;
 
 #[derive(Deserialize)]
 pub struct Settings {
-    pub obsidian: Obsidian,
-    pub todoist: Todoist,
+    pub providers: HashMap<String, HashMap<String, String>>,
 }
 
 impl Settings {
@@ -22,10 +12,7 @@ impl Settings {
         let settings = Config::builder()
             .add_source(File::new(file_name, FileFormat::Toml))
             .build()?;
-        let mut s = settings.try_deserialize::<Settings>()?;
-        if !s.obsidian.path.ends_with('/') {
-            s.obsidian.path.push('/')
-        }
-        Ok(s)
+
+        Ok(settings.try_deserialize::<Settings>().unwrap())
     }
 }
