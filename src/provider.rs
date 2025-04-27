@@ -16,7 +16,7 @@ pub trait Provider {
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>>;
     async fn change_task_state(
         &mut self,
-        task: Box<dyn TaskTrait>,
+        task: &Box<dyn TaskTrait>,
         state: State,
     ) -> Result<(), Box<dyn Error>>;
 }

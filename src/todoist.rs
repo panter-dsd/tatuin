@@ -113,11 +113,8 @@ impl ProviderTrait for Provider {
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
 
         for t in &mut self.tasks.to_vec() {
-            if t.project.is_none() {
-                // TODO: add project to completed_tasks and remove this
-                let p = self.project_by_id(t.project_id.as_str()).await?;
-                t.project = Some(p);
-            }
+            t.project = Some(self.project_by_id(t.project_id.as_str()).await?);
+            t.provider = Some(self.name());
             result.push(Box::new(t.clone()));
         }
 
@@ -138,11 +135,17 @@ impl ProviderTrait for Provider {
 
     async fn change_task_state(
         &mut self,
-        task: Box<dyn TaskTrait>,
+        task: &Box<dyn TaskTrait>,
         state: State,
     ) -> Result<(), Box<dyn Error>> {
         match state {
-            State::Completed => self.c.close_task(task.id().as_str()).await,
+            State::Completed => {
+                let result = self.c.close_task(task.id().as_str()).await;
+                if result.is_ok() {
+                    self.tasks.clear()
+                }
+                result
+            }
             State::InProgress | State::Unknown(_) => Err(Box::<dyn Error>::from("wrong state")),
             State::Uncompleted => {
                 todo!("implement me")

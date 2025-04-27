@@ -27,7 +27,6 @@ impl Parser {
         if let Some(caps) = TASK_RE.captures(line) {
             let task_text = String::from(&caps[2]);
             return Some(Task {
-                root_path: String::new(),
                 file_path: self.file_path.to_string(),
                 pos,
                 state: {
@@ -41,6 +40,7 @@ impl Parser {
                 },
                 text: task_text.to_string(),
                 due: try_parse_due(task_text.as_str()),
+                ..Default::default()
             });
         }
 

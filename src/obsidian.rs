@@ -42,7 +42,8 @@ impl ProviderTrait for Provider {
     ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn Error>> {
         let tasks = self.c.tasks(f).await?;
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
-        for t in tasks {
+        for mut t in tasks {
+            t.set_provider(self.name());
             result.push(Box::new(t));
         }
         Ok(result)
@@ -54,7 +55,7 @@ impl ProviderTrait for Provider {
 
     async fn change_task_state(
         &mut self,
-        _task: Box<dyn TaskTrait>,
+        _task: &Box<dyn TaskTrait>,
         _state: State,
     ) -> Result<(), Box<dyn Error>> {
         Ok(())

@@ -1,4 +1,3 @@
-use crate::obsidian::PROVIDER_NAME;
 use crate::task;
 use std::fmt::{self, Write};
 
@@ -8,6 +7,12 @@ pub enum State {
     Uncompleted,
     Completed,
     InProgress,
+}
+
+impl Default for State {
+    fn default() -> Self {
+        State::Unknown(' ')
+    }
 }
 
 impl State {
@@ -32,9 +37,11 @@ impl fmt::Display for State {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Task {
     pub root_path: String,
+    pub provider: String,
+
     pub file_path: String,
     pub pos: u64,
     pub state: State,
@@ -45,6 +52,9 @@ pub struct Task {
 impl Task {
     pub fn set_root_path(&mut self, p: String) {
         self.root_path = p;
+    }
+    pub fn set_provider(&mut self, p: String) {
+        self.provider = p;
     }
 }
 
@@ -77,6 +87,6 @@ impl task::Task for Task {
     }
 
     fn provider(&self) -> String {
-        PROVIDER_NAME.to_string()
+        self.provider.to_string()
     }
 }

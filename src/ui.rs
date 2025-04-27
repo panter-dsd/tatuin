@@ -3,12 +3,12 @@ use crate::{project, provider, task};
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::palette::tailwind::{BLUE, GREEN, SLATE};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
-    Block, Borders, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph,
+    Block, Borders, Clear, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph,
     StatefulWidget, Widget, Wrap,
 };
 use ratatui::{DefaultTerminal, symbols};
@@ -61,6 +61,7 @@ pub struct App {
     tasks: SelectableList<Box<dyn task::Task>>,
     current_block: AppBlock,
     filter_widget: filter_widget::FilterWidget,
+    alert: Option<String>,
 }
 
 impl App {
@@ -77,6 +78,7 @@ impl App {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
+            alert: None,
         }
     }
 }
@@ -96,7 +98,7 @@ impl App {
 
             terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
             if let Event::Key(key) = event::read()? {
-                self.handle_key(key);
+                self.handle_key(key).await;
             }
         }
         Ok(())
@@ -153,12 +155,18 @@ impl App {
         self.tasks.state = ListState::default().with_selected(Some(0));
     }
 
-    fn handle_key(&mut self, key: KeyEvent) {
+    async fn handle_key(&mut self, key: KeyEvent) {
         if key.kind != KeyEventKind::Press {
             return;
         }
         match key.code {
-            KeyCode::Char('q') | KeyCode::Esc => self.should_exit = true,
+            KeyCode::Char('q') | KeyCode::Esc => {
+                if self.alert.is_some() {
+                    self.alert = None;
+                } else {
+                    self.should_exit = true;
+                }
+            }
             KeyCode::Char('h') | KeyCode::Left => self.select_none(),
             KeyCode::Char('j') | KeyCode::Down => self.select_next(),
             KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
@@ -168,19 +176,42 @@ impl App {
                 self.toggle_status();
             }
             KeyCode::Tab => self.select_next_block(),
-            KeyCode::Char(' ') => self.change_check_state(),
+            KeyCode::Char(' ') => self.change_check_state().await,
             _ => {}
         }
     }
 
-    fn change_check_state(&mut self) {
+    async fn change_check_state(&mut self) {
         match self.current_block {
-            AppBlock::Providers | AppBlock::Projects | AppBlock::TaskList => {} //TODO: implement
+            AppBlock::Providers | AppBlock::Projects => {} //TODO: implement
+            AppBlock::TaskList => {
+                if self.tasks.state.selected().is_none() {
+                    return;
+                }
+
+                let t = &self.tasks.items[self.tasks.state.selected().unwrap()];
+                let provider_idx = self
+                    .providers
+                    .items
+                    .iter()
+                    .position(|p| p.name() == t.provider())
+                    .unwrap();
+                let provider = &mut self.providers.items[provider_idx];
+                let st = match t.state() {
+                    task::State::Completed => task::State::Uncompleted,
+                    task::State::Uncompleted | task::State::InProgress => task::State::Completed,
+                    task::State::Unknown(_) => task::State::Completed,
+                };
+                if let Err(e) = provider.change_task_state(t, st).await {
+                    self.alert = Some(format!("Change state error: {e}"))
+                }
+                self.reload_tasks = true;
+            }
             AppBlock::Filter => {
                 self.filter_widget.change_check_state();
                 self.reload_tasks = true;
             }
-            AppBlock::TaskDescription => { /*nothing to do here */ }
+            AppBlock::TaskDescription => {}
         }
     }
 
@@ -319,6 +350,18 @@ impl Widget for &mut App {
         self.render_projects(projects_area, buf);
         self.render_filter(filter_header_area, filter_area, buf);
         self.render_task_description(task_description_area, buf);
+
+        if let Some(alert) = &mut self.alert {
+            let block = Block::bordered()
+                .border_style(Style::default().fg(Color::Red))
+                .title("Alert!");
+            let area = popup_area(area, 60, 20);
+            Clear {}.render(area, buf);
+            Paragraph::new(alert.to_string())
+                .block(block)
+                .centered()
+                .render(area, buf);
+        }
     }
 }
 
@@ -492,4 +535,12 @@ fn styled_line<'a>(k: &'a str, v: &'a str) -> Line<'a> {
         Span::styled(format!("{k}:"), lable_style),
         Span::styled(v, value_style),
     ])
+}
+
+fn popup_area(area: Rect, percent_x: u16, percent_y: u16) -> Rect {
+    let vertical = Layout::vertical([Constraint::Percentage(percent_y)]).flex(Flex::Center);
+    let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
+    let [area] = vertical.areas(area);
+    let [area] = horizontal.areas(area);
+    area
 }

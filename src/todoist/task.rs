@@ -1,5 +1,4 @@
 use crate::task;
-use crate::todoist::PROVIDER_NAME;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::Deserialize;
 
@@ -51,6 +50,7 @@ pub struct Task {
     pub is_collapsed: bool,
 
     pub project: Option<Project>,
+    pub provider: Option<String>,
 }
 
 fn str_to_date(s: &str) -> Option<task::DateTimeUtc> {
@@ -118,6 +118,9 @@ impl task::Task for Task {
     }
 
     fn provider(&self) -> String {
-        PROVIDER_NAME.to_string()
+        match &self.provider {
+            Some(p) => p.to_string(),
+            None => String::new(),
+        }
     }
 }
