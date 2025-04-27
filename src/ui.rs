@@ -417,10 +417,7 @@ impl App {
             .iter()
             .map(|t| {
                 let mixed_line = Line::from(vec![
-                    Span::styled(
-                        format!("- [{}] {} (", t.state(), t.text()),
-                        Style::default(),
-                    ),
+                    Span::styled(format!("[{}] {} (", t.state(), t.text()), Style::default()),
                     Span::styled(
                         format!("due: {}", task::due_to_str(t.due())),
                         Style::default().fg(Color::Blue),
