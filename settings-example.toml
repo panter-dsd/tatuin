@@ -1,5 +1,13 @@
-[obsidian]
-path = "/path/to/vault/root"
+[providers]
 
-[todoist]
+[providers.obsidian_work]
+type = "Obsidian"
+path = "/path/to/vault"
+
+[providers.obsidian_personal]
+type = "Obsidian"
+path = "/path/to/vault"
+
+[providers.personal]
+type = "Todoist"
 api_key = "api_key"
