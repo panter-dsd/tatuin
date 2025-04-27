@@ -1,18 +1,23 @@
 use crate::filter;
-use crate::project;
-use crate::task;
+use crate::project::Project as ProjectTrait;
+use crate::task::{State, Task as TaskTrait};
 use async_trait::async_trait;
+use std::error::Error;
 
 #[async_trait]
 pub trait Provider {
+    fn id(&self) -> String;
     fn name(&self) -> String;
     fn type_name(&self) -> String;
     async fn tasks(
         &mut self,
-        project: Option<Box<dyn project::Project>>,
+        project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn task::Task>>, Box<dyn std::error::Error>>;
-    async fn projects(
+    ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn Error>>;
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>>;
+    async fn change_task_state(
         &mut self,
-    ) -> Result<Vec<Box<dyn project::Project>>, Box<dyn std::error::Error>>;
+        task: Box<dyn TaskTrait>,
+        state: State,
+    ) -> Result<(), Box<dyn Error>>;
 }

@@ -5,8 +5,9 @@ mod task;
 use crate::filter;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
-use crate::task::Task as TaskTrait;
+use crate::task::{State, Task as TaskTrait};
 use std::cmp::Ordering;
+use std::error::Error;
 
 use async_trait::async_trait;
 
@@ -31,17 +32,14 @@ impl Provider {
         }
     }
 
-    async fn load_projects(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn load_projects(&mut self) -> Result<(), Box<dyn Error>> {
         if self.projects.is_empty() {
             self.projects = self.c.projects().await?;
         }
         Ok(())
     }
 
-    pub async fn project_by_id(
-        &mut self,
-        id: &str,
-    ) -> Result<project::Project, Box<dyn std::error::Error>> {
+    pub async fn project_by_id(&mut self, id: &str) -> Result<project::Project, Box<dyn Error>> {
         self.load_projects().await?;
         let project = self.projects.iter().find(|p| p.id() == id);
         if let Some(p) = project {
@@ -56,6 +54,10 @@ impl Provider {
 
 #[async_trait]
 impl ProviderTrait for Provider {
+    fn id(&self) -> String {
+        todo!("implement me")
+    }
+
     fn name(&self) -> String {
         PROVIDER_NAME.to_string()
     }
@@ -68,7 +70,7 @@ impl ProviderTrait for Provider {
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn Error>> {
         let mut should_clear = false;
         if let Some(last_filter) = self.last_filter.as_mut() {
             should_clear = last_filter != f;
@@ -126,7 +128,7 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn std::error::Error>> {
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>> {
         self.load_projects().await?;
         let mut result: Vec<Box<dyn ProjectTrait>> = Vec::new();
         for p in &self.projects {
@@ -134,5 +136,19 @@ impl ProviderTrait for Provider {
         }
 
         Ok(result)
+    }
+
+    async fn change_task_state(
+        &mut self,
+        task: Box<dyn TaskTrait>,
+        state: State,
+    ) -> Result<(), Box<dyn Error>> {
+        match state {
+            State::Completed => self.c.close_task(task.id().as_str()).await,
+            State::InProgress | State::Unknown(_) => Err(Box::<dyn Error>::from("wrong state")),
+            State::Uncompleted => {
+                todo!("implement me")
+            }
+        }
     }
 }
