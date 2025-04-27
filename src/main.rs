@@ -82,7 +82,7 @@ fn due_to_str(t: Option<task::DateTimeUtc>) -> String {
     String::from("-")
 }
 
-fn print_tasks<T: task::Task>(tasks: &Vec<T>) {
+fn print_tasks<T: task::Task>(tasks: &[T]) {
     for t in tasks {
         println!(
             "- [{}] {} ({}) ({})",
@@ -120,18 +120,21 @@ async fn print_obsidian_task_list(
 
 async fn print_todoist_task_list(
     cfg: Settings,
-    project: &Option<String>,
+    project_id: &Option<String>,
     f: &filter::Filter,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let td = todoist::client::Client::new(&cfg.todoist.api_key);
-    let mut project_name: Option<Box<dyn project::Project>> = None;
-    if let Some(id) = project {
-        let project = td.project(id).await?;
-        project_name = Some(Box::new(project));
+    let mut td = todoist::Provider::new(&cfg.todoist.api_key);
+    let mut project: Option<Box<dyn project::Project>> = None;
+    if let Some(id) = project_id {
+        let prj: &dyn project::Project = &td.project_by_id(id).await? as &dyn project::Project;
+        project = Some(prj.clone_boxed());
     }
-    let tasks = td.tasks_by_filter(&project_name, f).await?;
 
-    print_tasks(&tasks);
+    let tasks = (&mut td as &mut dyn provider::Provider)
+        .tasks(project, f)
+        .await?;
+
+    print_boxed_tasks(&tasks);
 
     Ok(())
 }

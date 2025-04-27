@@ -38,7 +38,7 @@ impl Provider {
         Ok(())
     }
 
-    async fn project_by_id(
+    pub async fn project_by_id(
         &mut self,
         id: &str,
     ) -> Result<project::Project, Box<dyn std::error::Error>> {
@@ -109,6 +109,7 @@ impl ProviderTrait for Provider {
             }
             self.last_project = project;
         }
+
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
 
         for t in &mut self.tasks.to_vec() {

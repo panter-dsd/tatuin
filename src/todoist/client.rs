@@ -139,17 +139,7 @@ impl Client {
                 .json::<Response>()
                 .await?;
 
-            let mut projects: HashMap<String, Project> = HashMap::new();
-            for t in &mut resp.results {
-                if let Some(p) = projects.get(&t.project_id) {
-                    t.project = Some(p.clone());
-                } else {
-                    let p = self.project(&t.project_id).await?;
-                    t.project = Some(p.clone());
-                    projects.insert(t.project_id.to_string(), p);
-                }
-                result.push(t.clone());
-            }
+            result.append(&mut resp.results);
 
             if resp.next_cursor.is_none() {
                 break;
