@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::filter;
 use crate::project::Project as ProjectTrait;
 use crate::todoist::project::Project;

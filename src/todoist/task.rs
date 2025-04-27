@@ -53,6 +53,23 @@ pub struct Task {
     pub project: Option<Project>,
 }
 
+fn str_to_date(s: &str) -> Option<task::DateTimeUtc> {
+    if let Ok(d) = NaiveDate::parse_from_str(s, "%Y-%m-%d") {
+        let dt = d.and_hms_opt(0, 0, 0)?;
+        return Some(task::DateTimeUtc::from_naive_utc_and_offset(dt, Utc));
+    }
+
+    if let Ok(dt) = NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S%.f") {
+        return Some(task::DateTimeUtc::from_naive_utc_and_offset(dt, Utc));
+    }
+
+    if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
+        return Some(task::DateTimeUtc::from(dt));
+    }
+
+    None
+}
+
 impl task::Task for Task {
     fn id(&self) -> String {
         self.id.to_string()
@@ -81,20 +98,23 @@ impl task::Task for Task {
     fn due(&self) -> Option<task::DateTimeUtc> {
         let due = self.due.as_ref()?;
 
-        if let Ok(d) = NaiveDate::parse_from_str(due.date.as_str(), "%Y-%m-%d") {
-            let dt = d.and_hms_opt(0, 0, 0)?;
-            return Some(task::DateTimeUtc::from_naive_utc_and_offset(dt, Utc));
-        }
+        str_to_date(due.date.as_str())
+    }
 
-        if let Ok(dt) = NaiveDateTime::parse_from_str(due.date.as_str(), "%Y-%m-%dT%H:%M:%S%.f") {
-            return Some(task::DateTimeUtc::from_naive_utc_and_offset(dt, Utc));
+    fn created_at(&self) -> Option<task::DateTimeUtc> {
+        if let Some(s) = self.added_at.as_ref() {
+            str_to_date(s.as_str())
+        } else {
+            None
         }
+    }
 
-        if let Ok(dt) = DateTime::parse_from_rfc3339(due.date.as_str()) {
-            return Some(task::DateTimeUtc::from(dt));
+    fn updated_at(&self) -> Option<task::DateTimeUtc> {
+        if let Some(s) = self.updated_at.as_ref() {
+            str_to_date(s.as_str())
+        } else {
+            None
         }
-
-        None
     }
 
     fn provider(&self) -> String {

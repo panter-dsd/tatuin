@@ -443,31 +443,56 @@ impl App {
     }
 
     fn render_task_description(&self, area: Rect, buf: &mut Buffer) {
-        // We get the info depending on the item's state.
-        let info = if let Some(i) = self.tasks.state.selected() {
-            self.tasks.items[i].text()
-            // match self.tasks.items[i].status {
-            //     Status::Completed => format!("✓ DONE: {}", self.tasks.items[i].info),
-            //     Status::Todo => format!("☐ TODO: {}", self.tasks.items[i].info),
-            // }
-        } else {
-            "Nothing selected...".to_string()
-        };
-
         // We show the list item's info under the list in this paragraph
         let block = Block::new()
-            .title(Line::raw("TODO Info").centered())
+            .title(Line::raw("Task description").centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
             .border_style(self.block_style(AppBlock::TaskDescription))
             .bg(NORMAL_ROW_BG)
             .padding(Padding::horizontal(1));
 
-        // We can now render the item info
-        Paragraph::new(info)
-            .block(block)
-            .fg(TEXT_FG_COLOR)
-            .wrap(Wrap { trim: false })
-            .render(area, buf);
+        if let Some(i) = self.tasks.state.selected() {
+            let t = &self.tasks.items[i];
+            let id = t.id();
+            let task_text = t.text();
+            let mut text = vec![
+                styled_line("ID", id.as_str()),
+                styled_line("Text", task_text.as_str()),
+            ];
+
+            let created_at;
+            if let Some(d) = t.created_at() {
+                created_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
+                text.push(styled_line("Created", &created_at));
+            }
+
+            let updated_at;
+            if let Some(d) = t.updated_at() {
+                updated_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
+                text.push(styled_line("Updated", &updated_at));
+            }
+
+            Paragraph::new(text)
+                .block(block)
+                .fg(TEXT_FG_COLOR)
+                .wrap(Wrap { trim: false })
+                .render(area, buf);
+        } else {
+            Paragraph::new("Nothing selected...")
+                .block(block)
+                .fg(TEXT_FG_COLOR)
+                .wrap(Wrap { trim: false })
+                .render(area, buf);
+        };
     }
+}
+
+fn styled_line<'a>(k: &'a str, v: &'a str) -> Line<'a> {
+    let lable_style = Style::new().fg(Color::Blue).add_modifier(Modifier::BOLD);
+    let value_style = Style::new().fg(Color::White);
+    Line::from(vec![
+        Span::styled(format!("{k}:"), lable_style),
+        Span::styled(v, value_style),
+    ])
 }
