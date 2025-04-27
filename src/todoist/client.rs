@@ -15,6 +15,7 @@ pub struct Client {
     client: reqwest::Client,
 }
 
+#[allow(dead_code)]
 impl Client {
     pub fn new(api_key: &str) -> Self {
         let mut headers = HeaderMap::new();
