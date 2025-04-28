@@ -491,7 +491,11 @@ impl App {
             .collect();
 
         StatefulWidget::render(
-            self.prepare_render_list("Tasks", AppBlock::TaskList, &items),
+            self.prepare_render_list(
+                format!("Tasks ({})", items.len()).as_str(),
+                AppBlock::TaskList,
+                &items,
+            ),
             area,
             buf,
             &mut self.tasks.state,
