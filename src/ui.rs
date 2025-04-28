@@ -534,8 +534,17 @@ impl App {
                 text.push(styled_line("Updated", &updated_at));
             }
 
-            let due = task::due_to_str(t.due());
-            text.push(styled_line("Due", &due));
+            let completed_at;
+            if let Some(d) = t.completed_at() {
+                completed_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
+                text.push(styled_line("Completed", &completed_at));
+            }
+
+            let due;
+            if t.due().is_some() {
+                due = task::due_to_str(t.due());
+                text.push(styled_line("Due", &due));
+            }
 
             Paragraph::new(text)
                 .block(block)
