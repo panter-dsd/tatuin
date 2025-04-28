@@ -352,7 +352,7 @@ impl Widget for &mut App {
         .areas(area);
 
         let [left_area, right_area] =
-            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(3)]).areas(main_area);
+            Layout::horizontal([Constraint::Length(30), Constraint::Fill(3)]).areas(main_area);
 
         let [
             providers_area,
