@@ -70,7 +70,7 @@ impl App {
             should_exit: false,
             reload_projects: true,
             reload_tasks: true,
-            current_block: AppBlock::Providers,
+            current_block: AppBlock::TaskList,
             providers: SelectableList::new(providers, Some(0)),
             projects: SelectableList::default(),
             tasks: SelectableList::default(),
