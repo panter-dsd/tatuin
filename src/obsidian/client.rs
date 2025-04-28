@@ -1,5 +1,5 @@
 use crate::filter;
-use crate::obsidian::mdparser;
+use crate::obsidian::md_file;
 use crate::obsidian::task::{State, Task};
 use std::cmp::Ordering;
 use std::fs;
@@ -40,7 +40,7 @@ impl Client {
             let job = tokio::spawn(async move {
                 let _permit = semaphore.acquire().await.unwrap();
 
-                let parser = mdparser::Parser::new(f.as_str());
+                let parser = md_file::Parser::new(f.as_str());
                 let mut tasks = parser.tasks().await.unwrap();
                 for t in &mut tasks {
                     t.set_root_path(p.to_string());
