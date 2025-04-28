@@ -193,13 +193,24 @@ impl App {
                     self.should_exit = true;
                 }
             }
-            KeyCode::Char('h') | KeyCode::Left => self.select_none(),
+            KeyCode::Char('h') | KeyCode::Left => {
+                const BLOCKS: [AppBlock; 2] = [AppBlock::TaskList, AppBlock::TaskDescription];
+
+                if BLOCKS.contains(&self.current_block) {
+                    self.current_block = AppBlock::Providers;
+                }
+            }
             KeyCode::Char('j') | KeyCode::Down => self.select_next(),
             KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
             KeyCode::Char('g') | KeyCode::Home => self.select_first(),
             KeyCode::Char('G') | KeyCode::End => self.select_last(),
-            KeyCode::Char('l') | KeyCode::Right | KeyCode::Enter => {
-                self.toggle_status();
+            KeyCode::Char('l') | KeyCode::Right => {
+                const BLOCKS: [AppBlock; 3] =
+                    [AppBlock::Providers, AppBlock::Projects, AppBlock::Filter];
+
+                if BLOCKS.contains(&self.current_block) {
+                    self.current_block = AppBlock::TaskList;
+                }
             }
             KeyCode::Tab => self.select_next_block(),
             KeyCode::Char(' ') => self.change_check_state().await,
@@ -276,17 +287,6 @@ impl App {
         }
     }
 
-    fn select_none(&mut self) {
-        match self.current_block {
-            AppBlock::Providers => self.providers.state.select(None),
-            AppBlock::Projects => self.projects.state.select(None),
-            AppBlock::Filter => self.filter_widget.select_none(),
-            AppBlock::TaskList => self.tasks.state.select(None),
-            AppBlock::TaskDescription => {}
-        }
-        self.set_reload();
-    }
-
     fn select_next(&mut self) {
         match self.current_block {
             AppBlock::Providers => self.providers.state.select_next(),
@@ -329,16 +329,6 @@ impl App {
             AppBlock::TaskDescription => {}
         }
         self.set_reload();
-    }
-
-    /// Changes the status of the selected list item
-    fn toggle_status(&mut self) {
-        // if let Some(i) = self.tasks.state.selected() {
-        // self.tasks.items[i].status = match self.tasks.items[i].status {
-        //     Status::Completed => Status::Todo,
-        //     Status::Todo => Status::Completed,
-        // }
-        // }
     }
 }
 
@@ -509,7 +499,6 @@ impl App {
     }
 
     fn render_task_description(&self, area: Rect, buf: &mut Buffer) {
-        // We show the list item's info under the list in this paragraph
         let block = Block::new()
             .title(Line::raw("Task description").centered())
             .borders(Borders::TOP)
