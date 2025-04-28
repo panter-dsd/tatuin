@@ -515,9 +515,11 @@ impl App {
             let t = &self.tasks.items[i];
             let id = t.id();
             let task_text = t.text();
+            let provider = t.provider();
             let mut text = vec![
-                styled_line("ID", id.as_str()),
-                styled_line("Text", task_text.as_str()),
+                styled_line("ID", &id),
+                styled_line("Provider", &provider),
+                styled_line("Text", &task_text),
             ];
 
             let created_at;
