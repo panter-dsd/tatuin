@@ -106,27 +106,48 @@ impl App {
 
     async fn load_projects(&mut self) {
         let mut projects: Vec<Box<dyn project::Project>> = Vec::new();
-        let is_all = self.providers.state.selected().unwrap_or_default() == 0;
+        let selected_idx = std::cmp::min(
+            self.providers.state.selected().unwrap_or_default(),
+            self.providers.items.len(),
+        );
 
+        let mut errors = Vec::new();
         for (i, p) in self.providers.items.iter_mut().enumerate() {
-            // -1 because of All
-            if !is_all && i != self.providers.state.selected().unwrap_or_default() - 1 {
+            if selected_idx != 0 && i != selected_idx - 1 {
                 continue;
             }
 
             let result = p.projects().await;
-            if let Ok(mut prj) = result {
-                projects.append(&mut prj);
+            match result {
+                Ok(mut prj) => projects.append(&mut prj),
+                Err(err) => errors.push((p.name(), err)),
             }
+        }
+
+        for (provider_name, err) in errors {
+            self.add_error(
+                format!("Load provider {} projects failure: {}", provider_name, err).as_str(),
+            )
         }
 
         self.projects.items = projects;
         self.projects.state = ListState::default().with_selected(Some(0));
     }
 
+    fn add_error(&mut self, message: &str) {
+        self.alert = match self.alert.as_ref() {
+            Some(s) => Some(format!("{}\n{}", s, message)),
+            None => Some(message.to_string()),
+        }
+    }
     async fn load_tasks(&mut self) {
         let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
-        let is_all = self.providers.state.selected().unwrap_or_default() == 0;
+        let selected_idx = std::cmp::min(
+            self.providers.state.selected().unwrap_or_default(),
+            self.providers.items.len(),
+        );
+
+        let mut errors = Vec::new();
 
         for (i, p) in self.providers.items.iter_mut().enumerate() {
             let project = if let Some(idx) = self.projects.state.selected() {
@@ -139,15 +160,20 @@ impl App {
                 None
             };
 
-            // -1 because of All
-            if !is_all && i != self.providers.state.selected().unwrap_or_default() - 1 {
+            if selected_idx != 0 && i != selected_idx - 1 {
                 continue;
             }
 
-            let result = p.tasks(project, &self.filter_widget.filter()).await;
-            if let Ok(mut prj) = result {
-                tasks.append(&mut prj);
+            match p.tasks(project, &self.filter_widget.filter()).await {
+                Ok(mut prj) => tasks.append(&mut prj),
+                Err(err) => errors.push((p.name(), err)),
             }
+        }
+
+        for (provider_name, err) in errors {
+            self.add_error(
+                format!("Load provider {} projects failure: {}", provider_name, err).as_str(),
+            )
         }
 
         tasks.sort_by_key(|k| k.due());
