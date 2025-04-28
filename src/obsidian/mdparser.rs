@@ -34,7 +34,7 @@ impl Parser {
                     match cap.chars().next() {
                         Some(x) => State::new(x),
                         None => panic!(
-                            "Something wronng with regexp parsing of '{line}' because state shouldn't be empty"
+                            "Something wrong with regexp parsing of '{line}' because state shouldn't be empty"
                         ),
                     }
                 },
