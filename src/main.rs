@@ -113,6 +113,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    providers.sort_by_key(|p| p.name());
+
     println!(
         "Available providers: {}",
         providers
