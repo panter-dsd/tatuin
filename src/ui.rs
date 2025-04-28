@@ -532,6 +532,9 @@ impl App {
                 text.push(styled_line("Updated", &updated_at));
             }
 
+            let due = task::due_to_str(t.due());
+            text.push(styled_line("Due", &due));
+
             Paragraph::new(text)
                 .block(block)
                 .fg(TEXT_FG_COLOR)
