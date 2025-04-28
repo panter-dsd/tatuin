@@ -7,11 +7,11 @@ use std::sync::LazyLock;
 
 static TASK_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\ *-\ \[(.)\]\ (.*)$").unwrap());
 
-pub struct Parser {
+pub struct File {
     file_path: String,
 }
 
-impl Parser {
+impl File {
     pub fn new(file_path: &str) -> Self {
         Self {
             file_path: String::from(file_path),
@@ -92,7 +92,7 @@ mod tests {
 
     #[tokio::test]
     async fn parse_not_exists_file() {
-        let p = Parser::new("/etc/file/not/exists");
+        let p = File::new("/etc/file/not/exists");
         let err = p.tasks().await.unwrap_err();
         if let Some(error) = err.downcast_ref::<std::io::Error>() {
             assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
@@ -150,7 +150,7 @@ some another text
             },
         ];
 
-        let p = Parser::new("");
+        let p = File::new("");
 
         for c in CASES {
             let tasks = p.tasks_from_content(String::from(c.file_content)).unwrap();

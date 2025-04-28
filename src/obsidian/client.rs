@@ -40,7 +40,7 @@ impl Client {
             let job = tokio::spawn(async move {
                 let _permit = semaphore.acquire().await.unwrap();
 
-                let parser = md_file::Parser::new(f.as_str());
+                let parser = md_file::File::new(f.as_str());
                 let mut tasks = parser.tasks().await.unwrap();
                 for t in &mut tasks {
                     t.set_root_path(p.to_string());
