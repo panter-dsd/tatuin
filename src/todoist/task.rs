@@ -32,22 +32,22 @@ pub struct Task {
     pub added_by_uid: Option<String>,
     pub assigned_by_uid: Option<String>,
     pub responsible_uid: Option<String>,
-    pub labels: Vec<String>,
+    pub labels: Option<Vec<String>>,
     pub deadline: Option<Duration>,
     pub duration: Option<Duration>,
-    pub checked: bool,
-    pub is_deleted: bool,
+    pub checked: Option<bool>,
+    pub is_deleted: Option<bool>,
     pub added_at: Option<String>,
     pub completed_at: Option<String>,
     pub updated_at: Option<String>,
     pub due: Option<Due>,
-    pub priority: i32,
-    pub child_order: i32,
+    pub priority: Option<i32>,
+    pub child_order: Option<i32>,
     pub content: String,
-    pub description: String,
-    pub note_count: i32,
-    pub day_order: i32,
-    pub is_collapsed: bool,
+    pub description: Option<String>,
+    pub note_count: Option<i32>,
+    pub day_order: Option<i32>,
+    pub is_collapsed: Option<bool>,
 
     pub project: Option<Project>,
     pub provider: Option<String>,
@@ -80,7 +80,8 @@ impl task::Task for Task {
     }
 
     fn state(&self) -> task::State {
-        if self.checked {
+        if self.checked.unwrap_or(true) {
+            // completed tasks doesn't contain this field
             task::State::Completed
         } else {
             task::State::Uncompleted
@@ -111,6 +112,14 @@ impl task::Task for Task {
 
     fn updated_at(&self) -> Option<task::DateTimeUtc> {
         if let Some(s) = self.updated_at.as_ref() {
+            str_to_date(s.as_str())
+        } else {
+            None
+        }
+    }
+
+    fn completed_at(&self) -> Option<task::DateTimeUtc> {
+        if let Some(s) = self.completed_at.as_ref() {
             str_to_date(s.as_str())
         } else {
             None
