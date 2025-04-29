@@ -13,6 +13,7 @@ use ratatui::widgets::{
 };
 use ratatui::{DefaultTerminal, symbols};
 mod filter_widget;
+use std::cmp::Ordering;
 
 const ACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(GREEN.c800);
 const INACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
@@ -475,8 +476,23 @@ impl App {
             .items
             .iter()
             .map(|t| {
+                let fg_color = {
+                    match t.due() {
+                        Some(d) => {
+                            let now = chrono::Utc::now().date_naive();
+                            match d.date_naive().cmp(&now) {
+                                Ordering::Less => Color::LightRed,
+                                Ordering::Equal => Color::White,
+                                Ordering::Greater => Color::LightGreen,
+                            }
+                        }
+                        None => Color::White,
+                    }
+                };
                 let mixed_line = Line::from(vec![
-                    Span::styled(format!("[{}] {} (", t.state(), t.text()), Style::default()),
+                    Span::from(format!("[{}] ", t.state())),
+                    Span::styled(t.text(), Style::default().fg(fg_color)),
+                    Span::from(" ("),
                     Span::styled(
                         format!("due: {}", task::due_to_str(t.due())),
                         Style::default().fg(Color::Blue),
