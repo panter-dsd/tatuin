@@ -37,6 +37,9 @@ impl Provider {
     async fn load_projects(&mut self) -> Result<(), Box<dyn Error>> {
         if self.projects.is_empty() {
             self.projects = self.c.projects().await?;
+            for p in &mut self.projects {
+                p.provider = Some(self.name.to_string());
+            }
         }
         Ok(())
     }
