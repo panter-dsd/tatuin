@@ -1281,28 +1281,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "obsidian-todoist-sync"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "chrono",
- "clap",
- "color-eyre",
- "colored",
- "config",
- "crossterm 0.29.0",
- "ratatui",
- "regex",
- "reqwest",
- "serde",
- "time",
- "tokio",
- "url",
- "url-builder",
- "urlencoding",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1993,6 +1971,28 @@ checksum = "8e1d1b10ced5ca923a1fcb8d03e96b8d3268065d724548c0211415ff6ac6bac4"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "tatuin"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "clap",
+ "color-eyre",
+ "colored",
+ "config",
+ "crossterm 0.29.0",
+ "ratatui",
+ "regex",
+ "reqwest",
+ "serde",
+ "time",
+ "tokio",
+ "url",
+ "url-builder",
+ "urlencoding",
 ]
 
 [[package]]

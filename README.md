@@ -1,1 +1,1 @@
-# Obsidian to Todoist sync application
+# Tatuin (Task Aggregator TUI for N providers)

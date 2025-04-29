@@ -384,7 +384,7 @@ impl Widget for &mut App {
 /// Rendering logic for the app
 impl App {
     fn render_header(area: Rect, buf: &mut Buffer) {
-        Paragraph::new("Task Aggregator TUI")
+        Paragraph::new("Tatuin (Task Aggregator TUI for N providers)")
             .bold()
             .centered()
             .render(area, buf);
