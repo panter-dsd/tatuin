@@ -2,6 +2,7 @@ use crate::filter;
 use crate::obsidian::md_file;
 use crate::obsidian::task::{State, Task};
 use std::cmp::Ordering;
+use std::error::Error;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
@@ -20,11 +21,11 @@ impl Client {
         }
     }
 
-    pub fn all_supported_files(&self) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    pub fn all_supported_files(&self) -> Result<Vec<String>, Box<dyn Error>> {
         supported_files(Path::new(self.path.as_str()))
     }
 
-    pub async fn tasks(&self, f: &filter::Filter) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+    pub async fn tasks(&self, f: &filter::Filter) -> Result<Vec<Task>, Box<dyn Error>> {
         let files = self.all_supported_files()?;
 
         let mut tasks: Vec<Task> = Vec::new();
@@ -66,9 +67,14 @@ impl Client {
 
         Ok(tasks)
     }
+
+    pub async fn change_state(&self, t: &Task, s: State) -> Result<(), Box<dyn Error>> {
+        let f = md_file::File::new(&t.file_path);
+        f.change_state(t, s).await
+    }
 }
 
-fn supported_files(p: &Path) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+fn supported_files(p: &Path) -> Result<Vec<String>, Box<dyn Error>> {
     let mut result: Vec<String> = Vec::new();
 
     for e in fs::read_dir(p)? {

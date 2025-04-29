@@ -2,6 +2,7 @@ use crate::obsidian::task::{State, Task};
 use crate::task::DateTimeUtc;
 use chrono::{NaiveDate, Utc};
 use regex::Regex;
+use std::error::Error;
 use std::fs;
 use std::sync::LazyLock;
 
@@ -18,17 +19,28 @@ impl File {
         }
     }
 
-    pub async fn tasks(&self) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+    pub async fn tasks(&self) -> Result<Vec<Task>, Box<dyn Error>> {
         let content = fs::read_to_string(self.file_path.as_str())?;
         self.tasks_from_content(content)
     }
 
-    fn try_parse_task(&self, line: &str, pos: u64) -> Option<Task> {
+    pub async fn change_state(&self, t: &Task, s: State) -> Result<(), Box<dyn Error>> {
+        let content = fs::read_to_string(self.file_path.as_str())?;
+        let content = self.change_state_in_content(t, s, content.as_str())?;
+        if let Err(err) = fs::write(self.file_path.as_str(), content) {
+            return Err(Box::new(err));
+        }
+
+        Ok(())
+    }
+
+    fn try_parse_task(&self, line: &str, pos: usize) -> Option<Task> {
         if let Some(caps) = TASK_RE.captures(line) {
             let task_text = String::from(&caps[2]);
             return Some(Task {
                 file_path: self.file_path.to_string(),
-                pos,
+                start_pos: pos,
+                end_pos: pos + line.chars().count(),
                 state: {
                     let cap: &str = &caps[1];
                     match cap.chars().next() {
@@ -47,22 +59,69 @@ impl File {
         None
     }
 
-    fn tasks_from_content(&self, content: String) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
-        let mut result: Vec<Task> = Vec::new();
-
+    fn tasks_from_content(&self, content: String) -> Result<Vec<Task>, Box<dyn Error>> {
         const SPLIT_TERMINATOR: &str = "\n";
 
-        let mut pos: u64 = 0;
+        let mut result: Vec<Task> = Vec::new();
+
+        let mut pos: usize = 0;
 
         for l in content.split(SPLIT_TERMINATOR) {
             if let Some(t) = self.try_parse_task(l, pos) {
-                let tt = t;
-                result.push(tt);
+                result.push(t);
             }
 
-            pos += (l.len() + SPLIT_TERMINATOR.len()) as u64;
+            pos += l.chars().count() + SPLIT_TERMINATOR.len();
         }
 
+        Ok(result)
+    }
+
+    fn change_state_in_content(
+        &self,
+        t: &Task,
+        s: State,
+        content: &str,
+    ) -> Result<String, Box<dyn Error>> {
+        let line = content
+            .chars()
+            .skip(t.start_pos)
+            .take(t.end_pos - t.start_pos)
+            .collect::<String>();
+
+        match self.try_parse_task(&line, t.start_pos) {
+            Some(task) => {
+                if task != *t {
+                    return Err(Box::<dyn std::error::Error>::from(
+                        "Task has been changed since last loading",
+                    ));
+                }
+            }
+            None => {
+                return Err(Box::<dyn std::error::Error>::from(
+                    "Task disapeader from the file since last loading",
+                ));
+            }
+        }
+
+        let mut pos_found = false;
+        let mut found = false;
+        let result = content
+            .chars()
+            .enumerate()
+            .map(|(i, c)| {
+                let mut result = c;
+                if i > t.start_pos && !found {
+                    if pos_found {
+                        found = true;
+                        result = char::from(s.clone());
+                    } else {
+                        pos_found = c == '[';
+                    }
+                }
+                result
+            })
+            .collect();
         Ok(result)
     }
 }
@@ -133,6 +192,14 @@ some another text
                 count: 1,
             },
             Case {
+                name: "content contain cyrilic",
+                file_content: "какой-то текст
+- [ ] Текст задачи
+длинный текст в конце
+",
+                count: 1,
+            },
+            Case {
                 name: "several tasks",
                 file_content: "some text
 - [ ] Correct task
@@ -199,5 +266,113 @@ some another text
             let dt = try_parse_due(c.line);
             assert_eq!(dt, c.expected, "Test {} was failed", c.name);
         }
+    }
+
+    #[test]
+    fn change_state_in_content() {
+        struct Case<'a> {
+            name: &'a str,
+            file_content_before: &'a str,
+            file_content_after: &'a str,
+        }
+        const CASES: &[Case] = &[
+            Case {
+                name: "content contain the single task and nothing else",
+                file_content_before: "- [ ] Some text",
+                file_content_after: "- [x] Some text",
+            },
+            Case {
+                name: "content contain the single task and other text",
+                file_content_before: "some text
+- [ ] Some text
+some another text
+",
+                file_content_after: "some text
+- [x] Some text
+some another text
+",
+            },
+            Case {
+                name: "several tasks",
+                file_content_before: "some text
+- [ ] Correct task
+     - [ ] Correct task
+- [x] Correct task
+- [/] Correct task
+-- [ ] Wrong task
+- [] Wrong task
+- [aa] Wrong task
+- [ ]
+-[ ] Wrong task
+some another text
+",
+                file_content_after: "some text
+- [x] Correct task
+     - [x] Correct task
+- [x] Correct task
+- [x] Correct task
+-- [ ] Wrong task
+- [] Wrong task
+- [aa] Wrong task
+- [ ]
+-[ ] Wrong task
+some another text
+",
+            },
+            Case {
+                name: "content contain cyrilic",
+                file_content_before: "какой-то текст
+- [ ] Текст задачи
+длинный текст в конце
+",
+                file_content_after: "какой-то текст
+- [x] Текст задачи
+длинный текст в конце
+",
+            },
+        ];
+
+        let p = File::new("");
+
+        for c in CASES {
+            let tasks = p
+                .tasks_from_content(c.file_content_before.to_string())
+                .unwrap();
+            let mut result = c.file_content_before.to_string();
+            for t in tasks {
+                let r = p.change_state_in_content(&t, State::Completed, result.as_str());
+                assert!(r.is_ok(), "{}", r.unwrap());
+                result = r.unwrap();
+            }
+            assert_eq!(c.file_content_after, result, "Test '{}' was failed", c.name);
+        }
+    }
+
+    #[test]
+    fn test_pos_in_parse_content_for_for_eng() {
+        let content = "Some text
+- [ ] Task
+Some another text";
+        let tasks = File::new("").tasks_from_content(content.to_string());
+        assert!(tasks.is_ok());
+
+        let tasks = tasks.unwrap();
+        assert_eq!(1, tasks.len());
+        assert_eq!(10, tasks[0].start_pos);
+        assert_eq!(20, tasks[0].end_pos);
+    }
+
+    #[test]
+    fn test_pos_in_parse_content_for_for_cyrilic() {
+        let content = "Какой-то текст
+- [ ] Задача
+Какой-то другой текст";
+        let tasks = File::new("").tasks_from_content(content.to_string());
+        assert!(tasks.is_ok());
+
+        let tasks = tasks.unwrap();
+        assert_eq!(1, tasks.len());
+        assert_eq!(15, tasks[0].start_pos);
+        assert_eq!(27, tasks[0].end_pos);
     }
 }

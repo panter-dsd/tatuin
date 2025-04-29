@@ -1,6 +1,7 @@
 use chrono::DateTime;
 use chrono::prelude::*;
 use colored::Colorize;
+use std::any::Any;
 use std::fmt;
 use std::fmt::Write;
 
@@ -53,6 +54,8 @@ pub trait Task: Send + Sync {
         String::new()
     }
     fn provider(&self) -> String;
+
+    fn as_any(&self) -> &dyn Any;
 }
 
 pub fn due_to_str(t: Option<DateTimeUtc>) -> String {

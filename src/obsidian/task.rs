@@ -1,7 +1,8 @@
 use crate::task;
+use std::any::Any;
 use std::fmt::{self, Write};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum State {
     Unknown(char),
     Uncompleted,
@@ -26,6 +27,17 @@ impl State {
     }
 }
 
+impl From<State> for char {
+    fn from(st: State) -> Self {
+        match st {
+            State::Uncompleted => ' ',
+            State::Completed => 'x',
+            State::InProgress => '/',
+            State::Unknown(x) => x,
+        }
+    }
+}
+
 impl fmt::Display for State {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -37,17 +49,41 @@ impl fmt::Display for State {
     }
 }
 
+impl From<task::State> for State {
+    fn from(v: task::State) -> Self {
+        match v {
+            task::State::Completed => State::Completed,
+            task::State::Uncompleted => State::Uncompleted,
+            task::State::InProgress => State::InProgress,
+            task::State::Unknown(x) => State::Unknown(x),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Task {
     pub root_path: String,
     pub provider: String,
 
     pub file_path: String,
-    pub pos: u64,
+    pub start_pos: usize,
+    pub end_pos: usize,
     pub state: State,
     pub text: String,
     pub due: Option<task::DateTimeUtc>,
 }
+
+impl PartialEq for Task {
+    fn eq(&self, o: &Self) -> bool {
+        self.start_pos == o.start_pos
+            && self.end_pos == o.end_pos
+            && self.state == o.state
+            && self.text == o.text
+            && self.due == o.due
+    }
+}
+
+impl Eq for Task {}
 
 impl Task {
     pub fn set_root_path(&mut self, p: String) {
@@ -78,7 +114,7 @@ impl task::Task for Task {
             self.file_path
                 .strip_prefix(self.root_path.as_str())
                 .unwrap_or_default(),
-            self.pos,
+            self.start_pos,
         )
     }
 
@@ -88,5 +124,9 @@ impl task::Task for Task {
 
     fn provider(&self) -> String {
         self.provider.to_string()
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

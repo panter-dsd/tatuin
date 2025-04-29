@@ -1,6 +1,7 @@
 use crate::task;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::Deserialize;
+use std::any::Any;
 
 use super::project::Project;
 
@@ -131,5 +132,9 @@ impl task::Task for Task {
             Some(p) => p.to_string(),
             None => String::new(),
         }
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

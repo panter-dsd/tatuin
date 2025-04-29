@@ -55,9 +55,14 @@ impl ProviderTrait for Provider {
 
     async fn change_task_state(
         &mut self,
-        _task: &dyn TaskTrait,
-        _state: State,
+        task: &dyn TaskTrait,
+        state: State,
     ) -> Result<(), Box<dyn Error>> {
-        Ok(())
+        let t: &task::Task = match task.as_any().downcast_ref::<task::Task>() {
+            Some(t) => t,
+            None => panic!("Wrong casting!"),
+        };
+
+        self.c.change_state(t, state.into()).await
     }
 }
