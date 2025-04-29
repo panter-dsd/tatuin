@@ -37,6 +37,7 @@ impl File {
     fn try_parse_task(&self, line: &str, pos: usize) -> Option<Task> {
         if let Some(caps) = TASK_RE.captures(line) {
             let task_text = String::from(&caps[2]);
+            let (text, due) = parse_due(task_text.as_str());
             return Some(Task {
                 file_path: self.file_path.to_string(),
                 start_pos: pos,
@@ -50,8 +51,8 @@ impl File {
                         ),
                     }
                 },
-                text: task_text.to_string(),
-                due: try_parse_due(task_text.as_str()),
+                text,
+                due,
                 ..Default::default()
             });
         }
@@ -126,22 +127,29 @@ impl File {
     }
 }
 
-fn try_parse_due(text: &str) -> Option<DateTimeUtc> {
-    const DUE_START: &str = "📅 ";
-    let idx = text.rfind(DUE_START)?;
+fn parse_due(text: &str) -> (String, Option<DateTimeUtc>) {
+    const DUE_START: &str = " 📅 ";
+    let idx = text.rfind(DUE_START);
+    if idx.is_none() {
+        return (text.to_string(), None);
+    }
+
+    let idx = idx.unwrap();
 
     const DUE_PATTERN: &str = "0000-00-00";
 
-    match NaiveDate::parse_from_str(
-        &text[idx + DUE_START.len()..idx + DUE_START.len() + DUE_PATTERN.len()],
-        "%Y-%m-%d",
-    ) {
-        Ok(d) => {
-            let dt = d.and_hms_opt(0, 0, 0)?;
-            Some(DateTimeUtc::from_naive_utc_and_offset(dt, Utc))
+    let date_str = &text[idx + DUE_START.len()..idx + DUE_START.len() + DUE_PATTERN.len()];
+
+    if let Ok(d) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
+        if let Some(dt) = d.and_hms_opt(0, 0, 0) {
+            return (
+                text[..idx].to_string(),
+                Some(DateTimeUtc::from_naive_utc_and_offset(dt, Utc)),
+            );
         }
-        Err(_) => None,
     }
+
+    (text.to_string(), None)
 }
 
 #[cfg(test)]
