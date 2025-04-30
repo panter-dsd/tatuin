@@ -158,7 +158,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn parse_not_exists_file() {
+    async fn parse_not_exists_file_test() {
         let p = File::new("/etc/file/not/exists");
         let err = p.tasks().await.unwrap_err();
         if let Some(error) = err.downcast_ref::<std::io::Error>() {
@@ -169,7 +169,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_content() {
+    fn parse_content_test() {
         struct Case<'a> {
             name: &'a str,
             file_content: &'a str,
@@ -234,7 +234,7 @@ some another text
     }
 
     #[test]
-    fn parse_due() {
+    fn parse_due_test() {
         struct Case<'a> {
             name: &'a str,
             line: &'a str,
@@ -271,13 +271,13 @@ some another text
         ];
 
         for c in cases {
-            let dt = try_parse_due(c.line);
+            let (_, dt) = parse_due(c.line);
             assert_eq!(dt, c.expected, "Test {} was failed", c.name);
         }
     }
 
     #[test]
-    fn change_state_in_content() {
+    fn change_state_in_content_test() {
         struct Case<'a> {
             name: &'a str,
             file_content_before: &'a str,
@@ -357,7 +357,7 @@ some another text
     }
 
     #[test]
-    fn test_pos_in_parse_content_for_for_eng() {
+    fn test_pos_in_parse_content_for_for_eng_test() {
         let content = "Some text
 - [ ] Task
 Some another text";
@@ -371,7 +371,7 @@ Some another text";
     }
 
     #[test]
-    fn test_pos_in_parse_content_for_for_cyrilic() {
+    fn test_pos_in_parse_content_for_for_cyrilic_test() {
         let content = "Какой-то текст
 - [ ] Задача
 Какой-то другой текст";
