@@ -9,7 +9,7 @@ use ratatui::widgets::{
     Block, Borders, HighlightSpacing, List, ListItem, ListState, StatefulWidget, Widget,
 };
 
-use crate::ui::{ACTIVE_BLOCK_STYLE, INACTIVE_BLOCK_STYLE, NORMAL_ROW_BG, SELECTED_STYLE};
+use crate::ui::style::{ACTIVE_BLOCK_STYLE, INACTIVE_BLOCK_STYLE, NORMAL_ROW_BG, SELECTED_STYLE};
 
 const POSSIBLE_STATES: [FilterState; 4] = [
     FilterState::Completed,

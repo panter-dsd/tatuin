@@ -4,7 +4,6 @@ use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
-use ratatui::style::palette::tailwind::{BLUE, GREEN, SLATE};
 use ratatui::style::{Color, Modifier, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
@@ -13,13 +12,8 @@ use ratatui::widgets::{
 };
 use ratatui::{DefaultTerminal, symbols};
 mod filter_widget;
+mod style;
 use std::cmp::Ordering;
-
-const ACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(GREEN.c800);
-const INACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
-const NORMAL_ROW_BG: Color = SLATE.c950;
-const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
-const TEXT_FG_COLOR: Color = SLATE.c200;
 
 #[derive(Eq, PartialEq)]
 enum AppBlock {
@@ -399,10 +393,10 @@ impl App {
 
     fn block_style(&self, b: AppBlock) -> Style {
         if self.current_block == b {
-            return ACTIVE_BLOCK_STYLE;
+            return style::ACTIVE_BLOCK_STYLE;
         }
 
-        INACTIVE_BLOCK_STYLE
+        style::INACTIVE_BLOCK_STYLE
     }
 
     fn prepare_render_list<'a>(
@@ -416,11 +410,11 @@ impl App {
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
             .border_style(self.block_style(block))
-            .bg(NORMAL_ROW_BG);
+            .bg(style::NORMAL_ROW_BG);
 
         List::new(items.to_vec())
             .block(block)
-            .highlight_style(SELECTED_STYLE)
+            .highlight_style(style::SELECTED_STYLE)
             .highlight_symbol(">")
             .highlight_spacing(HighlightSpacing::Always)
     }
@@ -465,7 +459,7 @@ impl App {
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
             .border_style(self.block_style(AppBlock::Filter))
-            .bg(NORMAL_ROW_BG)
+            .bg(style::NORMAL_ROW_BG)
             .render(header_area, buf);
         self.filter_widget.render(area, buf);
     }
@@ -481,12 +475,12 @@ impl App {
                         Some(d) => {
                             let now = chrono::Utc::now().date_naive();
                             match d.date_naive().cmp(&now) {
-                                Ordering::Less => Color::LightRed,
-                                Ordering::Equal => Color::White,
-                                Ordering::Greater => Color::LightGreen,
+                                Ordering::Less => style::OVERDUE_TASK_FG,
+                                Ordering::Equal => style::TODAY_TASK_FG,
+                                Ordering::Greater => style::FUTURE_TASK_FG,
                             }
                         }
-                        None => Color::White,
+                        None => style::NO_DATE_TASK_FG,
                     }
                 };
                 let mixed_line = Line::from(vec![
@@ -524,7 +518,7 @@ impl App {
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
             .border_style(self.block_style(AppBlock::TaskDescription))
-            .bg(NORMAL_ROW_BG)
+            .bg(style::NORMAL_ROW_BG)
             .padding(Padding::horizontal(1));
 
         if let Some(i) = self.tasks.state.selected() {
@@ -564,13 +558,12 @@ impl App {
 
             Paragraph::new(text)
                 .block(block)
-                .fg(TEXT_FG_COLOR)
                 .wrap(Wrap { trim: false })
                 .render(area, buf);
         } else {
             Paragraph::new("Nothing selected...")
                 .block(block)
-                .fg(TEXT_FG_COLOR)
+                .fg(style::DESCRIPTION_VALUE_COLOR)
                 .wrap(Wrap { trim: false })
                 .render(area, buf);
         };
@@ -578,8 +571,10 @@ impl App {
 }
 
 fn styled_line<'a>(k: &'a str, v: &'a str) -> Line<'a> {
-    let lable_style = Style::new().fg(Color::Blue).add_modifier(Modifier::BOLD);
-    let value_style = Style::new().fg(Color::White);
+    let lable_style = Style::new()
+        .fg(style::DESCRIPTION_KEY_COLOR)
+        .add_modifier(Modifier::BOLD);
+    let value_style = Style::new().fg(style::DESCRIPTION_VALUE_COLOR);
     Line::from(vec![
         Span::styled(format!("{k}:"), lable_style),
         Span::styled(v, value_style),
