@@ -148,6 +148,7 @@ impl App {
             None => Some(message.to_string()),
         }
     }
+
     async fn load_tasks(&mut self) {
         let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
         let selected_provider_idx = std::cmp::min(
@@ -204,6 +205,7 @@ impl App {
                 .unwrap_or_else(|| 0);
             ListState::default().with_selected(Some(selected_idx))
         };
+
         self.set_current_task();
     }
 
