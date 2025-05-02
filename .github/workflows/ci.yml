@@ -2,7 +2,7 @@ name: Release CI
 on:
   push:
     branches:
-      - main
+      - master
 jobs:
   build-and-release:
     runs-on: ${{ matrix.os }}
