@@ -271,7 +271,6 @@ impl App {
 
     async fn change_check_state(&mut self) {
         match self.current_block {
-            AppBlock::Providers | AppBlock::Projects => {} //TODO: implement
             AppBlock::TaskList => {
                 if self.tasks.state.selected().is_none() {
                     return;
@@ -300,7 +299,7 @@ impl App {
                 self.projects.state.select_first();
                 self.reload().await;
             }
-            AppBlock::TaskDescription => {}
+            _ => {}
         }
     }
 
