@@ -8,6 +8,14 @@ pub const NO_DATE_TASK_FG: Color = TODAY_TASK_FG;
 pub const DESCRIPTION_KEY_COLOR: Color = Color::Blue;
 pub const DESCRIPTION_VALUE_COLOR: Color = Color::White;
 pub const NORMAL_ROW_BG: Color = SLATE.c950;
+pub const PROVIDER_COLORS: &[Color] = &[
+    Color::Green,
+    Color::Magenta,
+    Color::Cyan,
+    Color::Yellow,
+    Color::Blue,
+    Color::Red,
+];
 
 pub const ACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(GREEN.c800);
 pub const INACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);

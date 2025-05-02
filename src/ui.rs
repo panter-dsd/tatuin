@@ -13,7 +13,7 @@ use ratatui::widgets::{
 };
 use ratatui::{DefaultTerminal, symbols};
 mod filter_widget;
-mod style;
+pub mod style;
 mod task_description_widget;
 use std::cmp::Ordering;
 
@@ -508,7 +508,12 @@ impl App {
             .providers
             .items
             .iter()
-            .map(|p| ListItem::from(format!("{} ({})", p.name(), p.type_name())))
+            .map(|p| {
+                ListItem::from(Span::styled(
+                    format!("{} ({})", p.name(), p.type_name()),
+                    p.color(),
+                ))
+            })
             .collect();
 
         items.insert(0, ListItem::from("All"));
@@ -520,12 +525,26 @@ impl App {
         );
     }
 
+    fn provider_color(&self, name: &str) -> Color {
+        self.providers
+            .items
+            .iter()
+            .find(|p| p.name() == name)
+            .unwrap()
+            .color()
+    }
+
     fn render_projects(&mut self, area: Rect, buf: &mut Buffer) {
         let mut items: Vec<ListItem> = self
             .projects
             .items
             .iter()
-            .map(|p| ListItem::from(format!("{} ({})", p.name(), p.provider())))
+            .map(|p| {
+                ListItem::from(Span::styled(
+                    format!("{} ({})", p.name(), p.provider()),
+                    self.provider_color(p.provider().as_str()),
+                ))
+            })
             .collect();
 
         items.insert(0, ListItem::from("All"));

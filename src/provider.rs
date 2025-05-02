@@ -2,6 +2,7 @@ use crate::filter;
 use crate::project::Project as ProjectTrait;
 use crate::task::{State, Task as TaskTrait};
 use async_trait::async_trait;
+use ratatui::style::Color;
 use std::error::Error;
 
 #[async_trait]
@@ -20,4 +21,5 @@ pub trait Provider {
         state: State,
     ) -> Result<(), Box<dyn Error>>;
     async fn reload(&mut self);
+    fn color(&self) -> Color;
 }
