@@ -29,7 +29,7 @@ jobs:
         run: cargo build --release
       - name: Package for Linux (if on Ubuntu)
         if: contains(matrix.os, 'ubuntu')
-        run: cargo package --no-crates-io
+        run: cargo package
       - name: Package for macOS (if on Mac OS)
         if: contains(matrix.os, 'macos')
         uses: actions/upload-artifact@v4
