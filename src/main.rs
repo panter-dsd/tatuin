@@ -38,32 +38,6 @@ enum Commands {
     },
 }
 
-#[derive(Subcommand, Debug)]
-enum ObsidianCommands {
-    Tasks {
-        #[arg(short, long)]
-        state: Option<Vec<filter::FilterState>>,
-
-        #[arg(short, long)]
-        due: Option<Vec<filter::Due>>,
-    },
-}
-
-#[derive(Subcommand, Debug)]
-enum TodoistCommands {
-    Tasks {
-        #[arg(short, long)]
-        project: Option<String>,
-
-        #[arg(short, long)]
-        state: Option<Vec<filter::FilterState>>,
-
-        #[arg(short, long)]
-        due: Option<Vec<filter::Due>>,
-    },
-    Projects {},
-}
-
 fn print_boxed_tasks(tasks: &[Box<dyn task::Task>]) {
     // Rewrite the loop with map/filter AI!
     for t in tasks {
