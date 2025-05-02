@@ -4,15 +4,16 @@ use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
-use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
-    Block, Borders, Clear, HighlightSpacing, List, ListItem, ListState, Padding, Paragraph,
-    StatefulWidget, Widget, Wrap,
+    Block, Borders, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget,
+    Widget,
 };
 use ratatui::{DefaultTerminal, symbols};
 mod filter_widget;
 mod style;
+mod task_description_widget;
 use std::cmp::Ordering;
 
 #[derive(Eq, PartialEq, Clone)]
@@ -63,7 +64,10 @@ pub struct App {
     projects: SelectableList<Box<dyn project::Project>>,
     tasks: SelectableList<Box<dyn task::Task>>,
     current_block: AppBlock,
+
     filter_widget: filter_widget::FilterWidget,
+    task_description_widget: task_description_widget::TaskDescriptionWidget,
+
     alert: Option<String>,
 }
 
@@ -81,6 +85,7 @@ impl App {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
+            task_description_widget: task_description_widget::TaskDescriptionWidget::default(),
             alert: None,
         }
     }
@@ -182,6 +187,7 @@ impl App {
         tasks.sort_by_key(|k| k.due());
         self.tasks.items = tasks;
         self.tasks.state = ListState::default().with_selected(Some(0));
+        self.set_current_task();
     }
 
     async fn handle_key(&mut self, key: KeyEvent) {
@@ -326,12 +332,28 @@ impl App {
         }
     }
 
+    fn set_current_task(&mut self) {
+        if self.tasks.state.selected().is_some() && !self.tasks.items.is_empty() {
+            let selected_idx = std::cmp::min(
+                self.tasks.state.selected().unwrap_or_default(),
+                self.tasks.items.len() - 1,
+            );
+            let t = &self.tasks.items[selected_idx];
+            self.task_description_widget.set_task(Some(t.clone_boxed()));
+        } else {
+            self.task_description_widget.set_task(None);
+        }
+    }
+
     fn select_next(&mut self) {
         match self.current_block {
             AppBlock::Providers => self.providers.state.select_next(),
             AppBlock::Projects => self.projects.state.select_next(),
             AppBlock::Filter => self.filter_widget.select_next(),
-            AppBlock::TaskList => self.tasks.state.select_next(),
+            AppBlock::TaskList => {
+                self.tasks.state.select_next();
+                self.set_current_task();
+            }
             AppBlock::TaskDescription => {}
         }
         self.set_reload();
@@ -342,7 +364,10 @@ impl App {
             AppBlock::Providers => self.providers.state.select_previous(),
             AppBlock::Projects => self.projects.state.select_previous(),
             AppBlock::Filter => self.filter_widget.select_previous(),
-            AppBlock::TaskList => self.tasks.state.select_previous(),
+            AppBlock::TaskList => {
+                self.tasks.state.select_previous();
+                self.set_current_task();
+            }
             AppBlock::TaskDescription => {}
         }
         self.set_reload();
@@ -556,73 +581,9 @@ impl App {
         );
     }
 
-    fn render_task_description(&self, area: Rect, buf: &mut Buffer) {
-        let block = Block::new()
-            .title(Line::raw("Task description").centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(AppBlock::TaskDescription))
-            .bg(style::NORMAL_ROW_BG)
-            .padding(Padding::horizontal(1));
-
-        if let Some(i) = self.tasks.state.selected() {
-            let t = &self.tasks.items[i];
-            let id = t.id();
-            let task_text = t.text();
-            let provider = t.provider();
-            let mut text = vec![
-                styled_line("ID", &id),
-                styled_line("Provider", &provider),
-                styled_line("Text", &task_text),
-            ];
-
-            let created_at;
-            if let Some(d) = t.created_at() {
-                created_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
-                text.push(styled_line("Created", &created_at));
-            }
-
-            let updated_at;
-            if let Some(d) = t.updated_at() {
-                updated_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
-                text.push(styled_line("Updated", &updated_at));
-            }
-
-            let completed_at;
-            if let Some(d) = t.completed_at() {
-                completed_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
-                text.push(styled_line("Completed", &completed_at));
-            }
-
-            let due;
-            if t.due().is_some() {
-                due = task::due_to_str(t.due());
-                text.push(styled_line("Due", &due));
-            }
-
-            Paragraph::new(text)
-                .block(block)
-                .wrap(Wrap { trim: false })
-                .render(area, buf);
-        } else {
-            Paragraph::new("Nothing selected...")
-                .block(block)
-                .fg(style::DESCRIPTION_VALUE_COLOR)
-                .wrap(Wrap { trim: false })
-                .render(area, buf);
-        };
+    fn render_task_description(&mut self, area: Rect, buf: &mut Buffer) {
+        self.task_description_widget.render(area, buf)
     }
-}
-
-fn styled_line<'a>(k: &'a str, v: &'a str) -> Line<'a> {
-    let lable_style = Style::new()
-        .fg(style::DESCRIPTION_KEY_COLOR)
-        .add_modifier(Modifier::BOLD);
-    let value_style = Style::new().fg(style::DESCRIPTION_VALUE_COLOR);
-    Line::from(vec![
-        Span::styled(format!("{k}:"), lable_style),
-        Span::styled(v, value_style),
-    ])
 }
 
 fn popup_area(area: Rect, percent_x: u16, percent_y: u16) -> Rect {

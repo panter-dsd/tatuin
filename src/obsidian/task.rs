@@ -1,4 +1,4 @@
-use crate::task;
+use crate::task::{DateTimeUtc, State as TaskState, Task as TaskTrait};
 use std::any::Any;
 use std::fmt::{self, Write};
 
@@ -49,13 +49,13 @@ impl fmt::Display for State {
     }
 }
 
-impl From<task::State> for State {
-    fn from(v: task::State) -> Self {
+impl From<TaskState> for State {
+    fn from(v: TaskState) -> Self {
         match v {
-            task::State::Completed => State::Completed,
-            task::State::Uncompleted => State::Uncompleted,
-            task::State::InProgress => State::InProgress,
-            task::State::Unknown(x) => State::Unknown(x),
+            TaskState::Completed => State::Completed,
+            TaskState::Uncompleted => State::Uncompleted,
+            TaskState::InProgress => State::InProgress,
+            TaskState::Unknown(x) => State::Unknown(x),
         }
     }
 }
@@ -70,7 +70,7 @@ pub struct Task {
     pub end_pos: usize,
     pub state: State,
     pub text: String,
-    pub due: Option<task::DateTimeUtc>,
+    pub due: Option<DateTimeUtc>,
 }
 
 impl PartialEq for Task {
@@ -94,17 +94,17 @@ impl Task {
     }
 }
 
-impl task::Task for Task {
+impl TaskTrait for Task {
     fn text(&self) -> String {
         self.text.to_string()
     }
 
-    fn state(&self) -> task::State {
+    fn state(&self) -> TaskState {
         match self.state {
-            State::Completed => task::State::Completed,
-            State::Uncompleted => task::State::Uncompleted,
-            State::InProgress => task::State::InProgress,
-            State::Unknown(x) => task::State::Unknown(x),
+            State::Completed => TaskState::Completed,
+            State::Uncompleted => TaskState::Uncompleted,
+            State::InProgress => TaskState::InProgress,
+            State::Unknown(x) => TaskState::Unknown(x),
         }
     }
 
@@ -118,7 +118,7 @@ impl task::Task for Task {
         )
     }
 
-    fn due(&self) -> Option<task::DateTimeUtc> {
+    fn due(&self) -> Option<DateTimeUtc> {
         self.due
     }
 
@@ -128,5 +128,9 @@ impl task::Task for Task {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn clone_boxed(&self) -> Box<dyn TaskTrait> {
+        Box::new(self.clone())
     }
 }

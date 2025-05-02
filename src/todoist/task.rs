@@ -1,4 +1,4 @@
-use crate::task;
+use crate::task::{DateTimeUtc, State as TaskState, Task as TaskTrait};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::Deserialize;
 use std::any::Any;
@@ -54,24 +54,24 @@ pub struct Task {
     pub provider: Option<String>,
 }
 
-fn str_to_date(s: &str) -> Option<task::DateTimeUtc> {
+fn str_to_date(s: &str) -> Option<DateTimeUtc> {
     if let Ok(d) = NaiveDate::parse_from_str(s, "%Y-%m-%d") {
         let dt = d.and_hms_opt(0, 0, 0)?;
-        return Some(task::DateTimeUtc::from_naive_utc_and_offset(dt, Utc));
+        return Some(DateTimeUtc::from_naive_utc_and_offset(dt, Utc));
     }
 
     if let Ok(dt) = NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S%.f") {
-        return Some(task::DateTimeUtc::from_naive_utc_and_offset(dt, Utc));
+        return Some(DateTimeUtc::from_naive_utc_and_offset(dt, Utc));
     }
 
     if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
-        return Some(task::DateTimeUtc::from(dt));
+        return Some(DateTimeUtc::from(dt));
     }
 
     None
 }
 
-impl task::Task for Task {
+impl TaskTrait for Task {
     fn id(&self) -> String {
         self.id.to_string()
     }
@@ -80,12 +80,12 @@ impl task::Task for Task {
         self.content.to_string()
     }
 
-    fn state(&self) -> task::State {
+    fn state(&self) -> TaskState {
         if self.checked.unwrap_or(true) {
             // completed tasks doesn't contain this field
-            task::State::Completed
+            TaskState::Completed
         } else {
-            task::State::Uncompleted
+            TaskState::Uncompleted
         }
     }
 
@@ -97,13 +97,13 @@ impl task::Task for Task {
         }
     }
 
-    fn due(&self) -> Option<task::DateTimeUtc> {
+    fn due(&self) -> Option<DateTimeUtc> {
         let due = self.due.as_ref()?;
 
         str_to_date(due.date.as_str())
     }
 
-    fn created_at(&self) -> Option<task::DateTimeUtc> {
+    fn created_at(&self) -> Option<DateTimeUtc> {
         if let Some(s) = self.added_at.as_ref() {
             str_to_date(s.as_str())
         } else {
@@ -111,7 +111,7 @@ impl task::Task for Task {
         }
     }
 
-    fn updated_at(&self) -> Option<task::DateTimeUtc> {
+    fn updated_at(&self) -> Option<DateTimeUtc> {
         if let Some(s) = self.updated_at.as_ref() {
             str_to_date(s.as_str())
         } else {
@@ -119,7 +119,7 @@ impl task::Task for Task {
         }
     }
 
-    fn completed_at(&self) -> Option<task::DateTimeUtc> {
+    fn completed_at(&self) -> Option<DateTimeUtc> {
         if let Some(s) = self.completed_at.as_ref() {
             str_to_date(s.as_str())
         } else {
@@ -136,5 +136,9 @@ impl task::Task for Task {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn clone_boxed(&self) -> Box<dyn TaskTrait> {
+        Box::new(self.clone())
     }
 }

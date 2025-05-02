@@ -56,6 +56,8 @@ pub trait Task: Send + Sync {
     fn provider(&self) -> String;
 
     fn as_any(&self) -> &dyn Any;
+
+    fn clone_boxed(&self) -> Box<dyn Task>;
 }
 
 pub fn due_to_str(t: Option<DateTimeUtc>) -> String {
