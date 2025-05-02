@@ -2,6 +2,10 @@
 name = "tatuin"
 version = "0.1.0"
 edition = "2024"
+description = "Task Aggregator TUI for N providers"
+homepage = "https://github.com/panter-dsd/tatuin"
+license-file = "LICENSE.txt"
+readme = "README.md"
 
 [dependencies]
 async-trait = "0.1.88"
