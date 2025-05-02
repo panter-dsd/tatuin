@@ -15,7 +15,7 @@ mod filter_widget;
 mod style;
 use std::cmp::Ordering;
 
-#[derive(Eq, PartialEq)]
+#[derive(Eq, PartialEq, Clone)]
 enum AppBlock {
     Providers,
     Projects,
@@ -23,6 +23,14 @@ enum AppBlock {
     TaskList,
     TaskDescription,
 }
+
+const BLOCK_ORDER: [AppBlock; 5] = [
+    AppBlock::Providers,
+    AppBlock::Projects,
+    AppBlock::Filter,
+    AppBlock::TaskList,
+    AppBlock::TaskDescription,
+];
 
 struct SelectableList<T> {
     items: Vec<T>,
@@ -208,6 +216,7 @@ impl App {
                 }
             }
             KeyCode::Tab => self.select_next_block(),
+            KeyCode::BackTab => self.select_previous_block(),
             KeyCode::Char(' ') => self.change_check_state().await,
             _ => {}
         }
@@ -248,20 +257,55 @@ impl App {
     }
 
     fn select_next_block(&mut self) {
+        let cur_block_idx = BLOCK_ORDER
+            .iter()
+            .position(|x| *x == self.current_block)
+            .unwrap();
+        let next_block_idx = if cur_block_idx == BLOCK_ORDER.len() - 1 {
+            0
+        } else {
+            cur_block_idx + 1
+        };
+
         match self.current_block {
-            AppBlock::Providers => self.current_block = AppBlock::Projects,
             AppBlock::Projects => {
                 self.current_block = AppBlock::Filter;
-                self.filter_widget.set_active(true);
+                self.filter_widget.set_active(true, false);
             }
             AppBlock::Filter => {
                 if !self.filter_widget.next_block() {
                     self.current_block = AppBlock::TaskList;
-                    self.filter_widget.set_active(false);
+                    self.filter_widget.set_active(false, false);
                 }
             }
-            AppBlock::TaskList => self.current_block = AppBlock::TaskDescription,
-            AppBlock::TaskDescription => self.current_block = AppBlock::Providers,
+            _ => self.current_block = BLOCK_ORDER[next_block_idx].clone(),
+        }
+    }
+
+    fn select_previous_block(&mut self) {
+        let cur_block_idx = BLOCK_ORDER
+            .iter()
+            .position(|x| *x == self.current_block)
+            .unwrap();
+
+        let next_block_idx = if cur_block_idx == 0 {
+            BLOCK_ORDER.len() - 1
+        } else {
+            cur_block_idx - 1
+        };
+
+        match self.current_block {
+            AppBlock::TaskList => {
+                self.current_block = BLOCK_ORDER[next_block_idx].clone();
+                self.filter_widget.set_active(true, true);
+            }
+            AppBlock::Filter => {
+                if !self.filter_widget.previous_block() {
+                    self.current_block = BLOCK_ORDER[next_block_idx].clone();
+                    self.filter_widget.set_active(false, true);
+                }
+            }
+            _ => self.current_block = BLOCK_ORDER[next_block_idx].clone(),
         }
     }
 

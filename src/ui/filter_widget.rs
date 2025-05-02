@@ -45,10 +45,14 @@ impl FilterWidget {
         }
     }
 
-    pub fn set_active(&mut self, is_active: bool) {
+    pub fn set_active(&mut self, is_active: bool, backward: bool) {
         self.is_active = is_active;
-        if !is_active {
-            self.current_block = FilterBlock::State;
+        if is_active {
+            self.current_block = if backward {
+                FilterBlock::Due
+            } else {
+                FilterBlock::State
+            };
         }
     }
 
@@ -88,6 +92,16 @@ impl FilterWidget {
                 true
             }
             FilterBlock::Due => false,
+        }
+    }
+
+    pub fn previous_block(&mut self) -> bool {
+        match self.current_block {
+            FilterBlock::State => false,
+            FilterBlock::Due => {
+                self.current_block = FilterBlock::State;
+                true
+            }
         }
     }
 
