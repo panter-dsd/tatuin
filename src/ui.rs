@@ -1,4 +1,6 @@
 use crate::filter;
+use crate::project::Project as ProjectTrait;
+use crate::task::Task as TaskTrait;
 use crate::{project, provider, task};
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -12,7 +14,7 @@ use ratatui::widgets::{
 };
 use ratatui::{DefaultTerminal, symbols};
 mod filter_widget;
-mod style;
+pub mod style;
 mod task_description_widget;
 use std::cmp::Ordering;
 
@@ -58,7 +60,6 @@ impl<T> Default for SelectableList<T> {
 
 pub struct App {
     should_exit: bool,
-    reload_projects: bool,
     reload_tasks: bool,
     providers: SelectableList<Box<dyn provider::Provider>>,
     projects: SelectableList<Box<dyn project::Project>>,
@@ -75,7 +76,6 @@ impl App {
     pub fn new(providers: Vec<Box<dyn provider::Provider>>) -> Self {
         Self {
             should_exit: false,
-            reload_projects: true,
             reload_tasks: true,
             current_block: AppBlock::TaskList,
             providers: SelectableList::new(providers, Some(0)),
@@ -94,11 +94,6 @@ impl App {
 impl App {
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         while !self.should_exit {
-            if self.reload_projects {
-                self.load_projects().await;
-                self.reload_projects = false
-            }
-
             if self.reload_tasks {
                 self.load_tasks().await;
                 self.reload_tasks = false;
@@ -113,30 +108,24 @@ impl App {
     }
 
     async fn load_projects(&mut self) {
-        let mut projects: Vec<Box<dyn project::Project>> = Vec::new();
-        let selected_idx = std::cmp::min(
-            self.providers.state.selected().unwrap_or_default(),
-            self.providers.items.len(),
-        );
+        let mut projects: Vec<Box<dyn ProjectTrait>> = Vec::new();
 
-        let mut errors = Vec::new();
-        for (i, p) in self.providers.items.iter_mut().enumerate() {
-            if selected_idx != 0 && i != selected_idx - 1 {
-                continue;
-            }
-
-            let result = p.projects().await;
-            match result {
-                Ok(mut prj) => projects.append(&mut prj),
-                Err(err) => errors.push((p.name(), err)),
+        for t in &self.tasks.items {
+            if let Some(tp) = t.project() {
+                let it = projects
+                    .iter()
+                    .find(|p| p.id() == tp.id() && p.provider() == tp.provider());
+                if it.is_none() {
+                    projects.push(t.project().unwrap().clone_boxed());
+                }
             }
         }
 
-        for (provider_name, err) in errors {
-            self.add_error(
-                format!("Load provider {} projects failure: {}", provider_name, err).as_str(),
-            )
-        }
+        projects.sort_by(|l, r| {
+            l.provider()
+                .cmp(&r.provider())
+                .then_with(|| l.name().cmp(&r.name()))
+        });
 
         self.projects.items = projects;
         self.projects.state = ListState::default().with_selected(Some(0));
@@ -149,6 +138,19 @@ impl App {
         }
     }
 
+    fn selected_project_id(&self) -> Option<String> {
+        if let Some(idx) = self.projects.state.selected() {
+            if idx < 1 {
+                None
+            } else {
+                let idx = std::cmp::min(idx, self.projects.items.len());
+                Some(self.projects.items[idx - 1].id())
+            }
+        } else {
+            None
+        }
+    }
+
     async fn load_tasks(&mut self) {
         let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
         let selected_provider_idx = std::cmp::min(
@@ -158,23 +160,25 @@ impl App {
 
         let mut errors = Vec::new();
 
-        for (i, p) in self.providers.items.iter_mut().enumerate() {
-            let project = if let Some(idx) = self.projects.state.selected() {
-                if idx < 1 {
-                    None
-                } else {
-                    Some(self.projects.items[idx - 1].as_ref().clone_boxed())
-                }
-            } else {
-                None
-            };
+        let project_id = self.selected_project_id();
 
+        for (i, p) in self.providers.items.iter_mut().enumerate() {
             if selected_provider_idx != 0 && i != selected_provider_idx - 1 {
                 continue;
             }
 
-            match p.tasks(project, &self.filter_widget.filter()).await {
-                Ok(mut prj) => tasks.append(&mut prj),
+            match p.tasks(None, &self.filter_widget.filter()).await {
+                Ok(t) => tasks.append(
+                    &mut t
+                        .iter()
+                        .filter(|t| {
+                            project_id.is_none()
+                                || t.project().is_none()
+                                || t.project().unwrap().id() == *project_id.as_ref().unwrap()
+                        })
+                        .map(|t| t.clone_boxed())
+                        .collect::<Vec<Box<dyn TaskTrait>>>(),
+                ),
                 Err(err) => errors.push((p.name(), err)),
             }
         }
@@ -207,6 +211,10 @@ impl App {
         };
 
         self.set_current_task();
+
+        if project_id.is_none() {
+            self.load_projects().await;
+        }
     }
 
     async fn handle_key(&mut self, key: KeyEvent) {
@@ -258,7 +266,6 @@ impl App {
             p.reload().await;
         }
 
-        self.reload_projects = true;
         self.reload_tasks = true;
     }
 
@@ -290,7 +297,8 @@ impl App {
             }
             AppBlock::Filter => {
                 self.filter_widget.change_check_state();
-                self.reload_tasks = true;
+                self.projects.state.select_first();
+                self.reload().await;
             }
             AppBlock::TaskDescription => {}
         }
@@ -351,14 +359,7 @@ impl App {
 
     fn set_reload(&mut self) {
         match self.current_block {
-            AppBlock::Providers => {
-                self.reload_projects = true;
-                self.reload_tasks = true;
-            }
-            AppBlock::Projects => {
-                self.reload_tasks = true;
-            }
-            AppBlock::Filter => {
+            AppBlock::Providers | AppBlock::Projects | AppBlock::Filter => {
                 self.reload_tasks = true;
             }
             AppBlock::TaskList => {}
@@ -381,7 +382,10 @@ impl App {
 
     fn select_next(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.state.select_next(),
+            AppBlock::Providers => {
+                self.providers.state.select_next();
+                self.projects.state.select_first();
+            }
             AppBlock::Projects => self.projects.state.select_next(),
             AppBlock::Filter => self.filter_widget.select_next(),
             AppBlock::TaskList => {
@@ -395,7 +399,10 @@ impl App {
 
     fn select_previous(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.state.select_previous(),
+            AppBlock::Providers => {
+                self.providers.state.select_previous();
+                self.projects.state.select_first();
+            }
             AppBlock::Projects => self.projects.state.select_previous(),
             AppBlock::Filter => self.filter_widget.select_previous(),
             AppBlock::TaskList => {
@@ -440,7 +447,7 @@ impl Widget for &mut App {
         .areas(area);
 
         let [left_area, right_area] =
-            Layout::horizontal([Constraint::Length(30), Constraint::Fill(3)]).areas(main_area);
+            Layout::horizontal([Constraint::Length(50), Constraint::Fill(3)]).areas(main_area);
 
         let [
             providers_area,
@@ -527,7 +534,12 @@ impl App {
             .providers
             .items
             .iter()
-            .map(|p| ListItem::from(format!("{} ({})", p.name(), p.type_name())))
+            .map(|p| {
+                ListItem::from(Span::styled(
+                    format!("{} ({})", p.name(), p.type_name()),
+                    p.color(),
+                ))
+            })
             .collect();
 
         items.insert(0, ListItem::from("All"));
@@ -539,12 +551,26 @@ impl App {
         );
     }
 
+    fn provider_color(&self, name: &str) -> Color {
+        self.providers
+            .items
+            .iter()
+            .find(|p| p.name() == name)
+            .unwrap()
+            .color()
+    }
+
     fn render_projects(&mut self, area: Rect, buf: &mut Buffer) {
         let mut items: Vec<ListItem> = self
             .projects
             .items
             .iter()
-            .map(|p| ListItem::from(format!("{} ({})", p.name(), p.provider())))
+            .map(|p| {
+                ListItem::from(Span::styled(
+                    format!("{} ({})", p.name(), p.provider()),
+                    self.provider_color(p.provider().as_str()),
+                ))
+            })
             .collect();
 
         items.insert(0, ListItem::from("All"));

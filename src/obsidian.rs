@@ -1,12 +1,14 @@
-pub mod client;
+mod client;
 mod md_file;
-pub mod task;
+mod project;
+mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
 use crate::task::{State, Task as TaskTrait};
 use async_trait::async_trait;
+use ratatui::style::Color;
 use std::error::Error;
 
 pub const PROVIDER_NAME: &str = "Obsidian";
@@ -14,13 +16,15 @@ pub const PROVIDER_NAME: &str = "Obsidian";
 pub struct Provider {
     name: String,
     c: client::Client,
+    color: Color,
 }
 
 impl Provider {
-    pub fn new(name: &str, path: &str) -> Self {
+    pub fn new(name: &str, path: &str, color: &Color) -> Self {
         Self {
             name: name.to_string(),
             c: client::Client::new(path),
+            color: *color,
         }
     }
 }
@@ -68,5 +72,9 @@ impl ProviderTrait for Provider {
 
     async fn reload(&mut self) {
         // do nothing for now
+    }
+
+    fn color(&self) -> Color {
+        self.color
     }
 }

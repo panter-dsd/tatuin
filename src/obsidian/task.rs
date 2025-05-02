@@ -1,3 +1,5 @@
+use super::project::Project;
+use crate::project::Project as ProjectTrait;
 use crate::task::{DateTimeUtc, State as TaskState, Task as TaskTrait};
 use std::any::Any;
 use std::fmt::{self, Write};
@@ -124,6 +126,14 @@ impl TaskTrait for Task {
 
     fn provider(&self) -> String {
         self.provider.to_string()
+    }
+
+    fn project(&self) -> Option<Box<dyn ProjectTrait>> {
+        Some(Box::new(Project::new(
+            &self.provider,
+            &self.root_path,
+            &self.file_path,
+        )))
     }
 
     fn as_any(&self) -> &dyn Any {

@@ -1,3 +1,4 @@
+use crate::project::Project as ProjectTrait;
 use chrono::DateTime;
 use chrono::prelude::*;
 use colored::Colorize;
@@ -54,6 +55,8 @@ pub trait Task: Send + Sync {
         String::new()
     }
     fn provider(&self) -> String;
+
+    fn project(&self) -> Option<Box<dyn ProjectTrait>>;
 
     fn as_any(&self) -> &dyn Any;
 

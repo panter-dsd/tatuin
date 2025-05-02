@@ -6,6 +6,7 @@ use crate::filter;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
 use crate::task::{State, Task as TaskTrait};
+use ratatui::style::Color;
 use std::cmp::Ordering;
 use std::error::Error;
 
@@ -16,6 +17,7 @@ pub const PROVIDER_NAME: &str = "Todoist";
 pub struct Provider {
     name: String,
     c: client::Client,
+    color: Color,
     projects: Vec<project::Project>,
     tasks: Vec<task::Task>,
     last_filter: Option<filter::Filter>,
@@ -23,10 +25,11 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(name: &str, api_key: &str) -> Self {
+    pub fn new(name: &str, api_key: &str, color: &Color) -> Self {
         Self {
             name: name.to_string(),
             c: client::Client::new(api_key),
+            color: *color,
             projects: Vec::new(),
             tasks: Vec::new(),
             last_filter: None,
@@ -158,5 +161,9 @@ impl ProviderTrait for Provider {
     async fn reload(&mut self) {
         self.projects.clear();
         self.tasks.clear();
+    }
+
+    fn color(&self) -> Color {
+        self.color
     }
 }

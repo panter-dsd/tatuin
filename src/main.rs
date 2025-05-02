@@ -7,8 +7,10 @@ mod task;
 mod todoist;
 mod ui;
 use clap::{Parser, Subcommand};
-use colored::Colorize;
+use color_eyre::owo_colors::OwoColorize;
+use ratatui::style::Color;
 use settings::Settings;
+use ui::style;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -95,6 +97,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut providers: Vec<Box<dyn provider::Provider>> = Vec::new();
 
+    let mut it = style::PROVIDER_COLORS.iter();
+    let mut color = || -> &Color {
+        let it = &mut it;
+
+        if let Some(n) = it.next() {
+            n
+        } else {
+            *it = style::PROVIDER_COLORS.iter();
+            it.next().unwrap()
+        }
+    };
+
     for (name, config) in &cfg.providers {
         match config.get("type").unwrap().as_str() {
             obsidian::PROVIDER_NAME => {
@@ -103,11 +117,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     path.push('/');
                 }
 
-                providers.push(Box::new(obsidian::Provider::new(name, path.as_str())));
+                providers.push(Box::new(obsidian::Provider::new(
+                    name,
+                    path.as_str(),
+                    color(),
+                )));
             }
             todoist::PROVIDER_NAME => providers.push(Box::new(todoist::Provider::new(
                 name,
                 config.get("api_key").unwrap().as_str(),
+                color(),
             ))),
             _ => panic!("Unknown provider configuration for section: {name}"),
         }
