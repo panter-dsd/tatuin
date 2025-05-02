@@ -65,4 +65,8 @@ impl ProviderTrait for Provider {
 
         self.c.change_state(t, state.into()).await
     }
+
+    async fn reload(&mut self) {
+        // do nothing for now
+    }
 }

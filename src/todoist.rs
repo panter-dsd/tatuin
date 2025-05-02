@@ -155,4 +155,8 @@ impl ProviderTrait for Provider {
             }
         }
     }
+    async fn reload(&mut self) {
+        self.projects.clear();
+        self.tasks.clear();
+    }
 }

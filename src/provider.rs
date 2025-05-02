@@ -19,4 +19,5 @@ pub trait Provider {
         task: &dyn TaskTrait,
         state: State,
     ) -> Result<(), Box<dyn Error>>;
+    async fn reload(&mut self);
 }

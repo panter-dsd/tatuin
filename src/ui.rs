@@ -1,7 +1,7 @@
 use crate::filter;
 use crate::{project, provider, task};
 use color_eyre::Result;
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize};
@@ -213,6 +213,7 @@ impl App {
         if key.kind != KeyEventKind::Press {
             return;
         }
+
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => {
                 if self.alert.is_some() {
@@ -243,8 +244,22 @@ impl App {
             KeyCode::Tab => self.select_next_block(),
             KeyCode::BackTab => self.select_previous_block(),
             KeyCode::Char(' ') => self.change_check_state().await,
+            KeyCode::Char('r') => {
+                if key.modifiers.contains(KeyModifiers::CONTROL) {
+                    self.reload().await;
+                }
+            }
             _ => {}
         }
+    }
+
+    async fn reload(&mut self) {
+        for p in &mut self.providers.items {
+            p.reload().await;
+        }
+
+        self.reload_projects = true;
+        self.reload_tasks = true;
     }
 
     async fn change_check_state(&mut self) {
