@@ -1,4 +1,5 @@
 use crate::filter;
+use crate::project::Project as ProjectTrait;
 use crate::{project, provider, task};
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -58,7 +59,6 @@ impl<T> Default for SelectableList<T> {
 
 pub struct App {
     should_exit: bool,
-    reload_projects: bool,
     reload_tasks: bool,
     providers: SelectableList<Box<dyn provider::Provider>>,
     projects: SelectableList<Box<dyn project::Project>>,
@@ -75,7 +75,6 @@ impl App {
     pub fn new(providers: Vec<Box<dyn provider::Provider>>) -> Self {
         Self {
             should_exit: false,
-            reload_projects: true,
             reload_tasks: true,
             current_block: AppBlock::TaskList,
             providers: SelectableList::new(providers, Some(0)),
@@ -94,11 +93,6 @@ impl App {
 impl App {
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         while !self.should_exit {
-            if self.reload_projects {
-                self.load_projects().await;
-                self.reload_projects = false
-            }
-
             if self.reload_tasks {
                 self.load_tasks().await;
                 self.reload_tasks = false;
@@ -113,30 +107,24 @@ impl App {
     }
 
     async fn load_projects(&mut self) {
-        let mut projects: Vec<Box<dyn project::Project>> = Vec::new();
-        let selected_idx = std::cmp::min(
-            self.providers.state.selected().unwrap_or_default(),
-            self.providers.items.len(),
-        );
+        let mut projects: Vec<Box<dyn ProjectTrait>> = Vec::new();
 
-        let mut errors = Vec::new();
-        for (i, p) in self.providers.items.iter_mut().enumerate() {
-            if selected_idx != 0 && i != selected_idx - 1 {
-                continue;
-            }
-
-            let result = p.projects().await;
-            match result {
-                Ok(mut prj) => projects.append(&mut prj),
-                Err(err) => errors.push((p.name(), err)),
+        for t in &self.tasks.items {
+            if let Some(tp) = t.project() {
+                let it = projects
+                    .iter()
+                    .find(|p| p.id() == tp.id() && p.provider() == tp.provider());
+                if it.is_none() {
+                    projects.push(t.project().unwrap().clone_boxed());
+                }
             }
         }
 
-        for (provider_name, err) in errors {
-            self.add_error(
-                format!("Load provider {} projects failure: {}", provider_name, err).as_str(),
-            )
-        }
+        projects.sort_by(|l, r| {
+            l.provider()
+                .cmp(&r.provider())
+                .then_with(|| l.name().cmp(&r.name()))
+        });
 
         self.projects.items = projects;
         self.projects.state = ListState::default().with_selected(Some(0));
@@ -207,6 +195,7 @@ impl App {
         };
 
         self.set_current_task();
+        self.load_projects().await;
     }
 
     async fn handle_key(&mut self, key: KeyEvent) {
@@ -258,7 +247,6 @@ impl App {
             p.reload().await;
         }
 
-        self.reload_projects = true;
         self.reload_tasks = true;
     }
 
@@ -351,14 +339,7 @@ impl App {
 
     fn set_reload(&mut self) {
         match self.current_block {
-            AppBlock::Providers => {
-                self.reload_projects = true;
-                self.reload_tasks = true;
-            }
-            AppBlock::Projects => {
-                self.reload_tasks = true;
-            }
-            AppBlock::Filter => {
+            AppBlock::Providers | AppBlock::Projects | AppBlock::Filter => {
                 self.reload_tasks = true;
             }
             AppBlock::TaskList => {}
@@ -440,7 +421,7 @@ impl Widget for &mut App {
         .areas(area);
 
         let [left_area, right_area] =
-            Layout::horizontal([Constraint::Length(30), Constraint::Fill(3)]).areas(main_area);
+            Layout::horizontal([Constraint::Length(50), Constraint::Fill(3)]).areas(main_area);
 
         let [
             providers_area,

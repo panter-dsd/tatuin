@@ -1,6 +1,7 @@
-pub mod client;
+mod client;
 mod md_file;
-pub mod task;
+mod project;
+mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;

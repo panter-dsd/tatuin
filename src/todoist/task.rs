@@ -1,3 +1,4 @@
+use crate::project::Project as ProjectTrait;
 use crate::task::{DateTimeUtc, State as TaskState, Task as TaskTrait};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::Deserialize;
@@ -132,6 +133,13 @@ impl TaskTrait for Task {
             Some(p) => p.to_string(),
             None => String::new(),
         }
+    }
+    fn project(&self) -> Option<Box<dyn ProjectTrait>> {
+        if let Some(p) = &self.project {
+            return Some(Box::new(p.clone()));
+        }
+
+        None
     }
 
     fn as_any(&self) -> &dyn Any {
