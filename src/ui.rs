@@ -1,5 +1,6 @@
 use crate::filter;
 use crate::project::Project as ProjectTrait;
+use crate::task::Task as TaskTrait;
 use crate::{project, provider, task};
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -137,6 +138,19 @@ impl App {
         }
     }
 
+    fn selected_project_id(&self) -> Option<String> {
+        if let Some(idx) = self.projects.state.selected() {
+            if idx < 1 {
+                None
+            } else {
+                let idx = std::cmp::min(idx, self.projects.items.len());
+                Some(self.projects.items[idx - 1].id())
+            }
+        } else {
+            None
+        }
+    }
+
     async fn load_tasks(&mut self) {
         let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
         let selected_provider_idx = std::cmp::min(
@@ -146,23 +160,25 @@ impl App {
 
         let mut errors = Vec::new();
 
-        for (i, p) in self.providers.items.iter_mut().enumerate() {
-            let project = if let Some(idx) = self.projects.state.selected() {
-                if idx < 1 {
-                    None
-                } else {
-                    Some(self.projects.items[idx - 1].as_ref().clone_boxed())
-                }
-            } else {
-                None
-            };
+        let project_id = self.selected_project_id();
 
+        for (i, p) in self.providers.items.iter_mut().enumerate() {
             if selected_provider_idx != 0 && i != selected_provider_idx - 1 {
                 continue;
             }
 
-            match p.tasks(project, &self.filter_widget.filter()).await {
-                Ok(mut prj) => tasks.append(&mut prj),
+            match p.tasks(None, &self.filter_widget.filter()).await {
+                Ok(t) => tasks.append(
+                    &mut t
+                        .iter()
+                        .filter(|t| {
+                            project_id.is_none()
+                                || t.project().is_none()
+                                || t.project().unwrap().id() == *project_id.as_ref().unwrap()
+                        })
+                        .map(|t| t.clone_boxed())
+                        .collect::<Vec<Box<dyn TaskTrait>>>(),
+                ),
                 Err(err) => errors.push((p.name(), err)),
             }
         }
@@ -195,7 +211,10 @@ impl App {
         };
 
         self.set_current_task();
-        self.load_projects().await;
+
+        if project_id.is_none() {
+            self.load_projects().await;
+        }
     }
 
     async fn handle_key(&mut self, key: KeyEvent) {
@@ -278,7 +297,8 @@ impl App {
             }
             AppBlock::Filter => {
                 self.filter_widget.change_check_state();
-                self.reload_tasks = true;
+                self.projects.state.select_first();
+                self.reload().await;
             }
             AppBlock::TaskDescription => {}
         }
@@ -362,7 +382,10 @@ impl App {
 
     fn select_next(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.state.select_next(),
+            AppBlock::Providers => {
+                self.providers.state.select_next();
+                self.projects.state.select_first();
+            }
             AppBlock::Projects => self.projects.state.select_next(),
             AppBlock::Filter => self.filter_widget.select_next(),
             AppBlock::TaskList => {
@@ -376,7 +399,10 @@ impl App {
 
     fn select_previous(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.state.select_previous(),
+            AppBlock::Providers => {
+                self.providers.state.select_previous();
+                self.projects.state.select_first();
+            }
             AppBlock::Projects => self.projects.state.select_previous(),
             AppBlock::Filter => self.filter_widget.select_previous(),
             AppBlock::TaskList => {
