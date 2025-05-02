@@ -93,7 +93,11 @@ fn due_to_filter(due: &Option<Vec<filter::Due>>) -> Vec<filter::Due> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let cfg = Settings::load("settings.toml")?;
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("tatuin")?;
+    let config_path = xdg_dirs
+        .place_config_file("settings.toml")
+        .expect("cannot create configuration directory");
+    let cfg = Settings::new(config_path.to_str().unwrap());
 
     let mut providers: Vec<Box<dyn provider::Provider>> = Vec::new();
 
@@ -132,16 +136,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    providers.sort_by_key(|p| p.name());
+    if !providers.is_empty() {
+        providers.sort_by_key(|p| p.name());
 
-    println!(
-        "Available providers: {}",
-        providers
-            .iter()
-            .map(|p| p.name())
-            .collect::<Vec<String>>()
-            .join(", ")
-    );
+        println!(
+            "Available providers: {}",
+            providers
+                .iter()
+                .map(|p| p.name())
+                .collect::<Vec<String>>()
+                .join(", ")
+        );
+    }
 
     let cli = Cli::parse();
     match &cli.command {
