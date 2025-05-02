@@ -150,7 +150,7 @@ impl App {
     }
     async fn load_tasks(&mut self) {
         let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
-        let selected_idx = std::cmp::min(
+        let selected_provider_idx = std::cmp::min(
             self.providers.state.selected().unwrap_or_default(),
             self.providers.items.len(),
         );
@@ -168,7 +168,7 @@ impl App {
                 None
             };
 
-            if selected_idx != 0 && i != selected_idx - 1 {
+            if selected_provider_idx != 0 && i != selected_provider_idx - 1 {
                 continue;
             }
 
@@ -186,7 +186,24 @@ impl App {
 
         tasks.sort_by_key(|k| k.due());
         self.tasks.items = tasks;
-        self.tasks.state = ListState::default().with_selected(Some(0));
+
+        self.tasks.state = if self.tasks.items.is_empty() {
+            ListState::default()
+        } else {
+            let selected_idx = self
+                .tasks
+                .state
+                .selected()
+                .map(|i| {
+                    if i >= self.tasks.items.len() {
+                        self.tasks.items.len() - 1
+                    } else {
+                        i
+                    }
+                })
+                .unwrap_or_else(|| 0);
+            ListState::default().with_selected(Some(selected_idx))
+        };
         self.set_current_task();
     }
 
