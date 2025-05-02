@@ -140,7 +140,7 @@ impl App {
 
     fn selected_project_id(&self) -> Option<String> {
         if let Some(idx) = self.projects.state.selected() {
-            if idx < 1 {
+            if idx < 1 || self.projects.items.is_empty() {
                 None
             } else {
                 let idx = std::cmp::min(idx, self.projects.items.len());
@@ -327,6 +327,9 @@ impl App {
             }
             _ => self.current_block = BLOCK_ORDER[next_block_idx].clone(),
         }
+
+        self.task_description_widget
+            .set_active(self.current_block == AppBlock::TaskDescription);
     }
 
     fn select_previous_block(&mut self) {
@@ -354,6 +357,9 @@ impl App {
             }
             _ => self.current_block = BLOCK_ORDER[next_block_idx].clone(),
         }
+
+        self.task_description_widget
+            .set_active(self.current_block == AppBlock::TaskDescription);
     }
 
     fn set_reload(&mut self) {
