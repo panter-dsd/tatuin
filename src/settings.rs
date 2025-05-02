@@ -1,9 +1,12 @@
 use config::{Config, File, FileFormat};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default)]
 pub struct Settings {
+    #[serde(skip_serializing, skip_deserializing)]
+    file_name: String,
+
     pub providers: HashMap<String, HashMap<String, String>>,
 }
 
@@ -15,9 +18,29 @@ impl Settings {
             .build();
 
         if let Ok(s) = settings {
-            s.try_deserialize::<Self>().unwrap_or_default();
+            return Self {
+                file_name: file_name.to_string(),
+                ..s.try_deserialize::<Self>().unwrap()
+            };
         }
 
-        Settings::default()
+        Self {
+            file_name: file_name.to_string(),
+            ..Settings::default()
+        }
+    }
+
+    pub fn add_provider(
+        &mut self,
+        name: &str,
+        config: &HashMap<String, String>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.providers.insert(name.to_string(), config.clone());
+
+        let s = toml::to_string(self)?;
+
+        std::fs::write(&self.file_name, s)?;
+
+        Ok(())
     }
 }

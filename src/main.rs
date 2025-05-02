@@ -6,6 +6,7 @@ mod settings;
 mod task;
 mod todoist;
 mod ui;
+mod wizard;
 use clap::{Parser, Subcommand};
 use color_eyre::owo_colors::OwoColorize;
 use ratatui::style::Color;
@@ -36,6 +37,7 @@ enum Commands {
         #[arg(short, long)]
         provider: Option<String>,
     },
+    AddProvider {},
 }
 
 fn print_boxed_tasks(tasks: &[Box<dyn task::Task>]) {
@@ -71,7 +73,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config_path = xdg_dirs
         .place_config_file("settings.toml")
         .expect("cannot create configuration directory");
-    let cfg = Settings::new(config_path.to_str().unwrap());
+    let mut cfg = Settings::new(config_path.to_str().unwrap());
 
     let mut providers: Vec<Box<dyn provider::Provider>> = Vec::new();
 
@@ -114,7 +116,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         providers.sort_by_key(|p| p.name());
 
         println!(
-            "Available providers: {}",
+            "Loaded providers: {}",
             providers
                 .iter()
                 .map(|p| p.name())
@@ -167,6 +169,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let terminal = ratatui::init();
             let _app_result = ui::App::new(providers).run(terminal).await;
             ratatui::restore();
+        }
+        Commands::AddProvider {} => {
+            let w = wizard::AddProvider {};
+            w.run(&mut cfg)?
         }
     };
     Ok(())
