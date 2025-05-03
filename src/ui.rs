@@ -629,6 +629,11 @@ impl App {
                         Style::default().fg(Color::Blue),
                     ),
                     Span::from(") ("),
+                    Span::styled(
+                        format!("Priority: {}", t.priority()),
+                        style::priority_color(&t.priority()),
+                    ),
+                    Span::from(") ("),
                     Span::styled(t.place(), Style::default().fg(Color::Green)),
                     Span::from(")"),
                 ]);
