@@ -27,6 +27,22 @@ impl fmt::Display for State {
     }
 }
 
+#[derive(Debug)]
+pub enum Priority {
+    Lowest,
+    Low,
+    Normal,
+    Medium,
+    High,
+    Highest,
+}
+
+impl fmt::Display for Priority {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 #[allow(dead_code)]
 pub trait Task: Send + Sync {
     fn id(&self) -> String {
@@ -35,8 +51,8 @@ pub trait Task: Send + Sync {
     fn text(&self) -> String {
         String::new()
     }
-    fn priority(&self) -> i8 {
-        0
+    fn priority(&self) -> Priority {
+        Priority::Normal
     }
     fn state(&self) -> State;
     fn created_at(&self) -> Option<DateTimeUtc> {

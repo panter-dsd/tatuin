@@ -76,6 +76,9 @@ impl Widget for &mut TaskDescriptionWidget {
                 text.push(styled_line("Due", &due));
             }
 
+            let priority = t.priority().to_string();
+            text.push(styled_line("Priority", priority.as_str()));
+
             Paragraph::new(text)
                 .block(block)
                 .wrap(Wrap { trim: false })

@@ -1,5 +1,5 @@
 use crate::project::Project as ProjectTrait;
-use crate::task::{DateTimeUtc, State as TaskState, Task as TaskTrait};
+use crate::task::{DateTimeUtc, Priority, State as TaskState, Task as TaskTrait};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::Deserialize;
 use std::any::Any;
@@ -140,6 +140,15 @@ impl TaskTrait for Task {
         }
 
         None
+    }
+
+    fn priority(&self) -> Priority {
+        match self.priority.unwrap_or_default() {
+            2 => Priority::Medium,
+            3 => Priority::High,
+            4 => Priority::Highest,
+            _ => Priority::Normal,
+        }
     }
 
     fn as_any(&self) -> &dyn Any {
