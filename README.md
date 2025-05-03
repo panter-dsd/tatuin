@@ -31,7 +31,7 @@ This command will guide you through setting up the integration for the specified
 
 ## Screenshots
 
-![TATUIN Interface](https://example.com/path/to/screenshot.png)
+<img src="./assets/screenshots/main.png" width="96%" />
 
 ## Contributing
 
