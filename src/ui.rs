@@ -14,6 +14,7 @@ use ratatui::widgets::{
 };
 use ratatui::{DefaultTerminal, symbols};
 mod filter_widget;
+mod hyperlink;
 pub mod style;
 mod task_description_widget;
 use std::cmp::Ordering;
@@ -504,6 +505,8 @@ impl App {
         Paragraph::new("Use ↓↑ to move, ← to unselect, → to change status, g/G to go top/bottom.")
             .centered()
             .render(area, buf);
+        let link = hyperlink::Hyperlink::new("[Homepage]", "https://github.com/panter-dsd/tatuin");
+        link.render(area, buf);
     }
 
     fn block_style(&self, b: AppBlock) -> Style {
