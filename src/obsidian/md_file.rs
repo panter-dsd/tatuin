@@ -1,5 +1,5 @@
 use crate::obsidian::task::{State, Task};
-use crate::task::DateTimeUtc;
+use crate::task::{DateTimeUtc, Priority};
 use chrono::{NaiveDate, Utc};
 use regex::Regex;
 use std::error::Error;
@@ -38,6 +38,7 @@ impl File {
         if let Some(caps) = TASK_RE.captures(line) {
             let task_text = String::from(&caps[2]);
             let (text, due) = parse_due(task_text.as_str());
+            let (text, priority) = parse_priority(text.as_str());
             return Some(Task {
                 file_path: self.file_path.to_string(),
                 start_pos: pos,
@@ -51,8 +52,9 @@ impl File {
                         ),
                     }
                 },
-                text,
+                text: text.trim().to_string(),
                 due,
+                priority,
                 ..Default::default()
             });
         }
@@ -150,6 +152,46 @@ fn parse_due(text: &str) -> (String, Option<DateTimeUtc>) {
     }
 
     (text.to_string(), None)
+}
+
+fn parse_priority(text: &str) -> (String, Priority) {
+    let symbols = vec![
+        ('⏬', Priority::Lowest),
+        ('🔽', Priority::Low),
+        ('🔼', Priority::Medium),
+        ('⏫', Priority::High),
+        ('🔺', Priority::Highest),
+    ];
+    let mut symbol_indexes = Vec::new();
+    for (s, p) in symbols {
+        if let Some(idx) = text.chars().position(|c| c == s) {
+            if idx != 0
+                && text.chars().nth(idx - 1).unwrap_or(' ') == ' '
+                && idx != text.len() - 1
+                && text.chars().nth(idx + 1).unwrap_or(' ') == ' '
+            {
+                symbol_indexes.push((p, idx));
+            }
+        }
+    }
+
+    if symbol_indexes.is_empty() {
+        return (text.to_string(), Priority::Normal);
+    }
+
+    symbol_indexes.sort_by_key(|x| x.1);
+    let last = &symbol_indexes[symbol_indexes.len() - 1];
+
+    let mut result_text = text.chars().take(last.1 - 1).collect::<String>();
+    result_text.push_str(
+        text.to_string()
+            .chars()
+            .skip(last.1 + 1)
+            .collect::<String>()
+            .as_str(),
+    );
+
+    (result_text, last.0.clone())
 }
 
 #[cfg(test)]
@@ -382,5 +424,65 @@ Some another text";
         assert_eq!(1, tasks.len());
         assert_eq!(15, tasks[0].start_pos);
         assert_eq!(27, tasks[0].end_pos);
+    }
+
+    #[test]
+    fn parse_priority_test() {
+        struct Case<'a> {
+            name: &'a str,
+            line: &'a str,
+            expected_string: &'a str,
+            expected_priority: Priority,
+        }
+        let cases: &[Case] = &[
+            Case {
+                name: "empty string",
+                line: "",
+                expected_string: "",
+                expected_priority: Priority::Normal,
+            },
+            Case {
+                name: "correct string without priority",
+                line: "Some text 📅 2025-01-27",
+                expected_string: "Some text 📅 2025-01-27",
+                expected_priority: Priority::Normal,
+            },
+            Case {
+                name: "correct string with high priority",
+                line: "Some text ⏫ 📅 2025-01-27",
+                expected_string: "Some text 📅 2025-01-27",
+                expected_priority: Priority::High,
+            },
+            Case {
+                name: "correct string with low priority",
+                line: "Some text 🔽 📅 2025-01-27",
+                expected_string: "Some text 📅 2025-01-27",
+                expected_priority: Priority::Low,
+            },
+            Case {
+                name: "two different priorities",
+                line: "Проверка ⏬задача 🔽 📅 2025-01-27",
+                expected_string: "Проверка ⏬задача 📅 2025-01-27",
+                expected_priority: Priority::Low,
+            },
+            Case {
+                name: "string with the only priority without spaces",
+                line: "🔽",
+                expected_string: "🔽",
+                expected_priority: Priority::Normal,
+            },
+            Case {
+                name: "string with the only priority with surrounding spaces",
+                line: " 🔽 ",
+                expected_string: " ",
+                expected_priority: Priority::Low,
+            },
+        ];
+
+        for c in cases {
+            let (s, p) = parse_priority(c.line);
+            assert_eq!(p, c.expected_priority, "Test {} was failed", c.name);
+            assert_eq!(s, c.expected_string, "Test {} was failed", c.name);
+        }
     }
 }

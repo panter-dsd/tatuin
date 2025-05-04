@@ -29,10 +29,11 @@ impl fmt::Display for State {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub enum Priority {
     Lowest,
     Low,
+    #[default]
     Normal,
     Medium,
     High,
