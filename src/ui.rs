@@ -639,7 +639,7 @@ impl App {
                         style::priority_color(&t.priority()),
                     ),
                     Span::from(") ("),
-                    Span::styled(t.place(), Style::default().fg(Color::Green)),
+                    Span::styled(t.place(), Style::default().fg(Color::Yellow)),
                     Span::from(")"),
                 ]);
 
