@@ -1,6 +1,6 @@
 use super::project::Project;
 use crate::project::Project as ProjectTrait;
-use crate::task::{DateTimeUtc, State as TaskState, Task as TaskTrait};
+use crate::task::{DateTimeUtc, Priority, State as TaskState, Task as TaskTrait};
 use std::any::Any;
 use std::fmt::{self, Write};
 
@@ -73,6 +73,7 @@ pub struct Task {
     pub state: State,
     pub text: String,
     pub due: Option<DateTimeUtc>,
+    pub priority: Priority,
 }
 
 impl PartialEq for Task {
@@ -82,6 +83,7 @@ impl PartialEq for Task {
             && self.state == o.state
             && self.text == o.text
             && self.due == o.due
+            && self.priority == o.priority
     }
 }
 
@@ -134,6 +136,10 @@ impl TaskTrait for Task {
             &self.root_path,
             &self.file_path,
         )))
+    }
+
+    fn priority(&self) -> Priority {
+        self.priority.clone()
     }
 
     fn as_any(&self) -> &dyn Any {

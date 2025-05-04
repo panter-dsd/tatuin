@@ -29,7 +29,7 @@ impl fmt::Display for State {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Priority {
     Lowest,
     Low,
@@ -42,6 +42,12 @@ pub enum Priority {
 impl fmt::Display for Priority {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+impl Default for Priority {
+    fn default() -> Self {
+        Priority::Normal
     }
 }
 
