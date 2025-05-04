@@ -1,8 +1,10 @@
+use crate::filter;
 use crate::project::Project as ProjectTrait;
 use chrono::DateTime;
 use chrono::prelude::*;
 use colored::Colorize;
 use std::any::Any;
+use std::cmp::Ordering;
 use std::fmt;
 use std::fmt::Write;
 
@@ -27,7 +29,7 @@ impl fmt::Display for State {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Priority {
     Lowest,
     Low,
@@ -99,4 +101,18 @@ pub fn format(t: &dyn Task) -> String {
         format!("due: {}", due_to_str(t.due())).blue(),
         t.place().green()
     )
+}
+
+pub fn due_group(t: &dyn Task) -> filter::Due {
+    match t.due() {
+        Some(d) => {
+            let now = chrono::Utc::now().date_naive();
+            match d.date_naive().cmp(&now) {
+                Ordering::Less => filter::Due::Overdue,
+                Ordering::Equal => filter::Due::Today,
+                Ordering::Greater => filter::Due::Future,
+            }
+        }
+        None => filter::Due::NoDate,
+    }
 }
