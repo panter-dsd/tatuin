@@ -1,6 +1,6 @@
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::task::Task as TaskTrait;
+use crate::task::{Task as TaskTrait, due_group};
 use crate::{project, provider, task};
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -190,7 +190,12 @@ impl App {
             )
         }
 
-        tasks.sort_by_key(|k| k.due());
+        tasks.sort_by(|l, r| {
+            due_group(l.as_ref())
+                .cmp(&due_group(r.as_ref()))
+                .then_with(|| r.priority().cmp(&l.priority()))
+                .then_with(|| l.due().cmp(&r.due()))
+        });
         self.tasks.items = tasks;
 
         self.tasks.state = if self.tasks.items.is_empty() {
@@ -629,7 +634,12 @@ impl App {
                         Style::default().fg(Color::Blue),
                     ),
                     Span::from(") ("),
-                    Span::styled(t.place(), Style::default().fg(Color::Green)),
+                    Span::styled(
+                        format!("Priority: {}", t.priority()),
+                        style::priority_color(&t.priority()),
+                    ),
+                    Span::from(") ("),
+                    Span::styled(t.place(), Style::default().fg(Color::Yellow)),
                     Span::from(")"),
                 ]);
 

@@ -14,7 +14,7 @@ impl std::fmt::Display for FilterState {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum, Ord, PartialOrd)]
 pub enum Due {
     Overdue,
     Today,
