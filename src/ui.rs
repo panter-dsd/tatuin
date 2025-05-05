@@ -14,9 +14,11 @@ use ratatui::widgets::{
 use ratatui::{DefaultTerminal, symbols};
 mod filter_widget;
 mod hyperlink;
+mod selectable_list;
 pub mod style;
 mod task_description_widget;
 mod tasks_widget;
+use selectable_list::SelectableList;
 
 #[derive(Eq, PartialEq, Clone)]
 enum AppBlock {
@@ -34,29 +36,6 @@ const BLOCK_ORDER: [AppBlock; 5] = [
     AppBlock::TaskList,
     AppBlock::TaskDescription,
 ];
-
-struct SelectableList<T> {
-    items: Vec<T>,
-    state: ListState,
-}
-
-impl<T> SelectableList<T> {
-    fn new(v: Vec<T>, selected: Option<usize>) -> Self {
-        Self {
-            items: v,
-            state: ListState::default().with_selected(selected),
-        }
-    }
-}
-
-impl<T> Default for SelectableList<T> {
-    fn default() -> Self {
-        Self {
-            items: Vec::new(),
-            state: ListState::default(),
-        }
-    }
-}
 
 pub struct App {
     should_exit: bool,

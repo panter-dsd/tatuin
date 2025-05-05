@@ -2,7 +2,7 @@ use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
 use crate::task;
 use crate::task::Task as TaskTrait;
-use crate::ui::SelectableList;
+use crate::ui::selectable_list::SelectableList;
 use crate::ui::style;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
