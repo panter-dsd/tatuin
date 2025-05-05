@@ -1,5 +1,4 @@
 use crate::filter;
-use crate::project::Project as ProjectTrait;
 use crate::task::{Task as TaskTrait, due_group};
 use crate::{project, provider, task};
 use color_eyre::Result;
@@ -15,9 +14,11 @@ use ratatui::widgets::{
 use ratatui::{DefaultTerminal, symbols};
 mod filter_widget;
 mod hyperlink;
+mod selectable_list;
 pub mod style;
 mod task_description_widget;
-use std::cmp::Ordering;
+mod tasks_widget;
+use selectable_list::SelectableList;
 
 #[derive(Eq, PartialEq, Clone)]
 enum AppBlock {
@@ -36,38 +37,15 @@ const BLOCK_ORDER: [AppBlock; 5] = [
     AppBlock::TaskDescription,
 ];
 
-struct SelectableList<T> {
-    items: Vec<T>,
-    state: ListState,
-}
-
-impl<T> SelectableList<T> {
-    fn new(v: Vec<T>, selected: Option<usize>) -> Self {
-        Self {
-            items: v,
-            state: ListState::default().with_selected(selected),
-        }
-    }
-}
-
-impl<T> Default for SelectableList<T> {
-    fn default() -> Self {
-        Self {
-            items: Vec::new(),
-            state: ListState::default(),
-        }
-    }
-}
-
 pub struct App {
     should_exit: bool,
     reload_tasks: bool,
     providers: SelectableList<Box<dyn provider::Provider>>,
     projects: SelectableList<Box<dyn project::Project>>,
-    tasks: SelectableList<Box<dyn task::Task>>,
     current_block: AppBlock,
 
     filter_widget: filter_widget::FilterWidget,
+    tasks_widget: tasks_widget::TasksWidget,
     task_description_widget: task_description_widget::TaskDescriptionWidget,
 
     alert: Option<String>,
@@ -81,11 +59,11 @@ impl App {
             current_block: AppBlock::TaskList,
             providers: SelectableList::new(providers, Some(0)),
             projects: SelectableList::default(),
-            tasks: SelectableList::default(),
             filter_widget: filter_widget::FilterWidget::new(filter::Filter {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
+            tasks_widget: tasks_widget::TasksWidget::default(),
             task_description_widget: task_description_widget::TaskDescriptionWidget::default(),
             alert: None,
         }
@@ -94,6 +72,8 @@ impl App {
 
 impl App {
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        self.tasks_widget.set_active(true);
+
         while !self.should_exit {
             if self.reload_tasks {
                 self.load_tasks().await;
@@ -109,18 +89,7 @@ impl App {
     }
 
     async fn load_projects(&mut self) {
-        let mut projects: Vec<Box<dyn ProjectTrait>> = Vec::new();
-
-        for t in &self.tasks.items {
-            if let Some(tp) = t.project() {
-                let it = projects
-                    .iter()
-                    .find(|p| p.id() == tp.id() && p.provider() == tp.provider());
-                if it.is_none() {
-                    projects.push(t.project().unwrap().clone_boxed());
-                }
-            }
-        }
+        let mut projects = self.tasks_widget.tasks_projects();
 
         projects.sort_by(|l, r| {
             l.provider()
@@ -196,27 +165,7 @@ impl App {
                 .then_with(|| r.priority().cmp(&l.priority()))
                 .then_with(|| l.due().cmp(&r.due()))
         });
-        self.tasks.items = tasks;
-
-        self.tasks.state = if self.tasks.items.is_empty() {
-            ListState::default()
-        } else {
-            let selected_idx = self
-                .tasks
-                .state
-                .selected()
-                .map(|i| {
-                    if i >= self.tasks.items.len() {
-                        self.tasks.items.len() - 1
-                    } else {
-                        i
-                    }
-                })
-                .unwrap_or_else(|| 0);
-            ListState::default().with_selected(Some(selected_idx))
-        };
-
-        self.set_current_task();
+        self.tasks_widget.set_tasks(tasks);
 
         if project_id.is_none() {
             self.load_projects().await;
@@ -278,24 +227,11 @@ impl App {
     async fn change_check_state(&mut self) {
         match self.current_block {
             AppBlock::TaskList => {
-                if self.tasks.state.selected().is_none() {
-                    return;
-                }
-
-                let t = &self.tasks.items[self.tasks.state.selected().unwrap()];
-                let provider_idx = self
-                    .providers
-                    .items
-                    .iter()
-                    .position(|p| p.name() == t.provider())
-                    .unwrap();
-                let provider = &mut self.providers.items[provider_idx];
-                let st = match t.state() {
-                    task::State::Completed => task::State::Uncompleted,
-                    task::State::Uncompleted | task::State::InProgress => task::State::Completed,
-                    task::State::Unknown(_) => task::State::Completed,
-                };
-                if let Err(e) = provider.change_task_state(t.as_ref(), st).await {
+                let result = self
+                    .tasks_widget
+                    .change_check_state(&mut self.providers.items)
+                    .await;
+                if let Err(e) = result {
                     self.alert = Some(format!("Change state error: {e}"))
                 }
                 self.reload_tasks = true;
@@ -379,16 +315,8 @@ impl App {
     }
 
     fn set_current_task(&mut self) {
-        if self.tasks.state.selected().is_some() && !self.tasks.items.is_empty() {
-            let selected_idx = std::cmp::min(
-                self.tasks.state.selected().unwrap_or_default(),
-                self.tasks.items.len() - 1,
-            );
-            let t = &self.tasks.items[selected_idx];
-            self.task_description_widget.set_task(Some(t.clone_boxed()));
-        } else {
-            self.task_description_widget.set_task(None);
-        }
+        self.task_description_widget
+            .set_task(self.tasks_widget.selected_task());
     }
 
     fn select_next(&mut self) {
@@ -400,7 +328,7 @@ impl App {
             AppBlock::Projects => self.projects.state.select_next(),
             AppBlock::Filter => self.filter_widget.select_next(),
             AppBlock::TaskList => {
-                self.tasks.state.select_next();
+                self.tasks_widget.select_next();
                 self.set_current_task();
             }
             AppBlock::TaskDescription => {}
@@ -417,7 +345,7 @@ impl App {
             AppBlock::Projects => self.projects.state.select_previous(),
             AppBlock::Filter => self.filter_widget.select_previous(),
             AppBlock::TaskList => {
-                self.tasks.state.select_previous();
+                self.tasks_widget.select_previous();
                 self.set_current_task();
             }
             AppBlock::TaskDescription => {}
@@ -430,7 +358,10 @@ impl App {
             AppBlock::Providers => self.providers.state.select_first(),
             AppBlock::Projects => self.projects.state.select_first(),
             AppBlock::Filter => self.filter_widget.select_first(),
-            AppBlock::TaskList => self.tasks.state.select_first(),
+            AppBlock::TaskList => {
+                self.tasks_widget.select_first();
+                self.set_current_task();
+            }
             AppBlock::TaskDescription => {}
         }
         self.set_reload();
@@ -441,7 +372,10 @@ impl App {
             AppBlock::Providers => self.providers.state.select_last(),
             AppBlock::Projects => self.projects.state.select_last(),
             AppBlock::Filter => self.filter_widget.select_last(),
-            AppBlock::TaskList => self.tasks.state.select_last(),
+            AppBlock::TaskList => {
+                self.tasks_widget.select_last();
+                self.set_current_task();
+            }
             AppBlock::TaskDescription => {}
         }
         self.set_reload();
@@ -460,15 +394,9 @@ impl Widget for &mut App {
         let [left_area, right_area] =
             Layout::horizontal([Constraint::Length(50), Constraint::Fill(3)]).areas(main_area);
 
-        let [
-            providers_area,
-            projects_area,
-            filter_header_area,
-            filter_area,
-        ] = Layout::vertical([
+        let [providers_area, projects_area, filter_area] = Layout::vertical([
             Constraint::Fill(1),
             Constraint::Fill(3),
-            Constraint::Length(1),
             Constraint::Fill(1),
         ])
         .areas(left_area);
@@ -477,11 +405,12 @@ impl Widget for &mut App {
 
         App::render_header(header_area, buf);
         App::render_footer(footer_area, buf);
-        self.render_tasks(list_area, buf);
         self.render_providers(providers_area, buf);
         self.render_projects(projects_area, buf);
-        self.render_filter(filter_header_area, filter_area, buf);
-        self.render_task_description(task_description_area, buf);
+        self.filter_widget.render(filter_area, buf);
+        self.tasks_widget.render(list_area, buf);
+        self.task_description_widget
+            .render(task_description_area, buf);
 
         if let Some(alert) = &mut self.alert {
             let block = Block::bordered()
@@ -593,74 +522,6 @@ impl App {
             buf,
             &mut self.projects.state,
         );
-    }
-
-    fn render_filter(&mut self, header_area: Rect, area: Rect, buf: &mut Buffer) {
-        Block::new()
-            .title(Line::raw("Filter").centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(AppBlock::Filter))
-            .bg(style::NORMAL_ROW_BG)
-            .render(header_area, buf);
-        self.filter_widget.render(area, buf);
-    }
-
-    fn render_tasks(&mut self, area: Rect, buf: &mut Buffer) {
-        let items: Vec<ListItem> = self
-            .tasks
-            .items
-            .iter()
-            .map(|t| {
-                let fg_color = {
-                    match t.due() {
-                        Some(d) => {
-                            let now = chrono::Utc::now().date_naive();
-                            match d.date_naive().cmp(&now) {
-                                Ordering::Less => style::OVERDUE_TASK_FG,
-                                Ordering::Equal => style::TODAY_TASK_FG,
-                                Ordering::Greater => style::FUTURE_TASK_FG,
-                            }
-                        }
-                        None => style::NO_DATE_TASK_FG,
-                    }
-                };
-                let mixed_line = Line::from(vec![
-                    Span::from(format!("[{}] ", t.state())),
-                    Span::styled(t.text(), Style::default().fg(fg_color)),
-                    Span::from(" ("),
-                    Span::styled(
-                        format!("due: {}", task::due_to_str(t.due())),
-                        Style::default().fg(Color::Blue),
-                    ),
-                    Span::from(") ("),
-                    Span::styled(
-                        format!("Priority: {}", t.priority()),
-                        style::priority_color(&t.priority()),
-                    ),
-                    Span::from(") ("),
-                    Span::styled(t.place(), Style::default().fg(Color::Yellow)),
-                    Span::from(")"),
-                ]);
-
-                ListItem::from(mixed_line)
-            })
-            .collect();
-
-        StatefulWidget::render(
-            self.prepare_render_list(
-                format!("Tasks ({})", items.len()).as_str(),
-                AppBlock::TaskList,
-                &items,
-            ),
-            area,
-            buf,
-            &mut self.tasks.state,
-        );
-    }
-
-    fn render_task_description(&mut self, area: Rect, buf: &mut Buffer) {
-        self.task_description_widget.render(area, buf)
     }
 }
 

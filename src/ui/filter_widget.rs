@@ -1,4 +1,5 @@
 use crate::filter::{Due, Filter, FilterState};
+use crate::ui::style;
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -140,8 +141,8 @@ impl FilterWidget {
         }
     }
 
-    fn block_style(&self, b: FilterBlock) -> Style {
-        if self.is_active && self.current_block == b {
+    fn block_style(&self, b: Option<FilterBlock>) -> Style {
+        if self.is_active && (b.is_none() || self.current_block == b.unwrap()) {
             return ACTIVE_BLOCK_STYLE;
         }
 
@@ -153,7 +154,7 @@ impl FilterWidget {
             .title(Line::raw("Task state").centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(FilterBlock::State))
+            .border_style(self.block_style(Some(FilterBlock::State)))
             .bg(NORMAL_ROW_BG);
 
         let items = POSSIBLE_STATES
@@ -178,7 +179,7 @@ impl FilterWidget {
             .title(Line::raw("Task due").centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(FilterBlock::Due))
+            .border_style(self.block_style(Some(FilterBlock::Due)))
             .bg(NORMAL_ROW_BG);
 
         let items = POSSIBLE_DUE
@@ -201,9 +202,18 @@ impl FilterWidget {
 
 impl Widget for &mut FilterWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        let [header_area, body_area] =
+            Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
         let [filter_state_area, filter_due_area] =
-            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(area);
+            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(body_area);
 
+        Block::new()
+            .title(Line::raw("Filter").centered())
+            .borders(Borders::TOP)
+            .border_set(symbols::border::EMPTY)
+            .border_style(self.block_style(None))
+            .bg(style::NORMAL_ROW_BG)
+            .render(header_area, buf);
         self.render_filter_state(filter_state_area, buf);
         self.render_filter_due(filter_due_area, buf);
     }
