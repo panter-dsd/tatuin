@@ -64,7 +64,7 @@ impl TasksWidget {
                     .iter()
                     .find(|p| p.id() == tp.id() && p.provider() == tp.provider());
                 if it.is_none() {
-                    projects.push(t.project().unwrap().clone_boxed());
+                    projects.push(tp.clone_boxed());
                 }
             }
         }
