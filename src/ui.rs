@@ -394,15 +394,9 @@ impl Widget for &mut App {
         let [left_area, right_area] =
             Layout::horizontal([Constraint::Length(50), Constraint::Fill(3)]).areas(main_area);
 
-        let [
-            providers_area,
-            projects_area,
-            filter_header_area,
-            filter_area,
-        ] = Layout::vertical([
+        let [providers_area, projects_area, filter_area] = Layout::vertical([
             Constraint::Fill(1),
             Constraint::Fill(3),
-            Constraint::Length(1),
             Constraint::Fill(1),
         ])
         .areas(left_area);
@@ -411,11 +405,12 @@ impl Widget for &mut App {
 
         App::render_header(header_area, buf);
         App::render_footer(footer_area, buf);
-        self.render_tasks(list_area, buf);
         self.render_providers(providers_area, buf);
         self.render_projects(projects_area, buf);
-        self.render_filter(filter_header_area, filter_area, buf);
-        self.render_task_description(task_description_area, buf);
+        self.filter_widget.render(filter_area, buf);
+        self.tasks_widget.render(list_area, buf);
+        self.task_description_widget
+            .render(task_description_area, buf);
 
         if let Some(alert) = &mut self.alert {
             let block = Block::bordered()
@@ -527,25 +522,6 @@ impl App {
             buf,
             &mut self.projects.state,
         );
-    }
-
-    fn render_filter(&mut self, header_area: Rect, area: Rect, buf: &mut Buffer) {
-        Block::new()
-            .title(Line::raw("Filter").centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(AppBlock::Filter))
-            .bg(style::NORMAL_ROW_BG)
-            .render(header_area, buf);
-        self.filter_widget.render(area, buf);
-    }
-
-    fn render_tasks(&mut self, area: Rect, buf: &mut Buffer) {
-        self.tasks_widget.render(area, buf);
-    }
-
-    fn render_task_description(&mut self, area: Rect, buf: &mut Buffer) {
-        self.task_description_widget.render(area, buf)
     }
 }
 
