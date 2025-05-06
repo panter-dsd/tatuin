@@ -8,12 +8,11 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Span;
-use ratatui::widgets::{
-    Block, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget, Widget,
-};
+use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, StatefulWidget, Widget};
 mod filter_widget;
 mod header;
 mod hyperlink;
+mod list;
 mod selectable_list;
 pub mod style;
 mod task_description_widget;
@@ -457,15 +456,14 @@ impl App {
             .collect();
 
         items.insert(0, ListItem::from("All"));
-        let block =
-            header::Header::new("Providers", self.current_block == AppBlock::Providers).block();
-
-        let list = List::new(items.to_vec())
-            .block(block)
-            .highlight_style(style::SELECTED_STYLE)
-            .highlight_symbol(">")
-            .highlight_spacing(HighlightSpacing::Always);
-        StatefulWidget::render(list, area, buf, &mut self.providers.state);
+        StatefulWidget::render(
+            list::List::new(&items, self.current_block == AppBlock::Providers)
+                .title("Providers")
+                .widget(),
+            area,
+            buf,
+            &mut self.providers.state,
+        );
     }
 
     fn provider_color(&self, name: &str) -> Color {
@@ -491,15 +489,14 @@ impl App {
             .collect();
 
         items.insert(0, ListItem::from("All"));
-        let block =
-            header::Header::new("Projects", self.current_block == AppBlock::Projects).block();
-
-        let list = List::new(items.to_vec())
-            .block(block)
-            .highlight_style(style::SELECTED_STYLE)
-            .highlight_symbol(">")
-            .highlight_spacing(HighlightSpacing::Always);
-        StatefulWidget::render(list, area, buf, &mut self.projects.state);
+        StatefulWidget::render(
+            list::List::new(&items, self.current_block == AppBlock::Projects)
+                .title("Projects")
+                .widget(),
+            area,
+            buf,
+            &mut self.projects.state,
+        );
     }
 }
 
