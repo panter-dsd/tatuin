@@ -3,16 +3,16 @@ use crate::task::{Task as TaskTrait, due_group};
 use crate::{project, provider, task};
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use ratatui::DefaultTerminal;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize};
-use ratatui::text::{Line, Span};
+use ratatui::text::Span;
 use ratatui::widgets::{
-    Block, Borders, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget,
-    Widget,
+    Block, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget, Widget,
 };
-use ratatui::{DefaultTerminal, symbols};
 mod filter_widget;
+mod header;
 mod hyperlink;
 mod selectable_list;
 pub mod style;
@@ -443,34 +443,6 @@ impl App {
         link.render(area, buf);
     }
 
-    fn block_style(&self, b: AppBlock) -> Style {
-        if self.current_block == b {
-            return style::ACTIVE_BLOCK_STYLE;
-        }
-
-        style::INACTIVE_BLOCK_STYLE
-    }
-
-    fn prepare_render_list<'a>(
-        &self,
-        title: &'a str,
-        block: AppBlock,
-        items: &'a [ListItem],
-    ) -> List<'a> {
-        let block = Block::new()
-            .title(Line::raw(title).centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(block))
-            .bg(style::NORMAL_ROW_BG);
-
-        List::new(items.to_vec())
-            .block(block)
-            .highlight_style(style::SELECTED_STYLE)
-            .highlight_symbol(">")
-            .highlight_spacing(HighlightSpacing::Always)
-    }
-
     fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
         let mut items: Vec<ListItem> = self
             .providers
@@ -485,12 +457,15 @@ impl App {
             .collect();
 
         items.insert(0, ListItem::from("All"));
-        StatefulWidget::render(
-            self.prepare_render_list("Providers", AppBlock::Providers, &items),
-            area,
-            buf,
-            &mut self.providers.state,
-        );
+        let block =
+            header::Header::new("Providers", self.current_block == AppBlock::Providers).block();
+
+        let list = List::new(items.to_vec())
+            .block(block)
+            .highlight_style(style::SELECTED_STYLE)
+            .highlight_symbol(">")
+            .highlight_spacing(HighlightSpacing::Always);
+        StatefulWidget::render(list, area, buf, &mut self.providers.state);
     }
 
     fn provider_color(&self, name: &str) -> Color {
@@ -516,12 +491,15 @@ impl App {
             .collect();
 
         items.insert(0, ListItem::from("All"));
-        StatefulWidget::render(
-            self.prepare_render_list("Projects", AppBlock::Projects, &items),
-            area,
-            buf,
-            &mut self.projects.state,
-        );
+        let block =
+            header::Header::new("Projects", self.current_block == AppBlock::Projects).block();
+
+        let list = List::new(items.to_vec())
+            .block(block)
+            .highlight_style(style::SELECTED_STYLE)
+            .highlight_symbol(">")
+            .highlight_spacing(HighlightSpacing::Always);
+        StatefulWidget::render(list, area, buf, &mut self.projects.state);
     }
 }
 
