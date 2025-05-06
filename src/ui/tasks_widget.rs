@@ -1,3 +1,4 @@
+use super::list;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
 use crate::task;
@@ -6,12 +7,9 @@ use crate::ui::selectable_list::SelectableList;
 use crate::ui::style;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Style, Stylize};
-use ratatui::symbols;
+use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{
-    Block, Borders, HighlightSpacing, List, ListItem, ListState, StatefulWidget, Widget,
-};
+use ratatui::widgets::{ListItem, ListState, StatefulWidget, Widget};
 use std::cmp::Ordering;
 
 #[derive(Default)]
@@ -23,14 +21,6 @@ pub struct TasksWidget {
 impl TasksWidget {
     pub fn set_active(&mut self, is_active: bool) {
         self.is_active = is_active
-    }
-
-    fn block_style(&self) -> Style {
-        if self.is_active {
-            return style::ACTIVE_BLOCK_STYLE;
-        }
-
-        style::INACTIVE_BLOCK_STYLE
     }
 
     pub fn set_tasks(&mut self, tasks: Vec<Box<dyn task::Task>>) {
@@ -171,18 +161,13 @@ impl Widget for &mut TasksWidget {
             })
             .collect();
 
-        let block = Block::new()
-            .title(Line::raw(format!("Tasks ({})", items.len())).centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style())
-            .bg(style::NORMAL_ROW_BG);
-
-        let list = List::new(items.to_vec())
-            .block(block)
-            .highlight_style(style::SELECTED_STYLE)
-            .highlight_symbol(">")
-            .highlight_spacing(HighlightSpacing::Always);
-        StatefulWidget::render(list, area, buf, &mut self.tasks.state);
+        StatefulWidget::render(
+            list::List::new(&items, self.is_active)
+                .title(format!("Tasks ({})", items.len()).as_str())
+                .widget(),
+            area,
+            buf,
+            &mut self.tasks.state,
+        );
     }
 }
