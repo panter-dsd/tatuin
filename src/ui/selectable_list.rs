@@ -1,4 +1,7 @@
-use ratatui::widgets::ListState;
+use super::list;
+use ratatui::buffer::Buffer;
+use ratatui::layout::Rect;
+use ratatui::widgets::{ListItem, ListState, StatefulWidget};
 use std::slice::{Iter, IterMut};
 
 pub struct SelectableList<T> {
@@ -7,15 +10,11 @@ pub struct SelectableList<T> {
 }
 
 impl<T> SelectableList<T> {
-    pub fn new(v: Vec<T>, selected: Option<usize>) -> Self {
+    pub fn new(items: Vec<T>, selected: Option<usize>) -> Self {
         Self {
-            items: v,
+            items,
             state: ListState::default().with_selected(selected),
         }
-    }
-
-    pub fn state(&mut self) -> &mut ListState {
-        &mut self.state
     }
 
     pub fn set_items(&mut self, items: Vec<T>) {
@@ -55,6 +54,10 @@ impl<T> SelectableList<T> {
         }
     }
 
+    pub fn state(&mut self) -> &mut ListState {
+        &mut self.state
+    }
+
     pub fn selected_idx(&self) -> Option<usize> {
         self.state.selected()
     }
@@ -82,13 +85,23 @@ impl<T> SelectableList<T> {
     pub fn select_last(&mut self) {
         self.state.select_last()
     }
-}
 
-impl<T> Default for SelectableList<T> {
-    fn default() -> Self {
-        Self {
-            items: Vec::new(),
-            state: ListState::default(),
-        }
+    pub fn render(
+        &mut self,
+        title: &str,
+        is_active: bool,
+        f: impl Fn(&T) -> ListItem,
+        area: Rect,
+        buf: &mut Buffer,
+    ) {
+        let items = self.items.iter().map(f).collect::<Vec<ListItem>>();
+        StatefulWidget::render(
+            list::List::new(&items, is_active)
+                .title(format!("{title} ({})", items.len()).as_str())
+                .widget(),
+            area,
+            buf,
+            &mut self.state,
+        );
     }
 }

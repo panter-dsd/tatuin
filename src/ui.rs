@@ -57,12 +57,12 @@ impl App {
             reload_tasks: true,
             current_block: AppBlock::TaskList,
             providers: SelectableList::new(providers, Some(0)),
-            projects: SelectableList::default(),
+            projects: SelectableList::new(Vec::new(), None),
             filter_widget: filter_widget::FilterWidget::new(filter::Filter {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
-            tasks_widget: tasks_widget::TasksWidget::default(),
+            tasks_widget: tasks_widget::TasksWidget::new(),
             task_description_widget: task_description_widget::TaskDescriptionWidget::default(),
             alert: None,
         }
@@ -444,56 +444,40 @@ impl App {
     }
 
     fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
-        let mut items: Vec<ListItem> = self
-            .providers
-            .iter()
-            .map(|p| {
+        self.providers.render(
+            "Providers",
+            self.current_block == AppBlock::Providers,
+            |p| -> ListItem {
                 ListItem::from(Span::styled(
                     format!("{} ({})", p.name(), p.type_name()),
                     p.color(),
                 ))
-            })
-            .collect();
-
-        items.insert(0, ListItem::from("All"));
-        StatefulWidget::render(
-            list::List::new(&items, self.current_block == AppBlock::Providers)
-                .title("Providers")
-                .widget(),
+            },
             area,
             buf,
-            self.providers.state(),
         );
     }
 
-    fn provider_color(&self, name: &str) -> Color {
-        self.providers
-            .iter()
-            .find(|p| p.name() == name)
-            .unwrap()
-            .color()
-    }
-
     fn render_projects(&mut self, area: Rect, buf: &mut Buffer) {
-        let mut items: Vec<ListItem> = self
-            .projects
+        let provider_colors: Vec<(String, Color)> = self
+            .providers
             .iter()
-            .map(|p| {
+            .map(|p| (p.name(), p.color()))
+            .collect();
+        let provider_color =
+            |name: &str| provider_colors.iter().find(|(n, _)| n == name).unwrap().1;
+
+        self.projects.render(
+            "Projects",
+            self.current_block == AppBlock::Projects,
+            |p| -> ListItem {
                 ListItem::from(Span::styled(
                     format!("{} ({})", p.name(), p.provider()),
-                    self.provider_color(p.provider().as_str()),
+                    provider_color(p.provider().as_str()),
                 ))
-            })
-            .collect();
-
-        items.insert(0, ListItem::from("All"));
-        StatefulWidget::render(
-            list::List::new(&items, self.current_block == AppBlock::Projects)
-                .title("Projects")
-                .widget(),
+            },
             area,
             buf,
-            self.projects.state(),
         );
     }
 }

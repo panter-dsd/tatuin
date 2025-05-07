@@ -1,4 +1,3 @@
-use super::list;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
 use crate::task;
@@ -9,17 +8,22 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{ListItem, ListState, StatefulWidget, Widget};
+use ratatui::widgets::{ListItem, ListState, Widget};
 use std::cmp::Ordering;
 use std::slice::IterMut;
 
-#[derive(Default)]
 pub struct TasksWidget {
     is_active: bool,
-    tasks: SelectableList<Box<dyn task::Task>>,
+    tasks: SelectableList<Box<dyn TaskTrait>>,
 }
 
 impl TasksWidget {
+    pub fn new() -> Self {
+        Self {
+            is_active: false,
+            tasks: SelectableList::new(Vec::new(), None),
+        }
+    }
     pub fn set_active(&mut self, is_active: bool) {
         self.is_active = is_active
     }
@@ -117,52 +121,42 @@ impl TasksWidget {
 
 impl Widget for &mut TasksWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let items: Vec<ListItem> = self
-            .tasks
-            .iter()
-            .map(|t| {
-                let fg_color = {
-                    match t.due() {
-                        Some(d) => {
-                            let now = chrono::Utc::now().date_naive();
-                            match d.date_naive().cmp(&now) {
-                                Ordering::Less => style::OVERDUE_TASK_FG,
-                                Ordering::Equal => style::TODAY_TASK_FG,
-                                Ordering::Greater => style::FUTURE_TASK_FG,
-                            }
-                        }
-                        None => style::NO_DATE_TASK_FG,
-                    }
-                };
-                let mixed_line = Line::from(vec![
-                    Span::from(format!("[{}] ", t.state())),
-                    Span::styled(t.text(), Style::default().fg(fg_color)),
-                    Span::from(" ("),
-                    Span::styled(
-                        format!("due: {}", task::due_to_str(t.due())),
-                        Style::default().fg(Color::Blue),
-                    ),
-                    Span::from(") ("),
-                    Span::styled(
-                        format!("Priority: {}", t.priority()),
-                        style::priority_color(&t.priority()),
-                    ),
-                    Span::from(") ("),
-                    Span::styled(t.place(), Style::default().fg(Color::Yellow)),
-                    Span::from(")"),
-                ]);
-
-                ListItem::from(mixed_line)
-            })
-            .collect();
-
-        StatefulWidget::render(
-            list::List::new(&items, self.is_active)
-                .title(format!("Tasks ({})", items.len()).as_str())
-                .widget(),
-            area,
-            buf,
-            self.tasks.state(),
-        );
+        self.tasks
+            .render("Tasks", self.is_active, task_to_list_item, area, buf);
     }
+}
+
+fn task_to_list_item(t: &Box<dyn TaskTrait>) -> ListItem {
+    let fg_color = {
+        match t.due() {
+            Some(d) => {
+                let now = chrono::Utc::now().date_naive();
+                match d.date_naive().cmp(&now) {
+                    Ordering::Less => style::OVERDUE_TASK_FG,
+                    Ordering::Equal => style::TODAY_TASK_FG,
+                    Ordering::Greater => style::FUTURE_TASK_FG,
+                }
+            }
+            None => style::NO_DATE_TASK_FG,
+        }
+    };
+    let mixed_line = Line::from(vec![
+        Span::from(format!("[{}] ", t.state())),
+        Span::styled(t.text(), Style::default().fg(fg_color)),
+        Span::from(" ("),
+        Span::styled(
+            format!("due: {}", task::due_to_str(t.due())),
+            Style::default().fg(Color::Blue),
+        ),
+        Span::from(") ("),
+        Span::styled(
+            format!("Priority: {}", t.priority()),
+            style::priority_color(&t.priority()),
+        ),
+        Span::from(") ("),
+        Span::styled(t.place(), Style::default().fg(Color::Yellow)),
+        Span::from(")"),
+    ]);
+
+    ListItem::from(mixed_line)
 }
