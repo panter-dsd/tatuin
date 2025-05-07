@@ -7,6 +7,7 @@ use std::slice::{Iter, IterMut};
 pub struct SelectableList<T> {
     items: Vec<T>,
     state: ListState,
+    add_all_item: bool,
 }
 
 impl<T> SelectableList<T> {
@@ -14,7 +15,13 @@ impl<T> SelectableList<T> {
         Self {
             items,
             state: ListState::default().with_selected(selected),
+            add_all_item: false,
         }
+    }
+
+    pub fn add_all_item(mut self) -> Self {
+        self.add_all_item = true;
+        self
     }
 
     pub fn set_items(&mut self, items: Vec<T>) {
@@ -94,7 +101,11 @@ impl<T> SelectableList<T> {
         area: Rect,
         buf: &mut Buffer,
     ) {
-        let items = self.items.iter().map(f).collect::<Vec<ListItem>>();
+        let mut items = self.items.iter().map(f).collect::<Vec<ListItem>>();
+        if self.add_all_item {
+            items.insert(0, ListItem::from("All"));
+        }
+
         StatefulWidget::render(
             list::List::new(&items, is_active)
                 .title(format!("{title} ({})", items.len()).as_str())
@@ -111,6 +122,7 @@ impl<T> Default for SelectableList<T> {
         Self {
             items: Vec::new(),
             state: ListState::default(),
+            add_all_item: false,
         }
     }
 }

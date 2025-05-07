@@ -56,8 +56,8 @@ impl App {
             should_exit: false,
             reload_tasks: true,
             current_block: AppBlock::TaskList,
-            providers: SelectableList::new(providers, Some(0)),
-            projects: SelectableList::new(Vec::new(), None),
+            providers: SelectableList::new(providers, Some(0)).add_all_item(),
+            projects: SelectableList::default().add_all_item(),
             filter_widget: filter_widget::FilterWidget::new(filter::Filter {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
