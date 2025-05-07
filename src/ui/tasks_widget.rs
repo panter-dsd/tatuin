@@ -116,42 +116,45 @@ impl TasksWidget {
 
 impl Widget for &mut TasksWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        self.tasks
-            .render("Tasks", self.is_active, task_to_list_item, area, buf);
+        self.tasks.render(
+            "Tasks",
+            self.is_active,
+            |t| {
+                let fg_color = {
+                    match t.due() {
+                        Some(d) => {
+                            let now = chrono::Utc::now().date_naive();
+                            match d.date_naive().cmp(&now) {
+                                Ordering::Less => style::OVERDUE_TASK_FG,
+                                Ordering::Equal => style::TODAY_TASK_FG,
+                                Ordering::Greater => style::FUTURE_TASK_FG,
+                            }
+                        }
+                        None => style::NO_DATE_TASK_FG,
+                    }
+                };
+                let mixed_line = Line::from(vec![
+                    Span::from(format!("[{}] ", t.state())),
+                    Span::styled(t.text(), Style::default().fg(fg_color)),
+                    Span::from(" ("),
+                    Span::styled(
+                        format!("due: {}", task::due_to_str(t.due())),
+                        Style::default().fg(Color::Blue),
+                    ),
+                    Span::from(") ("),
+                    Span::styled(
+                        format!("Priority: {}", t.priority()),
+                        style::priority_color(&t.priority()),
+                    ),
+                    Span::from(") ("),
+                    Span::styled(t.place(), Style::default().fg(Color::Yellow)),
+                    Span::from(")"),
+                ]);
+
+                ListItem::from(mixed_line)
+            },
+            area,
+            buf,
+        );
     }
-}
-
-fn task_to_list_item(t: &Box<dyn TaskTrait>) -> ListItem {
-    let fg_color = {
-        match t.due() {
-            Some(d) => {
-                let now = chrono::Utc::now().date_naive();
-                match d.date_naive().cmp(&now) {
-                    Ordering::Less => style::OVERDUE_TASK_FG,
-                    Ordering::Equal => style::TODAY_TASK_FG,
-                    Ordering::Greater => style::FUTURE_TASK_FG,
-                }
-            }
-            None => style::NO_DATE_TASK_FG,
-        }
-    };
-    let mixed_line = Line::from(vec![
-        Span::from(format!("[{}] ", t.state())),
-        Span::styled(t.text(), Style::default().fg(fg_color)),
-        Span::from(" ("),
-        Span::styled(
-            format!("due: {}", task::due_to_str(t.due())),
-            Style::default().fg(Color::Blue),
-        ),
-        Span::from(") ("),
-        Span::styled(
-            format!("Priority: {}", t.priority()),
-            style::priority_color(&t.priority()),
-        ),
-        Span::from(") ("),
-        Span::styled(t.place(), Style::default().fg(Color::Yellow)),
-        Span::from(")"),
-    ]);
-
-    ListItem::from(mixed_line)
 }
