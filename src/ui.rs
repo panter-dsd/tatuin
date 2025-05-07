@@ -109,31 +109,23 @@ impl App {
     }
 
     fn selected_project_id(&self) -> Option<String> {
-        if let Some(idx) = self.projects.selected_idx() {
-            if idx < 1 || self.projects.is_empty() {
-                None
-            } else {
-                let idx = std::cmp::min(idx, self.projects.len());
-                Some(self.projects.item(idx - 1).id())
-            }
-        } else {
-            None
-        }
+        self.projects.selected().map(|p| p.id())
     }
 
     async fn load_tasks(&mut self) {
         let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
-        let selected_provider_idx = std::cmp::min(
-            self.providers.selected_idx().unwrap_or_default(),
-            self.providers.len(),
-        );
 
+        let selected_provider_name = if let Some(p) = self.providers.selected() {
+            p.name()
+        } else {
+            String::new()
+        };
         let mut errors = Vec::new();
 
         let project_id = self.selected_project_id();
 
-        for (i, p) in self.providers.iter_mut().enumerate() {
-            if selected_provider_idx != 0 && i != selected_provider_idx - 1 {
+        for p in self.providers.iter_mut() {
+            if !selected_provider_name.is_empty() && p.name() != selected_provider_name {
                 continue;
             }
 

@@ -21,6 +21,7 @@ impl<T> SelectableList<T> {
 
     pub fn add_all_item(mut self) -> Self {
         self.add_all_item = true;
+        self.state.select_first();
         self
     }
 
@@ -50,11 +51,18 @@ impl<T> SelectableList<T> {
 
     pub fn selected(&self) -> Option<&T> {
         if self.state.selected().is_some() && !self.items.is_empty() {
-            let selected_idx = std::cmp::min(
+            let idx = std::cmp::min(
                 self.state.selected().unwrap_or_default(),
-                self.items.len() - 1,
+                if self.add_all_item {
+                    self.items.len()
+                } else {
+                    self.items.len() - 1
+                },
             );
-            let t = &self.items[selected_idx];
+            if self.add_all_item && idx == 0 {
+                return None;
+            }
+            let t = &self.items[if self.add_all_item { idx - 1 } else { idx }];
             Some(t)
         } else {
             None
@@ -63,14 +71,6 @@ impl<T> SelectableList<T> {
 
     pub fn state(&mut self) -> &mut ListState {
         &mut self.state
-    }
-
-    pub fn selected_idx(&self) -> Option<usize> {
-        self.state.selected()
-    }
-
-    pub fn item(&self, idx: usize) -> &T {
-        &self.items[idx]
     }
 
     pub fn select_none(&mut self) {
