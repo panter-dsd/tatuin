@@ -8,7 +8,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Span;
-use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, StatefulWidget, Widget};
+use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
 mod filter_widget;
 mod header;
 mod hyperlink;
@@ -62,7 +62,7 @@ impl App {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
-            tasks_widget: tasks_widget::TasksWidget::new(),
+            tasks_widget: tasks_widget::TasksWidget::default(),
             task_description_widget: task_description_widget::TaskDescriptionWidget::default(),
             alert: None,
         }

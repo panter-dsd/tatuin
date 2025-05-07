@@ -105,3 +105,12 @@ impl<T> SelectableList<T> {
         );
     }
 }
+
+impl<T> Default for SelectableList<T> {
+    fn default() -> Self {
+        Self {
+            items: Vec::new(),
+            state: ListState::default(),
+        }
+    }
+}

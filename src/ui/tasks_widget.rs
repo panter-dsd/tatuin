@@ -12,18 +12,13 @@ use ratatui::widgets::{ListItem, ListState, Widget};
 use std::cmp::Ordering;
 use std::slice::IterMut;
 
+#[derive(Default)]
 pub struct TasksWidget {
     is_active: bool,
     tasks: SelectableList<Box<dyn TaskTrait>>,
 }
 
 impl TasksWidget {
-    pub fn new() -> Self {
-        Self {
-            is_active: false,
-            tasks: SelectableList::new(Vec::new(), None),
-        }
-    }
     pub fn set_active(&mut self, is_active: bool) {
         self.is_active = is_active
     }
