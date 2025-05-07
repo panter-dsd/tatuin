@@ -11,6 +11,7 @@ use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{ListItem, ListState, StatefulWidget, Widget};
 use std::cmp::Ordering;
+use std::slice::IterMut;
 
 #[derive(Default)]
 pub struct TasksWidget {
@@ -24,18 +25,18 @@ impl TasksWidget {
     }
 
     pub fn set_tasks(&mut self, tasks: Vec<Box<dyn task::Task>>) {
-        self.tasks.items = tasks;
+        self.tasks.set_items(tasks);
 
-        self.tasks.state = if self.tasks.items.is_empty() {
+        let state = if self.tasks.is_empty() {
             ListState::default()
         } else {
             let selected_idx = self
                 .tasks
-                .state
+                .state()
                 .selected()
                 .map(|i| {
-                    if i >= self.tasks.items.len() {
-                        self.tasks.items.len() - 1
+                    if i >= self.tasks.len() {
+                        self.tasks.len() - 1
                     } else {
                         i
                     }
@@ -43,12 +44,14 @@ impl TasksWidget {
                 .unwrap_or_else(|| 0);
             ListState::default().with_selected(Some(selected_idx))
         };
+
+        self.tasks.set_state(state);
     }
 
     pub fn tasks_projects(&self) -> Vec<Box<dyn ProjectTrait>> {
         let mut projects: Vec<Box<dyn ProjectTrait>> = Vec::new();
 
-        for t in &self.tasks.items {
+        for t in self.tasks.iter() {
             if let Some(tp) = t.project() {
                 let it = projects
                     .iter()
@@ -63,12 +66,7 @@ impl TasksWidget {
     }
 
     pub fn selected_task(&self) -> Option<Box<dyn TaskTrait>> {
-        if self.tasks.state.selected().is_some() && !self.tasks.items.is_empty() {
-            let selected_idx = std::cmp::min(
-                self.tasks.state.selected().unwrap_or_default(),
-                self.tasks.items.len() - 1,
-            );
-            let t = &self.tasks.items[selected_idx];
+        if let Some(t) = self.tasks.selected() {
             Some(t.clone_boxed())
         } else {
             None
@@ -76,39 +74,37 @@ impl TasksWidget {
     }
 
     pub fn select_none(&mut self) {
-        self.tasks.state.select(None)
+        self.tasks.select_none();
     }
 
     pub fn select_next(&mut self) {
-        self.tasks.state.select_next()
+        self.tasks.select_next()
     }
 
     pub fn select_previous(&mut self) {
-        self.tasks.state.select_previous()
+        self.tasks.select_previous()
     }
 
     pub fn select_first(&mut self) {
-        self.tasks.state.select_first()
+        self.tasks.select_first()
     }
 
     pub fn select_last(&mut self) {
-        self.tasks.state.select_last()
+        self.tasks.select_last()
     }
 
     pub async fn change_check_state(
         &mut self,
-        providers: &mut [Box<dyn ProviderTrait>],
+        providers: &mut IterMut<'_, Box<dyn ProviderTrait>>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        if self.tasks.state.selected().is_none() {
+        let selected = self.tasks.selected();
+        if selected.is_none() {
             return Ok(());
         }
 
-        let t = &self.tasks.items[self.tasks.state.selected().unwrap()];
-        let provider_idx = providers
-            .iter()
-            .position(|p| p.name() == t.provider())
-            .unwrap();
-        let provider = &mut providers[provider_idx];
+        let t = selected.unwrap();
+
+        let provider = providers.find(|p| p.name() == t.provider()).unwrap();
         let st = match t.state() {
             task::State::Completed => task::State::Uncompleted,
             task::State::Uncompleted | task::State::InProgress => task::State::Completed,
@@ -123,7 +119,6 @@ impl Widget for &mut TasksWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let items: Vec<ListItem> = self
             .tasks
-            .items
             .iter()
             .map(|t| {
                 let fg_color = {
@@ -167,7 +162,7 @@ impl Widget for &mut TasksWidget {
                 .widget(),
             area,
             buf,
-            &mut self.tasks.state,
+            self.tasks.state(),
         );
     }
 }

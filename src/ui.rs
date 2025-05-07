@@ -96,8 +96,9 @@ impl App {
                 .then_with(|| l.name().cmp(&r.name()))
         });
 
-        self.projects.items = projects;
-        self.projects.state = ListState::default().with_selected(Some(0));
+        self.projects.set_items(projects);
+        self.projects
+            .set_state(ListState::default().with_selected(Some(0)));
     }
 
     fn add_error(&mut self, message: &str) {
@@ -108,12 +109,12 @@ impl App {
     }
 
     fn selected_project_id(&self) -> Option<String> {
-        if let Some(idx) = self.projects.state.selected() {
-            if idx < 1 || self.projects.items.is_empty() {
+        if let Some(idx) = self.projects.selected_idx() {
+            if idx < 1 || self.projects.is_empty() {
                 None
             } else {
-                let idx = std::cmp::min(idx, self.projects.items.len());
-                Some(self.projects.items[idx - 1].id())
+                let idx = std::cmp::min(idx, self.projects.len());
+                Some(self.projects.item(idx - 1).id())
             }
         } else {
             None
@@ -123,15 +124,15 @@ impl App {
     async fn load_tasks(&mut self) {
         let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
         let selected_provider_idx = std::cmp::min(
-            self.providers.state.selected().unwrap_or_default(),
-            self.providers.items.len(),
+            self.providers.selected_idx().unwrap_or_default(),
+            self.providers.len(),
         );
 
         let mut errors = Vec::new();
 
         let project_id = self.selected_project_id();
 
-        for (i, p) in self.providers.items.iter_mut().enumerate() {
+        for (i, p) in self.providers.iter_mut().enumerate() {
             if selected_provider_idx != 0 && i != selected_provider_idx - 1 {
                 continue;
             }
@@ -216,7 +217,7 @@ impl App {
     }
 
     async fn reload(&mut self) {
-        for p in &mut self.providers.items {
+        for p in self.providers.iter_mut() {
             p.reload().await;
         }
 
@@ -228,7 +229,7 @@ impl App {
             AppBlock::TaskList => {
                 let result = self
                     .tasks_widget
-                    .change_check_state(&mut self.providers.items)
+                    .change_check_state(&mut self.providers.iter_mut())
                     .await;
                 if let Err(e) = result {
                     self.alert = Some(format!("Change state error: {e}"))
@@ -237,7 +238,7 @@ impl App {
             }
             AppBlock::Filter => {
                 self.filter_widget.change_check_state();
-                self.projects.state.select_first();
+                self.projects.select_first();
                 self.reload().await;
             }
             _ => {}
@@ -321,10 +322,10 @@ impl App {
     fn select_next(&mut self) {
         match self.current_block {
             AppBlock::Providers => {
-                self.providers.state.select_next();
-                self.projects.state.select_first();
+                self.providers.select_next();
+                self.projects.select_first();
             }
-            AppBlock::Projects => self.projects.state.select_next(),
+            AppBlock::Projects => self.projects.select_next(),
             AppBlock::Filter => self.filter_widget.select_next(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_next();
@@ -338,10 +339,10 @@ impl App {
     fn select_previous(&mut self) {
         match self.current_block {
             AppBlock::Providers => {
-                self.providers.state.select_previous();
-                self.projects.state.select_first();
+                self.providers.select_previous();
+                self.projects.select_first();
             }
-            AppBlock::Projects => self.projects.state.select_previous(),
+            AppBlock::Projects => self.projects.select_previous(),
             AppBlock::Filter => self.filter_widget.select_previous(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_previous();
@@ -354,8 +355,8 @@ impl App {
 
     fn select_first(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.state.select_first(),
-            AppBlock::Projects => self.projects.state.select_first(),
+            AppBlock::Providers => self.providers.select_first(),
+            AppBlock::Projects => self.projects.select_first(),
             AppBlock::Filter => self.filter_widget.select_first(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_first();
@@ -368,8 +369,8 @@ impl App {
 
     fn select_last(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.state.select_last(),
-            AppBlock::Projects => self.projects.state.select_last(),
+            AppBlock::Providers => self.providers.select_last(),
+            AppBlock::Projects => self.projects.select_last(),
             AppBlock::Filter => self.filter_widget.select_last(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_last();
@@ -445,7 +446,6 @@ impl App {
     fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
         let mut items: Vec<ListItem> = self
             .providers
-            .items
             .iter()
             .map(|p| {
                 ListItem::from(Span::styled(
@@ -462,13 +462,12 @@ impl App {
                 .widget(),
             area,
             buf,
-            &mut self.providers.state,
+            self.providers.state(),
         );
     }
 
     fn provider_color(&self, name: &str) -> Color {
         self.providers
-            .items
             .iter()
             .find(|p| p.name() == name)
             .unwrap()
@@ -478,7 +477,6 @@ impl App {
     fn render_projects(&mut self, area: Rect, buf: &mut Buffer) {
         let mut items: Vec<ListItem> = self
             .projects
-            .items
             .iter()
             .map(|p| {
                 ListItem::from(Span::styled(
@@ -495,7 +493,7 @@ impl App {
                 .widget(),
             area,
             buf,
-            &mut self.projects.state,
+            self.projects.state(),
         );
     }
 }
