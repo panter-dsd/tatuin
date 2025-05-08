@@ -453,22 +453,15 @@ impl App {
 
     fn render_projects(&mut self, area: Rect, buf: &mut Buffer) {
         static PROVIDER_COLORS: OnceLock<Vec<(String, Color)>> = OnceLock::new();
-        PROVIDER_COLORS.get_or_init(|| {
+        let provider_colors = PROVIDER_COLORS.get_or_init(|| {
             self.providers
                 .iter()
                 .map(|p| (p.name(), p.color()))
                 .collect()
         });
 
-        let provider_color = |name: &str| {
-            PROVIDER_COLORS
-                .get()
-                .unwrap()
-                .iter()
-                .find(|(n, _)| n == name)
-                .unwrap()
-                .1
-        };
+        let provider_color =
+            |name: &str| provider_colors.iter().find(|(n, _)| n == name).unwrap().1;
 
         self.projects.render(
             "Projects",
