@@ -1,16 +1,11 @@
 use crate::filter::{Due, Filter, FilterState};
-use crate::ui::style;
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::style::{Style, Stylize};
-use ratatui::symbols;
-use ratatui::text::Line;
-use ratatui::widgets::{
-    Block, Borders, HighlightSpacing, List, ListItem, ListState, StatefulWidget, Widget,
-};
+use ratatui::widgets::{ListItem, ListState, StatefulWidget, Widget};
 
-use crate::ui::style::{ACTIVE_BLOCK_STYLE, INACTIVE_BLOCK_STYLE, NORMAL_ROW_BG, SELECTED_STYLE};
+use super::header;
+use super::list;
 
 const POSSIBLE_STATES: [FilterState; 4] = [
     FilterState::Completed,
@@ -141,22 +136,7 @@ impl FilterWidget {
         }
     }
 
-    fn block_style(&self, b: Option<FilterBlock>) -> Style {
-        if self.is_active && (b.is_none() || self.current_block == b.unwrap()) {
-            return ACTIVE_BLOCK_STYLE;
-        }
-
-        INACTIVE_BLOCK_STYLE
-    }
-
     fn render_filter_state(&mut self, area: Rect, buf: &mut Buffer) {
-        let block = Block::new()
-            .title(Line::raw("Task state").centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(Some(FilterBlock::State)))
-            .bg(NORMAL_ROW_BG);
-
         let items = POSSIBLE_STATES
             .iter()
             .map(|s| {
@@ -165,23 +145,20 @@ impl FilterWidget {
             })
             .collect::<Vec<ListItem>>();
 
-        let list = List::new(items)
-            .block(block)
-            .highlight_style(SELECTED_STYLE)
-            .highlight_symbol(">")
-            .highlight_spacing(HighlightSpacing::Always);
-
-        StatefulWidget::render(list, area, buf, &mut self.filter_state_state);
+        StatefulWidget::render(
+            list::List::new(
+                &items,
+                self.is_active && self.current_block == FilterBlock::State,
+            )
+            .title("Task state")
+            .widget(),
+            area,
+            buf,
+            &mut self.filter_state_state,
+        );
     }
 
     fn render_filter_due(&mut self, area: Rect, buf: &mut Buffer) {
-        let block = Block::new()
-            .title(Line::raw("Task due").centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(Some(FilterBlock::Due)))
-            .bg(NORMAL_ROW_BG);
-
         let items = POSSIBLE_DUE
             .iter()
             .map(|s| {
@@ -190,13 +167,17 @@ impl FilterWidget {
             })
             .collect::<Vec<ListItem>>();
 
-        let list = List::new(items)
-            .block(block)
-            .highlight_style(SELECTED_STYLE)
-            .highlight_symbol(">")
-            .highlight_spacing(HighlightSpacing::Always);
-
-        StatefulWidget::render(list, area, buf, &mut self.filter_due_state);
+        StatefulWidget::render(
+            list::List::new(
+                &items,
+                self.is_active && self.current_block == FilterBlock::Due,
+            )
+            .title("Task due")
+            .widget(),
+            area,
+            buf,
+            &mut self.filter_due_state,
+        );
     }
 }
 
@@ -207,12 +188,8 @@ impl Widget for &mut FilterWidget {
         let [filter_state_area, filter_due_area] =
             Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(body_area);
 
-        Block::new()
-            .title(Line::raw("Filter").centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(None))
-            .bg(style::NORMAL_ROW_BG)
+        header::Header::new("Filter", self.is_active)
+            .block()
             .render(header_area, buf);
         self.render_filter_state(filter_state_area, buf);
         self.render_filter_due(filter_due_area, buf);

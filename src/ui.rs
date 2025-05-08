@@ -3,17 +3,17 @@ use crate::task::{Task as TaskTrait, due_group};
 use crate::{project, provider, task};
 use color_eyre::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use ratatui::DefaultTerminal;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{
-    Block, Borders, Clear, HighlightSpacing, List, ListItem, ListState, Paragraph, StatefulWidget,
-    Widget,
-};
-use ratatui::{DefaultTerminal, symbols};
+use ratatui::text::Span;
+use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
+use std::sync::OnceLock;
 mod filter_widget;
+mod header;
 mod hyperlink;
+mod list;
 mod selectable_list;
 pub mod style;
 mod task_description_widget;
@@ -57,8 +57,8 @@ impl App {
             should_exit: false,
             reload_tasks: true,
             current_block: AppBlock::TaskList,
-            providers: SelectableList::new(providers, Some(0)),
-            projects: SelectableList::default(),
+            providers: SelectableList::new(providers, Some(0)).add_all_item(),
+            projects: SelectableList::default().add_all_item(),
             filter_widget: filter_widget::FilterWidget::new(filter::Filter {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
@@ -97,8 +97,9 @@ impl App {
                 .then_with(|| l.name().cmp(&r.name()))
         });
 
-        self.projects.items = projects;
-        self.projects.state = ListState::default().with_selected(Some(0));
+        self.projects.set_items(projects);
+        self.projects
+            .set_state(ListState::default().with_selected(Some(0)));
     }
 
     fn add_error(&mut self, message: &str) {
@@ -109,31 +110,23 @@ impl App {
     }
 
     fn selected_project_id(&self) -> Option<String> {
-        if let Some(idx) = self.projects.state.selected() {
-            if idx < 1 || self.projects.items.is_empty() {
-                None
-            } else {
-                let idx = std::cmp::min(idx, self.projects.items.len());
-                Some(self.projects.items[idx - 1].id())
-            }
-        } else {
-            None
-        }
+        self.projects.selected().map(|p| p.id())
     }
 
     async fn load_tasks(&mut self) {
         let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
-        let selected_provider_idx = std::cmp::min(
-            self.providers.state.selected().unwrap_or_default(),
-            self.providers.items.len(),
-        );
 
+        let selected_provider_name = if let Some(p) = self.providers.selected() {
+            p.name()
+        } else {
+            String::new()
+        };
         let mut errors = Vec::new();
 
         let project_id = self.selected_project_id();
 
-        for (i, p) in self.providers.items.iter_mut().enumerate() {
-            if selected_provider_idx != 0 && i != selected_provider_idx - 1 {
+        for p in self.providers.iter_mut() {
+            if !selected_provider_name.is_empty() && p.name() != selected_provider_name {
                 continue;
             }
 
@@ -217,7 +210,7 @@ impl App {
     }
 
     async fn reload(&mut self) {
-        for p in &mut self.providers.items {
+        for p in self.providers.iter_mut() {
             p.reload().await;
         }
 
@@ -229,7 +222,7 @@ impl App {
             AppBlock::TaskList => {
                 let result = self
                     .tasks_widget
-                    .change_check_state(&mut self.providers.items)
+                    .change_check_state(&mut self.providers.iter_mut())
                     .await;
                 if let Err(e) = result {
                     self.alert = Some(format!("Change state error: {e}"))
@@ -238,7 +231,7 @@ impl App {
             }
             AppBlock::Filter => {
                 self.filter_widget.change_check_state();
-                self.projects.state.select_first();
+                self.projects.select_first();
                 self.reload().await;
             }
             _ => {}
@@ -322,10 +315,10 @@ impl App {
     fn select_next(&mut self) {
         match self.current_block {
             AppBlock::Providers => {
-                self.providers.state.select_next();
-                self.projects.state.select_first();
+                self.providers.select_next();
+                self.projects.select_first();
             }
-            AppBlock::Projects => self.projects.state.select_next(),
+            AppBlock::Projects => self.projects.select_next(),
             AppBlock::Filter => self.filter_widget.select_next(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_next();
@@ -339,10 +332,10 @@ impl App {
     fn select_previous(&mut self) {
         match self.current_block {
             AppBlock::Providers => {
-                self.providers.state.select_previous();
-                self.projects.state.select_first();
+                self.providers.select_previous();
+                self.projects.select_first();
             }
-            AppBlock::Projects => self.projects.state.select_previous(),
+            AppBlock::Projects => self.projects.select_previous(),
             AppBlock::Filter => self.filter_widget.select_previous(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_previous();
@@ -355,8 +348,8 @@ impl App {
 
     fn select_first(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.state.select_first(),
-            AppBlock::Projects => self.projects.state.select_first(),
+            AppBlock::Providers => self.providers.select_first(),
+            AppBlock::Projects => self.projects.select_first(),
             AppBlock::Filter => self.filter_widget.select_first(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_first();
@@ -369,8 +362,8 @@ impl App {
 
     fn select_last(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.state.select_last(),
-            AppBlock::Projects => self.projects.state.select_last(),
+            AppBlock::Providers => self.providers.select_last(),
+            AppBlock::Projects => self.projects.select_last(),
             AppBlock::Filter => self.filter_widget.select_last(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_last();
@@ -443,84 +436,44 @@ impl App {
         link.render(area, buf);
     }
 
-    fn block_style(&self, b: AppBlock) -> Style {
-        if self.current_block == b {
-            return style::ACTIVE_BLOCK_STYLE;
-        }
-
-        style::INACTIVE_BLOCK_STYLE
-    }
-
-    fn prepare_render_list<'a>(
-        &self,
-        title: &'a str,
-        block: AppBlock,
-        items: &'a [ListItem],
-    ) -> List<'a> {
-        let block = Block::new()
-            .title(Line::raw(title).centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style(block))
-            .bg(style::NORMAL_ROW_BG);
-
-        List::new(items.to_vec())
-            .block(block)
-            .highlight_style(style::SELECTED_STYLE)
-            .highlight_symbol(">")
-            .highlight_spacing(HighlightSpacing::Always)
-    }
-
     fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
-        let mut items: Vec<ListItem> = self
-            .providers
-            .items
-            .iter()
-            .map(|p| {
+        self.providers.render(
+            "Providers",
+            self.current_block == AppBlock::Providers,
+            |p| -> ListItem {
                 ListItem::from(Span::styled(
                     format!("{} ({})", p.name(), p.type_name()),
                     p.color(),
                 ))
-            })
-            .collect();
-
-        items.insert(0, ListItem::from("All"));
-        StatefulWidget::render(
-            self.prepare_render_list("Providers", AppBlock::Providers, &items),
+            },
             area,
             buf,
-            &mut self.providers.state,
         );
     }
 
-    fn provider_color(&self, name: &str) -> Color {
-        self.providers
-            .items
-            .iter()
-            .find(|p| p.name() == name)
-            .unwrap()
-            .color()
-    }
-
     fn render_projects(&mut self, area: Rect, buf: &mut Buffer) {
-        let mut items: Vec<ListItem> = self
-            .projects
-            .items
-            .iter()
-            .map(|p| {
+        static PROVIDER_COLORS: OnceLock<Vec<(String, Color)>> = OnceLock::new();
+        let provider_colors = PROVIDER_COLORS.get_or_init(|| {
+            self.providers
+                .iter()
+                .map(|p| (p.name(), p.color()))
+                .collect()
+        });
+
+        let provider_color =
+            |name: &str| provider_colors.iter().find(|(n, _)| n == name).unwrap().1;
+
+        self.projects.render(
+            "Projects",
+            self.current_block == AppBlock::Projects,
+            |p| -> ListItem {
                 ListItem::from(Span::styled(
                     format!("{} ({})", p.name(), p.provider()),
-                    self.provider_color(p.provider().as_str()),
+                    provider_color(p.provider().as_str()),
                 ))
-            })
-            .collect();
-
-        items.insert(0, ListItem::from("All"));
-        StatefulWidget::render(
-            self.prepare_render_list("Projects", AppBlock::Projects, &items),
+            },
             area,
             buf,
-            &mut self.projects.state,
         );
     }
 }
