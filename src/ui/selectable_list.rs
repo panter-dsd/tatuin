@@ -11,6 +11,7 @@ pub struct SelectableList<T> {
     state: ListState,
     add_all_item: bool,
     shortcut: Option<Shortcut>,
+    is_active: bool,
 }
 
 impl<T> ShortcutProvider for SelectableList<T> {
@@ -26,6 +27,7 @@ impl<T> SelectableList<T> {
             state: ListState::default().with_selected(selected),
             add_all_item: false,
             shortcut: None,
+            is_active: false,
         }
     }
 
@@ -46,6 +48,10 @@ impl<T> SelectableList<T> {
 
     pub fn set_state(&mut self, state: ListState) {
         self.state = state
+    }
+
+    pub fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active
     }
 
     pub fn len(&self) -> usize {
@@ -111,7 +117,6 @@ impl<T> SelectableList<T> {
     pub fn render(
         &mut self,
         title: &str,
-        is_active: bool,
         f: impl Fn(&T) -> ListItem,
         area: Rect,
         buf: &mut Buffer,
@@ -122,7 +127,7 @@ impl<T> SelectableList<T> {
         }
 
         StatefulWidget::render(
-            list::List::new(&items, is_active)
+            list::List::new(&items, self.is_active)
                 .title(format!("{title} ({})", items.len()).as_str())
                 .shortcut(&self.shortcut)
                 .widget(),

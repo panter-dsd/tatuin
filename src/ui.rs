@@ -229,7 +229,7 @@ impl App {
                     self.current_block = AppBlock::Providers;
                 }
 
-                self.update_activity_state();
+                self.update_activity_state().await;
             }
             KeyCode::Char('j') | KeyCode::Down => self.select_next().await,
             KeyCode::Char('k') | KeyCode::Up => self.select_previous().await,
@@ -243,10 +243,10 @@ impl App {
                     self.current_block = AppBlock::TaskList;
                 }
 
-                self.update_activity_state();
+                self.update_activity_state().await;
             }
-            KeyCode::Tab => self.select_next_block(),
-            KeyCode::BackTab => self.select_previous_block(),
+            KeyCode::Tab => self.select_next_block().await,
+            KeyCode::BackTab => self.select_previous_block().await,
             KeyCode::Char(' ') => self.change_check_state().await,
             KeyCode::Char('r') => {
                 if key.modifiers.contains(KeyModifiers::CONTROL) {
@@ -257,7 +257,13 @@ impl App {
         }
     }
 
-    fn update_activity_state(&mut self) {
+    async fn update_activity_state(&mut self) {
+        self.providers
+            .lock()
+            .await
+            .set_active(self.current_block == AppBlock::Providers);
+        self.projects
+            .set_active(self.current_block == AppBlock::Projects);
         self.tasks_widget
             .set_active(self.current_block == AppBlock::TaskList);
         self.task_description_widget
@@ -293,7 +299,7 @@ impl App {
         }
     }
 
-    fn select_next_block(&mut self) {
+    async fn select_next_block(&mut self) {
         let cur_block_idx = BLOCK_ORDER
             .iter()
             .position(|x| *x == self.current_block)
@@ -318,10 +324,10 @@ impl App {
             _ => self.current_block = BLOCK_ORDER[next_block_idx].clone(),
         }
 
-        self.update_activity_state();
+        self.update_activity_state().await;
     }
 
-    fn select_previous_block(&mut self) {
+    async fn select_previous_block(&mut self) {
         let cur_block_idx = BLOCK_ORDER
             .iter()
             .position(|x| *x == self.current_block)
@@ -347,7 +353,7 @@ impl App {
             _ => self.current_block = BLOCK_ORDER[next_block_idx].clone(),
         }
 
-        self.update_activity_state();
+        self.update_activity_state().await;
     }
 
     fn set_reload(&mut self) {
@@ -492,7 +498,6 @@ impl App {
     async fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
         self.providers.lock().await.render(
             "Providers",
-            self.current_block == AppBlock::Providers,
             |p| -> ListItem {
                 ListItem::from(Span::styled(
                     format!("{} ({})", p.name(), p.type_name()),
@@ -522,7 +527,6 @@ impl App {
 
         self.projects.render(
             "Projects",
-            self.current_block == AppBlock::Projects,
             |p| -> ListItem {
                 ListItem::from(Span::styled(
                     format!("{} ({})", p.name(), p.provider()),

@@ -15,14 +15,12 @@ use std::slice::IterMut;
 use super::shortcut::Shortcut;
 
 pub struct TasksWidget {
-    is_active: bool,
     tasks: SelectableList<Box<dyn TaskTrait>>,
 }
 
 impl Default for TasksWidget {
     fn default() -> Self {
         Self {
-            is_active: false,
             tasks: SelectableList::default().shortcut(Shortcut::new(&['g', 't'])),
         }
     }
@@ -30,7 +28,7 @@ impl Default for TasksWidget {
 
 impl TasksWidget {
     pub fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
+        self.tasks.set_active(is_active)
     }
 
     pub fn set_tasks(&mut self, tasks: Vec<Box<dyn task::Task>>) {
@@ -128,7 +126,6 @@ impl Widget for &mut TasksWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
         self.tasks.render(
             "Tasks",
-            self.is_active,
             |t| {
                 let fg_color = {
                     match t.due() {
