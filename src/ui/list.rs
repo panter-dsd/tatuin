@@ -1,4 +1,5 @@
 use super::header;
+use super::shortcut::Shortcut;
 use super::style;
 use ratatui::widgets::{Block, HighlightSpacing, List as ListWidget, ListItem};
 
@@ -6,6 +7,7 @@ pub struct List<'a, T> {
     items: &'a [T],
     is_active: bool,
     title: Option<&'a str>,
+    shortcut: &'a Option<Shortcut>,
 }
 
 impl<'a, T> List<'a, T>
@@ -18,6 +20,7 @@ where
             items,
             is_active,
             title: None,
+            shortcut: &None,
         }
     }
 
@@ -26,9 +29,14 @@ where
         self
     }
 
+    pub fn shortcut(mut self, s: &'a Option<Shortcut>) -> Self {
+        self.shortcut = s;
+        self
+    }
+
     pub fn widget(&self) -> ListWidget<'a> {
         let block = if let Some(t) = self.title {
-            header::Header::new(t, self.is_active).block()
+            header::Header::new(t, self.is_active, self.shortcut).block()
         } else {
             Block::new()
         };

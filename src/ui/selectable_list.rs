@@ -1,4 +1,5 @@
 use super::list;
+use super::shortcut::Shortcut;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::widgets::{ListItem, ListState, StatefulWidget};
@@ -8,6 +9,7 @@ pub struct SelectableList<T> {
     items: Vec<T>,
     state: ListState,
     add_all_item: bool,
+    shortcut: Option<Shortcut>,
 }
 
 impl<T> SelectableList<T> {
@@ -16,12 +18,18 @@ impl<T> SelectableList<T> {
             items,
             state: ListState::default().with_selected(selected),
             add_all_item: false,
+            shortcut: None,
         }
     }
 
     pub fn add_all_item(mut self) -> Self {
         self.add_all_item = true;
         self.state.select_first();
+        self
+    }
+
+    pub fn shortcut(mut self, s: Shortcut) -> Self {
+        self.shortcut = Some(s);
         self
     }
 
@@ -109,6 +117,7 @@ impl<T> SelectableList<T> {
         StatefulWidget::render(
             list::List::new(&items, is_active)
                 .title(format!("{title} ({})", items.len()).as_str())
+                .shortcut(&self.shortcut)
                 .widget(),
             area,
             buf,
@@ -119,10 +128,6 @@ impl<T> SelectableList<T> {
 
 impl<T> Default for SelectableList<T> {
     fn default() -> Self {
-        Self {
-            items: Vec::new(),
-            state: ListState::default(),
-            add_all_item: false,
-        }
+        SelectableList::new(Vec::new(), None)
     }
 }

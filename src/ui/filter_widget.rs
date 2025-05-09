@@ -6,6 +6,7 @@ use ratatui::widgets::{ListItem, ListState, StatefulWidget, Widget};
 
 use super::header;
 use super::list;
+use super::shortcut::Shortcut;
 
 const POSSIBLE_STATES: [FilterState; 4] = [
     FilterState::Completed,
@@ -28,6 +29,8 @@ pub struct FilterWidget {
     filter: Filter,
     filter_state_state: ListState,
     filter_due_state: ListState,
+    state_shortcut: Shortcut,
+    due_shortcut: Shortcut,
 }
 
 impl FilterWidget {
@@ -38,6 +41,8 @@ impl FilterWidget {
             filter: f,
             filter_state_state: ListState::default(),
             filter_due_state: ListState::default(),
+            state_shortcut: Shortcut::new(&['g', 's']),
+            due_shortcut: Shortcut::new(&['g', 'd']),
         }
     }
 
@@ -151,6 +156,7 @@ impl FilterWidget {
                 self.is_active && self.current_block == FilterBlock::State,
             )
             .title("Task state")
+            .shortcut(&Some(self.state_shortcut.clone()))
             .widget(),
             area,
             buf,
@@ -173,6 +179,7 @@ impl FilterWidget {
                 self.is_active && self.current_block == FilterBlock::Due,
             )
             .title("Task due")
+            .shortcut(&Some(self.due_shortcut.clone()))
             .widget(),
             area,
             buf,
@@ -188,7 +195,7 @@ impl Widget for &mut FilterWidget {
         let [filter_state_area, filter_due_area] =
             Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(body_area);
 
-        header::Header::new("Filter", self.is_active)
+        header::Header::new("Filter", self.is_active, &None)
             .block()
             .render(header_area, buf);
         self.render_filter_state(filter_state_area, buf);

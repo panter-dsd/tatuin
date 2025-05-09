@@ -9,12 +9,14 @@ use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Span;
 use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
+use shortcut::Shortcut;
 use std::sync::OnceLock;
 mod filter_widget;
 mod header;
 mod hyperlink;
 mod list;
 mod selectable_list;
+mod shortcut;
 pub mod style;
 mod task_description_widget;
 mod tasks_widget;
@@ -57,8 +59,12 @@ impl App {
             should_exit: false,
             reload_tasks: true,
             current_block: AppBlock::TaskList,
-            providers: SelectableList::new(providers, Some(0)).add_all_item(),
-            projects: SelectableList::default().add_all_item(),
+            providers: SelectableList::new(providers, Some(0))
+                .add_all_item()
+                .shortcut(Shortcut::new(&['g', 'v'])),
+            projects: SelectableList::default()
+                .add_all_item()
+                .shortcut(Shortcut::new(&['g', 'p'])),
             filter_widget: filter_widget::FilterWidget::new(filter::Filter {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],

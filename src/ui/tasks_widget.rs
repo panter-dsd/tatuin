@@ -12,10 +12,20 @@ use ratatui::widgets::{ListItem, ListState, Widget};
 use std::cmp::Ordering;
 use std::slice::IterMut;
 
-#[derive(Default)]
+use super::shortcut::Shortcut;
+
 pub struct TasksWidget {
     is_active: bool,
     tasks: SelectableList<Box<dyn TaskTrait>>,
+}
+
+impl Default for TasksWidget {
+    fn default() -> Self {
+        Self {
+            is_active: false,
+            tasks: SelectableList::default().shortcut(Shortcut::new(&['g', 't'])),
+        }
+    }
 }
 
 impl TasksWidget {
