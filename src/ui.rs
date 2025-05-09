@@ -10,8 +10,7 @@ use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Span;
 use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
 use shortcut::Shortcut;
-use std::sync::OnceLock;
-use std::sync::{Arc, Mutex};
+use tokio::sync::{Mutex, OnceCell};
 mod filter_widget;
 mod header;
 mod hyperlink;
@@ -150,7 +149,7 @@ impl App {
     async fn load_tasks(&mut self) {
         let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
 
-        let selected_provider_name = if let Some(p) = self.providers.lock().unwrap().selected() {
+        let selected_provider_name = if let Some(p) = self.providers.lock().await.selected() {
             p.name()
         } else {
             String::new()
@@ -159,7 +158,7 @@ impl App {
 
         let project_id = self.selected_project_id();
 
-        for p in self.providers.lock().unwrap().iter_mut() {
+        for p in self.providers.lock().await.iter_mut() {
             if !selected_provider_name.is_empty() && p.name() != selected_provider_name {
                 continue;
             }
@@ -207,7 +206,7 @@ impl App {
         if let Some(c) = key.code.as_char() {
             let keys = self.key_buffer.push(c);
             for p in &self.shortcut_providers {
-                if let Some(p) = p.lock().unwrap().shortcut() {
+                if let Some(p) = p.lock().await.shortcut() {
                     if p.accept(&keys) {
                         self.should_exit = true;
                     }
@@ -232,10 +231,10 @@ impl App {
 
                 self.update_activity_state();
             }
-            KeyCode::Char('j') | KeyCode::Down => self.select_next(),
-            KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
-            KeyCode::Char('g') | KeyCode::Home => self.select_first(),
-            KeyCode::Char('G') | KeyCode::End => self.select_last(),
+            KeyCode::Char('j') | KeyCode::Down => self.select_next().await,
+            KeyCode::Char('k') | KeyCode::Up => self.select_previous().await,
+            KeyCode::Char('g') | KeyCode::Home => self.select_first().await,
+            KeyCode::Char('G') | KeyCode::End => self.select_last().await,
             KeyCode::Char('l') | KeyCode::Right => {
                 const BLOCKS: [AppBlock; 3] =
                     [AppBlock::Providers, AppBlock::Projects, AppBlock::Filter];
@@ -266,7 +265,7 @@ impl App {
     }
 
     async fn reload(&mut self) {
-        for p in self.providers.lock().unwrap().iter_mut() {
+        for p in self.providers.lock().await.iter_mut() {
             p.reload().await;
         }
 
@@ -278,7 +277,7 @@ impl App {
             AppBlock::TaskList => {
                 let result = self
                     .tasks_widget
-                    .change_check_state(&mut self.providers.lock().unwrap().iter_mut())
+                    .change_check_state(&mut self.providers.lock().await.iter_mut())
                     .await;
                 if let Err(e) = result {
                     self.alert = Some(format!("Change state error: {e}"))
@@ -366,10 +365,10 @@ impl App {
             .set_task(self.tasks_widget.selected_task());
     }
 
-    fn select_next(&mut self) {
+    async fn select_next(&mut self) {
         match self.current_block {
             AppBlock::Providers => {
-                self.providers.lock().unwrap().select_next();
+                self.providers.lock().await.select_next();
                 self.projects.select_first();
             }
             AppBlock::Projects => self.projects.select_next(),
@@ -383,10 +382,10 @@ impl App {
         self.set_reload();
     }
 
-    fn select_previous(&mut self) {
+    async fn select_previous(&mut self) {
         match self.current_block {
             AppBlock::Providers => {
-                self.providers.lock().unwrap().select_previous();
+                self.providers.lock().await.select_previous();
                 self.projects.select_first();
             }
             AppBlock::Projects => self.projects.select_previous(),
@@ -400,9 +399,9 @@ impl App {
         self.set_reload();
     }
 
-    fn select_first(&mut self) {
+    async fn select_first(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.lock().unwrap().select_first(),
+            AppBlock::Providers => self.providers.lock().await.select_first(),
             AppBlock::Projects => self.projects.select_first(),
             AppBlock::Filter => self.filter_widget.select_first(),
             AppBlock::TaskList => {
@@ -414,9 +413,9 @@ impl App {
         self.set_reload();
     }
 
-    fn select_last(&mut self) {
+    async fn select_last(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.lock().unwrap().select_last(),
+            AppBlock::Providers => self.providers.lock().await.select_last(),
             AppBlock::Projects => self.projects.select_last(),
             AppBlock::Filter => self.filter_widget.select_last(),
             AppBlock::TaskList => {
@@ -452,8 +451,8 @@ impl Widget for &mut App {
 
         App::render_header(header_area, buf);
         App::render_footer(footer_area, buf);
-        self.render_providers(providers_area, buf);
-        self.render_projects(projects_area, buf);
+        futures::executor::block_on(self.render_providers(providers_area, buf));
+        futures::executor::block_on(self.render_projects(projects_area, buf));
         self.filter_widget.render(filter_area, buf);
         self.tasks_widget.render(list_area, buf);
         self.task_description_widget
@@ -490,8 +489,8 @@ impl App {
         link.render(area, buf);
     }
 
-    fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
-        self.providers.lock().unwrap().render(
+    async fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
+        self.providers.lock().await.render(
             "Providers",
             self.current_block == AppBlock::Providers,
             |p| -> ListItem {
@@ -505,16 +504,18 @@ impl App {
         );
     }
 
-    fn render_projects(&mut self, area: Rect, buf: &mut Buffer) {
-        static PROVIDER_COLORS: OnceLock<Vec<(String, Color)>> = OnceLock::new();
-        let provider_colors = PROVIDER_COLORS.get_or_init(|| {
-            self.providers
-                .lock()
-                .unwrap()
-                .iter()
-                .map(|p| (p.name(), p.color()))
-                .collect()
-        });
+    async fn render_projects(&mut self, area: Rect, buf: &mut Buffer) {
+        static PROVIDER_COLORS: OnceCell<Vec<(String, Color)>> = OnceCell::const_new();
+        let provider_colors = PROVIDER_COLORS
+            .get_or_init(async || {
+                self.providers
+                    .lock()
+                    .await
+                    .iter()
+                    .map(|p| (p.name(), p.color()))
+                    .collect()
+            })
+            .await;
 
         let provider_color =
             |name: &str| provider_colors.iter().find(|(n, _)| n == name).unwrap().1;

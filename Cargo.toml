@@ -15,6 +15,7 @@ color-eyre = "0.6.3"
 colored = "3.0.0"
 config = "0.15.11"
 crossterm = "0.29.0"
+futures = "0.3.31"
 ratatui = "0.29.0"
 regex = "1.11.1"
 reqwest = { version = "0.12.15", features = ["json"] }
