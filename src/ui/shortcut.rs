@@ -13,4 +13,8 @@ impl Shortcut {
     pub fn text(&self) -> String {
         self.keys.iter().collect()
     }
+
+    pub fn accept(&self, keys: &[char]) -> bool {
+        self.keys == keys
+    }
 }

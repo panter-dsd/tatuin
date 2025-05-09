@@ -1,3 +1,4 @@
+use super::ShortcutProvider;
 use super::list;
 use super::shortcut::Shortcut;
 use ratatui::buffer::Buffer;
@@ -10,6 +11,12 @@ pub struct SelectableList<T> {
     state: ListState,
     add_all_item: bool,
     shortcut: Option<Shortcut>,
+}
+
+impl<T> ShortcutProvider for SelectableList<T> {
+    fn shortcut(&self) -> &Option<Shortcut> {
+        &self.shortcut
+    }
 }
 
 impl<T> SelectableList<T> {

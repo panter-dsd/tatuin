@@ -11,12 +11,14 @@ use ratatui::text::Span;
 use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
 use shortcut::Shortcut;
 use std::sync::OnceLock;
+use std::sync::{Arc, Mutex};
 mod filter_widget;
 mod header;
 mod hyperlink;
 mod list;
 mod selectable_list;
 mod shortcut;
+use std::rc::Rc;
 pub mod style;
 mod task_description_widget;
 mod tasks_widget;
@@ -39,10 +41,26 @@ const BLOCK_ORDER: [AppBlock; 5] = [
     AppBlock::TaskDescription,
 ];
 
+trait ShortcutProvider {
+    fn shortcut(&self) -> &Option<Shortcut>;
+}
+
+#[derive(Default)]
+struct KeyBuffer {
+    keys: Vec<char>,
+}
+
+impl KeyBuffer {
+    fn push(&mut self, key: char) -> Vec<char> {
+        self.keys.push(key);
+        self.keys.to_vec()
+    }
+}
+
 pub struct App {
     should_exit: bool,
     reload_tasks: bool,
-    providers: SelectableList<Box<dyn provider::Provider>>,
+    providers: Rc<Mutex<SelectableList<Box<dyn provider::Provider>>>>,
     projects: SelectableList<Box<dyn project::Project>>,
     current_block: AppBlock,
 
@@ -51,17 +69,21 @@ pub struct App {
     task_description_widget: task_description_widget::TaskDescriptionWidget,
 
     alert: Option<String>,
+    shortcut_providers: Vec<Rc<Mutex<dyn ShortcutProvider>>>,
+    key_buffer: KeyBuffer,
 }
 
 impl App {
     pub fn new(providers: Vec<Box<dyn provider::Provider>>) -> Self {
-        Self {
+        let mut s = Self {
             should_exit: false,
             reload_tasks: true,
             current_block: AppBlock::TaskList,
-            providers: SelectableList::new(providers, Some(0))
-                .add_all_item()
-                .shortcut(Shortcut::new(&['g', 'v'])),
+            providers: Rc::new(Mutex::new(
+                SelectableList::new(providers, Some(0))
+                    .add_all_item()
+                    .shortcut(Shortcut::new(&['g', 'v'])),
+            )),
             projects: SelectableList::default()
                 .add_all_item()
                 .shortcut(Shortcut::new(&['g', 'p'])),
@@ -72,7 +94,13 @@ impl App {
             tasks_widget: tasks_widget::TasksWidget::default(),
             task_description_widget: task_description_widget::TaskDescriptionWidget::default(),
             alert: None,
-        }
+            shortcut_providers: Vec::new(),
+            key_buffer: KeyBuffer::default(),
+        };
+
+        s.shortcut_providers.push(s.providers.clone());
+
+        s
     }
 }
 
@@ -122,7 +150,7 @@ impl App {
     async fn load_tasks(&mut self) {
         let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
 
-        let selected_provider_name = if let Some(p) = self.providers.selected() {
+        let selected_provider_name = if let Some(p) = self.providers.lock().unwrap().selected() {
             p.name()
         } else {
             String::new()
@@ -131,7 +159,7 @@ impl App {
 
         let project_id = self.selected_project_id();
 
-        for p in self.providers.iter_mut() {
+        for p in self.providers.lock().unwrap().iter_mut() {
             if !selected_provider_name.is_empty() && p.name() != selected_provider_name {
                 continue;
             }
@@ -174,6 +202,17 @@ impl App {
     async fn handle_key(&mut self, key: KeyEvent) {
         if key.kind != KeyEventKind::Press {
             return;
+        }
+
+        if let Some(c) = key.code.as_char() {
+            let keys = self.key_buffer.push(c);
+            for p in &self.shortcut_providers {
+                if let Some(p) = p.lock().unwrap().shortcut() {
+                    if p.accept(&keys) {
+                        self.should_exit = true;
+                    }
+                }
+            }
         }
 
         match key.code {
@@ -227,7 +266,7 @@ impl App {
     }
 
     async fn reload(&mut self) {
-        for p in self.providers.iter_mut() {
+        for p in self.providers.lock().unwrap().iter_mut() {
             p.reload().await;
         }
 
@@ -239,7 +278,7 @@ impl App {
             AppBlock::TaskList => {
                 let result = self
                     .tasks_widget
-                    .change_check_state(&mut self.providers.iter_mut())
+                    .change_check_state(&mut self.providers.lock().unwrap().iter_mut())
                     .await;
                 if let Err(e) = result {
                     self.alert = Some(format!("Change state error: {e}"))
@@ -330,7 +369,7 @@ impl App {
     fn select_next(&mut self) {
         match self.current_block {
             AppBlock::Providers => {
-                self.providers.select_next();
+                self.providers.lock().unwrap().select_next();
                 self.projects.select_first();
             }
             AppBlock::Projects => self.projects.select_next(),
@@ -347,7 +386,7 @@ impl App {
     fn select_previous(&mut self) {
         match self.current_block {
             AppBlock::Providers => {
-                self.providers.select_previous();
+                self.providers.lock().unwrap().select_previous();
                 self.projects.select_first();
             }
             AppBlock::Projects => self.projects.select_previous(),
@@ -363,7 +402,7 @@ impl App {
 
     fn select_first(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.select_first(),
+            AppBlock::Providers => self.providers.lock().unwrap().select_first(),
             AppBlock::Projects => self.projects.select_first(),
             AppBlock::Filter => self.filter_widget.select_first(),
             AppBlock::TaskList => {
@@ -377,7 +416,7 @@ impl App {
 
     fn select_last(&mut self) {
         match self.current_block {
-            AppBlock::Providers => self.providers.select_last(),
+            AppBlock::Providers => self.providers.lock().unwrap().select_last(),
             AppBlock::Projects => self.projects.select_last(),
             AppBlock::Filter => self.filter_widget.select_last(),
             AppBlock::TaskList => {
@@ -452,7 +491,7 @@ impl App {
     }
 
     fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
-        self.providers.render(
+        self.providers.lock().unwrap().render(
             "Providers",
             self.current_block == AppBlock::Providers,
             |p| -> ListItem {
@@ -470,6 +509,8 @@ impl App {
         static PROVIDER_COLORS: OnceLock<Vec<(String, Color)>> = OnceLock::new();
         let provider_colors = PROVIDER_COLORS.get_or_init(|| {
             self.providers
+                .lock()
+                .unwrap()
                 .iter()
                 .map(|p| (p.name(), p.color()))
                 .collect()
