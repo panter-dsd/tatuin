@@ -190,6 +190,8 @@ impl App {
                 if BLOCKS.contains(&self.current_block) {
                     self.current_block = AppBlock::Providers;
                 }
+
+                self.update_activity_state();
             }
             KeyCode::Char('j') | KeyCode::Down => self.select_next(),
             KeyCode::Char('k') | KeyCode::Up => self.select_previous(),
@@ -202,6 +204,8 @@ impl App {
                 if BLOCKS.contains(&self.current_block) {
                     self.current_block = AppBlock::TaskList;
                 }
+
+                self.update_activity_state();
             }
             KeyCode::Tab => self.select_next_block(),
             KeyCode::BackTab => self.select_previous_block(),
@@ -213,6 +217,13 @@ impl App {
             }
             _ => {}
         }
+    }
+
+    fn update_activity_state(&mut self) {
+        self.tasks_widget
+            .set_active(self.current_block == AppBlock::TaskList);
+        self.task_description_widget
+            .set_active(self.current_block == AppBlock::TaskDescription);
     }
 
     async fn reload(&mut self) {
@@ -269,8 +280,7 @@ impl App {
             _ => self.current_block = BLOCK_ORDER[next_block_idx].clone(),
         }
 
-        self.task_description_widget
-            .set_active(self.current_block == AppBlock::TaskDescription);
+        self.update_activity_state();
     }
 
     fn select_previous_block(&mut self) {
@@ -299,8 +309,7 @@ impl App {
             _ => self.current_block = BLOCK_ORDER[next_block_idx].clone(),
         }
 
-        self.task_description_widget
-            .set_active(self.current_block == AppBlock::TaskDescription);
+        self.update_activity_state();
     }
 
     fn set_reload(&mut self) {
