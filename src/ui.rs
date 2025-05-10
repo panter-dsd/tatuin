@@ -1,11 +1,9 @@
 use crate::filter;
 use crate::task::{Task as TaskTrait, due_group};
 use crate::{project, provider, task};
-use chrono::DateTime;
 use color_eyre::Result;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::DefaultTerminal;
-use ratatui::Frame;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize};
@@ -87,8 +85,6 @@ pub struct App {
 }
 
 impl App {
-    const FRAMES_PER_SECOND: f32 = 60.0;
-
     pub fn new(providers: Vec<Box<dyn provider::Provider>>) -> Self {
         let mut s = Self {
             should_exit: false,
