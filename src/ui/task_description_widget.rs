@@ -1,3 +1,4 @@
+use super::AppBlockWidget;
 use crate::task;
 use crate::task::Task as TaskTrait;
 use crate::ui::style;
@@ -23,6 +24,12 @@ impl Default for TaskDescriptionWidget {
             t: None,
             shortcut: Some(Shortcut::new(&['g', 'c'])),
         }
+    }
+}
+
+impl AppBlockWidget for TaskDescriptionWidget {
+    fn activate_shortcut(&self) -> &Option<Shortcut> {
+        &self.shortcut
     }
 }
 

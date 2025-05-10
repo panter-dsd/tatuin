@@ -53,6 +53,10 @@ struct KeyBuffer {
 
 impl KeyBuffer {
     fn push(&mut self, key: char) -> Vec<char> {
+        const MAX_KEYS_COUNT: usize = 2;
+        if self.keys.len() == MAX_KEYS_COUNT {
+            self.clear();
+        }
         self.keys.push(key);
         self.keys.to_vec()
     }
@@ -70,7 +74,7 @@ pub struct App {
 
     filter_widget: filter_widget::FilterWidget,
     tasks_widget: Rc<Mutex<tasks_widget::TasksWidget>>,
-    task_description_widget: task_description_widget::TaskDescriptionWidget,
+    task_description_widget: Rc<Mutex<task_description_widget::TaskDescriptionWidget>>,
 
     alert: Option<String>,
     app_blocks: HashMap<AppBlock, Rc<Mutex<dyn AppBlockWidget>>>,
@@ -98,7 +102,9 @@ impl App {
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
             tasks_widget: Rc::new(Mutex::new(tasks_widget::TasksWidget::default())),
-            task_description_widget: task_description_widget::TaskDescriptionWidget::default(),
+            task_description_widget: Rc::new(Mutex::new(
+                task_description_widget::TaskDescriptionWidget::default(),
+            )),
             alert: None,
             app_blocks: HashMap::new(),
             key_buffer: KeyBuffer::default(),
@@ -109,6 +115,8 @@ impl App {
         s.app_blocks.insert(AppBlock::Projects, s.projects.clone());
         s.app_blocks
             .insert(AppBlock::TaskList, s.tasks_widget.clone());
+        s.app_blocks
+            .insert(AppBlock::TaskDescription, s.task_description_widget.clone());
 
         s
     }
@@ -286,6 +294,8 @@ impl App {
             .await
             .set_active(self.current_block == AppBlock::TaskList);
         self.task_description_widget
+            .lock()
+            .await
             .set_active(self.current_block == AppBlock::TaskDescription);
     }
 
@@ -389,6 +399,8 @@ impl App {
 
     async fn set_current_task(&mut self) {
         self.task_description_widget
+            .lock()
+            .await
             .set_task(self.tasks_widget.lock().await.selected_task());
     }
 
@@ -482,8 +494,7 @@ impl Widget for &mut App {
         futures::executor::block_on(self.render_projects(projects_area, buf));
         self.filter_widget.render(filter_area, buf);
         futures::executor::block_on(self.render_tasks(list_area, buf));
-        self.task_description_widget
-            .render(task_description_area, buf);
+        futures::executor::block_on(self.render_task_description(task_description_area, buf));
 
         if let Some(alert) = &mut self.alert {
             let block = Block::bordered()
@@ -561,6 +572,9 @@ impl App {
 
     async fn render_tasks(&mut self, area: Rect, buf: &mut Buffer) {
         self.tasks_widget.lock().await.render(area, buf)
+    }
+    async fn render_task_description(&mut self, area: Rect, buf: &mut Buffer) {
+        self.task_description_widget.lock().await.render(area, buf)
     }
 }
 
