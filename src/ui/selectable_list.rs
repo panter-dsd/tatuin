@@ -1,4 +1,4 @@
-use super::ShortcutProvider;
+use super::AppBlockWidget;
 use super::list;
 use super::shortcut::Shortcut;
 use ratatui::buffer::Buffer;
@@ -14,7 +14,7 @@ pub struct SelectableList<T> {
     is_active: bool,
 }
 
-impl<T> ShortcutProvider for SelectableList<T> {
+impl<T> AppBlockWidget for SelectableList<T> {
     fn shortcut(&self) -> &Option<Shortcut> {
         &self.shortcut
     }

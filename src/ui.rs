@@ -40,7 +40,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
     AppBlock::TaskDescription,
 ];
 
-trait ShortcutProvider {
+trait AppBlockWidget {
     fn shortcut(&self) -> &Option<Shortcut>;
 }
 
@@ -68,7 +68,7 @@ pub struct App {
     task_description_widget: task_description_widget::TaskDescriptionWidget,
 
     alert: Option<String>,
-    shortcut_providers: Vec<Rc<Mutex<dyn ShortcutProvider>>>,
+    shortcut_providers: Vec<Rc<Mutex<dyn AppBlockWidget>>>,
     key_buffer: KeyBuffer,
 }
 
