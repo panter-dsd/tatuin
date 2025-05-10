@@ -549,8 +549,8 @@ impl App {
 
     fn render_footer(area: Rect, buf: &mut Buffer) {
         Paragraph::new(format!(
-            "Use ↓↑ to move, ← to unselect, → to change status, g/G to go top/bottom. {}",
-            chrono::Utc::now().format("%H:%M:%S")
+            "Use ↓↑ to move up/down, Tab/BackTab to move between blocks. Current date/time: {}",
+            chrono::Utc::now().format("%Y-%m-%d %H:%M:%S")
         ))
         .centered()
         .render(area, buf);
