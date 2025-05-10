@@ -65,7 +65,7 @@ pub struct App {
     should_exit: bool,
     reload_tasks: bool,
     providers: Rc<Mutex<SelectableList<Box<dyn provider::Provider>>>>,
-    projects: SelectableList<Box<dyn project::Project>>,
+    projects: Rc<Mutex<SelectableList<Box<dyn project::Project>>>>,
     current_block: AppBlock,
 
     filter_widget: filter_widget::FilterWidget,
@@ -88,9 +88,11 @@ impl App {
                     .add_all_item()
                     .shortcut(Shortcut::new(&['g', 'v'])),
             )),
-            projects: SelectableList::default()
-                .add_all_item()
-                .shortcut(Shortcut::new(&['g', 'p'])),
+            projects: Rc::new(Mutex::new(
+                SelectableList::default()
+                    .add_all_item()
+                    .shortcut(Shortcut::new(&['g', 'p'])),
+            )),
             filter_widget: filter_widget::FilterWidget::new(filter::Filter {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
@@ -104,6 +106,7 @@ impl App {
 
         s.app_blocks
             .insert(AppBlock::Providers, s.providers.clone());
+        s.app_blocks.insert(AppBlock::Projects, s.projects.clone());
 
         s
     }
@@ -136,8 +139,10 @@ impl App {
                 .then_with(|| l.name().cmp(&r.name()))
         });
 
-        self.projects.set_items(projects);
+        self.projects.lock().await.set_items(projects);
         self.projects
+            .lock()
+            .await
             .set_state(ListState::default().with_selected(Some(0)));
     }
 
@@ -148,8 +153,8 @@ impl App {
         }
     }
 
-    fn selected_project_id(&self) -> Option<String> {
-        self.projects.selected().map(|p| p.id())
+    async fn selected_project_id(&self) -> Option<String> {
+        self.projects.lock().await.selected().map(|p| p.id())
     }
 
     async fn load_tasks(&mut self) {
@@ -162,7 +167,7 @@ impl App {
         };
         let mut errors = Vec::new();
 
-        let project_id = self.selected_project_id();
+        let project_id = self.selected_project_id().await;
 
         for p in self.providers.lock().await.iter_mut() {
             if !selected_provider_name.is_empty() && p.name() != selected_provider_name {
@@ -271,6 +276,8 @@ impl App {
             .await
             .set_active(self.current_block == AppBlock::Providers);
         self.projects
+            .lock()
+            .await
             .set_active(self.current_block == AppBlock::Projects);
         self.tasks_widget
             .set_active(self.current_block == AppBlock::TaskList);
@@ -300,7 +307,7 @@ impl App {
             }
             AppBlock::Filter => {
                 self.filter_widget.change_check_state();
-                self.projects.select_first();
+                self.projects.lock().await.select_first();
                 self.reload().await;
             }
             _ => {}
@@ -383,9 +390,9 @@ impl App {
         match self.current_block {
             AppBlock::Providers => {
                 self.providers.lock().await.select_next();
-                self.projects.select_first();
+                self.projects.lock().await.select_first();
             }
-            AppBlock::Projects => self.projects.select_next(),
+            AppBlock::Projects => self.projects.lock().await.select_next(),
             AppBlock::Filter => self.filter_widget.select_next(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_next();
@@ -400,9 +407,9 @@ impl App {
         match self.current_block {
             AppBlock::Providers => {
                 self.providers.lock().await.select_previous();
-                self.projects.select_first();
+                self.projects.lock().await.select_first();
             }
-            AppBlock::Projects => self.projects.select_previous(),
+            AppBlock::Projects => self.projects.lock().await.select_previous(),
             AppBlock::Filter => self.filter_widget.select_previous(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_previous();
@@ -416,7 +423,7 @@ impl App {
     async fn select_first(&mut self) {
         match self.current_block {
             AppBlock::Providers => self.providers.lock().await.select_first(),
-            AppBlock::Projects => self.projects.select_first(),
+            AppBlock::Projects => self.projects.lock().await.select_first(),
             AppBlock::Filter => self.filter_widget.select_first(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_first();
@@ -430,7 +437,7 @@ impl App {
     async fn select_last(&mut self) {
         match self.current_block {
             AppBlock::Providers => self.providers.lock().await.select_last(),
-            AppBlock::Projects => self.projects.select_last(),
+            AppBlock::Projects => self.projects.lock().await.select_last(),
             AppBlock::Filter => self.filter_widget.select_last(),
             AppBlock::TaskList => {
                 self.tasks_widget.select_last();
@@ -533,7 +540,7 @@ impl App {
         let provider_color =
             |name: &str| provider_colors.iter().find(|(n, _)| n == name).unwrap().1;
 
-        self.projects.render(
+        self.projects.lock().await.render(
             "Projects",
             |p| -> ListItem {
                 ListItem::from(Span::styled(
