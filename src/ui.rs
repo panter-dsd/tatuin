@@ -274,6 +274,7 @@ impl App {
                     AcceptResult::Accepted => {
                         self.key_buffer.clear();
                         self.current_block = t.clone();
+                        found_shortcut = true;
                     }
                     AcceptResult::PartiallyAccepted => found_shortcut = true,
                     AcceptResult::NotAccepted => {}
