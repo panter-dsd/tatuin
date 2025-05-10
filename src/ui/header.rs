@@ -1,8 +1,9 @@
 use super::shortcut::Shortcut;
 use super::style;
+use ratatui::style::Style;
 use ratatui::style::Stylize;
 use ratatui::symbols;
-use ratatui::text::Line;
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders};
 
 pub struct Header<'a> {
@@ -34,7 +35,17 @@ impl<'a> Header<'a> {
             .bg(style::NORMAL_ROW_BG);
 
         if let Some(s) = self.shortcut {
-            b = b.title(Line::raw(s.text()).right_aligned());
+            let mut l = Vec::new();
+            for c in s.partially_keys() {
+                l.push(Span::styled(
+                    c.to_string(),
+                    Style::default().bold().fg(style::HEADER_KEY_SELECTED_FG),
+                ));
+            }
+            for c in s.keys().iter().skip(s.partially_keys().len()) {
+                l.push(Span::styled(c.to_string(), style::HEADER_KEY_FG));
+            }
+            b = b.title(Line::from(l).right_aligned());
         }
 
         b

@@ -28,8 +28,8 @@ impl Default for TaskDescriptionWidget {
 }
 
 impl AppBlockWidget for TaskDescriptionWidget {
-    fn activate_shortcut(&self) -> &Option<Shortcut> {
-        &self.shortcut
+    fn activate_shortcut(&mut self) -> &mut Option<Shortcut> {
+        &mut self.shortcut
     }
 
     fn set_active(&mut self, is_active: bool) {

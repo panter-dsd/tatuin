@@ -46,7 +46,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 ];
 
 trait AppBlockWidget {
-    fn activate_shortcut(&self) -> &Option<Shortcut>;
+    fn activate_shortcut(&mut self) -> &mut Option<Shortcut>;
     fn set_active(&mut self, is_active: bool);
 }
 

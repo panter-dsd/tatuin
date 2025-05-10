@@ -28,7 +28,7 @@ impl Default for TasksWidget {
 }
 
 impl AppBlockWidget for TasksWidget {
-    fn activate_shortcut(&self) -> &Option<Shortcut> {
+    fn activate_shortcut(&mut self) -> &mut Option<Shortcut> {
         self.tasks.activate_shortcut()
     }
 
