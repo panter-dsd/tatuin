@@ -9,19 +9,19 @@ pub enum AcceptResult {
 #[derive(Clone)]
 pub struct Shortcut {
     keys: Vec<char>,
-    partially_keys: Vec<char>,
+    current_input_keys: Vec<char>,
 }
 
 impl Shortcut {
     pub fn new(keys: &[char]) -> Self {
         Self {
             keys: keys.to_vec(),
-            partially_keys: Vec::new(),
+            current_input_keys: Vec::new(),
         }
     }
 
-    pub fn partially_keys(&self) -> Vec<char> {
-        self.partially_keys.to_vec()
+    pub fn current_input_keys(&self) -> Vec<char> {
+        self.current_input_keys.to_vec()
     }
 
     pub fn keys(&self) -> Vec<char> {
@@ -29,12 +29,12 @@ impl Shortcut {
     }
 
     pub fn accept(&mut self, keys: &[char]) -> AcceptResult {
-        self.partially_keys.clear();
+        self.current_input_keys.clear();
 
         if self.keys == keys {
             AcceptResult::Accepted
         } else if self.keys.starts_with(keys) {
-            self.partially_keys = keys.to_vec();
+            self.current_input_keys = keys.to_vec();
             AcceptResult::PartiallyAccepted
         } else {
             AcceptResult::NotAccepted

@@ -36,13 +36,13 @@ impl<'a> Header<'a> {
 
         if let Some(s) = self.shortcut {
             let mut l = Vec::new();
-            for c in s.partially_keys() {
+            for c in s.current_input_keys() {
                 l.push(Span::styled(
                     c.to_string(),
                     Style::default().bold().fg(style::HEADER_KEY_SELECTED_FG),
                 ));
             }
-            for c in s.keys().iter().skip(s.partially_keys().len()) {
+            for c in s.keys().iter().skip(s.current_input_keys().len()) {
                 l.push(Span::styled(c.to_string(), style::HEADER_KEY_FG));
             }
             b = b.title(Line::from(l).right_aligned());
