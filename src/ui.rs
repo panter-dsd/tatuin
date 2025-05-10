@@ -147,7 +147,7 @@ impl App {
 
         self.tasks_widget.lock().await.set_active(true);
 
-        let period = Duration::from_secs_f32(1.0);
+        let period = Duration::from_secs_f32(1.0 / 60.0);
         let mut interval = tokio::time::interval(period);
         let mut events = EventStream::new();
 
