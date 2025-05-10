@@ -1,17 +1,20 @@
 use crate::filter;
 use crate::task::{Task as TaskTrait, due_group};
 use crate::{project, provider, task};
+use chrono::DateTime;
 use color_eyre::Result;
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::DefaultTerminal;
+use ratatui::Frame;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Span;
 use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
-use shortcut::Shortcut;
+use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::time::Duration;
 use tokio::sync::{Mutex, OnceCell};
 mod filter_widget;
 mod header;
@@ -24,6 +27,7 @@ pub mod style;
 mod task_description_widget;
 mod tasks_widget;
 use selectable_list::SelectableList;
+use tokio_stream::StreamExt;
 
 #[derive(Eq, PartialEq, Clone, Hash)]
 enum AppBlock {
@@ -44,6 +48,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 
 trait AppBlockWidget {
     fn activate_shortcut(&self) -> &Option<Shortcut>;
+    fn set_active(&mut self, is_active: bool);
 }
 
 #[derive(Default)]
@@ -82,6 +87,8 @@ pub struct App {
 }
 
 impl App {
+    const FRAMES_PER_SECOND: f32 = 60.0;
+
     pub fn new(providers: Vec<Box<dyn provider::Provider>>) -> Self {
         let mut s = Self {
             should_exit: false,
@@ -124,7 +131,13 @@ impl App {
 
 impl App {
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        terminal.hide_cursor()?;
+
         self.tasks_widget.lock().await.set_active(true);
+
+        let period = Duration::from_secs_f32(1.0);
+        let mut interval = tokio::time::interval(period);
+        let mut events = EventStream::new();
 
         while !self.should_exit {
             if self.reload_tasks {
@@ -132,12 +145,27 @@ impl App {
                 self.reload_tasks = false;
             }
 
-            terminal.draw(|frame| frame.render_widget(&mut self, frame.area()))?;
-            if let Event::Key(key) = event::read()? {
-                self.handle_key(key).await;
+            self.draw(&mut terminal).await;
+
+            tokio::select! {
+                _ = interval.tick() => {},
+                Some(Ok(event)) = events.next() => {
+                    if let Event::Key(key) = event {
+                        self.handle_key(key).await
+                    }
+                },
             }
         }
         Ok(())
+    }
+
+    async fn draw(&mut self, terminal: &mut DefaultTerminal) {
+        let mut frame = terminal.get_frame();
+        let area = frame.area();
+        let buf = frame.buffer_mut();
+        Clear {}.render(area, buf);
+        self.render(area, buf).await;
+        let _ = terminal.flush();
     }
 
     async fn load_projects(&mut self) {
@@ -219,22 +247,41 @@ impl App {
         }
     }
 
+    async fn handle_block_shortcuts(&mut self, key: &KeyEvent) -> bool {
+        let code = key.code.as_char();
+        if code.is_none() {
+            return false;
+        }
+
+        let code = code.unwrap();
+        let mut found_shortcut = false;
+
+        let keys = self.key_buffer.push(code);
+        for (t, b) in &self.app_blocks {
+            if let Some(p) = b.lock().await.activate_shortcut() {
+                match p.accept(&keys) {
+                    AcceptResult::Accepted => {
+                        self.key_buffer.clear();
+                        self.current_block = t.clone();
+                    }
+                    AcceptResult::PartiallyAccepted => found_shortcut = true,
+                    AcceptResult::NotAccepted => {}
+                }
+            }
+        }
+
+        self.update_activity_state().await;
+
+        found_shortcut
+    }
+
     async fn handle_key(&mut self, key: KeyEvent) {
         if key.kind != KeyEventKind::Press {
             return;
         }
 
-        if let Some(c) = key.code.as_char() {
-            let keys = self.key_buffer.push(c);
-            for (t, b) in &self.app_blocks {
-                if let Some(p) = b.lock().await.activate_shortcut() {
-                    if p.accept(&keys) {
-                        self.key_buffer.clear();
-                        self.current_block = t.clone();
-                    }
-                }
-            }
-            self.update_activity_state().await;
+        if self.handle_block_shortcuts(&key).await {
+            return;
         }
 
         match key.code {
@@ -281,22 +328,9 @@ impl App {
     }
 
     async fn update_activity_state(&mut self) {
-        self.providers
-            .lock()
-            .await
-            .set_active(self.current_block == AppBlock::Providers);
-        self.projects
-            .lock()
-            .await
-            .set_active(self.current_block == AppBlock::Projects);
-        self.tasks_widget
-            .lock()
-            .await
-            .set_active(self.current_block == AppBlock::TaskList);
-        self.task_description_widget
-            .lock()
-            .await
-            .set_active(self.current_block == AppBlock::TaskDescription);
+        for (t, b) in &self.app_blocks {
+            b.lock().await.set_active(self.current_block == *t)
+        }
     }
 
     async fn reload(&mut self) {
@@ -467,8 +501,9 @@ impl App {
     }
 }
 
-impl Widget for &mut App {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+/// Rendering logic for the app
+impl App {
+    async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let [header_area, main_area, footer_area] = Layout::vertical([
             Constraint::Length(2),
             Constraint::Fill(1),
@@ -490,11 +525,12 @@ impl Widget for &mut App {
 
         App::render_header(header_area, buf);
         App::render_footer(footer_area, buf);
-        futures::executor::block_on(self.render_providers(providers_area, buf));
-        futures::executor::block_on(self.render_projects(projects_area, buf));
+        self.render_providers(providers_area, buf).await;
+        self.render_projects(projects_area, buf).await;
         self.filter_widget.render(filter_area, buf);
-        futures::executor::block_on(self.render_tasks(list_area, buf));
-        futures::executor::block_on(self.render_task_description(task_description_area, buf));
+        self.render_tasks(list_area, buf).await;
+        self.render_task_description(task_description_area, buf)
+            .await;
 
         if let Some(alert) = &mut self.alert {
             let block = Block::bordered()
@@ -508,10 +544,6 @@ impl Widget for &mut App {
                 .render(area, buf);
         }
     }
-}
-
-/// Rendering logic for the app
-impl App {
     fn render_header(area: Rect, buf: &mut Buffer) {
         Paragraph::new("Tatuin (Task Aggregator TUI for N providers)")
             .bold()
@@ -520,9 +552,12 @@ impl App {
     }
 
     fn render_footer(area: Rect, buf: &mut Buffer) {
-        Paragraph::new("Use ↓↑ to move, ← to unselect, → to change status, g/G to go top/bottom.")
-            .centered()
-            .render(area, buf);
+        Paragraph::new(format!(
+            "Use ↓↑ to move, ← to unselect, → to change status, g/G to go top/bottom. {}",
+            chrono::Utc::now().format("%H:%M:%S")
+        ))
+        .centered()
+        .render(area, buf);
         let link = hyperlink::Hyperlink::new("[Homepage]", "https://github.com/panter-dsd/tatuin");
         link.render(area, buf);
     }

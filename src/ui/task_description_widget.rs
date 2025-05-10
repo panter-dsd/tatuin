@@ -31,13 +31,13 @@ impl AppBlockWidget for TaskDescriptionWidget {
     fn activate_shortcut(&self) -> &Option<Shortcut> {
         &self.shortcut
     }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active
+    }
 }
 
 impl TaskDescriptionWidget {
-    pub fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
-    }
-
     pub fn set_task(&mut self, t: Option<Box<dyn TaskTrait>>) {
         self.t = t
     }

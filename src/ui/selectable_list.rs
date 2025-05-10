@@ -18,6 +18,9 @@ impl<T> AppBlockWidget for SelectableList<T> {
     fn activate_shortcut(&self) -> &Option<Shortcut> {
         &self.shortcut
     }
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active
+    }
 }
 
 impl<T> SelectableList<T> {
@@ -48,10 +51,6 @@ impl<T> SelectableList<T> {
 
     pub fn set_state(&mut self, state: ListState) {
         self.state = state
-    }
-
-    pub fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
     }
 
     pub fn len(&self) -> usize {

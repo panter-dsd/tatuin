@@ -31,13 +31,13 @@ impl AppBlockWidget for TasksWidget {
     fn activate_shortcut(&self) -> &Option<Shortcut> {
         self.tasks.activate_shortcut()
     }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.tasks.set_active(is_active);
+    }
 }
 
 impl TasksWidget {
-    pub fn set_active(&mut self, is_active: bool) {
-        self.tasks.set_active(is_active)
-    }
-
     pub fn set_tasks(&mut self, tasks: Vec<Box<dyn task::Task>>) {
         self.tasks.set_items(tasks);
 
