@@ -10,6 +10,8 @@ use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::Span;
 use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
 use shortcut::Shortcut;
+use std::collections::HashMap;
+use std::hash::Hash;
 use tokio::sync::{Mutex, OnceCell};
 mod filter_widget;
 mod header;
@@ -23,7 +25,7 @@ mod task_description_widget;
 mod tasks_widget;
 use selectable_list::SelectableList;
 
-#[derive(Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq, Clone, Hash)]
 enum AppBlock {
     Providers,
     Projects,
@@ -41,7 +43,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 ];
 
 trait AppBlockWidget {
-    fn shortcut(&self) -> &Option<Shortcut>;
+    fn activate_shortcut(&self) -> &Option<Shortcut>;
 }
 
 #[derive(Default)]
@@ -53,6 +55,9 @@ impl KeyBuffer {
     fn push(&mut self, key: char) -> Vec<char> {
         self.keys.push(key);
         self.keys.to_vec()
+    }
+    fn clear(&mut self) {
+        self.keys.clear();
     }
 }
 
@@ -68,7 +73,7 @@ pub struct App {
     task_description_widget: task_description_widget::TaskDescriptionWidget,
 
     alert: Option<String>,
-    shortcut_providers: Vec<Rc<Mutex<dyn AppBlockWidget>>>,
+    app_blocks: HashMap<AppBlock, Rc<Mutex<dyn AppBlockWidget>>>,
     key_buffer: KeyBuffer,
 }
 
@@ -93,11 +98,12 @@ impl App {
             tasks_widget: tasks_widget::TasksWidget::default(),
             task_description_widget: task_description_widget::TaskDescriptionWidget::default(),
             alert: None,
-            shortcut_providers: Vec::new(),
+            app_blocks: HashMap::new(),
             key_buffer: KeyBuffer::default(),
         };
 
-        s.shortcut_providers.push(s.providers.clone());
+        s.app_blocks
+            .insert(AppBlock::Providers, s.providers.clone());
 
         s
     }
@@ -205,13 +211,15 @@ impl App {
 
         if let Some(c) = key.code.as_char() {
             let keys = self.key_buffer.push(c);
-            for p in &self.shortcut_providers {
-                if let Some(p) = p.lock().await.shortcut() {
+            for (t, b) in &self.app_blocks {
+                if let Some(p) = b.lock().await.activate_shortcut() {
                     if p.accept(&keys) {
-                        self.should_exit = true;
+                        self.key_buffer.clear();
+                        self.current_block = t.clone();
                     }
                 }
             }
+            self.update_activity_state().await;
         }
 
         match key.code {

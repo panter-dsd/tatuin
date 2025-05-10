@@ -15,7 +15,7 @@ pub struct SelectableList<T> {
 }
 
 impl<T> AppBlockWidget for SelectableList<T> {
-    fn shortcut(&self) -> &Option<Shortcut> {
+    fn activate_shortcut(&self) -> &Option<Shortcut> {
         &self.shortcut
     }
 }
