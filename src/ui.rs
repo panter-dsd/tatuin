@@ -7,10 +7,11 @@ use ratatui::DefaultTerminal;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize};
-use ratatui::text::Span;
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
 use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
+use std::fmt::Write;
 use std::hash::Hash;
 use std::time::Duration;
 use tokio::sync::{Mutex, OnceCell};
@@ -63,8 +64,23 @@ impl KeyBuffer {
         self.keys.push(key);
         self.keys.to_vec()
     }
+
     fn clear(&mut self) {
         self.keys.clear();
+    }
+
+    fn is_empty(&self) -> bool {
+        self.keys.is_empty()
+    }
+}
+
+impl std::fmt::Display for KeyBuffer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for c in &self.keys {
+            f.write_char(*c)?
+        }
+
+        Ok(())
     }
 }
 
@@ -156,12 +172,13 @@ impl App {
     }
 
     async fn draw(&mut self, terminal: &mut DefaultTerminal) {
+        let _ = terminal.autoresize();
         let mut frame = terminal.get_frame();
         let area = frame.area();
         let buf = frame.buffer_mut();
-        Clear {}.render(area, buf);
         self.render(area, buf).await;
         let _ = terminal.flush();
+        terminal.swap_buffers();
     }
 
     async fn load_projects(&mut self) {
@@ -520,7 +537,7 @@ impl App {
             Layout::vertical([Constraint::Fill(1), Constraint::Percentage(20)]).areas(right_area);
 
         App::render_header(header_area, buf);
-        App::render_footer(footer_area, buf);
+        self.render_footer(footer_area, buf);
         self.render_providers(providers_area, buf).await;
         self.render_projects(projects_area, buf).await;
         self.filter_widget.render(filter_area, buf);
@@ -547,13 +564,30 @@ impl App {
             .render(area, buf);
     }
 
-    fn render_footer(area: Rect, buf: &mut Buffer) {
-        Paragraph::new(format!(
-            "Use ↓↑ to move up/down, Tab/BackTab to move between blocks. Current date/time: {}",
-            chrono::Utc::now().format("%Y-%m-%d %H:%M:%S")
-        ))
-        .centered()
-        .render(area, buf);
+    fn render_footer(&self, area: Rect, buf: &mut Buffer) {
+        let mut lines = vec![
+            Span::styled(
+                "Use ↓↑ to move up/down, Tab/BackTab to move between blocks. ",
+                style::FOOTER_KEYS_HELP_COLOR,
+            ),
+            Span::styled("Current date/time: ", style::FOOTER_DATETIME_LABLE_FG),
+            Span::styled(
+                chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                style::FOOTER_DATETIME_FG,
+            ),
+        ];
+
+        if !self.key_buffer.is_empty() {
+            lines.push(Span::styled(" Keys: ", style::FOOTER_KEYS_LABLE_FG));
+            lines.push(Span::styled(
+                self.key_buffer.to_string(),
+                style::FOOTER_KEYS_FG,
+            ));
+        }
+
+        Paragraph::new(Line::from(lines))
+            .centered()
+            .render(area, buf);
         let link = hyperlink::Hyperlink::new("[Homepage]", "https://github.com/panter-dsd/tatuin");
         link.render(area, buf);
     }
