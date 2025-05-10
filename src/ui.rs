@@ -157,10 +157,8 @@ impl App {
                 self.reload_tasks = false;
             }
 
-            self.draw(&mut terminal).await;
-
             tokio::select! {
-                _ = interval.tick() => {},
+                _ = interval.tick() => { self.draw(&mut terminal).await; },
                 Some(Ok(event)) = events.next() => {
                     if let Event::Key(key) = event {
                         self.handle_key(key).await
