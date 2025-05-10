@@ -69,7 +69,7 @@ pub struct App {
     current_block: AppBlock,
 
     filter_widget: filter_widget::FilterWidget,
-    tasks_widget: tasks_widget::TasksWidget,
+    tasks_widget: Rc<Mutex<tasks_widget::TasksWidget>>,
     task_description_widget: task_description_widget::TaskDescriptionWidget,
 
     alert: Option<String>,
@@ -97,7 +97,7 @@ impl App {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
-            tasks_widget: tasks_widget::TasksWidget::default(),
+            tasks_widget: Rc::new(Mutex::new(tasks_widget::TasksWidget::default())),
             task_description_widget: task_description_widget::TaskDescriptionWidget::default(),
             alert: None,
             app_blocks: HashMap::new(),
@@ -107,6 +107,8 @@ impl App {
         s.app_blocks
             .insert(AppBlock::Providers, s.providers.clone());
         s.app_blocks.insert(AppBlock::Projects, s.projects.clone());
+        s.app_blocks
+            .insert(AppBlock::TaskList, s.tasks_widget.clone());
 
         s
     }
@@ -114,7 +116,7 @@ impl App {
 
 impl App {
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
-        self.tasks_widget.set_active(true);
+        self.tasks_widget.lock().await.set_active(true);
 
         while !self.should_exit {
             if self.reload_tasks {
@@ -131,7 +133,7 @@ impl App {
     }
 
     async fn load_projects(&mut self) {
-        let mut projects = self.tasks_widget.tasks_projects();
+        let mut projects = self.tasks_widget.lock().await.tasks_projects();
 
         projects.sort_by(|l, r| {
             l.provider()
@@ -202,7 +204,7 @@ impl App {
                 .then_with(|| r.priority().cmp(&l.priority()))
                 .then_with(|| l.due().cmp(&r.due()))
         });
-        self.tasks_widget.set_tasks(tasks);
+        self.tasks_widget.lock().await.set_tasks(tasks);
 
         if project_id.is_none() {
             self.load_projects().await;
@@ -280,6 +282,8 @@ impl App {
             .await
             .set_active(self.current_block == AppBlock::Projects);
         self.tasks_widget
+            .lock()
+            .await
             .set_active(self.current_block == AppBlock::TaskList);
         self.task_description_widget
             .set_active(self.current_block == AppBlock::TaskDescription);
@@ -298,6 +302,8 @@ impl App {
             AppBlock::TaskList => {
                 let result = self
                     .tasks_widget
+                    .lock()
+                    .await
                     .change_check_state(&mut self.providers.lock().await.iter_mut())
                     .await;
                 if let Err(e) = result {
@@ -381,9 +387,9 @@ impl App {
         }
     }
 
-    fn set_current_task(&mut self) {
+    async fn set_current_task(&mut self) {
         self.task_description_widget
-            .set_task(self.tasks_widget.selected_task());
+            .set_task(self.tasks_widget.lock().await.selected_task());
     }
 
     async fn select_next(&mut self) {
@@ -395,8 +401,8 @@ impl App {
             AppBlock::Projects => self.projects.lock().await.select_next(),
             AppBlock::Filter => self.filter_widget.select_next(),
             AppBlock::TaskList => {
-                self.tasks_widget.select_next();
-                self.set_current_task();
+                self.tasks_widget.lock().await.select_next();
+                self.set_current_task().await;
             }
             AppBlock::TaskDescription => {}
         }
@@ -412,8 +418,8 @@ impl App {
             AppBlock::Projects => self.projects.lock().await.select_previous(),
             AppBlock::Filter => self.filter_widget.select_previous(),
             AppBlock::TaskList => {
-                self.tasks_widget.select_previous();
-                self.set_current_task();
+                self.tasks_widget.lock().await.select_previous();
+                self.set_current_task().await;
             }
             AppBlock::TaskDescription => {}
         }
@@ -426,8 +432,8 @@ impl App {
             AppBlock::Projects => self.projects.lock().await.select_first(),
             AppBlock::Filter => self.filter_widget.select_first(),
             AppBlock::TaskList => {
-                self.tasks_widget.select_first();
-                self.set_current_task();
+                self.tasks_widget.lock().await.select_first();
+                self.set_current_task().await;
             }
             AppBlock::TaskDescription => {}
         }
@@ -440,8 +446,8 @@ impl App {
             AppBlock::Projects => self.projects.lock().await.select_last(),
             AppBlock::Filter => self.filter_widget.select_last(),
             AppBlock::TaskList => {
-                self.tasks_widget.select_last();
-                self.set_current_task();
+                self.tasks_widget.lock().await.select_last();
+                self.set_current_task().await;
             }
             AppBlock::TaskDescription => {}
         }
@@ -475,7 +481,7 @@ impl Widget for &mut App {
         futures::executor::block_on(self.render_providers(providers_area, buf));
         futures::executor::block_on(self.render_projects(projects_area, buf));
         self.filter_widget.render(filter_area, buf);
-        self.tasks_widget.render(list_area, buf);
+        futures::executor::block_on(self.render_tasks(list_area, buf));
         self.task_description_widget
             .render(task_description_area, buf);
 
@@ -551,6 +557,10 @@ impl App {
             area,
             buf,
         );
+    }
+
+    async fn render_tasks(&mut self, area: Rect, buf: &mut Buffer) {
+        self.tasks_widget.lock().await.render(area, buf)
     }
 }
 

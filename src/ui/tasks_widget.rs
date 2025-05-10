@@ -1,3 +1,4 @@
+use super::AppBlockWidget;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
 use crate::task;
@@ -23,6 +24,12 @@ impl Default for TasksWidget {
         Self {
             tasks: SelectableList::default().shortcut(Shortcut::new(&['g', 't'])),
         }
+    }
+}
+
+impl AppBlockWidget for TasksWidget {
+    fn activate_shortcut(&self) -> &Option<Shortcut> {
+        self.tasks.activate_shortcut()
     }
 }
 
