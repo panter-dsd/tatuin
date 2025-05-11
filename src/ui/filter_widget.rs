@@ -1,6 +1,6 @@
 use crate::filter::{Due, Filter, FilterState};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
@@ -46,8 +46,8 @@ impl AppBlockWidget for FilterWidget {
 }
 
 impl FilterWidget {
-    pub fn new(f: Filter) -> Arc<Mutex<Self>> {
-        let s = Arc::new(Mutex::new(Self {
+    pub fn new(f: Filter) -> Arc<RwLock<Self>> {
+        let s = Arc::new(RwLock::new(Self {
             is_active: false,
             current_block: FilterBlock::State,
             filter: f,
@@ -60,26 +60,26 @@ impl FilterWidget {
         tokio::spawn({
             let s = s.clone();
             async move {
-                let mut rx = s.lock().await.state_shortcut.subscribe_to_accepted();
+                let mut rx = s.read().await.state_shortcut.subscribe_to_accepted();
                 loop {
                     if rx.recv().await.is_err() {
                         return;
                     }
 
-                    s.lock().await.current_block = FilterBlock::State;
+                    s.write().await.current_block = FilterBlock::State;
                 }
             }
         });
         tokio::spawn({
             let s = s.clone();
             async move {
-                let mut rx = s.lock().await.due_shortcut.subscribe_to_accepted();
+                let mut rx = s.read().await.due_shortcut.subscribe_to_accepted();
                 loop {
                     if rx.recv().await.is_err() {
                         return;
                     }
 
-                    s.lock().await.current_block = FilterBlock::Due;
+                    s.write().await.current_block = FilterBlock::Due;
                 }
             }
         });
