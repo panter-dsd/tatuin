@@ -303,6 +303,8 @@ impl App {
             return;
         }
 
+        self.key_buffer.clear();
+
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => {
                 if self.alert.is_some() {
