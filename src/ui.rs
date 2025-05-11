@@ -98,6 +98,8 @@ pub struct App {
     alert: Option<String>,
     app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
     key_buffer: KeyBuffer,
+
+    select_first_shortcut: Shortcut,
 }
 
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
@@ -128,6 +130,7 @@ impl App {
             alert: None,
             app_blocks: HashMap::new(),
             key_buffer: KeyBuffer::default(),
+            select_first_shortcut: Shortcut::new(&['g', 'g']),
         };
 
         s.app_blocks
@@ -142,9 +145,7 @@ impl App {
 
         s
     }
-}
 
-impl App {
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         terminal.hide_cursor()?;
 
@@ -153,6 +154,8 @@ impl App {
         let period = Duration::from_secs_f32(1.0 / 60.0);
         let mut interval = tokio::time::interval(period);
         let mut events = EventStream::new();
+
+        let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
             if self.reload_tasks {
@@ -167,6 +170,7 @@ impl App {
                         self.handle_key(key).await
                     }
                 },
+                _ = select_first_accepted.recv() => self.select_first().await,
             }
         }
         Ok(())
@@ -267,7 +271,7 @@ impl App {
         self.set_current_task().await;
     }
 
-    async fn handle_block_shortcuts(&mut self, key: &KeyEvent) -> bool {
+    async fn handle_shortcuts(&mut self, key: &KeyEvent) -> bool {
         let code = key.code.as_char();
         if code.is_none() {
             return false;
@@ -293,6 +297,18 @@ impl App {
 
         self.update_activity_state().await;
 
+        let shortcuts = vec![&mut self.select_first_shortcut];
+        for s in shortcuts {
+            match s.accept(&keys) {
+                AcceptResult::Accepted => {
+                    self.key_buffer.clear();
+                    found_shortcut = true;
+                }
+                AcceptResult::PartiallyAccepted => found_shortcut = true,
+                AcceptResult::NotAccepted => {}
+            }
+        }
+
         found_shortcut
     }
 
@@ -301,7 +317,7 @@ impl App {
             return;
         }
 
-        if self.handle_block_shortcuts(&key).await {
+        if self.handle_shortcuts(&key).await {
             return;
         }
 
@@ -326,7 +342,6 @@ impl App {
             }
             KeyCode::Char('j') | KeyCode::Down => self.select_next().await,
             KeyCode::Char('k') | KeyCode::Up => self.select_previous().await,
-            KeyCode::Char('g') | KeyCode::Home => self.select_first().await,
             KeyCode::Char('G') | KeyCode::End => self.select_last().await,
             KeyCode::Char('l') | KeyCode::Right => {
                 const BLOCKS: [AppBlock; 3] =
