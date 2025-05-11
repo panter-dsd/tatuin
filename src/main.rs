@@ -18,6 +18,14 @@ use ui::style;
 struct Cli {
     #[command(subcommand)]
     command: Commands,
+
+    #[arg(
+        short,
+        long,
+        name("PATH_TO_CONFIG_FILE"),
+        help("/path/to/settings.toml")
+    )]
+    settings_file: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -69,11 +77,17 @@ fn due_to_filter(due: &Option<Vec<filter::Due>>) -> Vec<filter::Due> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("tatuin")?;
-    let config_path = xdg_dirs
-        .place_config_file("settings.toml")
-        .expect("cannot create configuration directory");
-    let mut cfg = Settings::new(config_path.to_str().unwrap());
+    let cli = Cli::parse();
+
+    let mut cfg = if let Some(p) = cli.settings_file {
+        Settings::new(p.as_str())
+    } else {
+        let xdg_dirs = xdg::BaseDirectories::with_prefix("tatuin")?;
+        let config_path = xdg_dirs
+            .place_config_file("settings.toml")
+            .expect("cannot create configuration directory");
+        Settings::new(config_path.to_str().unwrap())
+    };
 
     let mut providers: Vec<Box<dyn provider::Provider>> = Vec::new();
 
@@ -125,7 +139,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    let cli = Cli::parse();
     match &cli.command {
         Commands::Tasks {
             state,
