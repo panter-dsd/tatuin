@@ -263,6 +263,8 @@ impl App {
         if project_id.is_none() {
             self.load_projects().await;
         }
+
+        self.set_current_task().await;
     }
 
     async fn handle_block_shortcuts(&mut self, key: &KeyEvent) -> bool {
