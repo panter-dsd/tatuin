@@ -271,7 +271,7 @@ impl App {
         self.set_current_task().await;
     }
 
-    async fn handle_block_shortcuts(&mut self, key: &KeyEvent) -> bool {
+    async fn handle_shortcuts(&mut self, key: &KeyEvent) -> bool {
         let code = key.code.as_char();
         if code.is_none() {
             return false;
@@ -297,6 +297,18 @@ impl App {
 
         self.update_activity_state().await;
 
+        let shortcuts = vec![&mut self.select_first_shortcut];
+        for s in shortcuts {
+            match s.accept(&keys) {
+                AcceptResult::Accepted => {
+                    self.key_buffer.clear();
+                    found_shortcut = true;
+                }
+                AcceptResult::PartiallyAccepted => found_shortcut = true,
+                AcceptResult::NotAccepted => {}
+            }
+        }
+
         found_shortcut
     }
 
@@ -305,7 +317,7 @@ impl App {
             return;
         }
 
-        if self.handle_block_shortcuts(&key).await {
+        if self.handle_shortcuts(&key).await {
             return;
         }
 
@@ -330,7 +342,6 @@ impl App {
             }
             KeyCode::Char('j') | KeyCode::Down => self.select_next().await,
             KeyCode::Char('k') | KeyCode::Up => self.select_previous().await,
-            KeyCode::Char('g') | KeyCode::Home => self.select_first().await,
             KeyCode::Char('G') | KeyCode::End => self.select_last().await,
             KeyCode::Char('l') | KeyCode::Right => {
                 const BLOCKS: [AppBlock; 3] =
