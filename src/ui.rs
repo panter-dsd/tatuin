@@ -98,6 +98,8 @@ pub struct App {
     alert: Option<String>,
     app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
     key_buffer: KeyBuffer,
+
+    select_first_shortcut: Shortcut,
 }
 
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
@@ -128,6 +130,7 @@ impl App {
             alert: None,
             app_blocks: HashMap::new(),
             key_buffer: KeyBuffer::default(),
+            select_first_shortcut: Shortcut::new(&['g', 'g']),
         };
 
         s.app_blocks
@@ -142,9 +145,7 @@ impl App {
 
         s
     }
-}
 
-impl App {
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         terminal.hide_cursor()?;
 
@@ -153,6 +154,8 @@ impl App {
         let period = Duration::from_secs_f32(1.0 / 60.0);
         let mut interval = tokio::time::interval(period);
         let mut events = EventStream::new();
+
+        let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
             if self.reload_tasks {
@@ -167,6 +170,7 @@ impl App {
                         self.handle_key(key).await
                     }
                 },
+                _ = select_first_accepted.recv() => self.select_first().await,
             }
         }
         Ok(())
