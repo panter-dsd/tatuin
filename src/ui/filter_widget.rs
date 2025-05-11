@@ -1,11 +1,14 @@
 use crate::filter::{Due, Filter, FilterState};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::widgets::{ListItem, ListState, StatefulWidget, Widget};
 
-use super::header;
 use super::list;
+use super::shortcut::Shortcut;
+use super::{AppBlockWidget, header};
 
 const POSSIBLE_STATES: [FilterState; 4] = [
     FilterState::Completed,
@@ -28,17 +31,59 @@ pub struct FilterWidget {
     filter: Filter,
     filter_state_state: ListState,
     filter_due_state: ListState,
+    state_shortcut: Shortcut,
+    due_shortcut: Shortcut,
+}
+
+impl AppBlockWidget for FilterWidget {
+    fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        vec![&mut self.state_shortcut, &mut self.due_shortcut]
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active
+    }
 }
 
 impl FilterWidget {
-    pub fn new(f: Filter) -> Self {
-        Self {
+    pub fn new(f: Filter) -> Arc<RwLock<Self>> {
+        let s = Arc::new(RwLock::new(Self {
             is_active: false,
             current_block: FilterBlock::State,
             filter: f,
             filter_state_state: ListState::default(),
             filter_due_state: ListState::default(),
-        }
+            state_shortcut: Shortcut::new(&['g', 's']),
+            due_shortcut: Shortcut::new(&['g', 'd']),
+        }));
+
+        tokio::spawn({
+            let s = s.clone();
+            async move {
+                let mut rx = s.read().await.state_shortcut.subscribe_to_accepted();
+                loop {
+                    if rx.recv().await.is_err() {
+                        return;
+                    }
+
+                    s.write().await.current_block = FilterBlock::State;
+                }
+            }
+        });
+        tokio::spawn({
+            let s = s.clone();
+            async move {
+                let mut rx = s.read().await.due_shortcut.subscribe_to_accepted();
+                loop {
+                    if rx.recv().await.is_err() {
+                        return;
+                    }
+
+                    s.write().await.current_block = FilterBlock::Due;
+                }
+            }
+        });
+        s
     }
 
     pub fn set_active(&mut self, is_active: bool, backward: bool) {
@@ -151,6 +196,7 @@ impl FilterWidget {
                 self.is_active && self.current_block == FilterBlock::State,
             )
             .title("Task state")
+            .shortcut(&Some(self.state_shortcut.clone()))
             .widget(),
             area,
             buf,
@@ -173,6 +219,7 @@ impl FilterWidget {
                 self.is_active && self.current_block == FilterBlock::Due,
             )
             .title("Task due")
+            .shortcut(&Some(self.due_shortcut.clone()))
             .widget(),
             area,
             buf,
@@ -188,7 +235,7 @@ impl Widget for &mut FilterWidget {
         let [filter_state_area, filter_due_area] =
             Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(body_area);
 
-        header::Header::new("Filter", self.is_active)
+        header::Header::new("Filter", self.is_active, &None)
             .block()
             .render(header_area, buf);
         self.render_filter_state(filter_state_area, buf);

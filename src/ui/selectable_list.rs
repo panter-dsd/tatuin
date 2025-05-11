@@ -1,4 +1,6 @@
+use super::AppBlockWidget;
 use super::list;
+use super::shortcut::Shortcut;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::widgets::{ListItem, ListState, StatefulWidget};
@@ -8,6 +10,21 @@ pub struct SelectableList<T> {
     items: Vec<T>,
     state: ListState,
     add_all_item: bool,
+    shortcut: Option<Shortcut>,
+    is_active: bool,
+}
+
+impl<T> AppBlockWidget for SelectableList<T> {
+    fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        if let Some(s) = &mut self.shortcut {
+            vec![s]
+        } else {
+            Vec::new()
+        }
+    }
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active
+    }
 }
 
 impl<T> SelectableList<T> {
@@ -16,12 +33,19 @@ impl<T> SelectableList<T> {
             items,
             state: ListState::default().with_selected(selected),
             add_all_item: false,
+            shortcut: None,
+            is_active: false,
         }
     }
 
     pub fn add_all_item(mut self) -> Self {
         self.add_all_item = true;
         self.state.select_first();
+        self
+    }
+
+    pub fn shortcut(mut self, s: Shortcut) -> Self {
+        self.shortcut = Some(s);
         self
     }
 
@@ -96,7 +120,6 @@ impl<T> SelectableList<T> {
     pub fn render(
         &mut self,
         title: &str,
-        is_active: bool,
         f: impl Fn(&T) -> ListItem,
         area: Rect,
         buf: &mut Buffer,
@@ -107,8 +130,9 @@ impl<T> SelectableList<T> {
         }
 
         StatefulWidget::render(
-            list::List::new(&items, is_active)
+            list::List::new(&items, self.is_active)
                 .title(format!("{title} ({})", items.len()).as_str())
+                .shortcut(&self.shortcut)
                 .widget(),
             area,
             buf,
@@ -119,10 +143,6 @@ impl<T> SelectableList<T> {
 
 impl<T> Default for SelectableList<T> {
     fn default() -> Self {
-        Self {
-            items: Vec::new(),
-            state: ListState::default(),
-            add_all_item: false,
-        }
+        SelectableList::new(Vec::new(), None)
     }
 }

@@ -1,46 +1,55 @@
+use super::AppBlockWidget;
 use crate::task;
 use crate::task::Task as TaskTrait;
 use crate::ui::style;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style, Stylize};
-use ratatui::symbols;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Padding, Paragraph, Widget, Wrap};
+use ratatui::widgets::{Paragraph, Widget, Wrap};
 
-#[derive(Default)]
+use super::header::Header;
+use super::shortcut::Shortcut;
+
 pub struct TaskDescriptionWidget {
     is_active: bool,
     t: Option<Box<dyn TaskTrait>>,
+    shortcut: Option<Shortcut>,
+}
+
+impl Default for TaskDescriptionWidget {
+    fn default() -> Self {
+        Self {
+            is_active: false,
+            t: None,
+            shortcut: Some(Shortcut::new(&['g', 'c'])),
+        }
+    }
+}
+
+impl AppBlockWidget for TaskDescriptionWidget {
+    fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        if let Some(s) = &mut self.shortcut {
+            vec![s]
+        } else {
+            Vec::new()
+        }
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active
+    }
 }
 
 impl TaskDescriptionWidget {
-    pub fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
-    }
-
     pub fn set_task(&mut self, t: Option<Box<dyn TaskTrait>>) {
         self.t = t
-    }
-
-    fn block_style(&self) -> Style {
-        if self.is_active {
-            return style::ACTIVE_BLOCK_STYLE;
-        }
-
-        style::INACTIVE_BLOCK_STYLE
     }
 }
 
 impl Widget for &mut TaskDescriptionWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let block = Block::new()
-            .title(Line::raw("Task description").centered())
-            .borders(Borders::TOP)
-            .border_set(symbols::border::EMPTY)
-            .border_style(self.block_style())
-            .bg(style::NORMAL_ROW_BG)
-            .padding(Padding::horizontal(1));
+        let h = Header::new("Task description", self.is_active, &self.shortcut);
 
         if let Some(t) = &self.t {
             let id = t.id();
@@ -80,12 +89,12 @@ impl Widget for &mut TaskDescriptionWidget {
             text.push(styled_line("Priority", priority.as_str()));
 
             Paragraph::new(text)
-                .block(block)
+                .block(h.block())
                 .wrap(Wrap { trim: false })
                 .render(area, buf);
         } else {
             Paragraph::new("Nothing selected...")
-                .block(block)
+                .block(h.block())
                 .fg(style::DESCRIPTION_VALUE_COLOR)
                 .wrap(Wrap { trim: false })
                 .render(area, buf);

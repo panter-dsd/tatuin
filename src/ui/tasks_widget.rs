@@ -1,3 +1,4 @@
+use super::AppBlockWidget;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
 use crate::task;
@@ -12,17 +13,31 @@ use ratatui::widgets::{ListItem, ListState, Widget};
 use std::cmp::Ordering;
 use std::slice::IterMut;
 
-#[derive(Default)]
+use super::shortcut::Shortcut;
+
 pub struct TasksWidget {
-    is_active: bool,
     tasks: SelectableList<Box<dyn TaskTrait>>,
 }
 
-impl TasksWidget {
-    pub fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
+impl Default for TasksWidget {
+    fn default() -> Self {
+        Self {
+            tasks: SelectableList::default().shortcut(Shortcut::new(&['g', 't'])),
+        }
+    }
+}
+
+impl AppBlockWidget for TasksWidget {
+    fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        self.tasks.activate_shortcuts()
     }
 
+    fn set_active(&mut self, is_active: bool) {
+        self.tasks.set_active(is_active);
+    }
+}
+
+impl TasksWidget {
     pub fn set_tasks(&mut self, tasks: Vec<Box<dyn task::Task>>) {
         self.tasks.set_items(tasks);
 
@@ -118,7 +133,6 @@ impl Widget for &mut TasksWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
         self.tasks.render(
             "Tasks",
-            self.is_active,
             |t| {
                 let fg_color = {
                     match t.due() {

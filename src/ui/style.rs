@@ -20,6 +20,15 @@ pub const PROVIDER_COLORS: &[Color] = &[
     Color::Red,
 ];
 
+pub const FOOTER_KEYS_HELP_COLOR: Color = Color::White;
+pub const FOOTER_DATETIME_LABLE_FG: Color = Color::Yellow;
+pub const FOOTER_DATETIME_FG: Color = Color::LightCyan;
+pub const FOOTER_KEYS_LABLE_FG: Color = Color::Green;
+pub const FOOTER_KEYS_FG: Color = Color::LightRed;
+
+pub const HEADER_KEY_SELECTED_FG: Color = Color::LightRed;
+pub const HEADER_KEY_FG: Color = PINK_COLOR;
+
 pub const ACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(GREEN.c800);
 pub const INACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
 pub const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
