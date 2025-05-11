@@ -15,8 +15,12 @@ pub struct SelectableList<T> {
 }
 
 impl<T> AppBlockWidget for SelectableList<T> {
-    fn activate_shortcut(&mut self) -> &mut Option<Shortcut> {
-        &mut self.shortcut
+    fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        if let Some(s) = &mut self.shortcut {
+            vec![s]
+        } else {
+            Vec::new()
+        }
     }
     fn set_active(&mut self, is_active: bool) {
         self.is_active = is_active

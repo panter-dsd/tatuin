@@ -28,8 +28,8 @@ impl Default for TasksWidget {
 }
 
 impl AppBlockWidget for TasksWidget {
-    fn activate_shortcut(&mut self) -> &mut Option<Shortcut> {
-        self.tasks.activate_shortcut()
+    fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        self.tasks.activate_shortcuts()
     }
 
     fn set_active(&mut self, is_active: bool) {

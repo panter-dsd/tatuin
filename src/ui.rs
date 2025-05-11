@@ -13,6 +13,7 @@ use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
 use std::fmt::Write;
 use std::hash::Hash;
+use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{Mutex, OnceCell};
 mod filter_widget;
@@ -21,7 +22,6 @@ mod hyperlink;
 mod list;
 mod selectable_list;
 mod shortcut;
-use std::rc::Rc;
 pub mod style;
 mod task_description_widget;
 mod tasks_widget;
@@ -46,7 +46,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 ];
 
 trait AppBlockWidget {
-    fn activate_shortcut(&mut self) -> &mut Option<Shortcut>;
+    fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut>;
     fn set_active(&mut self, is_active: bool);
 }
 
@@ -87,31 +87,32 @@ impl std::fmt::Display for KeyBuffer {
 pub struct App {
     should_exit: bool,
     reload_tasks: bool,
-    providers: Rc<Mutex<SelectableList<Box<dyn provider::Provider>>>>,
-    projects: Rc<Mutex<SelectableList<Box<dyn project::Project>>>>,
+    providers: Arc<Mutex<SelectableList<Box<dyn provider::Provider>>>>,
+    projects: Arc<Mutex<SelectableList<Box<dyn project::Project>>>>,
     current_block: AppBlock,
 
-    filter_widget: filter_widget::FilterWidget,
-    tasks_widget: Rc<Mutex<tasks_widget::TasksWidget>>,
-    task_description_widget: Rc<Mutex<task_description_widget::TaskDescriptionWidget>>,
+    filter_widget: Arc<Mutex<filter_widget::FilterWidget>>,
+    tasks_widget: Arc<Mutex<tasks_widget::TasksWidget>>,
+    task_description_widget: Arc<Mutex<task_description_widget::TaskDescriptionWidget>>,
 
     alert: Option<String>,
-    app_blocks: HashMap<AppBlock, Rc<Mutex<dyn AppBlockWidget>>>,
+    app_blocks: HashMap<AppBlock, Arc<Mutex<dyn AppBlockWidget>>>,
     key_buffer: KeyBuffer,
 }
 
+#[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
 impl App {
     pub fn new(providers: Vec<Box<dyn provider::Provider>>) -> Self {
         let mut s = Self {
             should_exit: false,
             reload_tasks: true,
             current_block: AppBlock::TaskList,
-            providers: Rc::new(Mutex::new(
+            providers: Arc::new(Mutex::new(
                 SelectableList::new(providers, Some(0))
                     .add_all_item()
                     .shortcut(Shortcut::new(&['g', 'v'])),
             )),
-            projects: Rc::new(Mutex::new(
+            projects: Arc::new(Mutex::new(
                 SelectableList::default()
                     .add_all_item()
                     .shortcut(Shortcut::new(&['g', 'p'])),
@@ -120,8 +121,8 @@ impl App {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
-            tasks_widget: Rc::new(Mutex::new(tasks_widget::TasksWidget::default())),
-            task_description_widget: Rc::new(Mutex::new(
+            tasks_widget: Arc::new(Mutex::new(tasks_widget::TasksWidget::default())),
+            task_description_widget: Arc::new(Mutex::new(
                 task_description_widget::TaskDescriptionWidget::default(),
             )),
             alert: None,
@@ -136,6 +137,8 @@ impl App {
             .insert(AppBlock::TaskList, s.tasks_widget.clone());
         s.app_blocks
             .insert(AppBlock::TaskDescription, s.task_description_widget.clone());
+        s.app_blocks
+            .insert(AppBlock::Filter, s.filter_widget.clone());
 
         s
     }
@@ -207,7 +210,7 @@ impl App {
     }
 
     async fn load_tasks(&mut self) {
-        let mut tasks: Vec<Box<dyn task::Task>> = Vec::new();
+        let mut all_tasks: Vec<Box<dyn task::Task>> = Vec::new();
 
         let selected_provider_name = if let Some(p) = self.providers.lock().await.selected() {
             p.name()
@@ -223,8 +226,12 @@ impl App {
                 continue;
             }
 
-            match p.tasks(None, &self.filter_widget.filter()).await {
-                Ok(t) => tasks.append(
+            let tasks = p
+                .tasks(None, &self.filter_widget.lock().await.filter())
+                .await;
+
+            match tasks {
+                Ok(t) => all_tasks.append(
                     &mut t
                         .iter()
                         .filter(|t| {
@@ -245,13 +252,13 @@ impl App {
             )
         }
 
-        tasks.sort_by(|l, r| {
+        all_tasks.sort_by(|l, r| {
             due_group(l.as_ref())
                 .cmp(&due_group(r.as_ref()))
                 .then_with(|| r.priority().cmp(&l.priority()))
                 .then_with(|| l.due().cmp(&r.due()))
         });
-        self.tasks_widget.lock().await.set_tasks(tasks);
+        self.tasks_widget.lock().await.set_tasks(all_tasks);
 
         if project_id.is_none() {
             self.load_projects().await;
@@ -269,8 +276,8 @@ impl App {
 
         let keys = self.key_buffer.push(code);
         for (t, b) in &self.app_blocks {
-            if let Some(p) = b.lock().await.activate_shortcut() {
-                match p.accept(&keys) {
+            for s in b.lock().await.activate_shortcuts() {
+                match s.accept(&keys) {
                     AcceptResult::Accepted => {
                         self.key_buffer.clear();
                         self.current_block = t.clone();
@@ -368,7 +375,7 @@ impl App {
                 self.reload_tasks = true;
             }
             AppBlock::Filter => {
-                self.filter_widget.change_check_state();
+                self.filter_widget.lock().await.change_check_state();
                 self.projects.lock().await.select_first();
                 self.reload().await;
             }
@@ -390,12 +397,12 @@ impl App {
         match self.current_block {
             AppBlock::Projects => {
                 self.current_block = AppBlock::Filter;
-                self.filter_widget.set_active(true, false);
+                self.filter_widget.lock().await.set_active(true, false);
             }
             AppBlock::Filter => {
-                if !self.filter_widget.next_block() {
+                if !self.filter_widget.lock().await.next_block() {
                     self.current_block = AppBlock::TaskList;
-                    self.filter_widget.set_active(false, false);
+                    self.filter_widget.lock().await.set_active(false, false);
                 }
             }
             _ => self.current_block = BLOCK_ORDER[next_block_idx].clone(),
@@ -419,12 +426,12 @@ impl App {
         match self.current_block {
             AppBlock::TaskList => {
                 self.current_block = BLOCK_ORDER[next_block_idx].clone();
-                self.filter_widget.set_active(true, true);
+                self.filter_widget.lock().await.set_active(true, true);
             }
             AppBlock::Filter => {
-                if !self.filter_widget.previous_block() {
+                if !self.filter_widget.lock().await.previous_block() {
                     self.current_block = BLOCK_ORDER[next_block_idx].clone();
-                    self.filter_widget.set_active(false, true);
+                    self.filter_widget.lock().await.set_active(false, true);
                 }
             }
             _ => self.current_block = BLOCK_ORDER[next_block_idx].clone(),
@@ -457,7 +464,7 @@ impl App {
                 self.projects.lock().await.select_first();
             }
             AppBlock::Projects => self.projects.lock().await.select_next(),
-            AppBlock::Filter => self.filter_widget.select_next(),
+            AppBlock::Filter => self.filter_widget.lock().await.select_next(),
             AppBlock::TaskList => {
                 self.tasks_widget.lock().await.select_next();
                 self.set_current_task().await;
@@ -474,7 +481,7 @@ impl App {
                 self.projects.lock().await.select_first();
             }
             AppBlock::Projects => self.projects.lock().await.select_previous(),
-            AppBlock::Filter => self.filter_widget.select_previous(),
+            AppBlock::Filter => self.filter_widget.lock().await.select_previous(),
             AppBlock::TaskList => {
                 self.tasks_widget.lock().await.select_previous();
                 self.set_current_task().await;
@@ -488,7 +495,7 @@ impl App {
         match self.current_block {
             AppBlock::Providers => self.providers.lock().await.select_first(),
             AppBlock::Projects => self.projects.lock().await.select_first(),
-            AppBlock::Filter => self.filter_widget.select_first(),
+            AppBlock::Filter => self.filter_widget.lock().await.select_first(),
             AppBlock::TaskList => {
                 self.tasks_widget.lock().await.select_first();
                 self.set_current_task().await;
@@ -502,7 +509,7 @@ impl App {
         match self.current_block {
             AppBlock::Providers => self.providers.lock().await.select_last(),
             AppBlock::Projects => self.projects.lock().await.select_last(),
-            AppBlock::Filter => self.filter_widget.select_last(),
+            AppBlock::Filter => self.filter_widget.lock().await.select_last(),
             AppBlock::TaskList => {
                 self.tasks_widget.lock().await.select_last();
                 self.set_current_task().await;
@@ -539,7 +546,7 @@ impl App {
         self.render_footer(footer_area, buf);
         self.render_providers(providers_area, buf).await;
         self.render_projects(projects_area, buf).await;
-        self.filter_widget.render(filter_area, buf);
+        self.render_filters(filter_area, buf).await;
         self.render_tasks(list_area, buf).await;
         self.render_task_description(task_description_area, buf)
             .await;
@@ -637,8 +644,13 @@ impl App {
     async fn render_tasks(&mut self, area: Rect, buf: &mut Buffer) {
         self.tasks_widget.lock().await.render(area, buf)
     }
+
     async fn render_task_description(&mut self, area: Rect, buf: &mut Buffer) {
         self.task_description_widget.lock().await.render(area, buf)
+    }
+
+    async fn render_filters(&mut self, area: Rect, buf: &mut Buffer) {
+        self.filter_widget.lock().await.render(area, buf)
     }
 }
 

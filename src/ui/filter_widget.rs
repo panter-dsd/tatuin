@@ -1,12 +1,14 @@
 use crate::filter::{Due, Filter, FilterState};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::widgets::{ListItem, ListState, StatefulWidget, Widget};
 
-use super::header;
 use super::list;
 use super::shortcut::Shortcut;
+use super::{AppBlockWidget, header};
 
 const POSSIBLE_STATES: [FilterState; 4] = [
     FilterState::Completed,
@@ -33,9 +35,19 @@ pub struct FilterWidget {
     due_shortcut: Shortcut,
 }
 
+impl AppBlockWidget for FilterWidget {
+    fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        vec![&mut self.state_shortcut, &mut self.due_shortcut]
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active
+    }
+}
+
 impl FilterWidget {
-    pub fn new(f: Filter) -> Self {
-        Self {
+    pub fn new(f: Filter) -> Arc<Mutex<Self>> {
+        let s = Arc::new(Mutex::new(Self {
             is_active: false,
             current_block: FilterBlock::State,
             filter: f,
@@ -43,7 +55,35 @@ impl FilterWidget {
             filter_due_state: ListState::default(),
             state_shortcut: Shortcut::new(&['g', 's']),
             due_shortcut: Shortcut::new(&['g', 'd']),
-        }
+        }));
+
+        tokio::spawn({
+            let s = s.clone();
+            async move {
+                let mut rx = s.lock().await.state_shortcut.subscribe_to_accepted();
+                loop {
+                    if rx.recv().await.is_err() {
+                        return;
+                    }
+
+                    s.lock().await.current_block = FilterBlock::State;
+                }
+            }
+        });
+        tokio::spawn({
+            let s = s.clone();
+            async move {
+                let mut rx = s.lock().await.due_shortcut.subscribe_to_accepted();
+                loop {
+                    if rx.recv().await.is_err() {
+                        return;
+                    }
+
+                    s.lock().await.current_block = FilterBlock::Due;
+                }
+            }
+        });
+        s
     }
 
     pub fn set_active(&mut self, is_active: bool, backward: bool) {

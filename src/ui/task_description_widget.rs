@@ -28,8 +28,12 @@ impl Default for TaskDescriptionWidget {
 }
 
 impl AppBlockWidget for TaskDescriptionWidget {
-    fn activate_shortcut(&mut self) -> &mut Option<Shortcut> {
-        &mut self.shortcut
+    fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        if let Some(s) = &mut self.shortcut {
+            vec![s]
+        } else {
+            Vec::new()
+        }
     }
 
     fn set_active(&mut self, is_active: bool) {
