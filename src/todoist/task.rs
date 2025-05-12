@@ -81,6 +81,10 @@ impl TaskTrait for Task {
         self.content.to_string()
     }
 
+    fn description(&self) -> Option<String> {
+        self.description.clone()
+    }
+
     fn state(&self) -> TaskState {
         if self.checked.unwrap_or(true) {
             // completed tasks doesn't contain this field

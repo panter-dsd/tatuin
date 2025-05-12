@@ -88,6 +88,14 @@ impl Widget for &mut TaskDescriptionWidget {
             let priority = t.priority().to_string();
             text.push(styled_line("Priority", priority.as_str()));
 
+            let description;
+            if let Some(d) = t.description() {
+                if !d.is_empty() {
+                    description = d;
+                    text.push(styled_line("Description", description.as_str()));
+                }
+            }
+
             Paragraph::new(text)
                 .block(h.block())
                 .wrap(Wrap { trim: false })
