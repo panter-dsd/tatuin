@@ -51,9 +51,15 @@ pub trait Task: Send + Sync {
     fn id(&self) -> String {
         String::new()
     }
+
     fn text(&self) -> String {
         String::new()
     }
+
+    fn description(&self) -> Option<String> {
+        None
+    }
+
     fn priority(&self) -> Priority {
         Priority::Normal
     }

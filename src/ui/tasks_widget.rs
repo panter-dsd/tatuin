@@ -147,7 +147,7 @@ impl Widget for &mut TasksWidget {
                         None => style::NO_DATE_TASK_FG,
                     }
                 };
-                let mixed_line = Line::from(vec![
+                let mut lines = vec![
                     Span::from(format!("[{}] ", t.state())),
                     Span::styled(t.text(), Style::default().fg(fg_color)),
                     Span::from(" ("),
@@ -163,9 +163,13 @@ impl Widget for &mut TasksWidget {
                     Span::from(") ("),
                     Span::styled(t.place(), Style::default().fg(Color::Yellow)),
                     Span::from(")"),
-                ]);
+                ];
 
-                ListItem::from(mixed_line)
+                if !t.description().unwrap_or_default().is_empty() {
+                    lines.push(Span::from(" 💬"));
+                }
+
+                ListItem::from(Line::from(lines))
             },
             area,
             buf,

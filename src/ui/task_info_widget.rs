@@ -11,23 +11,23 @@ use ratatui::widgets::{Paragraph, Widget, Wrap};
 use super::header::Header;
 use super::shortcut::Shortcut;
 
-pub struct TaskDescriptionWidget {
+pub struct TaskInfoWidget {
     is_active: bool,
     t: Option<Box<dyn TaskTrait>>,
     shortcut: Option<Shortcut>,
 }
 
-impl Default for TaskDescriptionWidget {
+impl Default for TaskInfoWidget {
     fn default() -> Self {
         Self {
             is_active: false,
             t: None,
-            shortcut: Some(Shortcut::new(&['g', 'c'])),
+            shortcut: Some(Shortcut::new(&['g', 'i'])),
         }
     }
 }
 
-impl AppBlockWidget for TaskDescriptionWidget {
+impl AppBlockWidget for TaskInfoWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         if let Some(s) = &mut self.shortcut {
             vec![s]
@@ -41,15 +41,15 @@ impl AppBlockWidget for TaskDescriptionWidget {
     }
 }
 
-impl TaskDescriptionWidget {
+impl TaskInfoWidget {
     pub fn set_task(&mut self, t: Option<Box<dyn TaskTrait>>) {
         self.t = t
     }
 }
 
-impl Widget for &mut TaskDescriptionWidget {
+impl Widget for &mut TaskInfoWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let h = Header::new("Task description", self.is_active, &self.shortcut);
+        let h = Header::new("Task info", self.is_active, &self.shortcut);
 
         if let Some(t) = &self.t {
             let id = t.id();
@@ -87,6 +87,14 @@ impl Widget for &mut TaskDescriptionWidget {
 
             let priority = t.priority().to_string();
             text.push(styled_line("Priority", priority.as_str()));
+
+            let description;
+            if let Some(d) = t.description() {
+                if !d.is_empty() {
+                    description = d;
+                    text.push(styled_line("Description", description.as_str()));
+                }
+            }
 
             Paragraph::new(text)
                 .block(h.block())

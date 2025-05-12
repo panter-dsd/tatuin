@@ -23,7 +23,7 @@ mod list;
 mod selectable_list;
 mod shortcut;
 pub mod style;
-mod task_description_widget;
+mod task_info_widget;
 mod tasks_widget;
 use selectable_list::SelectableList;
 use tokio_stream::StreamExt;
@@ -34,7 +34,7 @@ enum AppBlock {
     Projects,
     Filter,
     TaskList,
-    TaskDescription,
+    TaskInfo,
 }
 
 const BLOCK_ORDER: [AppBlock; 5] = [
@@ -42,7 +42,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
     AppBlock::Projects,
     AppBlock::Filter,
     AppBlock::TaskList,
-    AppBlock::TaskDescription,
+    AppBlock::TaskInfo,
 ];
 
 trait AppBlockWidget {
@@ -93,7 +93,7 @@ pub struct App {
 
     filter_widget: Arc<RwLock<filter_widget::FilterWidget>>,
     tasks_widget: Arc<RwLock<tasks_widget::TasksWidget>>,
-    task_description_widget: Arc<RwLock<task_description_widget::TaskDescriptionWidget>>,
+    task_description_widget: Arc<RwLock<task_info_widget::TaskInfoWidget>>,
 
     alert: Option<String>,
     app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
@@ -125,7 +125,7 @@ impl App {
             }),
             tasks_widget: Arc::new(RwLock::new(tasks_widget::TasksWidget::default())),
             task_description_widget: Arc::new(RwLock::new(
-                task_description_widget::TaskDescriptionWidget::default(),
+                task_info_widget::TaskInfoWidget::default(),
             )),
             alert: None,
             app_blocks: HashMap::new(),
@@ -139,7 +139,7 @@ impl App {
         s.app_blocks
             .insert(AppBlock::TaskList, s.tasks_widget.clone());
         s.app_blocks
-            .insert(AppBlock::TaskDescription, s.task_description_widget.clone());
+            .insert(AppBlock::TaskInfo, s.task_description_widget.clone());
         s.app_blocks
             .insert(AppBlock::Filter, s.filter_widget.clone());
 
@@ -332,7 +332,7 @@ impl App {
                 }
             }
             KeyCode::Char('h') | KeyCode::Left => {
-                const BLOCKS: [AppBlock; 2] = [AppBlock::TaskList, AppBlock::TaskDescription];
+                const BLOCKS: [AppBlock; 2] = [AppBlock::TaskList, AppBlock::TaskInfo];
 
                 if BLOCKS.contains(&self.current_block) {
                     self.current_block = AppBlock::Providers;
@@ -465,7 +465,7 @@ impl App {
                 self.reload_tasks = true;
             }
             AppBlock::TaskList => {}
-            AppBlock::TaskDescription => {}
+            AppBlock::TaskInfo => {}
         }
     }
 
@@ -488,7 +488,7 @@ impl App {
                 self.tasks_widget.write().await.select_next();
                 self.set_current_task().await;
             }
-            AppBlock::TaskDescription => {}
+            AppBlock::TaskInfo => {}
         }
         self.set_reload();
     }
@@ -505,7 +505,7 @@ impl App {
                 self.tasks_widget.write().await.select_previous();
                 self.set_current_task().await;
             }
-            AppBlock::TaskDescription => {}
+            AppBlock::TaskInfo => {}
         }
         self.set_reload();
     }
@@ -519,7 +519,7 @@ impl App {
                 self.tasks_widget.write().await.select_first();
                 self.set_current_task().await;
             }
-            AppBlock::TaskDescription => {}
+            AppBlock::TaskInfo => {}
         }
         self.set_reload();
     }
@@ -533,7 +533,7 @@ impl App {
                 self.tasks_widget.write().await.select_last();
                 self.set_current_task().await;
             }
-            AppBlock::TaskDescription => {}
+            AppBlock::TaskInfo => {}
         }
         self.set_reload();
     }
