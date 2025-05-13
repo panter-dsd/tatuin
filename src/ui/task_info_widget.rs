@@ -61,24 +61,6 @@ impl Widget for &mut TaskInfoWidget {
                 styled_line("Text", &task_text),
             ];
 
-            let created_at;
-            if let Some(d) = t.created_at() {
-                created_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
-                text.push(styled_line("Created", &created_at));
-            }
-
-            let updated_at;
-            if let Some(d) = t.updated_at() {
-                updated_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
-                text.push(styled_line("Updated", &updated_at));
-            }
-
-            let completed_at;
-            if let Some(d) = t.completed_at() {
-                completed_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
-                text.push(styled_line("Completed", &completed_at));
-            }
-
             let due;
             if t.due().is_some() {
                 due = task::datetime_to_str(t.due());
@@ -100,6 +82,18 @@ impl Widget for &mut TaskInfoWidget {
                     description = d;
                     text.push(styled_line("Description", description.as_str()));
                 }
+            }
+
+            let created_at;
+            if let Some(d) = t.created_at() {
+                created_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
+                text.push(styled_line("Created", &created_at));
+            }
+
+            let updated_at;
+            if let Some(d) = t.updated_at() {
+                updated_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
+                text.push(styled_line("Updated", &updated_at));
             }
 
             Paragraph::new(text)
