@@ -8,4 +8,4 @@ extend-exclude = []
 [default.extend-words]
 
 [default]
-extend-ignore-identifiers-re = []
+extend-ignore-identifiers-re = ["ratatui"]

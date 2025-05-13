@@ -234,12 +234,12 @@ mod tests {
         }
         const CASES: &[Case] = &[
             Case {
-                name: "emty content",
+                name: "empty content",
                 file_content: "",
                 count: 0,
             },
             Case {
-                name: "non emty content without tasks",
+                name: "non empty content without tasks",
                 file_content: "some text",
                 count: 0,
             },
@@ -437,7 +437,7 @@ some another text
     }
 
     #[test]
-    fn change_state_to_uncomplete_in_content_test() {
+    fn change_state_to_incomplete_in_content_test() {
         struct Case<'a> {
             name: &'a str,
             file_content_before: &'a str,

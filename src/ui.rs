@@ -566,7 +566,7 @@ impl App {
                 "Use ↓↑ to move up/down, Tab/BackTab to move between blocks. ",
                 style::FOOTER_KEYS_HELP_COLOR,
             ),
-            Span::styled("Current date/time: ", style::FOOTER_DATETIME_LABLE_FG),
+            Span::styled("Current date/time: ", style::FOOTER_DATETIME_LABEL_FG),
             Span::styled(
                 chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
                 style::FOOTER_DATETIME_FG,
@@ -574,7 +574,7 @@ impl App {
         ];
 
         if !self.key_buffer.is_empty() {
-            lines.push(Span::styled(" Keys: ", style::FOOTER_KEYS_LABLE_FG));
+            lines.push(Span::styled(" Keys: ", style::FOOTER_KEYS_LABEL_FG));
             lines.push(Span::styled(self.key_buffer.to_string(), style::FOOTER_KEYS_FG));
         }
 
