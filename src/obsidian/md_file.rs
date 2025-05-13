@@ -257,7 +257,7 @@ some another text
                 count: 1,
             },
             Case {
-                name: "content contain cyrilic",
+                name: "content contain cyrillic",
                 file_content: "какой-то текст
 - [ ] Текст задачи
 длинный текст в конце
@@ -406,7 +406,7 @@ some another text
                 ),
             },
             Case {
-                name: "content contain cyrilic",
+                name: "content contain cyrillic",
                 file_content_before: "какой-то текст
 - [ ] Текст задачи
 длинный текст в конце
@@ -493,7 +493,7 @@ some another text
 ",
             },
             Case {
-                name: "content contain cyrilic",
+                name: "content contain cyrillic",
                 file_content_before: "какой-то текст
 - [x] Текст задачи ✅ 2025-01-01
 длинный текст в конце
@@ -536,7 +536,7 @@ Some another text";
     }
 
     #[test]
-    fn test_pos_in_parse_content_for_for_cyrilic_test() {
+    fn test_pos_in_parse_content_for_for_cyrillic_test() {
         let content = "Какой-то текст
 - [ ] Задача
 Какой-то другой текст";
