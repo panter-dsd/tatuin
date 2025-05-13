@@ -7,6 +7,8 @@ use std::fs;
 use std::sync::LazyLock;
 
 static TASK_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\ *-\ \[(.)\]\ (.*)$").unwrap());
+const DUE_EMOJI: char = '📅';
+const COMPLETED_EMOJI: char = '✅';
 
 pub struct File {
     file_path: String,
@@ -36,8 +38,9 @@ impl File {
 
     fn try_parse_task(&self, line: &str, pos: usize) -> Option<Task> {
         if let Some(caps) = TASK_RE.captures(line) {
-            let task_text = String::from(&caps[2]);
-            let (text, due) = parse_due(task_text.as_str());
+            let text = String::from(&caps[2]);
+            let (text, due) = extract_date_after_emoji(text.as_str(), DUE_EMOJI);
+            let (text, completed_at) = extract_date_after_emoji(text.as_str(), COMPLETED_EMOJI);
             let (text, priority) = parse_priority(text.as_str());
             return Some(Task {
                 file_path: self.file_path.to_string(),
@@ -55,6 +58,7 @@ impl File {
                 text: text.trim().to_string(),
                 due,
                 priority,
+                completed_at,
                 ..Default::default()
             });
         }
@@ -109,7 +113,7 @@ impl File {
 
         let mut pos_found = false;
         let mut found = false;
-        let result = content
+        let result: String = content
             .chars()
             .enumerate()
             .map(|(i, c)| {
@@ -125,27 +129,56 @@ impl File {
                 result
             })
             .collect();
-        Ok(result)
+
+        if s == State::Completed {
+            Ok([
+                result.chars().take(t.end_pos).collect::<String>(),
+                format!(
+                    " {COMPLETED_EMOJI} {}",
+                    chrono::Utc::now().format("%Y-%m-%d")
+                ),
+                result.chars().skip(t.end_pos).collect::<String>(),
+            ]
+            .join(""))
+        } else {
+            let task: String = result
+                .chars()
+                .skip(t.start_pos)
+                .take(t.end_pos - t.start_pos)
+                .collect();
+            let (task, _) = extract_date_after_emoji(task.as_str(), COMPLETED_EMOJI);
+
+            Ok([
+                result.chars().take(t.start_pos).collect::<String>(),
+                task,
+                result.chars().skip(t.end_pos).collect::<String>(),
+            ]
+            .join(""))
+        }
     }
 }
 
-fn parse_due(text: &str) -> (String, Option<DateTimeUtc>) {
-    const DUE_START: &str = " 📅 ";
-    let idx = text.rfind(DUE_START);
+fn extract_date_after_emoji(text: &str, emoji: char) -> (String, Option<DateTimeUtc>) {
+    let start = format!(" {emoji} ");
+    let idx = text.rfind(start.as_str());
     if idx.is_none() {
         return (text.to_string(), None);
     }
 
     let idx = idx.unwrap();
 
-    const DUE_PATTERN: &str = "0000-00-00";
+    const DATE_PATTERN: &str = "0000-00-00";
 
-    let date_str = &text[idx + DUE_START.len()..idx + DUE_START.len() + DUE_PATTERN.len()];
+    let date_str = &text[idx + start.len()..idx + start.len() + DATE_PATTERN.len()];
 
     if let Ok(d) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
         if let Some(dt) = d.and_hms_opt(0, 0, 0) {
             return (
-                text[..idx].to_string(),
+                [
+                    text[..idx].to_string(),
+                    text[idx + start.len() + DATE_PATTERN.len()..].to_string(),
+                ]
+                .join(""),
                 Some(DateTimeUtc::from_naive_utc_and_offset(dt, Utc)),
             );
         }
@@ -276,6 +309,29 @@ some another text
     }
 
     #[test]
+    fn check_all_fields_parsed_test() {
+        let text =
+            format!("- [x] Some text ⏫ {DUE_EMOJI} 2025-01-01 {COMPLETED_EMOJI} 2025-01-01");
+
+        let p = File::new("");
+        let task = p.try_parse_task(text.as_str(), 0);
+        assert!(task.is_some());
+        let task = task.unwrap();
+        assert_eq!(task.text, "Some text");
+        assert_eq!(task.state, State::Completed);
+        assert!(task.due.is_some());
+        assert_eq!(
+            task.due.unwrap().format("%Y-%m-%d").to_string(),
+            "2025-01-01"
+        );
+        assert!(task.completed_at.is_some());
+        assert_eq!(
+            task.completed_at.unwrap().format("%Y-%m-%d").to_string(),
+            "2025-01-01"
+        );
+    }
+
+    #[test]
     fn parse_due_test() {
         struct Case<'a> {
             name: &'a str,
@@ -313,23 +369,24 @@ some another text
         ];
 
         for c in cases {
-            let (_, dt) = parse_due(c.line);
+            let (_, dt) = extract_date_after_emoji(c.line, DUE_EMOJI);
             assert_eq!(dt, c.expected, "Test {} was failed", c.name);
         }
     }
 
     #[test]
-    fn change_state_in_content_test() {
+    fn change_state_to_complete_in_content_test() {
+        let completed_string = format!(" ✅ {}", chrono::Utc::now().format("%Y-%m-%d"));
         struct Case<'a> {
             name: &'a str,
             file_content_before: &'a str,
-            file_content_after: &'a str,
+            file_content_after: String,
         }
-        const CASES: &[Case] = &[
+        let cases: &[Case] = &[
             Case {
                 name: "content contain the single task and nothing else",
                 file_content_before: "- [ ] Some text",
-                file_content_after: "- [x] Some text",
+                file_content_after: format!("- [x] Some text{completed_string}"),
             },
             Case {
                 name: "content contain the single task and other text",
@@ -337,10 +394,12 @@ some another text
 - [ ] Some text
 some another text
 ",
-                file_content_after: "some text
-- [x] Some text
+                file_content_after: format!(
+                    "some text
+- [x] Some text{completed_string}
 some another text
-",
+"
+                ),
             },
             Case {
                 name: "several tasks",
@@ -356,11 +415,102 @@ some another text
 -[ ] Wrong task
 some another text
 ",
+                file_content_after: format!(
+                    "some text
+- [x] Correct task{completed_string}
+     - [x] Correct task{completed_string}
+- [x] Correct task{completed_string}
+- [x] Correct task{completed_string}
+-- [ ] Wrong task
+- [] Wrong task
+- [aa] Wrong task
+- [ ]
+-[ ] Wrong task
+some another text
+"
+                ),
+            },
+            Case {
+                name: "content contain cyrilic",
+                file_content_before: "какой-то текст
+- [ ] Текст задачи
+длинный текст в конце
+",
+                file_content_after: format!(
+                    "какой-то текст
+- [x] Текст задачи{completed_string}
+длинный текст в конце
+"
+                ),
+            },
+        ];
+
+        let p = File::new("");
+
+        for c in cases {
+            let original_tasks = p
+                .tasks_from_content(c.file_content_before.to_string())
+                .unwrap();
+            let mut tasks = original_tasks.clone();
+            let mut result = c.file_content_before.to_string();
+            for i in 0..original_tasks.len() {
+                let r = p.change_state_in_content(&tasks[i], State::Completed, result.as_str());
+                assert!(r.is_ok(), "{}: {}", c.name, r.unwrap_err());
+                result = r.unwrap();
+                tasks = p.tasks_from_content(result.to_string()).unwrap();
+            }
+            assert_eq!(c.file_content_after, result, "Test '{}' was failed", c.name);
+        }
+    }
+
+    #[test]
+    fn change_state_to_uncomplete_in_content_test() {
+        struct Case<'a> {
+            name: &'a str,
+            file_content_before: &'a str,
+            file_content_after: &'a str,
+        }
+        const CASES: &[Case] = &[
+            Case {
+                name: "content contain the single task and nothing else",
+                file_content_before: "- [x] Some text ✅ 2025-01-01",
+                file_content_after: "- [ ] Some text",
+            },
+            Case {
+                name: "content contain the single task without completed date",
+                file_content_before: "- [x] Some text",
+                file_content_after: "- [ ] Some text",
+            },
+            Case {
+                name: "content contain the single task and other text",
+                file_content_before: "some text
+- [x] Some text ✅ 2025-01-01
+some another text
+",
                 file_content_after: "some text
-- [x] Correct task
-     - [x] Correct task
-- [x] Correct task
-- [x] Correct task
+- [ ] Some text
+some another text
+",
+            },
+            Case {
+                name: "several tasks",
+                file_content_before: "some text
+- [x] Correct task ✅ 2025-01-01
+     - [x] Correct task ✅ 2025-01-01
+- [x] Correct task ✅ 2025-01-01
+- [/] Correct task
+-- [ ] Wrong task
+- [] Wrong task
+- [aa] Wrong task
+- [ ]
+-[ ] Wrong task
+some another text
+",
+                file_content_after: "some text
+- [ ] Correct task
+     - [ ] Correct task
+- [ ] Correct task
+- [ ] Correct task
 -- [ ] Wrong task
 - [] Wrong task
 - [aa] Wrong task
@@ -372,11 +522,11 @@ some another text
             Case {
                 name: "content contain cyrilic",
                 file_content_before: "какой-то текст
-- [ ] Текст задачи
+- [x] Текст задачи ✅ 2025-01-01
 длинный текст в конце
 ",
                 file_content_after: "какой-то текст
-- [x] Текст задачи
+- [ ] Текст задачи
 длинный текст в конце
 ",
             },
@@ -385,14 +535,16 @@ some another text
         let p = File::new("");
 
         for c in CASES {
-            let tasks = p
+            let original_tasks = p
                 .tasks_from_content(c.file_content_before.to_string())
                 .unwrap();
+            let mut tasks = original_tasks.clone();
             let mut result = c.file_content_before.to_string();
-            for t in tasks {
-                let r = p.change_state_in_content(&t, State::Completed, result.as_str());
-                assert!(r.is_ok(), "{}", r.unwrap());
+            for i in 0..original_tasks.len() {
+                let r = p.change_state_in_content(&tasks[i], State::Uncompleted, result.as_str());
+                assert!(r.is_ok(), "{}: {}", c.name, r.unwrap_err());
                 result = r.unwrap();
+                tasks = p.tasks_from_content(result.to_string()).unwrap();
             }
             assert_eq!(c.file_content_after, result, "Test '{}' was failed", c.name);
         }

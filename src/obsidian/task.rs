@@ -73,6 +73,7 @@ pub struct Task {
     pub state: State,
     pub text: String,
     pub due: Option<DateTimeUtc>,
+    pub completed_at: Option<DateTimeUtc>,
     pub priority: Priority,
 }
 
@@ -124,6 +125,10 @@ impl TaskTrait for Task {
 
     fn due(&self) -> Option<DateTimeUtc> {
         self.due
+    }
+
+    fn completed_at(&self) -> Option<DateTimeUtc> {
+        self.completed_at
     }
 
     fn provider(&self) -> String {

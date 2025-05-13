@@ -152,7 +152,7 @@ impl Widget for &mut TasksWidget {
                     Span::styled(t.text(), Style::default().fg(fg_color)),
                     Span::from(" ("),
                     Span::styled(
-                        format!("due: {}", task::due_to_str(t.due())),
+                        format!("due: {}", task::datetime_to_str(t.due())),
                         Style::default().fg(Color::Blue),
                     ),
                     Span::from(") ("),

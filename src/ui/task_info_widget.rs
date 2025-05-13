@@ -81,8 +81,14 @@ impl Widget for &mut TaskInfoWidget {
 
             let due;
             if t.due().is_some() {
-                due = task::due_to_str(t.due());
+                due = task::datetime_to_str(t.due());
                 text.push(styled_line("Due", &due));
+            }
+
+            let completed_at;
+            if t.completed_at().is_some() {
+                completed_at = task::datetime_to_str(t.completed_at());
+                text.push(styled_line("Completed at", &completed_at));
             }
 
             let priority = t.priority().to_string();
