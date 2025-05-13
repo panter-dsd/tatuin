@@ -89,11 +89,7 @@ impl FilterWidget {
     pub fn set_active(&mut self, is_active: bool, backward: bool) {
         self.is_active = is_active;
         if is_active {
-            self.current_block = if backward {
-                FilterBlock::Due
-            } else {
-                FilterBlock::State
-            };
+            self.current_block = if backward { FilterBlock::Due } else { FilterBlock::State };
         }
     }
 
@@ -191,13 +187,10 @@ impl FilterWidget {
             .collect::<Vec<ListItem>>();
 
         StatefulWidget::render(
-            list::List::new(
-                &items,
-                self.is_active && self.current_block == FilterBlock::State,
-            )
-            .title("Task state")
-            .shortcut(&Some(self.state_shortcut.clone()))
-            .widget(),
+            list::List::new(&items, self.is_active && self.current_block == FilterBlock::State)
+                .title("Task state")
+                .shortcut(&Some(self.state_shortcut.clone()))
+                .widget(),
             area,
             buf,
             &mut self.filter_state_state,
@@ -214,13 +207,10 @@ impl FilterWidget {
             .collect::<Vec<ListItem>>();
 
         StatefulWidget::render(
-            list::List::new(
-                &items,
-                self.is_active && self.current_block == FilterBlock::Due,
-            )
-            .title("Task due")
-            .shortcut(&Some(self.due_shortcut.clone()))
-            .widget(),
+            list::List::new(&items, self.is_active && self.current_block == FilterBlock::Due)
+                .title("Task due")
+                .shortcut(&Some(self.due_shortcut.clone()))
+                .widget(),
             area,
             buf,
             &mut self.filter_due_state,
@@ -230,8 +220,7 @@ impl FilterWidget {
 
 impl Widget for &mut FilterWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let [header_area, body_area] =
-            Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
+        let [header_area, body_area] = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
         let [filter_state_area, filter_due_area] =
             Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(body_area);
 

@@ -111,12 +111,12 @@ impl Widget for &mut TaskInfoWidget {
 }
 
 fn styled_line<'a>(k: &'a str, v: &'a str) -> Line<'a> {
-    let lable_style = Style::new()
+    let label_style = Style::new()
         .fg(style::DESCRIPTION_KEY_COLOR)
         .add_modifier(Modifier::BOLD);
     let value_style = Style::new().fg(style::DESCRIPTION_VALUE_COLOR);
     Line::from(vec![
-        Span::styled(format!("{k}:"), lable_style),
+        Span::styled(format!("{k}:"), label_style),
         Span::styled(v, value_style),
     ])
 }

@@ -48,13 +48,7 @@ impl TasksWidget {
                 .tasks
                 .state()
                 .selected()
-                .map(|i| {
-                    if i >= self.tasks.len() {
-                        self.tasks.len() - 1
-                    } else {
-                        i
-                    }
-                })
+                .map(|i| if i >= self.tasks.len() { self.tasks.len() - 1 } else { i })
                 .unwrap_or_else(|| 0);
             ListState::default().with_selected(Some(selected_idx))
         };

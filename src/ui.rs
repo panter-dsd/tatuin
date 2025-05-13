@@ -124,24 +124,19 @@ impl App {
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
             tasks_widget: Arc::new(RwLock::new(tasks_widget::TasksWidget::default())),
-            task_description_widget: Arc::new(RwLock::new(
-                task_info_widget::TaskInfoWidget::default(),
-            )),
+            task_description_widget: Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default())),
             alert: None,
             app_blocks: HashMap::new(),
             key_buffer: KeyBuffer::default(),
             select_first_shortcut: Shortcut::new(&['g', 'g']),
         };
 
-        s.app_blocks
-            .insert(AppBlock::Providers, s.providers.clone());
+        s.app_blocks.insert(AppBlock::Providers, s.providers.clone());
         s.app_blocks.insert(AppBlock::Projects, s.projects.clone());
-        s.app_blocks
-            .insert(AppBlock::TaskList, s.tasks_widget.clone());
+        s.app_blocks.insert(AppBlock::TaskList, s.tasks_widget.clone());
         s.app_blocks
             .insert(AppBlock::TaskInfo, s.task_description_widget.clone());
-        s.app_blocks
-            .insert(AppBlock::Filter, s.filter_widget.clone());
+        s.app_blocks.insert(AppBlock::Filter, s.filter_widget.clone());
 
         s
     }
@@ -189,11 +184,7 @@ impl App {
     async fn load_projects(&mut self) {
         let mut projects = self.tasks_widget.read().await.tasks_projects();
 
-        projects.sort_by(|l, r| {
-            l.provider()
-                .cmp(&r.provider())
-                .then_with(|| l.name().cmp(&r.name()))
-        });
+        projects.sort_by(|l, r| l.provider().cmp(&r.provider()).then_with(|| l.name().cmp(&r.name())));
 
         self.projects.write().await.set_items(projects);
         self.projects
@@ -230,9 +221,7 @@ impl App {
                 continue;
             }
 
-            let tasks = p
-                .tasks(None, &self.filter_widget.read().await.filter())
-                .await;
+            let tasks = p.tasks(None, &self.filter_widget.read().await.filter()).await;
 
             match tasks {
                 Ok(t) => all_tasks.append(
@@ -251,9 +240,7 @@ impl App {
         }
 
         for (provider_name, err) in errors {
-            self.add_error(
-                format!("Load provider {} projects failure: {}", provider_name, err).as_str(),
-            )
+            self.add_error(format!("Load provider {} projects failure: {}", provider_name, err).as_str())
         }
 
         all_tasks.sort_by(|l, r| {
@@ -344,8 +331,7 @@ impl App {
             KeyCode::Char('k') | KeyCode::Up => self.select_previous().await,
             KeyCode::Char('G') | KeyCode::End => self.select_last().await,
             KeyCode::Char('l') | KeyCode::Right => {
-                const BLOCKS: [AppBlock; 3] =
-                    [AppBlock::Providers, AppBlock::Projects, AppBlock::Filter];
+                const BLOCKS: [AppBlock; 3] = [AppBlock::Providers, AppBlock::Projects, AppBlock::Filter];
 
                 if BLOCKS.contains(&self.current_block) {
                     self.current_block = AppBlock::TaskList;
@@ -403,10 +389,7 @@ impl App {
     }
 
     async fn select_next_block(&mut self) {
-        let cur_block_idx = BLOCK_ORDER
-            .iter()
-            .position(|x| *x == self.current_block)
-            .unwrap();
+        let cur_block_idx = BLOCK_ORDER.iter().position(|x| *x == self.current_block).unwrap();
         let next_block_idx = if cur_block_idx == BLOCK_ORDER.len() - 1 {
             0
         } else {
@@ -431,10 +414,7 @@ impl App {
     }
 
     async fn select_previous_block(&mut self) {
-        let cur_block_idx = BLOCK_ORDER
-            .iter()
-            .position(|x| *x == self.current_block)
-            .unwrap();
+        let cur_block_idx = BLOCK_ORDER.iter().position(|x| *x == self.current_block).unwrap();
 
         let next_block_idx = if cur_block_idx == 0 {
             BLOCK_ORDER.len() - 1
@@ -542,22 +522,14 @@ impl App {
 /// Rendering logic for the app
 impl App {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let [header_area, main_area, footer_area] = Layout::vertical([
-            Constraint::Length(2),
-            Constraint::Fill(1),
-            Constraint::Length(1),
-        ])
-        .areas(area);
+        let [header_area, main_area, footer_area] =
+            Layout::vertical([Constraint::Length(2), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
 
         let [left_area, right_area] =
             Layout::horizontal([Constraint::Length(50), Constraint::Fill(3)]).areas(main_area);
 
-        let [providers_area, projects_area, filter_area] = Layout::vertical([
-            Constraint::Fill(1),
-            Constraint::Fill(3),
-            Constraint::Fill(1),
-        ])
-        .areas(left_area);
+        let [providers_area, projects_area, filter_area] =
+            Layout::vertical([Constraint::Fill(1), Constraint::Fill(3), Constraint::Fill(1)]).areas(left_area);
         let [list_area, task_description_area] =
             Layout::vertical([Constraint::Fill(1), Constraint::Percentage(20)]).areas(right_area);
 
@@ -567,8 +539,7 @@ impl App {
         self.render_projects(projects_area, buf).await;
         self.render_filters(filter_area, buf).await;
         self.render_tasks(list_area, buf).await;
-        self.render_task_description(task_description_area, buf)
-            .await;
+        self.render_task_description(task_description_area, buf).await;
 
         if let Some(alert) = &mut self.alert {
             let block = Block::bordered()
@@ -595,7 +566,7 @@ impl App {
                 "Use ↓↑ to move up/down, Tab/BackTab to move between blocks. ",
                 style::FOOTER_KEYS_HELP_COLOR,
             ),
-            Span::styled("Current date/time: ", style::FOOTER_DATETIME_LABLE_FG),
+            Span::styled("Current date/time: ", style::FOOTER_DATETIME_LABEL_FG),
             Span::styled(
                 chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
                 style::FOOTER_DATETIME_FG,
@@ -603,16 +574,11 @@ impl App {
         ];
 
         if !self.key_buffer.is_empty() {
-            lines.push(Span::styled(" Keys: ", style::FOOTER_KEYS_LABLE_FG));
-            lines.push(Span::styled(
-                self.key_buffer.to_string(),
-                style::FOOTER_KEYS_FG,
-            ));
+            lines.push(Span::styled(" Keys: ", style::FOOTER_KEYS_LABEL_FG));
+            lines.push(Span::styled(self.key_buffer.to_string(), style::FOOTER_KEYS_FG));
         }
 
-        Paragraph::new(Line::from(lines))
-            .centered()
-            .render(area, buf);
+        Paragraph::new(Line::from(lines)).centered().render(area, buf);
         let link = hyperlink::Hyperlink::new("[Homepage]", "https://github.com/panter-dsd/tatuin");
         link.render(area, buf);
     }
@@ -620,12 +586,7 @@ impl App {
     async fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
         self.providers.write().await.render(
             "Providers",
-            |p| -> ListItem {
-                ListItem::from(Span::styled(
-                    format!("{} ({})", p.name(), p.type_name()),
-                    p.color(),
-                ))
-            },
+            |p| -> ListItem { ListItem::from(Span::styled(format!("{} ({})", p.name(), p.type_name()), p.color())) },
             area,
             buf,
         );
@@ -644,8 +605,7 @@ impl App {
             })
             .await;
 
-        let provider_color =
-            |name: &str| provider_colors.iter().find(|(n, _)| n == name).unwrap().1;
+        let provider_color = |name: &str| provider_colors.iter().find(|(n, _)| n == name).unwrap().1;
 
         self.projects.write().await.render(
             "Projects",

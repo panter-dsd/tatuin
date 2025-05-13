@@ -21,9 +21,9 @@ pub const PROVIDER_COLORS: &[Color] = &[
 ];
 
 pub const FOOTER_KEYS_HELP_COLOR: Color = Color::White;
-pub const FOOTER_DATETIME_LABLE_FG: Color = Color::Yellow;
+pub const FOOTER_DATETIME_LABEL_FG: Color = Color::Yellow;
 pub const FOOTER_DATETIME_FG: Color = Color::LightCyan;
-pub const FOOTER_KEYS_LABLE_FG: Color = Color::Green;
+pub const FOOTER_KEYS_LABEL_FG: Color = Color::Green;
 pub const FOOTER_KEYS_FG: Color = Color::LightRed;
 
 pub const HEADER_KEY_SELECTED_FG: Color = Color::LightRed;

@@ -117,13 +117,7 @@ impl<T> SelectableList<T> {
         self.state.select_last()
     }
 
-    pub fn render(
-        &mut self,
-        title: &str,
-        f: impl Fn(&T) -> ListItem,
-        area: Rect,
-        buf: &mut Buffer,
-    ) {
+    pub fn render(&mut self, title: &str, f: impl Fn(&T) -> ListItem, area: Rect, buf: &mut Buffer) {
         let mut items = self.items.iter().map(f).collect::<Vec<ListItem>>();
         if self.add_all_item {
             items.insert(0, ListItem::from("All"));

@@ -116,9 +116,7 @@ impl TaskTrait for Task {
     fn place(&self) -> String {
         format!(
             "{}:{}",
-            self.file_path
-                .strip_prefix(self.root_path.as_str())
-                .unwrap_or_default(),
+            self.file_path.strip_prefix(self.root_path.as_str()).unwrap_or_default(),
             self.start_pos,
         )
     }
@@ -136,11 +134,7 @@ impl TaskTrait for Task {
     }
 
     fn project(&self) -> Option<Box<dyn ProjectTrait>> {
-        Some(Box::new(Project::new(
-            &self.provider,
-            &self.root_path,
-            &self.file_path,
-        )))
+        Some(Box::new(Project::new(&self.provider, &self.root_path, &self.file_path)))
     }
 
     fn priority(&self) -> Priority {

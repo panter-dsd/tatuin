@@ -80,11 +80,7 @@ fn supported_files(p: &Path) -> Result<Vec<String>, Box<dyn Error>> {
     for e in fs::read_dir(p)? {
         let entry = e?;
         let path = entry.path();
-        let name = path
-            .file_name()
-            .unwrap_or_default()
-            .to_str()
-            .unwrap_or_default();
+        let name = path.file_name().unwrap_or_default().to_str().unwrap_or_default();
         if path.is_file() && name.ends_with(".md") {
             if let Some(p) = path.to_str() {
                 result.push(String::from(p));

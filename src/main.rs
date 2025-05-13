@@ -19,12 +19,7 @@ struct Cli {
     #[command(subcommand)]
     command: Commands,
 
-    #[arg(
-        short,
-        long,
-        name("PATH_TO_CONFIG_FILE"),
-        help("/path/to/settings.toml")
-    )]
+    #[arg(short, long, name("PATH_TO_CONFIG_FILE"), help("/path/to/settings.toml"))]
     settings_file: Option<String>,
 }
 
@@ -111,11 +106,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     path.push('/');
                 }
 
-                providers.push(Box::new(obsidian::Provider::new(
-                    name,
-                    path.as_str(),
-                    color(),
-                )));
+                providers.push(Box::new(obsidian::Provider::new(name, path.as_str(), color())));
             }
             todoist::PROVIDER_NAME => providers.push(Box::new(todoist::Provider::new(
                 name,
@@ -131,20 +122,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         println!(
             "Loaded providers: {}",
-            providers
-                .iter()
-                .map(|p| p.name())
-                .collect::<Vec<String>>()
-                .join(", ")
+            providers.iter().map(|p| p.name()).collect::<Vec<String>>().join(", ")
         );
     }
 
     match &cli.command {
-        Commands::Tasks {
-            state,
-            due,
-            provider,
-        } => {
+        Commands::Tasks { state, due, provider } => {
             let f = filter::Filter {
                 states: state_to_filter(state),
                 due: due_to_filter(due),

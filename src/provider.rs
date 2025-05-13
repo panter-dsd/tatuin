@@ -15,11 +15,7 @@ pub trait Provider {
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn Error>>;
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>>;
-    async fn change_task_state(
-        &mut self,
-        task: &dyn TaskTrait,
-        state: State,
-    ) -> Result<(), Box<dyn Error>>;
+    async fn change_task_state(&mut self, task: &dyn TaskTrait, state: State) -> Result<(), Box<dyn Error>>;
     async fn reload(&mut self);
     fn color(&self) -> Color;
 }

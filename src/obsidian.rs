@@ -57,11 +57,7 @@ impl ProviderTrait for Provider {
         Ok(Vec::new())
     }
 
-    async fn change_task_state(
-        &mut self,
-        task: &dyn TaskTrait,
-        state: State,
-    ) -> Result<(), Box<dyn Error>> {
+    async fn change_task_state(&mut self, task: &dyn TaskTrait, state: State) -> Result<(), Box<dyn Error>> {
         let t: &task::Task = match task.as_any().downcast_ref::<task::Task>() {
             Some(t) => t,
             None => panic!("Wrong casting!"),
