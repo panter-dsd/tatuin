@@ -11,7 +11,7 @@ rust-version = "1.85.1"
 [dependencies]
 async-trait = "0.1.88"
 chrono = "0.4.41"
-clap = { version = "4.5.37", features = ["derive"] }
+clap = { version = "4.5.38", features = ["derive"] }
 color-eyre = "0.6.4"
 colored = "3.0.0"
 config = "0.15.11"
