@@ -101,17 +101,12 @@ impl ProviderTrait for Provider {
 
         if self.tasks.is_empty() {
             if f.states.contains(&filter::FilterState::Uncompleted) {
-                self.tasks
-                    .append(&mut self.c.tasks_by_filter(&project, f).await?);
+                self.tasks.append(&mut self.c.tasks_by_filter(&project, f).await?);
             }
 
             if f.states.contains(&filter::FilterState::Completed) {
-                self.tasks.append(
-                    &mut self
-                        .c
-                        .completed_tasks(&project.as_ref().map(|p| p.id()), f)
-                        .await?,
-                );
+                self.tasks
+                    .append(&mut self.c.completed_tasks(&project.as_ref().map(|p| p.id()), f).await?);
             }
             self.last_project = project;
         }
@@ -139,11 +134,7 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn change_task_state(
-        &mut self,
-        task: &dyn TaskTrait,
-        state: State,
-    ) -> Result<(), Box<dyn Error>> {
+    async fn change_task_state(&mut self, task: &dyn TaskTrait, state: State) -> Result<(), Box<dyn Error>> {
         match state {
             State::Completed => {
                 let result = self.c.close_task(task.id().as_str()).await;

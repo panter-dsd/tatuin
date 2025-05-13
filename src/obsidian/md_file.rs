@@ -50,9 +50,9 @@ impl File {
                     let cap: &str = &caps[1];
                     match cap.chars().next() {
                         Some(x) => State::new(x),
-                        None => panic!(
-                            "Something wrong with regexp parsing of '{line}' because state shouldn't be empty"
-                        ),
+                        None => {
+                            panic!("Something wrong with regexp parsing of '{line}' because state shouldn't be empty")
+                        }
                     }
                 },
                 text: text.trim().to_string(),
@@ -84,12 +84,7 @@ impl File {
         Ok(result)
     }
 
-    fn change_state_in_content(
-        &self,
-        t: &Task,
-        s: State,
-        content: &str,
-    ) -> Result<String, Box<dyn Error>> {
+    fn change_state_in_content(&self, t: &Task, s: State, content: &str) -> Result<String, Box<dyn Error>> {
         let line = content
             .chars()
             .skip(t.start_pos)
@@ -133,19 +128,12 @@ impl File {
         if s == State::Completed {
             Ok([
                 result.chars().take(t.end_pos).collect::<String>(),
-                format!(
-                    " {COMPLETED_EMOJI} {}",
-                    chrono::Utc::now().format("%Y-%m-%d")
-                ),
+                format!(" {COMPLETED_EMOJI} {}", chrono::Utc::now().format("%Y-%m-%d")),
                 result.chars().skip(t.end_pos).collect::<String>(),
             ]
             .join(""))
         } else {
-            let task: String = result
-                .chars()
-                .skip(t.start_pos)
-                .take(t.end_pos - t.start_pos)
-                .collect();
+            let task: String = result.chars().skip(t.start_pos).take(t.end_pos - t.start_pos).collect();
             let (task, _) = extract_date_after_emoji(task.as_str(), COMPLETED_EMOJI);
 
             Ok([
@@ -216,13 +204,7 @@ fn parse_priority(text: &str) -> (String, Priority) {
     let last = &symbol_indexes[symbol_indexes.len() - 1];
 
     let mut result_text = text.chars().take(last.1 - 1).collect::<String>();
-    result_text.push_str(
-        text.to_string()
-            .chars()
-            .skip(last.1 + 1)
-            .collect::<String>()
-            .as_str(),
-    );
+    result_text.push_str(text.to_string().chars().skip(last.1 + 1).collect::<String>().as_str());
 
     (result_text, last.0.clone())
 }
@@ -310,8 +292,7 @@ some another text
 
     #[test]
     fn check_all_fields_parsed_test() {
-        let text =
-            format!("- [x] Some text ⏫ {DUE_EMOJI} 2025-01-01 {COMPLETED_EMOJI} 2025-01-01");
+        let text = format!("- [x] Some text ⏫ {DUE_EMOJI} 2025-01-01 {COMPLETED_EMOJI} 2025-01-01");
 
         let p = File::new("");
         let task = p.try_parse_task(text.as_str(), 0);
@@ -320,15 +301,9 @@ some another text
         assert_eq!(task.text, "Some text");
         assert_eq!(task.state, State::Completed);
         assert!(task.due.is_some());
-        assert_eq!(
-            task.due.unwrap().format("%Y-%m-%d").to_string(),
-            "2025-01-01"
-        );
+        assert_eq!(task.due.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
         assert!(task.completed_at.is_some());
-        assert_eq!(
-            task.completed_at.unwrap().format("%Y-%m-%d").to_string(),
-            "2025-01-01"
-        );
+        assert_eq!(task.completed_at.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
     }
 
     #[test]
@@ -448,9 +423,7 @@ some another text
         let p = File::new("");
 
         for c in cases {
-            let original_tasks = p
-                .tasks_from_content(c.file_content_before.to_string())
-                .unwrap();
+            let original_tasks = p.tasks_from_content(c.file_content_before.to_string()).unwrap();
             let mut tasks = original_tasks.clone();
             let mut result = c.file_content_before.to_string();
             for i in 0..original_tasks.len() {
@@ -535,9 +508,7 @@ some another text
         let p = File::new("");
 
         for c in CASES {
-            let original_tasks = p
-                .tasks_from_content(c.file_content_before.to_string())
-                .unwrap();
+            let original_tasks = p.tasks_from_content(c.file_content_before.to_string()).unwrap();
             let mut tasks = original_tasks.clone();
             let mut result = c.file_content_before.to_string();
             for i in 0..original_tasks.len() {

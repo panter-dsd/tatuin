@@ -23,9 +23,7 @@ impl AddProvider {
 
         let mut input_line = String::new();
 
-        io::stdin()
-            .read_line(&mut input_line)
-            .expect("Failed to read line");
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
         input_line = input_line.trim().to_string();
         if input_line == "q" {
             return Ok(());
@@ -62,14 +60,10 @@ impl AddProvider {
 
         let mut input_line = String::new();
 
-        io::stdin()
-            .read_line(&mut input_line)
-            .expect("Failed to read line");
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
         input_line = input_line.trim().to_string();
 
-        let p = path::Path::new(&input_line)
-            .join(".obsidian")
-            .join("app.json");
+        let p = path::Path::new(&input_line).join(".obsidian").join("app.json");
         if !p.exists() {
             println!("The path doesn't contain a file .obsidian/app.json");
             return Err(Box::<dyn std::error::Error>::from("Wrong vault path"));
@@ -84,9 +78,7 @@ impl AddProvider {
 
         let mut input_line = String::new();
 
-        io::stdin()
-            .read_line(&mut input_line)
-            .expect("Failed to read line");
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
         input_line = input_line.trim().to_string();
 
         Ok(HashMap::from([("api_key".to_string(), input_line)]))
