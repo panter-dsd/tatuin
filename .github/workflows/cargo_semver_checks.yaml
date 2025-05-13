@@ -1,5 +1,4 @@
 name: Cargo Semver Checks
-
 on:
   workflow_call:
     inputs:
@@ -19,11 +18,9 @@ on:
           - patch
           - minor
           - major
-
 jobs:
   check-if-lib:
     uses: ./.github/workflows/crate_type.yaml
-
   get-baseline:
     runs-on: ubuntu-latest
     steps:
@@ -31,12 +28,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Install jql
         uses: taiki-e/install-action@v2
         with:
           tool: jql
-
       - name: Current versions
         id: get_baseline_hash
         run: |
@@ -66,10 +61,8 @@ jobs:
           fi
           echo "hash: $hash";
           echo "baseline=$hash" >> "$GITHUB_OUTPUT";
-
       - name: "check-for-release-type"
-        run: |
-
+        run: ""
       - name: print if skip cargo-semver-checks
         if: ${{ steps.get_baseline_hash.outputs.baseline == '' || (inputs.bump-version == '' && inputs.release_type == 'none') }}
         run: |
@@ -82,11 +75,9 @@ jobs:
           echo "4  You are screw if you use a lower bump_version of a non existent tag"
           echo "because it will run, but the baseline will be the latest tag"
           echo "the check will just pass and this will not print :)"
-
     outputs:
       baseline: ${{ steps.get_baseline_hash.outputs.baseline }}
       tag: ${{ steps.get_baseline_hash.outputs.tag }}
-
   cargo-semver-checks:
     needs: [check-if-lib, get-baseline]
     if: ${{ needs.check-if-lib.outputs.is_lib == 'true' && needs.get-baseline.outputs.baseline != '' && (inputs.bump-version != '' || inputs.release_type != 'none') }}
@@ -97,22 +88,17 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ needs.get-baseline.outputs.tag || 'main' }}
-
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
-
       - name: Install cargo-bump
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-bump
-
       - name: Run cargo bump
         run: cargo bump ${{ inputs.bump-version || inputs.release_type }}
-
       - name: Install cargo-semver-checks
         uses: taiki-e/install-action@v2
         with:
           tool: cargo-semver-checks
-
       - name: Run cargo-semver-checks
         run: cargo semver-checks --baseline-rev ${{ needs.get-baseline.outputs.baseline }};

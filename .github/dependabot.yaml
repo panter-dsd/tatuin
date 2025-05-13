@@ -1,6 +1,5 @@
 # Dependabot
 version: 2
-
 updates:
   - package-ecosystem: cargo
     directory: /
@@ -25,7 +24,6 @@ updates:
           - "*"
         update-types:
           - "major"
-
   - package-ecosystem: github-actions
     directory: /
     schedule:
