@@ -7,10 +7,18 @@ no-default-features = false
 feature-depth = 1
 
 [advisories]
-ignore = []
+unmaintained = 'workspace'
 
 [licenses]
-allow = ["*"]
+allow = [
+  "MIT",
+  "Unicode-3.0",
+  "Apache-2.0",
+  "ISC",
+  "Zlib",
+  "BSD-3-Clause",
+  "MPL-2.0",
+]
 confidence-threshold = 0.8
 exceptions = []
 
