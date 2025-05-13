@@ -10,7 +10,7 @@ feature-depth = 1
 ignore = []
 
 [licenses]
-allow = ["CC0-1.0", "MIT", "Apache-2.0", "Unicode-3.0"]
+allow = ["*"]
 confidence-threshold = 0.8
 exceptions = []
 
