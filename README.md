@@ -1,6 +1,10 @@
 # Tatuin (Task Aggregator TUI for N providers)
 
-Tatuin is a task aggregation tool that allows you to manage and track your tasks from various providers in one convenient place. Currently, the project supports **Obsidian** and **Todoist**, providing users with an easy-to-use Text User Interface (TUI) for viewing and managing their tasks.
+Tatuin is a task aggregation tool that allows you to manage and track your tasks
+from various providers in one convenient place.
+Currently, the project supports **Obsidian** and **Todoist**,
+providing users with an easy-to-use Text User Interface (TUI) for viewing
+and managing their tasks.
 
 ## Features
 
@@ -31,7 +35,7 @@ This command will guide you through setting up the integration for the specified
 
 ## Screenshots
 
-<img src="./assets/screenshots/main.png" width="96%" />
+![link]("./assets/screenshots/main.png")
 
 ## Contributing
 
