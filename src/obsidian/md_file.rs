@@ -215,6 +215,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn parse_not_exists_file_test() {
         let p = File::new("/etc/file/not/exists");
         let err = p.tasks().await.unwrap_err();
@@ -350,6 +351,7 @@ some another text
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn change_state_to_complete_in_content_test() {
         let completed_string = format!(" ✅ {}", chrono::Utc::now().format("%Y-%m-%d"));
         struct Case<'a> {
