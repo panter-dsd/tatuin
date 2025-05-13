@@ -40,7 +40,7 @@ impl File {
         if let Some(caps) = TASK_RE.captures(line) {
             let text = String::from(&caps[2]);
             let (text, due) = extract_date_after_emoji(text.as_str(), DUE_EMOJI);
-            let (text, completed) = extract_date_after_emoji(text.as_str(), COMPLETED_EMOJI);
+            let (text, completed_at) = extract_date_after_emoji(text.as_str(), COMPLETED_EMOJI);
             let (text, priority) = parse_priority(text.as_str());
             return Some(Task {
                 file_path: self.file_path.to_string(),
@@ -58,7 +58,7 @@ impl File {
                 text: text.trim().to_string(),
                 due,
                 priority,
-                completed_at: completed,
+                completed_at,
                 ..Default::default()
             });
         }
@@ -133,7 +133,10 @@ impl File {
         if s == State::Completed {
             Ok([
                 result.chars().take(t.end_pos).collect::<String>(),
-                format!(" ✅ {}", chrono::Utc::now().format("%Y-%m-%d")),
+                format!(
+                    " {COMPLETED_EMOJI} {}",
+                    chrono::Utc::now().format("%Y-%m-%d")
+                ),
                 result.chars().skip(t.end_pos).collect::<String>(),
             ]
             .join(""))
@@ -171,7 +174,11 @@ fn extract_date_after_emoji(text: &str, emoji: char) -> (String, Option<DateTime
     if let Ok(d) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
         if let Some(dt) = d.and_hms_opt(0, 0, 0) {
             return (
-                text[..idx].to_string(),
+                [
+                    text[..idx].to_string(),
+                    text[idx + start.len() + DATE_PATTERN.len()..].to_string(),
+                ]
+                .join(""),
                 Some(DateTimeUtc::from_naive_utc_and_offset(dt, Utc)),
             );
         }
@@ -299,6 +306,29 @@ some another text
             let tasks = p.tasks_from_content(String::from(c.file_content)).unwrap();
             assert_eq!(tasks.len(), c.count, "Test '{}' was failed", c.name);
         }
+    }
+
+    #[test]
+    fn check_all_fields_parsed_test() {
+        let text =
+            format!("- [x] Some text ⏫ {DUE_EMOJI} 2025-01-01 {COMPLETED_EMOJI} 2025-01-01");
+
+        let p = File::new("");
+        let task = p.try_parse_task(text.as_str(), 0);
+        assert!(task.is_some());
+        let task = task.unwrap();
+        assert_eq!(task.text, "Some text");
+        assert_eq!(task.state, State::Completed);
+        assert!(task.due.is_some());
+        assert_eq!(
+            task.due.unwrap().format("%Y-%m-%d").to_string(),
+            "2025-01-01"
+        );
+        assert!(task.completed_at.is_some());
+        assert_eq!(
+            task.completed_at.unwrap().format("%Y-%m-%d").to_string(),
+            "2025-01-01"
+        );
     }
 
     #[test]

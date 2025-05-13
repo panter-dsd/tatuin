@@ -88,7 +88,7 @@ pub trait Task: Send + Sync {
     fn clone_boxed(&self) -> Box<dyn Task>;
 }
 
-pub fn due_to_str(t: Option<DateTimeUtc>) -> String {
+pub fn datetime_to_str(t: Option<DateTimeUtc>) -> String {
     if let Some(d) = t {
         if d.time() == chrono::NaiveTime::default() {
             return d.format("%Y-%m-%d").to_string();
@@ -105,7 +105,7 @@ pub fn format(t: &dyn Task) -> String {
         "- [{}] {} ({}) ({})",
         t.state(),
         t.text(),
-        format!("due: {}", due_to_str(t.due())).blue(),
+        format!("due: {}", datetime_to_str(t.due())).blue(),
         t.place().green()
     )
 }
