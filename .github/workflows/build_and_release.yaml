@@ -40,15 +40,10 @@ jobs:
         id: regex-match
         run: |
           text="${{inputs.version}}";
-          regex="^v([0-9]+)\.([0-9]+)\.([0-9]+)-?([[:alnum:]]*)\+?([0-9]*)$";
           # Perform the regex match
           if echo "$text" | grep -qE "$regex"; then
-              echo "TRUE";
               echo "match=true" >> "$GITHUB_OUTPUT";
           else
-              echo "FALSE";
-              echo "$text";
-              echo "$regex";
               echo "match=false" >> "$GITHUB_OUTPUT";
           fi
       - name: Fail if don't match regex
