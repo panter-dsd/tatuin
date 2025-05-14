@@ -1,4 +1,4 @@
-name: "Build & Release"
+name: Build & Release
 permissions:
   # To upload files to GitHub Releases
   contents: write
@@ -7,7 +7,7 @@ on:
     inputs:
       version:
         type: string
-        description: "Version: (e.g. -> v3.1.4-alpha+159)"
+        description: 'Version: (e.g. -> v3.1.4-alpha+159)'
       release_type:
         type: choice
         default: none
@@ -24,7 +24,7 @@ on:
     inputs:
       version:
         type: string
-        description: "Version: (e.g. -> v3.1.4-alpha+159)"
+        description: 'Version: (e.g. -> v3.1.4-alpha+159)'
       release_type:
         type: string
       publish:
@@ -42,7 +42,7 @@ jobs:
           text="${INPUT_VERSION}";
           regex="^v([0-9]+)\.([0-9]+)\.([0-9]+)-?([[:alnum:]]*)\+?([0-9]*)$";
           # Perform the regex match
-          if grep -qE "$regex" <<< "$text"; then
+          if [$(grep -qE "$regex" <<< "$text") -eq 0]; then
               echo "match=true" >> "$GITHUB_OUTPUT";
           else
               echo "match=false" >> "$GITHUB_OUTPUT";
@@ -106,27 +106,37 @@ jobs:
     needs: validate-input
     uses: ./.github/workflows/ci.yaml
   add-notice:
-    needs: [get-version, run-ci]
+    needs:
+      - get-version
+      - run-ci
     uses: ./.github/workflows/add_notice.yaml
     with:
       commit_message: ${{  needs.get-version.outputs.new_crate_version }}
   cargo-semver-checks:
-    needs: [get-version, run-ci]
+    needs:
+      - get-version
+      - run-ci
     uses: ./.github/workflows/cargo_semver_checks.yaml
     with:
       bump-version: ${{ needs.get-version.outputs.new_crate_version }}
   bump-version:
-    needs: [get-version, cargo-semver-checks]
+    needs:
+      - get-version
+      - cargo-semver-checks
     uses: ./.github/workflows/bump_version.yaml
     with:
       crate-version: ${{  needs.get-version.outputs.new_crate_version }}
   update-attributions:
-    needs: [get-version, bump-version]
+    needs:
+      - get-version
+      - bump-version
     uses: ./.github/workflows/cargo_attribution.yaml
     with:
       commit_message: ${{ needs.get-version.outputs.new_crate_version }}
   create-tag:
-    needs: [get-version, update-attributions]
+    needs:
+      - get-version
+      - update-attributions
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Repository
@@ -157,7 +167,9 @@ jobs:
           git tag ${{ needs.get-version.outputs.new_tag_version}}
           git push origin ${{  needs.get-version.outputs.new_tag_version}}
   create-release:
-    needs: [get-version, create-tag]
+    needs:
+      - get-version
+      - create-tag
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Repository
@@ -169,7 +181,10 @@ jobs:
           allow-missing-changelog: true
           ref: refs/tags/${{ needs.get-version.outputs.new_tag_version }}
   build-and-release:
-    needs: [get-version, create-release, check-crate-type]
+    needs:
+      - get-version
+      - create-release
+      - check-crate-type
     if: ${{ needs.check-crate-type.outputs.is_bin == 'true' }}
     name: ${{ matrix.target }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -177,15 +192,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {os: ubuntu-latest, target: x86_64-unknown-linux-gnu, cross: false}
-          - {os: ubuntu-latest, target: x86_64-unknown-linux-musl, cross: true}
-          - {os: ubuntu-latest, target: aarch64-unknown-linux-gnu, cross: true}
-          - {os: ubuntu-latest, target: aarch64-unknown-linux-musl, cross: true}
-          - {os: ubuntu-latest, target: riscv64gc-unknown-linux-gnu, cross: true}
-          - {os: windows-latest, target: x86_64-pc-windows-msvc, cross: false}
-          - {os: windows-latest, target: aarch64-pc-windows-msvc, cross: false}
-          - {os: macos-latest, target: x86_64-apple-darwin, cross: false}
-          - {os: macos-latest, target: aarch64-apple-darwin, cross: false}
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            cross: false
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            cross: true
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            cross: true
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            cross: true
+          - os: ubuntu-latest
+            target: riscv64gc-unknown-linux-gnu
+            cross: true
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            cross: false
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            cross: false
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            cross: false
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            cross: false
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v4
@@ -210,7 +243,8 @@ jobs:
           ref: refs/tags/${{  needs.get-version.outputs.new_tag_version }}
           checksum: sha256
   publish-crate:
-    needs: [create-tag]
+    needs:
+      - create-tag
     if: ${{ inputs.publish }}
     uses: ./.github/workflows/publish.yaml
     secrets: inherit
