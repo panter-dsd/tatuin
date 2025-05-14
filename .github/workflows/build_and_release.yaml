@@ -42,7 +42,7 @@ jobs:
           text="${INPUT_VERSION}";
           regex="^v([0-9]+)\.([0-9]+)\.([0-9]+)-?([[:alnum:]]*)\+?([0-9]*)$";
           # Perform the regex match
-          if [$(grep -qE "$regex" <<< "$text") -eq 0]; then
+          if echo "$text" | grep -qE "$regex"; then
               echo "match=true" >> "$GITHUB_OUTPUT";
           else
               echo "match=false" >> "$GITHUB_OUTPUT";
