@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::project::Project;
 use crate::project::Project as ProjectTrait;
 use crate::task::{DateTimeUtc, Priority, State as TaskState, Task as TaskTrait};

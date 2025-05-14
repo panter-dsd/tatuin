@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 #[allow(dead_code)]
 pub trait Project: Send + Sync {
     fn id(&self) -> String;

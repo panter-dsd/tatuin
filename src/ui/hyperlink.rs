@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::Text;

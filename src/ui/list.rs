@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::header;
 use super::shortcut::Shortcut;
 use super::style;

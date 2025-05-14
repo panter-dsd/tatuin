@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::AppBlockWidget;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;

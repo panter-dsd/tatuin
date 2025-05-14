@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use clap::ValueEnum;
 
 #[derive(Clone, PartialEq, Eq, ValueEnum, Debug)]

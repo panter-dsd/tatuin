@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pub mod client;
 mod project;
 mod task;

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 mod filter;
 mod obsidian;
 mod project;

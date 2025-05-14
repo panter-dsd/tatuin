@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::filter;
 use crate::project::Project as ProjectTrait;
 use chrono::DateTime;

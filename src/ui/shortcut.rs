@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use tokio::sync::broadcast;
 
 #[derive(Clone)]

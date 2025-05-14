@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::filter;
 use crate::task::{Task as TaskTrait, due_group};
 use crate::{project, provider, task};

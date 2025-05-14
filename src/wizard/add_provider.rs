@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::obsidian;
 use crate::settings;
 use crate::todoist;
