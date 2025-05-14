@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

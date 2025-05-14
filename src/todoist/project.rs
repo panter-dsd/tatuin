@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::project::Project as ProjectTrait;
 use serde::Deserialize;
 

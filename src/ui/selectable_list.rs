@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::AppBlockWidget;
 use super::list;
 use super::shortcut::Shortcut;

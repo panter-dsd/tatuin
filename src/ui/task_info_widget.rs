@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::AppBlockWidget;
 use crate::task;
 use crate::task::Task as TaskTrait;

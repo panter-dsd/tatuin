@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::filter::{Due, Filter, FilterState};
 use std::sync::Arc;
 use tokio::sync::RwLock;

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::obsidian::task::{State, Task};
 use crate::task::{DateTimeUtc, Priority};
 use chrono::{NaiveDate, Utc};

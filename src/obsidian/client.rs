@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::filter;
 use crate::obsidian::md_file;
 use crate::obsidian::task::{State, Task};
