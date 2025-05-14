@@ -44,11 +44,11 @@ jobs:
           # Perform the regex match
           if echo "$text" | grep -qE "$regex"; then
               echo "TRUE";
-              echo "$text";
-              echo "$regex";
               echo "match=true" >> "$GITHUB_OUTPUT";
           else
               echo "FALSE";
+              echo "$text";
+              echo "$regex";
               echo "match=false" >> "$GITHUB_OUTPUT";
           fi
       - name: Fail if don't match regex
