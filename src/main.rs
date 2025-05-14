@@ -77,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = if let Some(p) = cli.settings_file {
         Settings::new(p.as_str())
     } else {
-        let xdg_dirs = xdg::BaseDirectories::with_prefix("tatuin")?;
+        let xdg_dirs = xdg::BaseDirectories::with_prefix("tatuin");
         let config_path = xdg_dirs
             .place_config_file("settings.toml")
             .expect("cannot create configuration directory");
