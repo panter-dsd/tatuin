@@ -95,7 +95,7 @@ jobs:
         run: |
           tag=${{inputs.version}};
           echo $tag;
-          echo "crate_version=${tag##v} >> GITHUB_OUTPUT";
+          echo "crate_version=${tag##v}" >> "$GITHUB_OUTPUT";
           echo ${tag##v};
     outputs:
       new_tag_version: ${{ inputs.version || steps.new_version.outputs.tag_version || steps.none_version.outputs.tag_version }}
