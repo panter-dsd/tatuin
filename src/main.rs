@@ -21,7 +21,7 @@ use ui::style;
 #[command(version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    command: Option<Commands>,
 
     #[arg(short, long, name("PATH_TO_CONFIG_FILE"), help("/path/to/settings.toml"))]
     settings_file: Option<String>,
@@ -29,7 +29,6 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    Tui {},
     Tasks {
         #[arg(short, long)]
         state: Option<Vec<filter::FilterState>>,
@@ -137,7 +136,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     match &cli.command {
-        Commands::Tasks { state, due, provider } => {
+        Some(Commands::Tasks { state, due, provider }) => {
             let f = filter::Filter {
                 states: state_to_filter(state),
                 due: due_to_filter(due),
@@ -155,7 +154,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             print_boxed_tasks(&tasks);
         }
-        Commands::Projects { provider } => {
+        Some(Commands::Projects { provider }) => {
             let mut projects = Vec::new();
 
             for mut p in providers {
@@ -170,15 +169,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             print_projects(&projects);
         }
-        Commands::Tui {} => {
+        Some(Commands::AddProvider {}) => {
+            let w = wizard::AddProvider {};
+            w.run(&mut cfg)?
+        }
+        _ => {
             color_eyre::install()?;
             let terminal = ratatui::init();
             let _app_result = ui::App::new(providers).run(terminal).await;
             ratatui::restore();
-        }
-        Commands::AddProvider {} => {
-            let w = wizard::AddProvider {};
-            w.run(&mut cfg)?
         }
     };
     Ok(())

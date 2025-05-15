@@ -12,7 +12,7 @@ pub enum FilterState {
 
 impl std::fmt::Display for FilterState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -26,7 +26,7 @@ pub enum Due {
 
 impl std::fmt::Display for Due {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
