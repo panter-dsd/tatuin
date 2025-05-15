@@ -3,6 +3,7 @@
 use super::AppBlockWidget;
 use super::list;
 use super::shortcut::Shortcut;
+use async_trait::async_trait;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::widgets::{ListItem, ListState, StatefulWidget};
@@ -16,7 +17,11 @@ pub struct SelectableList<T> {
     is_active: bool,
 }
 
-impl<T> AppBlockWidget for SelectableList<T> {
+#[async_trait]
+impl<T> AppBlockWidget for SelectableList<T>
+where
+    T: Send,
+{
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         if let Some(s) = &mut self.shortcut {
             vec![s]
@@ -24,8 +29,13 @@ impl<T> AppBlockWidget for SelectableList<T> {
             Vec::new()
         }
     }
+
     fn set_active(&mut self, is_active: bool) {
         self.is_active = is_active
+    }
+
+    async fn select_next(&mut self) {
+        self.state.select_next();
     }
 }
 
@@ -101,10 +111,6 @@ impl<T> SelectableList<T> {
 
     pub fn select_none(&mut self) {
         self.state.select(None)
-    }
-
-    pub fn select_next(&mut self) {
-        self.state.select_next()
     }
 
     pub fn select_previous(&mut self) {

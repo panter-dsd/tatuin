@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use crate::filter::{Due, Filter, FilterState};
+use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -37,6 +38,7 @@ pub struct FilterWidget {
     due_shortcut: Shortcut,
 }
 
+#[async_trait]
 impl AppBlockWidget for FilterWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         vec![&mut self.state_shortcut, &mut self.due_shortcut]
@@ -44,6 +46,13 @@ impl AppBlockWidget for FilterWidget {
 
     fn set_active(&mut self, is_active: bool) {
         self.is_active = is_active
+    }
+
+    async fn select_next(&mut self) {
+        match self.current_block {
+            FilterBlock::State => self.filter_state_state.select_next(),
+            FilterBlock::Due => self.filter_due_state.select_next(),
+        }
     }
 }
 
@@ -148,13 +157,6 @@ impl FilterWidget {
         match self.current_block {
             FilterBlock::State => self.filter_state_state.select(None),
             FilterBlock::Due => self.filter_due_state.select(None),
-        }
-    }
-
-    pub fn select_next(&mut self) {
-        match self.current_block {
-            FilterBlock::State => self.filter_state_state.select_next(),
-            FilterBlock::Due => self.filter_due_state.select_next(),
         }
     }
 

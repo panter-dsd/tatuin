@@ -3,6 +3,7 @@
 use crate::filter;
 use crate::task::{Task as TaskTrait, due_group};
 use crate::{project, provider, task};
+use async_trait::async_trait;
 use color_eyre::Result;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::DefaultTerminal;
@@ -47,9 +48,12 @@ const BLOCK_ORDER: [AppBlock; 5] = [
     AppBlock::TaskInfo,
 ];
 
+#[async_trait]
 trait AppBlockWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut>;
     fn set_active(&mut self, is_active: bool);
+
+    async fn select_next(&mut self);
 }
 
 #[derive(Default)]
@@ -459,18 +463,21 @@ impl App {
     }
 
     async fn select_next(&mut self) {
+        self.app_blocks
+            .get_mut(&self.current_block)
+            .unwrap()
+            .write()
+            .await
+            .select_next()
+            .await;
         match self.current_block {
             AppBlock::Providers => {
-                self.providers.write().await.select_next();
                 self.projects.write().await.select_first();
             }
-            AppBlock::Projects => self.projects.write().await.select_next(),
-            AppBlock::Filter => self.filter_widget.write().await.select_next(),
             AppBlock::TaskList => {
-                self.tasks_widget.write().await.select_next();
                 self.set_current_task().await;
             }
-            AppBlock::TaskInfo => {}
+            _ => {}
         }
         self.set_reload();
     }

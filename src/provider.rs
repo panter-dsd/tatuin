@@ -8,7 +8,7 @@ use ratatui::style::Color;
 use std::error::Error;
 
 #[async_trait]
-pub trait Provider {
+pub trait Provider: Send {
     fn name(&self) -> String;
     fn type_name(&self) -> String;
     async fn tasks(
