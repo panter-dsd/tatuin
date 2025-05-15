@@ -22,7 +22,9 @@ and managing their tasks.
    cargo install tatuin
    ~/.cargo/bin/tatuin --help
    ```
+   
 2. Install via homebrew
+
    ```bash
    brew install panter-dsd/tap/tatuin
    ```
