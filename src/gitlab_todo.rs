@@ -210,6 +210,7 @@ impl ProviderTrait for Provider {
             State::InProgress | State::Uncompleted | State::Unknown(_) => Err(Box::<dyn Error>::from("wrong state")),
         }
     }
+
     async fn reload(&mut self) {
         self.tasks.clear();
     }
