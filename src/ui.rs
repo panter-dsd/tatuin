@@ -197,7 +197,7 @@ impl App {
 
     fn add_error(&mut self, message: &str) {
         self.alert = match self.alert.as_ref() {
-            Some(s) => Some(format!("{}\n{}", s, message)),
+            Some(s) => Some(format!("{s}\n{message}")),
             None => Some(message.to_string()),
         }
     }
@@ -242,7 +242,7 @@ impl App {
         }
 
         for (provider_name, err) in errors {
-            self.add_error(format!("Load provider {} projects failure: {}", provider_name, err).as_str())
+            self.add_error(format!("Load provider {provider_name} projects failure: {err}").as_str())
         }
 
         all_tasks.sort_by(|l, r| {
