@@ -37,6 +37,18 @@ where
     async fn select_next(&mut self) {
         self.state.select_next();
     }
+
+    async fn select_previous(&mut self) {
+        self.state.select_previous();
+    }
+
+    async fn select_first(&mut self) {
+        self.state.select_first();
+    }
+
+    async fn select_last(&mut self) {
+        self.state.select_last();
+    }
 }
 
 impl<T> SelectableList<T> {
@@ -107,22 +119,6 @@ impl<T> SelectableList<T> {
 
     pub fn state(&mut self) -> &mut ListState {
         &mut self.state
-    }
-
-    pub fn select_none(&mut self) {
-        self.state.select(None)
-    }
-
-    pub fn select_previous(&mut self) {
-        self.state.select_previous()
-    }
-
-    pub fn select_first(&mut self) {
-        self.state.select_first()
-    }
-
-    pub fn select_last(&mut self) {
-        self.state.select_last()
     }
 
     pub fn render(&mut self, title: &str, f: impl Fn(&T) -> ListItem, area: Rect, buf: &mut Buffer) {

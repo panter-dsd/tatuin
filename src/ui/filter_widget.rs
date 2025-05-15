@@ -54,6 +54,27 @@ impl AppBlockWidget for FilterWidget {
             FilterBlock::Due => self.filter_due_state.select_next(),
         }
     }
+
+    async fn select_previous(&mut self) {
+        match self.current_block {
+            FilterBlock::State => self.filter_state_state.select_previous(),
+            FilterBlock::Due => self.filter_due_state.select_previous(),
+        }
+    }
+
+    async fn select_first(&mut self) {
+        match self.current_block {
+            FilterBlock::State => self.filter_state_state.select_first(),
+            FilterBlock::Due => self.filter_due_state.select_first(),
+        }
+    }
+
+    async fn select_last(&mut self) {
+        match self.current_block {
+            FilterBlock::State => self.filter_state_state.select_last(),
+            FilterBlock::Due => self.filter_due_state.select_last(),
+        }
+    }
 }
 
 impl FilterWidget {
@@ -150,34 +171,6 @@ impl FilterWidget {
                 self.current_block = FilterBlock::State;
                 true
             }
-        }
-    }
-
-    pub fn select_none(&mut self) {
-        match self.current_block {
-            FilterBlock::State => self.filter_state_state.select(None),
-            FilterBlock::Due => self.filter_due_state.select(None),
-        }
-    }
-
-    pub fn select_previous(&mut self) {
-        match self.current_block {
-            FilterBlock::State => self.filter_state_state.select_previous(),
-            FilterBlock::Due => self.filter_due_state.select_previous(),
-        }
-    }
-
-    pub fn select_first(&mut self) {
-        match self.current_block {
-            FilterBlock::State => self.filter_state_state.select_first(),
-            FilterBlock::Due => self.filter_due_state.select_first(),
-        }
-    }
-
-    pub fn select_last(&mut self) {
-        match self.current_block {
-            FilterBlock::State => self.filter_state_state.select_last(),
-            FilterBlock::Due => self.filter_due_state.select_last(),
         }
     }
 

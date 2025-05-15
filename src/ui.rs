@@ -54,6 +54,9 @@ trait AppBlockWidget {
     fn set_active(&mut self, is_active: bool);
 
     async fn select_next(&mut self);
+    async fn select_previous(&mut self);
+    async fn select_first(&mut self);
+    async fn select_last(&mut self);
 }
 
 #[derive(Default)]
@@ -387,7 +390,7 @@ impl App {
             }
             AppBlock::Filter => {
                 self.filter_widget.write().await.change_check_state();
-                self.projects.write().await.select_first();
+                self.projects.write().await.select_first().await;
                 self.reload().await;
             }
             _ => {}
@@ -472,7 +475,7 @@ impl App {
             .await;
         match self.current_block {
             AppBlock::Providers => {
-                self.projects.write().await.select_first();
+                self.projects.write().await.select_first().await;
             }
             AppBlock::TaskList => {
                 self.set_current_task().await;
@@ -483,46 +486,49 @@ impl App {
     }
 
     async fn select_previous(&mut self) {
+        self.app_blocks
+            .get_mut(&self.current_block)
+            .unwrap()
+            .write()
+            .await
+            .select_previous()
+            .await;
         match self.current_block {
             AppBlock::Providers => {
-                self.providers.write().await.select_previous();
-                self.projects.write().await.select_first();
+                self.projects.write().await.select_first().await;
             }
-            AppBlock::Projects => self.projects.write().await.select_previous(),
-            AppBlock::Filter => self.filter_widget.write().await.select_previous(),
             AppBlock::TaskList => {
-                self.tasks_widget.write().await.select_previous();
                 self.set_current_task().await;
             }
-            AppBlock::TaskInfo => {}
+            _ => {}
         }
         self.set_reload();
     }
 
     async fn select_first(&mut self) {
-        match self.current_block {
-            AppBlock::Providers => self.providers.write().await.select_first(),
-            AppBlock::Projects => self.projects.write().await.select_first(),
-            AppBlock::Filter => self.filter_widget.write().await.select_first(),
-            AppBlock::TaskList => {
-                self.tasks_widget.write().await.select_first();
-                self.set_current_task().await;
-            }
-            AppBlock::TaskInfo => {}
+        self.app_blocks
+            .get_mut(&self.current_block)
+            .unwrap()
+            .write()
+            .await
+            .select_first()
+            .await;
+        if self.current_block == AppBlock::TaskList {
+            self.set_current_task().await;
         }
         self.set_reload();
     }
 
     async fn select_last(&mut self) {
-        match self.current_block {
-            AppBlock::Providers => self.providers.write().await.select_last(),
-            AppBlock::Projects => self.projects.write().await.select_last(),
-            AppBlock::Filter => self.filter_widget.write().await.select_last(),
-            AppBlock::TaskList => {
-                self.tasks_widget.write().await.select_last();
-                self.set_current_task().await;
-            }
-            AppBlock::TaskInfo => {}
+        self.app_blocks
+            .get_mut(&self.current_block)
+            .unwrap()
+            .write()
+            .await
+            .select_last()
+            .await;
+        if self.current_block == AppBlock::TaskList {
+            self.set_current_task().await;
         }
         self.set_reload();
     }

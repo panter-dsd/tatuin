@@ -45,6 +45,9 @@ impl AppBlockWidget for TaskInfoWidget {
     }
 
     async fn select_next(&mut self) {}
+    async fn select_previous(&mut self) {}
+    async fn select_first(&mut self) {}
+    async fn select_last(&mut self) {}
 }
 
 impl TaskInfoWidget {

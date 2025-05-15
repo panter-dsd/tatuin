@@ -43,6 +43,18 @@ impl AppBlockWidget for TasksWidget {
     async fn select_next(&mut self) {
         self.tasks.select_next().await;
     }
+
+    async fn select_previous(&mut self) {
+        self.tasks.select_previous().await;
+    }
+
+    async fn select_first(&mut self) {
+        self.tasks.select_first().await;
+    }
+
+    async fn select_last(&mut self) {
+        self.tasks.select_last().await;
+    }
 }
 
 impl TasksWidget {
@@ -87,22 +99,6 @@ impl TasksWidget {
         } else {
             None
         }
-    }
-
-    pub fn select_none(&mut self) {
-        self.tasks.select_none();
-    }
-
-    pub fn select_previous(&mut self) {
-        self.tasks.select_previous()
-    }
-
-    pub fn select_first(&mut self) {
-        self.tasks.select_first()
-    }
-
-    pub fn select_last(&mut self) {
-        self.tasks.select_last()
     }
 
     pub async fn change_check_state(
