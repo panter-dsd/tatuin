@@ -1,4 +1,5 @@
 use super::structs::Todo;
+use crate::filter::FilterState;
 use reqwest::header::HeaderMap;
 use std::error::Error;
 
@@ -19,16 +20,39 @@ impl Client {
         }
     }
 
-    pub async fn todos(&self) -> Result<Vec<Todo>, Box<dyn Error>> {
-        let resp = self
-            .client
-            .get(format!("{}/todos", self.base_url))
-            .headers(self.default_header.clone())
-            .send()
-            .await?
-            .json::<Vec<Todo>>()
-            .await?;
-        Ok(resp)
+    pub async fn todos(&self, state: &FilterState) -> Result<Vec<Todo>, Box<dyn Error>> {
+        let mut result = Vec::new();
+
+        const PER_PAGE: i8 = 100;
+        let mut page = 0;
+
+        let state_query = match state {
+            FilterState::Completed => "state=done".to_string(),
+            FilterState::Uncompleted => "state=pending".to_string(),
+            _ => return Ok(Vec::new()),
+        };
+
+        loop {
+            let mut resp = self
+                .client
+                .get(format!(
+                    "{}/todos?page={page}&per_page={PER_PAGE}&{state_query}",
+                    self.base_url
+                ))
+                .headers(self.default_header.clone())
+                .send()
+                .await?
+                .json::<Vec<Todo>>()
+                .await?;
+            if resp.is_empty() {
+                break;
+            }
+
+            result.append(&mut resp);
+            page += 1;
+        }
+
+        Ok(result)
     }
 
     pub async fn mark_todo_as_done(&self, id: &str) -> Result<(), Box<dyn Error>> {

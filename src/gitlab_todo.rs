@@ -173,11 +173,13 @@ impl ProviderTrait for Provider {
         }
 
         if self.tasks.is_empty() {
-            for t in self.client.todos().await? {
-                self.tasks.push(Task {
-                    todo: t,
-                    provider: self.name(),
-                })
+            for st in &f.states {
+                for t in self.client.todos(st).await? {
+                    self.tasks.push(Task {
+                        todo: t,
+                        provider: self.name(),
+                    })
+                }
             }
         }
 
