@@ -35,7 +35,7 @@ This command will guide you through setting up the integration for the specified
 
 ## Screenshots
 
-![link]("./assets/screenshots/main.png")
+![link](./assets/screenshots/main.png)
 
 ## Contributing
 
