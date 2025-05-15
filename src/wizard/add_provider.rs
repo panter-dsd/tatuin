@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use crate::gitlab_todo;
 use crate::obsidian;
 use crate::settings;
 use crate::todoist;
@@ -7,7 +8,11 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 use std::path;
 
-const AVAILABLE_PROVIDERS: &[&str] = &[obsidian::PROVIDER_NAME, todoist::PROVIDER_NAME];
+const AVAILABLE_PROVIDERS: &[&str] = &[
+    obsidian::PROVIDER_NAME,
+    todoist::PROVIDER_NAME,
+    gitlab_todo::PROVIDER_NAME,
+];
 
 pub struct AddProvider {}
 
@@ -43,6 +48,7 @@ impl AddProvider {
                 let mut provider_cfg = match provider {
                     obsidian::PROVIDER_NAME => self.add_obsidian()?,
                     todoist::PROVIDER_NAME => self.add_todoist()?,
+                    gitlab_todo::PROVIDER_NAME => self.add_gitlab_todo()?,
                     _ => panic!("Unknown provider {provider}"),
                 };
                 provider_cfg.insert("type".to_string(), provider.to_string());
@@ -84,6 +90,29 @@ impl AddProvider {
         input_line = input_line.trim().to_string();
 
         Ok(HashMap::from([("api_key".to_string(), input_line)]))
+    }
+
+    fn add_gitlab_todo(&self) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+        print!("Please, provide a base url (aka https://gitlab.com)> ");
+        let _ = io::stdout().flush();
+
+        let mut input_line = String::new();
+
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
+        let base_url = input_line.trim().to_string();
+
+        print!("Please, provide an api key> ");
+        let _ = io::stdout().flush();
+
+        let mut input_line = String::new();
+
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
+        let api_key = input_line.trim().to_string();
+
+        Ok(HashMap::from([
+            ("base_url".to_string(), base_url),
+            ("api_key".to_string(), api_key),
+        ]))
     }
 
     fn get_provider_name(&self) -> Result<String, Box<dyn std::error::Error>> {

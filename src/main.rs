@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 mod filter;
+mod gitlab;
+mod gitlab_todo;
 mod obsidian;
 mod project;
 mod provider;
@@ -112,6 +114,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             todoist::PROVIDER_NAME => providers.push(Box::new(todoist::Provider::new(
                 name,
+                config.get("api_key").unwrap().as_str(),
+                color(),
+            ))),
+            gitlab_todo::PROVIDER_NAME => providers.push(Box::new(gitlab_todo::Provider::new(
+                name,
+                config.get("base_url").unwrap().as_str(),
                 config.get("api_key").unwrap().as_str(),
                 color(),
             ))),
