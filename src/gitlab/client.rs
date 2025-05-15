@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::structs::Todo;
 use crate::filter::FilterState;
 use reqwest::header::HeaderMap;
