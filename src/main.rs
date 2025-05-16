@@ -102,6 +102,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     for (name, config) in &cfg.providers {
+        if let Some(v) = config.get("disabled") {
+            if v.parse::<bool>() == Ok(true) {
+                continue;
+            }
+        }
+
         match config.get("type").unwrap().as_str() {
             obsidian::PROVIDER_NAME => {
                 let mut path = config.get("path").unwrap().to_string();
