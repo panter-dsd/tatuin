@@ -14,7 +14,7 @@ pub struct Client {
 impl Client {
     pub fn new(base_url: &str, api_key: &str) -> Self {
         let mut headers = HeaderMap::new();
-        headers.insert("Authorization", format!("Bearer {}", api_key).parse().unwrap());
+        headers.insert("Authorization", format!("Bearer {api_key}").parse().unwrap());
         Self {
             base_url: format!("{base_url}/api/v4"),
             default_header: headers,
