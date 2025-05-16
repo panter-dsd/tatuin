@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use crate::filter::{Due, Filter, FilterState};
+use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -37,6 +38,7 @@ pub struct FilterWidget {
     due_shortcut: Shortcut,
 }
 
+#[async_trait]
 impl AppBlockWidget for FilterWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         vec![&mut self.state_shortcut, &mut self.due_shortcut]
@@ -44,6 +46,34 @@ impl AppBlockWidget for FilterWidget {
 
     fn set_active(&mut self, is_active: bool) {
         self.is_active = is_active
+    }
+
+    async fn select_next(&mut self) {
+        match self.current_block {
+            FilterBlock::State => self.filter_state_state.select_next(),
+            FilterBlock::Due => self.filter_due_state.select_next(),
+        }
+    }
+
+    async fn select_previous(&mut self) {
+        match self.current_block {
+            FilterBlock::State => self.filter_state_state.select_previous(),
+            FilterBlock::Due => self.filter_due_state.select_previous(),
+        }
+    }
+
+    async fn select_first(&mut self) {
+        match self.current_block {
+            FilterBlock::State => self.filter_state_state.select_first(),
+            FilterBlock::Due => self.filter_due_state.select_first(),
+        }
+    }
+
+    async fn select_last(&mut self) {
+        match self.current_block {
+            FilterBlock::State => self.filter_state_state.select_last(),
+            FilterBlock::Due => self.filter_due_state.select_last(),
+        }
     }
 }
 
@@ -141,41 +171,6 @@ impl FilterWidget {
                 self.current_block = FilterBlock::State;
                 true
             }
-        }
-    }
-
-    pub fn select_none(&mut self) {
-        match self.current_block {
-            FilterBlock::State => self.filter_state_state.select(None),
-            FilterBlock::Due => self.filter_due_state.select(None),
-        }
-    }
-
-    pub fn select_next(&mut self) {
-        match self.current_block {
-            FilterBlock::State => self.filter_state_state.select_next(),
-            FilterBlock::Due => self.filter_due_state.select_next(),
-        }
-    }
-
-    pub fn select_previous(&mut self) {
-        match self.current_block {
-            FilterBlock::State => self.filter_state_state.select_previous(),
-            FilterBlock::Due => self.filter_due_state.select_previous(),
-        }
-    }
-
-    pub fn select_first(&mut self) {
-        match self.current_block {
-            FilterBlock::State => self.filter_state_state.select_first(),
-            FilterBlock::Due => self.filter_due_state.select_first(),
-        }
-    }
-
-    pub fn select_last(&mut self) {
-        match self.current_block {
-            FilterBlock::State => self.filter_state_state.select_last(),
-            FilterBlock::Due => self.filter_due_state.select_last(),
         }
     }
 

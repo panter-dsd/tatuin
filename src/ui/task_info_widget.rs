@@ -4,6 +4,7 @@ use super::AppBlockWidget;
 use crate::task;
 use crate::task::Task as TaskTrait;
 use crate::ui::style;
+use async_trait::async_trait;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style, Stylize};
@@ -29,6 +30,7 @@ impl Default for TaskInfoWidget {
     }
 }
 
+#[async_trait]
 impl AppBlockWidget for TaskInfoWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         if let Some(s) = &mut self.shortcut {
@@ -41,6 +43,11 @@ impl AppBlockWidget for TaskInfoWidget {
     fn set_active(&mut self, is_active: bool) {
         self.is_active = is_active
     }
+
+    async fn select_next(&mut self) {}
+    async fn select_previous(&mut self) {}
+    async fn select_first(&mut self) {}
+    async fn select_last(&mut self) {}
 }
 
 impl TaskInfoWidget {

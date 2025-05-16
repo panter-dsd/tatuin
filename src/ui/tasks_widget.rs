@@ -7,6 +7,7 @@ use crate::task;
 use crate::task::Task as TaskTrait;
 use crate::ui::selectable_list::SelectableList;
 use crate::ui::style;
+use async_trait::async_trait;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
@@ -29,6 +30,7 @@ impl Default for TasksWidget {
     }
 }
 
+#[async_trait]
 impl AppBlockWidget for TasksWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         self.tasks.activate_shortcuts()
@@ -36,6 +38,22 @@ impl AppBlockWidget for TasksWidget {
 
     fn set_active(&mut self, is_active: bool) {
         self.tasks.set_active(is_active);
+    }
+
+    async fn select_next(&mut self) {
+        self.tasks.select_next().await;
+    }
+
+    async fn select_previous(&mut self) {
+        self.tasks.select_previous().await;
+    }
+
+    async fn select_first(&mut self) {
+        self.tasks.select_first().await;
+    }
+
+    async fn select_last(&mut self) {
+        self.tasks.select_last().await;
     }
 }
 
@@ -81,26 +99,6 @@ impl TasksWidget {
         } else {
             None
         }
-    }
-
-    pub fn select_none(&mut self) {
-        self.tasks.select_none();
-    }
-
-    pub fn select_next(&mut self) {
-        self.tasks.select_next()
-    }
-
-    pub fn select_previous(&mut self) {
-        self.tasks.select_previous()
-    }
-
-    pub fn select_first(&mut self) {
-        self.tasks.select_first()
-    }
-
-    pub fn select_last(&mut self) {
-        self.tasks.select_last()
     }
 
     pub async fn change_check_state(
