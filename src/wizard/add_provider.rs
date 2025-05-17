@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use crate::github_issues;
 use crate::gitlab_todo;
 use crate::obsidian;
 use crate::settings;
@@ -12,6 +13,7 @@ const AVAILABLE_PROVIDERS: &[&str] = &[
     obsidian::PROVIDER_NAME,
     todoist::PROVIDER_NAME,
     gitlab_todo::PROVIDER_NAME,
+    github_issues::PROVIDER_NAME,
 ];
 
 pub struct AddProvider {}
@@ -43,12 +45,13 @@ impl AddProvider {
                 }
 
                 let provider = AVAILABLE_PROVIDERS[idx];
-                println!("Add provider {}", provider);
+                println!("Add provider {provider}");
 
                 let mut provider_cfg = match provider {
                     obsidian::PROVIDER_NAME => self.add_obsidian()?,
                     todoist::PROVIDER_NAME => self.add_todoist()?,
                     gitlab_todo::PROVIDER_NAME => self.add_gitlab_todo()?,
+                    github_issues::PROVIDER_NAME => self.add_github_issues()?,
                     _ => panic!("Unknown provider {provider}"),
                 };
                 provider_cfg.insert("type".to_string(), provider.to_string());
@@ -111,6 +114,29 @@ impl AddProvider {
 
         Ok(HashMap::from([
             ("base_url".to_string(), base_url),
+            ("api_key".to_string(), api_key),
+        ]))
+    }
+
+    fn add_github_issues(&self) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+        print!("Please, provide a repository (aka panter-dsd/tatuin)> ");
+        let _ = io::stdout().flush();
+
+        let mut input_line = String::new();
+
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
+        let repository = input_line.trim().to_string();
+
+        print!("Please, provide an api key> ");
+        let _ = io::stdout().flush();
+
+        let mut input_line = String::new();
+
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
+        let api_key = input_line.trim().to_string();
+
+        Ok(HashMap::from([
+            ("repository".to_string(), repository),
             ("api_key".to_string(), api_key),
         ]))
     }
