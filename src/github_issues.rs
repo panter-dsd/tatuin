@@ -6,7 +6,7 @@ use crate::github::structs;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
 use crate::task::{DateTimeUtc, State, Task as TaskTrait};
-use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use ratatui::style::Color;
 use std::any::Any;
 use std::error::Error;
