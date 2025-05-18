@@ -532,10 +532,7 @@ impl App {
         }
         self.set_reload();
     }
-}
 
-/// Rendering logic for the app
-impl App {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let [header_area, main_area, footer_area] =
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
