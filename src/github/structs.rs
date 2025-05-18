@@ -17,7 +17,7 @@ pub struct Issue {
     pub body: Option<String>,
     pub user: User,
     pub labels: Vec<Label>,
-    pub assignee: Assignee,
+    pub assignee: Option<Assignee>,
     pub assignees: Vec<Assignee>,
     pub milestone: Option<Milestone>,
     pub locked: bool,
