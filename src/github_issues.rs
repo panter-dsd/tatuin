@@ -5,6 +5,7 @@ use crate::github::client::Client;
 use crate::github::structs;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
+use crate::task::due_group;
 use crate::task::{DateTimeUtc, State, Task as TaskTrait};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use ratatui::style::Color;
@@ -146,7 +147,9 @@ impl ProviderTrait for Provider {
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
 
         for t in &self.tasks {
-            result.push(Box::new(t.clone()));
+            if f.due.contains(&due_group(t)) {
+                result.push(Box::new(t.clone()));
+            }
         }
 
         self.last_filter = Some(f.clone());
