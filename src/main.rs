@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 mod filter;
+mod github;
+mod github_issues;
 mod gitlab;
 mod gitlab_todo;
 mod obsidian;
@@ -126,6 +128,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 name,
                 config.get("base_url").unwrap().as_str(),
                 config.get("api_key").unwrap().as_str(),
+                color(),
+            ))),
+            github_issues::PROVIDER_NAME => providers.push(Box::new(github_issues::Provider::new(
+                name,
+                config.get("api_key").unwrap().as_str(),
+                config.get("repository").unwrap().as_str(),
                 color(),
             ))),
             _ => println!("Unknown provider configuration for section: {name}"),
