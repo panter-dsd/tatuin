@@ -169,7 +169,7 @@ repository = "https://github.com/marshallpierce/rust-base64"
 
 [[dependencies]]
 name = "bitflags"
-version = "2.9.0"
+version = "2.9.1"
 description = """
 A macro to generate structures which behave like bitflags.
 """
@@ -598,7 +598,7 @@ repository = "https://github.com/indexmap-rs/equivalent"
 
 [[dependencies]]
 name = "errno"
-version = "0.3.11"
+version = "0.3.12"
 description = "Cross-platform interface to the `errno` variable."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Chris Wong"]
@@ -1386,7 +1386,7 @@ repository = "https://github.com/sgodwincs/ordered-multimap-rs"
 
 [[dependencies]]
 name = "owo-colors"
-version = "4.2.0"
+version = "4.2.1"
 description = "Zero-allocation terminal colors that'll make people go owo"
 license = "MIT"
 notices = ["Copyright (c) 2020 - present The owo-colors Developers"]
@@ -2769,7 +2769,7 @@ repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "windows-result"
-version = "0.3.2"
+version = "0.3.3"
 description = "Windows error handling"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]
