@@ -128,7 +128,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 config.get("api_key").unwrap().as_str(),
                 color(),
             ))),
-            _ => panic!("Unknown provider configuration for section: {name}"),
+            _ => println!("Unknown provider configuration for section: {name}"),
         }
     }
 
