@@ -112,7 +112,7 @@ jobs:
       - name: Fetch Repository
         uses: actions/checkout@v4
       - name: markdownlint-cli2-action
-        uses: DavidAnson/markdownlint-cli2-action@v19
+        uses: DavidAnson/markdownlint-cli2-action@v20
         with:
           globs: '**/*.md'
   yamlfmt:
