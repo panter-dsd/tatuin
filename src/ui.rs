@@ -28,6 +28,7 @@ mod hyperlink;
 mod list;
 mod selectable_list;
 mod shortcut;
+mod states_widget;
 pub mod style;
 mod task_info_widget;
 mod tasks_widget;
@@ -114,6 +115,10 @@ pub struct App {
     key_buffer: KeyBuffer,
 
     select_first_shortcut: Shortcut,
+
+    load_state_shortcut: Shortcut,
+    state_dialog: Option<states_widget::StatesWidget>,
+
     settings: Box<dyn StateSettings>,
 }
 
@@ -145,6 +150,8 @@ impl App {
             stateful_widgets: HashMap::new(),
             key_buffer: KeyBuffer::default(),
             select_first_shortcut: Shortcut::new(&['g', 'g']),
+            load_state_shortcut: Shortcut::new(&['s', 'l']),
+            state_dialog: None,
             settings,
         };
 
@@ -177,6 +184,7 @@ impl App {
         let mut events = EventStream::new();
 
         let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
+        let mut load_state_accepted = self.load_state_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
             if self.reload_tasks {
@@ -193,6 +201,7 @@ impl App {
                     }
                 },
                 _ = select_first_accepted.recv() => self.select_first().await,
+                _ = load_state_accepted.recv() => self.load_state().await,
             }
         }
         Ok(())
@@ -311,7 +320,7 @@ impl App {
 
         self.update_activity_state().await;
 
-        let shortcuts = vec![&mut self.select_first_shortcut];
+        let shortcuts = vec![&mut self.select_first_shortcut, &mut self.load_state_shortcut];
         for s in shortcuts {
             match s.accept(&keys) {
                 AcceptResult::Accepted => {
@@ -582,6 +591,12 @@ impl App {
                 .centered()
                 .render(area, buf);
         }
+
+        if let Some(d) = &mut self.state_dialog {
+            let area = popup_area(area, 60, 20);
+            Clear {}.render(area, buf);
+            d.render(area, buf).await;
+        }
     }
     fn render_header(area: Rect, buf: &mut Buffer) {
         Paragraph::new("Tatuin (Task Aggregator TUI for N providers)")
@@ -698,6 +713,10 @@ impl App {
                 }
             }
         }
+    }
+
+    async fn load_state(&mut self) {
+        self.state_dialog = Some(states_widget::StatesWidget::new(&self.settings.states()));
     }
 }
 

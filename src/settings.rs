@@ -88,7 +88,7 @@ impl StateSettings for Settings {
     //     }
     // }
     //
-    // fn states(&self) -> Vec<String> {
-    //     self.states.keys().cloned().collect()
-    // }
+    fn states(&self) -> Vec<String> {
+        self.states.keys().cloned().collect()
+    }
 }
