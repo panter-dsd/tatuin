@@ -3,7 +3,6 @@ use super::style;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
-use ratatui::style::Style;
 use ratatui::widgets::{Block, Borders, ListItem, Widget};
 
 pub struct StatesDialog {
@@ -14,7 +13,7 @@ pub struct StatesDialog {
 impl StatesDialog {
     pub fn new(states: &[String]) -> Self {
         Self {
-            states: SelectableList::new(states.to_vec(), None),
+            states: SelectableList::new(states.to_vec(), Some(0)),
             should_be_closed: false,
         }
     }
@@ -23,8 +22,7 @@ impl StatesDialog {
         let b = Block::default()
             .title("States")
             .borders(Borders::ALL)
-            .border_style(style::BORDER_COLOR)
-            .style(Style::new().bg(style::ACTIVE_BLOCK_BG));
+            .border_style(style::BORDER_COLOR);
         Widget::render(&b, area, buf);
 
         self.states
