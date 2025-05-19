@@ -3,14 +3,14 @@ use std::collections::HashMap;
 pub type State = HashMap<String, String>;
 
 pub fn state_to_str(s: &State) -> Result<String, Box<dyn std::error::Error>> {
-    match toml::to_string(s) {
+    match serde_json::to_string(s) {
         Ok(v) => Ok(v),
         Err(e) => Err(Box::new(e)),
     }
 }
 
 pub fn state_from_str(s: &str) -> Result<State, Box<dyn std::error::Error>> {
-    match toml::from_str(s) {
+    match serde_json::from_str(s) {
         Ok(v) => Ok(v),
         Err(e) => Err(Box::new(e)),
     }

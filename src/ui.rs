@@ -155,7 +155,7 @@ impl App {
             .insert(AppBlock::TaskInfo, s.task_description_widget.clone());
         s.app_blocks.insert(AppBlock::Filter, s.filter_widget.clone());
 
-        // s.stateful_widgets.insert(AppBlock::Providers, s.providers.clone());
+        s.stateful_widgets.insert(AppBlock::Providers, s.providers.clone());
         // s.stateful_widgets.insert(AppBlock::Projects, s.projects.clone());
         // s.stateful_widgets.insert(AppBlock::TaskList, s.tasks_widget.clone());
         // s.stateful_widgets.insert(AppBlock::Filter, s.filter_widget.clone());
@@ -165,8 +165,8 @@ impl App {
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         self.load_tasks().await;
-        self.reload_tasks = false;
         self.restore_state().await;
+        self.reload_tasks = true;
 
         terminal.hide_cursor()?;
 

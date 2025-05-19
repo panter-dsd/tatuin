@@ -3,6 +3,7 @@
 use super::AppBlockWidget;
 use super::list;
 use super::shortcut::Shortcut;
+use crate::state::{State, StatefulObject};
 use async_trait::async_trait;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -142,5 +143,24 @@ impl<T> SelectableList<T> {
 impl<T> Default for SelectableList<T> {
     fn default() -> Self {
         SelectableList::new(Vec::new(), None)
+    }
+}
+
+const STATE_KEY: &str = "selected_item_index";
+
+impl<T> StatefulObject for SelectableList<T> {
+    fn save(&self) -> State {
+        State::from([(
+            STATE_KEY.to_string(),
+            self.state.selected().unwrap_or_default().to_string(),
+        )])
+    }
+
+    fn restore(&mut self, state: State) {
+        if let Some(idx) = state.get(STATE_KEY) {
+            if let Ok(idx) = idx.parse::<usize>() {
+                self.state.select(Some(idx));
+            }
+        }
     }
 }
