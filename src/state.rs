@@ -24,7 +24,7 @@ pub trait StatefulObject {
 pub trait StateSettings {
     fn load(&self, name: Option<&str>) -> State;
     fn save(&mut self, name: Option<&str>, state: State) -> Result<(), Box<dyn std::error::Error>>;
-    fn remove(&mut self, name: &str) -> Result<(), Box<dyn std::error::Error>>;
-    fn rename(&mut self, old_name: &str, new_name: &str) -> Result<(), Box<dyn std::error::Error>>;
-    fn states(&self) -> Vec<String>;
+    // fn remove(&mut self, name: &str) -> Result<(), Box<dyn std::error::Error>>;
+    // fn rename(&mut self, old_name: &str, new_name: &str) -> Result<(), Box<dyn std::error::Error>>;
+    // fn states(&self) -> Vec<String>;
 }

@@ -72,23 +72,23 @@ impl StateSettings for Settings {
         self.save_to_file()
     }
 
-    fn remove(&mut self, name: &str) -> Result<(), Box<dyn Error>> {
-        self.states.remove(name);
-        self.save_to_file()
-    }
+    // fn remove(&mut self, name: &str) -> Result<(), Box<dyn Error>> {
+    //     self.states.remove(name);
+    //     self.save_to_file()
+    // }
 
-    fn rename(&mut self, old_name: &str, new_name: &str) -> Result<(), Box<dyn Error>> {
-        match self.states.get(old_name) {
-            Some(st) => {
-                self.save(Some(new_name), st.clone())?;
-                self.remove(old_name)?;
-                self.save_to_file()
-            }
-            None => Err(Box::<dyn Error>::from(format!("key {old_name} doesn't exist"))),
-        }
-    }
-
-    fn states(&self) -> Vec<String> {
-        self.states.keys().cloned().collect()
-    }
+    // fn rename(&mut self, old_name: &str, new_name: &str) -> Result<(), Box<dyn Error>> {
+    //     match self.states.get(old_name) {
+    //         Some(st) => {
+    //             self.save(Some(new_name), st.clone())?;
+    //             self.remove(old_name)?;
+    //             self.save_to_file()
+    //         }
+    //         None => Err(Box::<dyn Error>::from(format!("key {old_name} doesn't exist"))),
+    //     }
+    // }
+    //
+    // fn states(&self) -> Vec<String> {
+    //     self.states.keys().cloned().collect()
+    // }
 }
