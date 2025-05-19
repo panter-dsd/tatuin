@@ -172,7 +172,7 @@ impl App {
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         self.load_tasks().await;
-        self.restore_state().await;
+        self.restore_state(None).await;
         self.reload_tasks = true;
 
         terminal.hide_cursor()?;
@@ -190,12 +190,19 @@ impl App {
             if self.reload_tasks {
                 self.load_tasks().await;
                 self.reload_tasks = false;
-                self.save_state().await;
             }
+
+            let mut state_to_restore = String::new();
             if let Some(d) = &self.state_dialog {
                 if d.should_be_closed() {
+                    if let Some(s) = d.selected_state() {
+                        state_to_restore = s.clone();
+                    }
                     self.state_dialog = None;
                 }
+            }
+            if !state_to_restore.is_empty() {
+                self.restore_state(Some(state_to_restore.as_str())).await;
             }
 
             tokio::select! {
@@ -362,6 +369,7 @@ impl App {
                     self.alert = None;
                 } else {
                     self.should_exit = true;
+                    self.save_state().await;
                 }
             }
             KeyCode::Char('h') | KeyCode::Left => {
@@ -713,8 +721,8 @@ impl App {
         }
     }
 
-    async fn restore_state(&mut self) {
-        for (block_name, st) in self.settings.load(None) {
+    async fn restore_state(&mut self, name: Option<&str>) {
+        for (block_name, st) in self.settings.load(name) {
             if let Ok(n) = AppBlock::from_str(block_name.as_str()) {
                 if let Some(b) = self.stateful_widgets.get_mut(&n) {
                     if let Ok(st) = state_from_str(&st) {
