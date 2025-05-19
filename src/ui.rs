@@ -14,6 +14,7 @@ use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
+use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
 use std::fmt::Write;
@@ -32,6 +33,7 @@ mod states_dialog;
 pub mod style;
 mod task_info_widget;
 mod tasks_widget;
+mod text_input_dialog;
 use selectable_list::SelectableList;
 use strum::{Display, EnumString};
 use tokio_stream::StreamExt;
@@ -117,7 +119,9 @@ pub struct App {
     select_first_shortcut: Shortcut,
 
     load_state_shortcut: Shortcut,
+    save_state_shortcut: Shortcut,
     state_dialog: Option<states_dialog::StatesDialog>,
+    state_name_dialog: Option<text_input_dialog::Dialog>,
 
     settings: Box<dyn StateSettings>,
 }
@@ -151,7 +155,9 @@ impl App {
             key_buffer: KeyBuffer::default(),
             select_first_shortcut: Shortcut::new(&['g', 'g']),
             load_state_shortcut: Shortcut::new(&['s', 'l']),
+            save_state_shortcut: Shortcut::new(&['s', 's']),
             state_dialog: None,
+            state_name_dialog: None,
             settings,
         };
 
@@ -185,6 +191,7 @@ impl App {
 
         let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
         let mut load_state_accepted = self.load_state_shortcut.subscribe_to_accepted();
+        let mut save_state_accepted = self.save_state_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
             if self.reload_tasks {
@@ -205,6 +212,16 @@ impl App {
                 self.restore_state(Some(state_to_restore.as_str())).await;
             }
 
+            if let Some(d) = &self.state_name_dialog {
+                if d.should_be_closed() {
+                    let t = d.text();
+                    if !t.is_empty() {
+                        self.save_state(Some(t.as_str())).await;
+                    }
+                    self.state_name_dialog = None;
+                }
+            }
+
             tokio::select! {
                 _ = interval.tick() => { self.draw(&mut terminal).await; },
                 Some(Ok(event)) = events.next() => {
@@ -214,6 +231,7 @@ impl App {
                 },
                 _ = select_first_accepted.recv() => self.select_first().await,
                 _ = load_state_accepted.recv() => self.load_state().await,
+                _ = save_state_accepted.recv() => self.save_state_as(),
             }
         }
         Ok(())
@@ -332,7 +350,11 @@ impl App {
 
         self.update_activity_state().await;
 
-        let shortcuts = vec![&mut self.select_first_shortcut, &mut self.load_state_shortcut];
+        let shortcuts = vec![
+            &mut self.select_first_shortcut,
+            &mut self.load_state_shortcut,
+            &mut self.save_state_shortcut,
+        ];
         for s in shortcuts {
             match s.accept(&keys) {
                 AcceptResult::Accepted => {
@@ -349,6 +371,10 @@ impl App {
 
     async fn handle_key(&mut self, key: KeyEvent) {
         if let Some(d) = &mut self.state_dialog {
+            d.handle_key(key).await;
+            return;
+        }
+        if let Some(d) = &mut self.state_name_dialog {
             d.handle_key(key).await;
             return;
         }
@@ -369,7 +395,7 @@ impl App {
                     self.alert = None;
                 } else {
                     self.should_exit = true;
-                    self.save_state().await;
+                    self.save_state(None).await;
                 }
             }
             KeyCode::Char('h') | KeyCode::Left => {
@@ -615,6 +641,12 @@ impl App {
             Clear {}.render(area, buf);
             d.render(area, buf).await;
         }
+
+        if let Some(d) = &mut self.state_name_dialog {
+            let area = popup_area(area, 60, 5);
+            Clear {}.render(area, buf);
+            d.render(area, buf).await;
+        }
     }
     fn render_header(area: Rect, buf: &mut Buffer) {
         Paragraph::new("Tatuin (Task Aggregator TUI for N providers)")
@@ -695,7 +727,14 @@ impl App {
         self.filter_widget.write().await.render(area, buf)
     }
 
-    async fn save_state(&mut self) {
+    fn save_state_as(&mut self) {
+        self.state_name_dialog = Some(text_input_dialog::Dialog::new(
+            "State name",
+            Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap(),
+        ))
+    }
+
+    async fn save_state(&mut self, name: Option<&str>) {
         let mut state = State::new();
         let mut errors = Vec::new();
 
@@ -716,7 +755,7 @@ impl App {
             self.add_error(e.as_str());
         }
 
-        if let Err(e) = self.settings.save(None, state) {
+        if let Err(e) = self.settings.save(name, state) {
             self.add_error(format!("Save state error: {e}").as_str());
         }
     }
