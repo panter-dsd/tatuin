@@ -28,7 +28,7 @@ mod hyperlink;
 mod list;
 mod selectable_list;
 mod shortcut;
-mod states_widget;
+mod states_dialog;
 pub mod style;
 mod task_info_widget;
 mod tasks_widget;
@@ -117,7 +117,7 @@ pub struct App {
     select_first_shortcut: Shortcut,
 
     load_state_shortcut: Shortcut,
-    state_dialog: Option<states_widget::StatesWidget>,
+    state_dialog: Option<states_dialog::StatesDialog>,
 
     settings: Box<dyn StateSettings>,
 }
@@ -191,6 +191,11 @@ impl App {
                 self.load_tasks().await;
                 self.reload_tasks = false;
                 self.save_state().await;
+            }
+            if let Some(d) = &self.state_dialog {
+                if d.should_be_closed() {
+                    self.state_dialog = None;
+                }
             }
 
             tokio::select! {
@@ -336,6 +341,11 @@ impl App {
     }
 
     async fn handle_key(&mut self, key: KeyEvent) {
+        if let Some(d) = &mut self.state_dialog {
+            d.handle_key(key).await;
+            return;
+        }
+
         if key.kind != KeyEventKind::Press {
             return;
         }
@@ -716,7 +726,7 @@ impl App {
     }
 
     async fn load_state(&mut self) {
-        self.state_dialog = Some(states_widget::StatesWidget::new(&self.settings.states()));
+        self.state_dialog = Some(states_dialog::StatesDialog::new(&self.settings.states()));
     }
 }
 

@@ -128,15 +128,15 @@ impl<T> SelectableList<T> {
             items.insert(0, ListItem::from("All"));
         }
 
-        StatefulWidget::render(
-            list::List::new(&items, self.is_active)
-                .title(format!("{title} ({})", items.len()).as_str())
-                .shortcut(&self.shortcut)
-                .widget(),
-            area,
-            buf,
-            &mut self.state,
-        );
+        let mut l = list::List::new(&items, self.is_active).shortcut(&self.shortcut);
+
+        let header_title;
+        if !title.is_empty() {
+            header_title = format!("{title} ({})", items.len());
+            l = l.title(header_title.as_str());
+        }
+
+        StatefulWidget::render(l.widget(), area, buf, &mut self.state);
     }
 }
 
