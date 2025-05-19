@@ -164,6 +164,8 @@ impl App {
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        self.load_tasks().await;
+        self.reload_tasks = false;
         self.restore_state().await;
 
         terminal.hide_cursor()?;
