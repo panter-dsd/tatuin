@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 
+use super::state::{StateSettings, StatefulObject};
 use crate::filter;
+use crate::state::{State, state_from_str, state_to_str};
 use crate::task::{Task as TaskTrait, due_group};
 use crate::{project, provider, task};
 use async_trait::async_trait;
@@ -16,6 +18,7 @@ use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
 use std::fmt::Write;
 use std::hash::Hash;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{OnceCell, RwLock};
@@ -29,9 +32,10 @@ pub mod style;
 mod task_info_widget;
 mod tasks_widget;
 use selectable_list::SelectableList;
+use strum::{Display, EnumString};
 use tokio_stream::StreamExt;
 
-#[derive(Eq, PartialEq, Clone, Hash)]
+#[derive(Eq, PartialEq, Clone, Hash, Display, EnumString)]
 enum AppBlock {
     Providers,
     Projects,
@@ -106,14 +110,16 @@ pub struct App {
 
     alert: Option<String>,
     app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
+    stateful_widgets: HashMap<AppBlock, Arc<RwLock<dyn StatefulObject>>>,
     key_buffer: KeyBuffer,
 
     select_first_shortcut: Shortcut,
+    settings: Box<dyn StateSettings>,
 }
 
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
 impl App {
-    pub fn new(providers: Vec<Box<dyn provider::Provider>>) -> Self {
+    pub fn new(providers: Vec<Box<dyn provider::Provider>>, settings: Box<dyn StateSettings>) -> Self {
         let mut s = Self {
             should_exit: false,
             reload_tasks: true,
@@ -136,8 +142,10 @@ impl App {
             task_description_widget: Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default())),
             alert: None,
             app_blocks: HashMap::new(),
+            stateful_widgets: HashMap::new(),
             key_buffer: KeyBuffer::default(),
             select_first_shortcut: Shortcut::new(&['g', 'g']),
+            settings,
         };
 
         s.app_blocks.insert(AppBlock::Providers, s.providers.clone());
@@ -147,10 +155,17 @@ impl App {
             .insert(AppBlock::TaskInfo, s.task_description_widget.clone());
         s.app_blocks.insert(AppBlock::Filter, s.filter_widget.clone());
 
+        // s.stateful_widgets.insert(AppBlock::Providers, s.providers.clone());
+        // s.stateful_widgets.insert(AppBlock::Projects, s.projects.clone());
+        // s.stateful_widgets.insert(AppBlock::TaskList, s.tasks_widget.clone());
+        // s.stateful_widgets.insert(AppBlock::Filter, s.filter_widget.clone());
+
         s
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        self.restore_state().await;
+
         terminal.hide_cursor()?;
 
         self.tasks_widget.write().await.set_active(true);
@@ -165,6 +180,7 @@ impl App {
             if self.reload_tasks {
                 self.load_tasks().await;
                 self.reload_tasks = false;
+                self.save_state().await;
             }
 
             tokio::select! {
@@ -642,6 +658,44 @@ impl App {
 
     async fn render_filters(&mut self, area: Rect, buf: &mut Buffer) {
         self.filter_widget.write().await.render(area, buf)
+    }
+
+    async fn save_state(&mut self) {
+        let mut state = State::new();
+        let mut errors = Vec::new();
+
+        for (block_name, w) in &self.stateful_widgets {
+            let s = w.read().await.save();
+
+            match state_to_str(&s) {
+                Ok(v) => {
+                    state.insert(block_name.to_string(), v);
+                }
+                Err(e) => {
+                    errors.push(format!("serialize state of {block_name}: {e}"));
+                }
+            }
+        }
+
+        for e in errors {
+            self.add_error(e.as_str());
+        }
+
+        if let Err(e) = self.settings.save(None, state) {
+            self.add_error(format!("Save state error: {e}").as_str());
+        }
+    }
+
+    async fn restore_state(&mut self) {
+        for (block_name, st) in self.settings.load(None) {
+            if let Ok(n) = AppBlock::from_str(block_name.as_str()) {
+                if let Some(b) = self.stateful_widgets.get_mut(&n) {
+                    if let Ok(st) = state_from_str(&st) {
+                        b.write().await.restore(st);
+                    }
+                }
+            }
+        }
     }
 }
 

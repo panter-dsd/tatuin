@@ -20,6 +20,8 @@ ratatui = "0.29.0"
 regex = "1.11.1"
 reqwest = { version = "0.12.15", features = ["json"] }
 serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+strum = { version = "0.27.1", features = ["derive"] }
 time = { version = "0.3.41", features = ["parsing", "formatting"] }
 tokio = { version = "1.45.0", features = ["full"] }
 tokio-stream = "0.1.17"
