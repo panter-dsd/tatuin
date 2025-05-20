@@ -1,7 +1,9 @@
+use super::dialog::DialogTrait;
 use super::style;
+use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Rect, Size};
 use ratatui::widgets::{Block, Borders, Paragraph, Widget};
 use regex::Regex;
 
@@ -22,7 +24,14 @@ impl Dialog {
         }
     }
 
-    pub async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+    pub fn text(&self) -> String {
+        self.text.clone()
+    }
+}
+
+#[async_trait]
+impl DialogTrait for Dialog {
+    async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default()
             .title(self.title.clone())
             .borders(Borders::ALL)
@@ -30,7 +39,7 @@ impl Dialog {
         Paragraph::new(self.text.clone() + "_").block(b).render(area, buf);
     }
 
-    pub async fn handle_key(&mut self, key: KeyEvent) {
+    async fn handle_key(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Esc => {
                 self.should_be_closed = true;
@@ -51,11 +60,15 @@ impl Dialog {
         }
     }
 
-    pub fn should_be_closed(&self) -> bool {
+    fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }
 
-    pub fn text(&self) -> String {
-        self.text.clone()
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn size(&self) -> Size {
+        Size::new(60, 5)
     }
 }

@@ -23,6 +23,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{OnceCell, RwLock};
+mod dialog;
 mod filter_widget;
 mod header;
 mod hyperlink;
@@ -120,8 +121,8 @@ pub struct App {
 
     load_state_shortcut: Shortcut,
     save_state_shortcut: Shortcut,
-    state_dialog: Option<states_dialog::StatesDialog>,
-    state_name_dialog: Option<text_input_dialog::Dialog>,
+
+    dialog: Option<Box<dyn dialog::DialogTrait>>,
 
     settings: Box<dyn StateSettings>,
 }
@@ -156,8 +157,7 @@ impl App {
             select_first_shortcut: Shortcut::new(&['g', 'g']),
             load_state_shortcut: Shortcut::new(&['s', 'l']),
             save_state_shortcut: Shortcut::new(&['s', 's']),
-            state_dialog: None,
-            state_name_dialog: None,
+            dialog: None,
             settings,
         };
 
@@ -199,26 +199,9 @@ impl App {
                 self.reload_tasks = false;
             }
 
-            let mut state_to_restore = String::new();
-            if let Some(d) = &self.state_dialog {
+            if let Some(d) = &self.dialog {
                 if d.should_be_closed() {
-                    if let Some(s) = d.selected_state() {
-                        state_to_restore = s.clone();
-                    }
-                    self.state_dialog = None;
-                }
-            }
-            if !state_to_restore.is_empty() {
-                self.restore_state(Some(state_to_restore.as_str())).await;
-            }
-
-            if let Some(d) = &self.state_name_dialog {
-                if d.should_be_closed() {
-                    let t = d.text();
-                    if !t.is_empty() {
-                        self.save_state(Some(t.as_str())).await;
-                    }
-                    self.state_name_dialog = None;
+                    self.close_dialog().await;
                 }
             }
 
@@ -370,11 +353,7 @@ impl App {
     }
 
     async fn handle_key(&mut self, key: KeyEvent) {
-        if let Some(d) = &mut self.state_dialog {
-            d.handle_key(key).await;
-            return;
-        }
-        if let Some(d) = &mut self.state_name_dialog {
+        if let Some(d) = &mut self.dialog {
             d.handle_key(key).await;
             return;
         }
@@ -636,18 +615,14 @@ impl App {
                 .render(area, buf);
         }
 
-        if let Some(d) = &mut self.state_dialog {
-            let area = popup_area(area, 60, 20);
-            Clear {}.render(area, buf);
-            d.render(area, buf).await;
-        }
-
-        if let Some(d) = &mut self.state_name_dialog {
-            let area = popup_area(area, 60, 5);
+        if let Some(d) = &mut self.dialog {
+            let size = d.size();
+            let area = popup_area(area, size.width, size.height);
             Clear {}.render(area, buf);
             d.render(area, buf).await;
         }
     }
+
     fn render_header(area: Rect, buf: &mut Buffer) {
         Paragraph::new("Tatuin (Task Aggregator TUI for N providers)")
             .bold()
@@ -728,10 +703,8 @@ impl App {
     }
 
     fn save_state_as(&mut self) {
-        self.state_name_dialog = Some(text_input_dialog::Dialog::new(
-            "State name",
-            Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap(),
-        ))
+        let d = text_input_dialog::Dialog::new("State name", Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap());
+        self.dialog = Some(Box::new(d));
     }
 
     async fn save_state(&mut self, name: Option<&str>) {
@@ -770,10 +743,34 @@ impl App {
                 }
             }
         }
+
+        self.reload_tasks = true;
     }
 
     async fn load_state(&mut self) {
-        self.state_dialog = Some(states_dialog::StatesDialog::new(&self.settings.states()));
+        let d = states_dialog::StatesDialog::new(&self.settings.states());
+        self.dialog = Some(Box::new(d));
+    }
+
+    async fn close_dialog(&mut self) {
+        let d = self.dialog.take().unwrap();
+
+        if let Some(d) = &d.as_any().downcast_ref::<states_dialog::StatesDialog>() {
+            let mut state_to_restore = String::new();
+            if let Some(s) = d.selected_state() {
+                state_to_restore = s.clone();
+            }
+            if !state_to_restore.is_empty() {
+                self.restore_state(Some(state_to_restore.as_str())).await;
+            }
+        }
+
+        if let Some(d) = &d.as_any().downcast_ref::<text_input_dialog::Dialog>() {
+            let t = d.text();
+            if !t.is_empty() {
+                self.save_state(Some(t.as_str())).await;
+            }
+        }
     }
 }
 

@@ -1,8 +1,10 @@
+use super::dialog::DialogTrait;
 use super::selectable_list::SelectableList;
 use super::{AppBlockWidget, style};
+use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Rect, Size};
 use ratatui::widgets::{Block, Borders, ListItem, Widget};
 
 pub struct StatesDialog {
@@ -20,7 +22,14 @@ impl StatesDialog {
         }
     }
 
-    pub async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+    pub fn selected_state(&self) -> &Option<String> {
+        &self.selected_state
+    }
+}
+
+#[async_trait]
+impl DialogTrait for StatesDialog {
+    async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default()
             .title("States")
             .borders(Borders::ALL)
@@ -31,7 +40,7 @@ impl StatesDialog {
             .render("", |s| ListItem::from(s.as_str()), b.inner(area), buf);
     }
 
-    pub async fn handle_key(&mut self, key: KeyEvent) {
+    async fn handle_key(&mut self, key: KeyEvent) {
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => {
                 self.should_be_closed = true;
@@ -50,11 +59,15 @@ impl StatesDialog {
         }
     }
 
-    pub fn should_be_closed(&self) -> bool {
+    fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }
 
-    pub fn selected_state(&self) -> &Option<String> {
-        &self.selected_state
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn size(&self) -> Size {
+        Size::new(60, 20)
     }
 }
