@@ -8,7 +8,7 @@ use std::error::Error;
 use std::fs;
 use std::sync::LazyLock;
 
-static TASK_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\ *-\ \[(.)\]\ (.*)$").unwrap());
+static TASK_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\s*-\ \[(.)\]\ (.*)$").unwrap());
 const DUE_EMOJI: char = '📅';
 const COMPLETED_EMOJI: char = '✅';
 
@@ -272,6 +272,7 @@ some another text
                 file_content: "some text
 - [ ] Correct task
      - [ ] Correct task
+	- [ ] Correct task
 - [x] Correct task
 - [/] Correct task
 -- [ ] Wrong task
@@ -281,7 +282,7 @@ some another text
 -[ ] Wrong task
 some another text
 ",
-                count: 4,
+                count: 5,
             },
         ];
 
