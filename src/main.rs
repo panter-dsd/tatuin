@@ -9,6 +9,7 @@ mod obsidian;
 mod project;
 mod provider;
 mod settings;
+mod state;
 mod task;
 mod todoist;
 mod ui;
@@ -190,7 +191,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => {
             color_eyre::install()?;
             let terminal = ratatui::init();
-            let _app_result = ui::App::new(providers).run(terminal).await;
+            let _app_result = ui::App::new(providers, Box::new(cfg)).run(terminal).await;
             ratatui::restore();
         }
     };

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 
 use clap::ValueEnum;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Eq, ValueEnum, Debug)]
+#[derive(Clone, PartialEq, Eq, ValueEnum, Debug, Serialize, Deserialize)]
 pub enum FilterState {
     Completed,
     Uncompleted,
@@ -16,7 +17,7 @@ impl std::fmt::Display for FilterState {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ValueEnum, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Due {
     Overdue,
     Today,
@@ -30,7 +31,7 @@ impl std::fmt::Display for Due {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Filter {
     pub states: Vec<FilterState>,
     pub due: Vec<Due>,

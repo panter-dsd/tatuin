@@ -3,6 +3,7 @@
 use super::AppBlockWidget;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
+use crate::state::StatefulObject;
 use crate::task;
 use crate::task::Task as TaskTrait;
 use crate::ui::selectable_list::SelectableList;
@@ -168,5 +169,15 @@ impl Widget for &mut TasksWidget {
             area,
             buf,
         );
+    }
+}
+
+impl StatefulObject for TasksWidget {
+    fn save(&self) -> crate::state::State {
+        self.tasks.save()
+    }
+
+    fn restore(&mut self, state: crate::state::State) {
+        self.tasks.restore(state);
     }
 }

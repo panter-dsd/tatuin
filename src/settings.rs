@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: MIT
 
+use super::state::{State, StateSettings};
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::error::Error;
+
+const DEFAULT_STATE_NAME: &str = "default";
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Settings {
@@ -10,6 +15,13 @@ pub struct Settings {
     file_name: String,
 
     pub providers: HashMap<String, HashMap<String, String>>,
+
+    #[serde(default = "default_states_hash_map")]
+    states: HashMap<String, State>,
+}
+
+fn default_states_hash_map() -> HashMap<String, State> {
+    HashMap::new()
 }
 
 impl Settings {
@@ -32,17 +44,51 @@ impl Settings {
         }
     }
 
-    pub fn add_provider(
-        &mut self,
-        name: &str,
-        config: &HashMap<String, String>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn add_provider(&mut self, name: &str, config: &HashMap<String, String>) -> Result<(), Box<dyn Error>> {
         self.providers.insert(name.to_string(), config.clone());
 
+        self.save_to_file()
+    }
+
+    fn save_to_file(&self) -> Result<(), Box<dyn Error>> {
         let s = toml::to_string(self)?;
 
         std::fs::write(&self.file_name, s)?;
 
         Ok(())
+    }
+}
+
+fn state_name(name: Option<&str>) -> String {
+    name.unwrap_or(DEFAULT_STATE_NAME).to_string()
+}
+
+impl StateSettings for Settings {
+    fn load(&self, name: Option<&str>) -> State {
+        self.states.get(&state_name(name)).cloned().unwrap_or(State::new())
+    }
+
+    fn save(&mut self, name: Option<&str>, state: State) -> Result<(), Box<dyn Error>> {
+        self.states.insert(state_name(name), state);
+        self.save_to_file()
+    }
+
+    fn remove(&mut self, name: &str) -> Result<(), Box<dyn Error>> {
+        self.states.remove(name);
+        self.save_to_file()
+    }
+
+    fn states(&self) -> Vec<String> {
+        let mut result: Vec<String> = self.states.keys().cloned().collect();
+        result.sort_by(|l, r| {
+            if l == DEFAULT_STATE_NAME {
+                Ordering::Less
+            } else if r == DEFAULT_STATE_NAME {
+                Ordering::Greater
+            } else {
+                l.cmp(r)
+            }
+        });
+        result
     }
 }

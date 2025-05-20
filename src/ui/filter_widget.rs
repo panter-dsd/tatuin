@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use crate::filter::{Due, Filter, FilterState};
+use crate::state::StatefulObject;
 use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -226,6 +227,28 @@ impl Widget for &mut FilterWidget {
             .render(header_area, buf);
         self.render_filter_state(filter_state_area, buf);
         self.render_filter_due(filter_due_area, buf);
+    }
+}
+
+const STATE_KEY: &str = "filter";
+
+impl StatefulObject for FilterWidget {
+    fn save(&self) -> crate::state::State {
+        let mut state = crate::state::State::new();
+
+        if let Ok(s) = serde_json::to_string(&self.filter) {
+            state.insert(STATE_KEY.to_string(), s);
+        }
+
+        state
+    }
+
+    fn restore(&mut self, state: crate::state::State) {
+        if let Some(s) = state.get(STATE_KEY) {
+            if let Ok(f) = serde_json::from_str(s) {
+                self.filter = f;
+            }
+        }
     }
 }
 

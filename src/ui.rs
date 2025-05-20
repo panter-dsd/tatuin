@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 
+use super::state::{StateSettings, StatefulObject};
 use crate::filter;
+use crate::state::{State, state_from_str, state_to_str};
 use crate::task::{Task as TaskTrait, due_group};
 use crate::{project, provider, task};
 use async_trait::async_trait;
@@ -12,26 +14,32 @@ use ratatui::layout::{Constraint, Flex, Layout, Rect};
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
+use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
 use std::fmt::Write;
 use std::hash::Hash;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{OnceCell, RwLock};
+mod dialog;
 mod filter_widget;
 mod header;
 mod hyperlink;
 mod list;
 mod selectable_list;
 mod shortcut;
+mod states_dialog;
 pub mod style;
 mod task_info_widget;
 mod tasks_widget;
+mod text_input_dialog;
 use selectable_list::SelectableList;
+use strum::{Display, EnumString};
 use tokio_stream::StreamExt;
 
-#[derive(Eq, PartialEq, Clone, Hash)]
+#[derive(Eq, PartialEq, Clone, Hash, Display, EnumString)]
 enum AppBlock {
     Providers,
     Projects,
@@ -106,14 +114,22 @@ pub struct App {
 
     alert: Option<String>,
     app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
+    stateful_widgets: HashMap<AppBlock, Arc<RwLock<dyn StatefulObject>>>,
     key_buffer: KeyBuffer,
 
     select_first_shortcut: Shortcut,
+
+    load_state_shortcut: Shortcut,
+    save_state_shortcut: Shortcut,
+
+    dialog: Option<Box<dyn dialog::DialogTrait>>,
+
+    settings: Arc<RwLock<Box<dyn StateSettings>>>,
 }
 
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
 impl App {
-    pub fn new(providers: Vec<Box<dyn provider::Provider>>) -> Self {
+    pub fn new(providers: Vec<Box<dyn provider::Provider>>, settings: Box<dyn StateSettings>) -> Self {
         let mut s = Self {
             should_exit: false,
             reload_tasks: true,
@@ -136,8 +152,13 @@ impl App {
             task_description_widget: Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default())),
             alert: None,
             app_blocks: HashMap::new(),
+            stateful_widgets: HashMap::new(),
             key_buffer: KeyBuffer::default(),
             select_first_shortcut: Shortcut::new(&['g', 'g']),
+            load_state_shortcut: Shortcut::new(&['s', 'l']),
+            save_state_shortcut: Shortcut::new(&['s', 's']),
+            dialog: None,
+            settings: Arc::new(RwLock::new(settings)),
         };
 
         s.app_blocks.insert(AppBlock::Providers, s.providers.clone());
@@ -147,10 +168,24 @@ impl App {
             .insert(AppBlock::TaskInfo, s.task_description_widget.clone());
         s.app_blocks.insert(AppBlock::Filter, s.filter_widget.clone());
 
+        s.stateful_widgets.insert(AppBlock::Providers, s.providers.clone());
+        s.stateful_widgets.insert(AppBlock::Projects, s.projects.clone());
+        s.stateful_widgets.insert(AppBlock::TaskList, s.tasks_widget.clone());
+        s.stateful_widgets.insert(AppBlock::Filter, s.filter_widget.clone());
+
         s
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        if self.settings.read().await.states().is_empty() {
+            // If there is no states, save the original as default
+            self.save_state(None).await;
+        }
+
+        self.load_tasks().await;
+        self.restore_state(None).await;
+        self.reload_tasks = true;
+
         terminal.hide_cursor()?;
 
         self.tasks_widget.write().await.set_active(true);
@@ -160,11 +195,19 @@ impl App {
         let mut events = EventStream::new();
 
         let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
+        let mut load_state_accepted = self.load_state_shortcut.subscribe_to_accepted();
+        let mut save_state_accepted = self.save_state_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
             if self.reload_tasks {
                 self.load_tasks().await;
                 self.reload_tasks = false;
+            }
+
+            if let Some(d) = &self.dialog {
+                if d.should_be_closed() {
+                    self.close_dialog().await;
+                }
             }
 
             tokio::select! {
@@ -175,6 +218,8 @@ impl App {
                     }
                 },
                 _ = select_first_accepted.recv() => self.select_first().await,
+                _ = load_state_accepted.recv() => self.load_state().await,
+                _ = save_state_accepted.recv() => self.save_state_as(),
             }
         }
         Ok(())
@@ -293,7 +338,11 @@ impl App {
 
         self.update_activity_state().await;
 
-        let shortcuts = vec![&mut self.select_first_shortcut];
+        let shortcuts = vec![
+            &mut self.select_first_shortcut,
+            &mut self.load_state_shortcut,
+            &mut self.save_state_shortcut,
+        ];
         for s in shortcuts {
             match s.accept(&keys) {
                 AcceptResult::Accepted => {
@@ -309,6 +358,11 @@ impl App {
     }
 
     async fn handle_key(&mut self, key: KeyEvent) {
+        if let Some(d) = &mut self.dialog {
+            d.handle_key(key).await;
+            return;
+        }
+
         if key.kind != KeyEventKind::Press {
             return;
         }
@@ -532,10 +586,7 @@ impl App {
         }
         self.set_reload();
     }
-}
 
-/// Rendering logic for the app
-impl App {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let [header_area, main_area, footer_area] =
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
@@ -567,7 +618,15 @@ impl App {
                 .centered()
                 .render(area, buf);
         }
+
+        if let Some(d) = &mut self.dialog {
+            let size = d.size();
+            let area = popup_area(area, size.width, size.height);
+            Clear {}.render(area, buf);
+            d.render(area, buf).await;
+        }
     }
+
     fn render_header(area: Rect, buf: &mut Buffer) {
         Paragraph::new("Tatuin (Task Aggregator TUI for N providers)")
             .bold()
@@ -645,6 +704,78 @@ impl App {
 
     async fn render_filters(&mut self, area: Rect, buf: &mut Buffer) {
         self.filter_widget.write().await.render(area, buf)
+    }
+
+    fn save_state_as(&mut self) {
+        let d = text_input_dialog::Dialog::new("State name", Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap());
+        self.dialog = Some(Box::new(d));
+    }
+
+    async fn save_state(&mut self, name: Option<&str>) {
+        let mut state = State::new();
+        let mut errors = Vec::new();
+
+        for (block_name, w) in &self.stateful_widgets {
+            let s = w.read().await.save();
+
+            match state_to_str(&s) {
+                Ok(v) => {
+                    state.insert(block_name.to_string(), v);
+                }
+                Err(e) => {
+                    errors.push(format!("serialize state of {block_name}: {e}"));
+                }
+            }
+        }
+
+        for e in errors {
+            self.add_error(e.as_str());
+        }
+
+        let e = self.settings.write().await.save(name, state);
+        if e.is_err() {
+            self.add_error(format!("Save state error: {}", e.unwrap_err()).as_str());
+        }
+    }
+
+    async fn restore_state(&mut self, name: Option<&str>) {
+        for (block_name, st) in self.settings.read().await.load(name) {
+            if let Ok(n) = AppBlock::from_str(block_name.as_str()) {
+                if let Some(b) = self.stateful_widgets.get_mut(&n) {
+                    if let Ok(st) = state_from_str(&st) {
+                        b.write().await.restore(st);
+                    }
+                }
+            }
+        }
+
+        self.reload_tasks = true;
+    }
+
+    async fn load_state(&mut self) {
+        let d = states_dialog::Dialog::new(&self.settings).await;
+        self.dialog = Some(Box::new(d));
+    }
+
+    async fn close_dialog(&mut self) {
+        let d = self.dialog.take().unwrap();
+
+        if let Some(d) = &d.as_any().downcast_ref::<states_dialog::Dialog>() {
+            let mut state_to_restore = String::new();
+            if let Some(s) = d.selected_state() {
+                state_to_restore = s.clone();
+            }
+            if !state_to_restore.is_empty() {
+                self.restore_state(Some(state_to_restore.as_str())).await;
+            }
+        }
+
+        if let Some(d) = &d.as_any().downcast_ref::<text_input_dialog::Dialog>() {
+            let t = d.text();
+            if !t.is_empty() {
+                self.save_state(Some(t.as_str())).await;
+            }
+        }
     }
 }
 
