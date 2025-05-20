@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::state::StateSettings;
 
 use super::dialog::DialogTrait;

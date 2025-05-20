@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crossterm::event::KeyEvent;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};

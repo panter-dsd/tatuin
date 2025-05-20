@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::collections::HashMap;
 
 pub type State = HashMap<String, String>;

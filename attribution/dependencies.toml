@@ -2018,8 +2018,26 @@ authors = ["Peter Glotfelty <peter.glotfelty@microsoft.com>"]
 repository = "https://github.com/Peternator7/strum"
 
 [[dependencies]]
+name = "strum"
+version = "0.27.1"
+description = "Helpful macros for working with enums and strings"
+license = "MIT"
+notices = ["Copyright (c) 2019 Peter Glotfelty"]
+authors = ["Peter Glotfelty <peter.glotfelty@microsoft.com>"]
+repository = "https://github.com/Peternator7/strum"
+
+[[dependencies]]
 name = "strum_macros"
 version = "0.26.4"
+description = "Helpful macros for working with enums and strings"
+license = "MIT"
+notices = ["Copyright (c) 2019 Peter Glotfelty"]
+authors = ["Peter Glotfelty <peter.glotfelty@microsoft.com>"]
+repository = "https://github.com/Peternator7/strum"
+
+[[dependencies]]
+name = "strum_macros"
+version = "0.27.1"
 description = "Helpful macros for working with enums and strings"
 license = "MIT"
 notices = ["Copyright (c) 2019 Peter Glotfelty"]
