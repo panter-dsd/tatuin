@@ -177,6 +177,11 @@ impl App {
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        if self.settings.states().is_empty() {
+            // If there is no states, save the original as default
+            self.save_state(None).await;
+        }
+
         self.load_tasks().await;
         self.restore_state(None).await;
         self.reload_tasks = true;
@@ -374,7 +379,6 @@ impl App {
                     self.alert = None;
                 } else {
                     self.should_exit = true;
-                    self.save_state(None).await;
                 }
             }
             KeyCode::Char('h') | KeyCode::Left => {
