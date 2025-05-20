@@ -611,7 +611,7 @@ impl App {
             let block = Block::bordered()
                 .border_style(Style::default().fg(Color::Red))
                 .title("Alert!");
-            let area = popup_area(area, 60, 20);
+            let area = popup_area(area, 60, 5);
             Clear {}.render(area, buf);
             Paragraph::new(alert.to_string())
                 .block(block)
