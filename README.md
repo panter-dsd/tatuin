@@ -7,6 +7,7 @@ Currently, the project supports the next providers:
 - **Obsidian**
 - **Todoist**
 - **GitLab TODO**
+- **GitHub Issues**
 
 Tatuin provides users with an easy-to-use Text User Interface (TUI) for viewing and managing their tasks.
 
@@ -15,6 +16,7 @@ Tatuin provides users with an easy-to-use Text User Interface (TUI) for viewing 
 - **Cross-provider Task Management:** Tatuin allows you to view and manage tasks across different task management platforms.
 - **Command-line Interface (CLI):** The project is designed using a text-based interface, making it accessible from the command line.
 - **Task Filters & Status Changes:** Easily filter and update your tasks' statuses as needed.
+- **Save and load UI state:** The user can save the current view's state (selected provider, selected project, used filters) and switch between states.
 
 ## Quick Start
 
