@@ -3,6 +3,7 @@
 use super::state::{State, StateSettings};
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::error::Error;
 
@@ -89,6 +90,16 @@ impl StateSettings for Settings {
     // }
     //
     fn states(&self) -> Vec<String> {
-        self.states.keys().cloned().collect()
+        let mut result: Vec<String> = self.states.keys().cloned().collect();
+        result.sort_by(|l, r| {
+            if l == DEFAULT_STATE_NAME {
+                Ordering::Less
+            } else if r == DEFAULT_STATE_NAME {
+                Ordering::Greater
+            } else {
+                l.cmp(r)
+            }
+        });
+        result
     }
 }
