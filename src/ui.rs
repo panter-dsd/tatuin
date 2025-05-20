@@ -752,14 +752,14 @@ impl App {
     }
 
     async fn load_state(&mut self) {
-        let d = states_dialog::StatesDialog::new(&self.settings.states());
+        let d = states_dialog::Dialog::new(&self.settings.states());
         self.dialog = Some(Box::new(d));
     }
 
     async fn close_dialog(&mut self) {
         let d = self.dialog.take().unwrap();
 
-        if let Some(d) = &d.as_any().downcast_ref::<states_dialog::StatesDialog>() {
+        if let Some(d) = &d.as_any().downcast_ref::<states_dialog::Dialog>() {
             let mut state_to_restore = String::new();
             if let Some(s) = d.selected_state() {
                 state_to_restore = s.clone();

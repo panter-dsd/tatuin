@@ -7,13 +7,13 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};
 use ratatui::widgets::{Block, Borders, ListItem, Widget};
 
-pub struct StatesDialog {
+pub struct Dialog {
     states: SelectableList<String>,
     should_be_closed: bool,
     selected_state: Option<String>,
 }
 
-impl StatesDialog {
+impl Dialog {
     pub fn new(states: &[String]) -> Self {
         Self {
             states: SelectableList::new(states.to_vec(), Some(0)),
@@ -28,7 +28,7 @@ impl StatesDialog {
 }
 
 #[async_trait]
-impl DialogTrait for StatesDialog {
+impl DialogTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default()
             .title_alignment(ratatui::layout::Alignment::Center)
