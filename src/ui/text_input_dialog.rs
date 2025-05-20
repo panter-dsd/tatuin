@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::dialog::DialogTrait;
 use super::style;
 use async_trait::async_trait;
