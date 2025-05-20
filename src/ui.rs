@@ -10,7 +10,7 @@ use color_eyre::Result;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use ratatui::DefaultTerminal;
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Flex, Layout, Rect};
+use ratatui::layout::{Constraint, Flex, Layout, Rect, Size};
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
@@ -611,7 +611,7 @@ impl App {
             let block = Block::bordered()
                 .border_style(Style::default().fg(Color::Red))
                 .title("Alert!");
-            let area = popup_area(area, 60, 5);
+            let area = popup_area(area, Size::new(60, 5));
             Clear {}.render(area, buf);
             Paragraph::new(alert.to_string())
                 .block(block)
@@ -621,7 +621,7 @@ impl App {
 
         if let Some(d) = &mut self.dialog {
             let size = d.size();
-            let area = popup_area(area, size.width, size.height);
+            let area = popup_area(area, size);
             Clear {}.render(area, buf);
             d.render(area, buf).await;
         }
@@ -779,9 +779,9 @@ impl App {
     }
 }
 
-fn popup_area(area: Rect, w: u16, h: u16) -> Rect {
-    let vertical = Layout::vertical([Constraint::Length(h)]).flex(Flex::Center);
-    let horizontal = Layout::horizontal([Constraint::Length(w)]).flex(Flex::Center);
+fn popup_area(area: Rect, size: Size) -> Rect {
+    let vertical = Layout::vertical([Constraint::Length(size.height)]).flex(Flex::Center);
+    let horizontal = Layout::horizontal([Constraint::Length(size.width)]).flex(Flex::Center);
     let [area] = vertical.areas(area);
     let [area] = horizontal.areas(area);
     area
