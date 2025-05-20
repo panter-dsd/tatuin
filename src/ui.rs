@@ -124,7 +124,7 @@ pub struct App {
 
     dialog: Option<Box<dyn dialog::DialogTrait>>,
 
-    settings: Box<dyn StateSettings>,
+    settings: Arc<RwLock<Box<dyn StateSettings>>>,
 }
 
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
@@ -158,7 +158,7 @@ impl App {
             load_state_shortcut: Shortcut::new(&['s', 'l']),
             save_state_shortcut: Shortcut::new(&['s', 's']),
             dialog: None,
-            settings,
+            settings: Arc::new(RwLock::new(settings)),
         };
 
         s.app_blocks.insert(AppBlock::Providers, s.providers.clone());
@@ -177,7 +177,7 @@ impl App {
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
-        if self.settings.states().is_empty() {
+        if self.settings.read().await.states().is_empty() {
             // If there is no states, save the original as default
             self.save_state(None).await;
         }
@@ -732,13 +732,14 @@ impl App {
             self.add_error(e.as_str());
         }
 
-        if let Err(e) = self.settings.save(name, state) {
-            self.add_error(format!("Save state error: {e}").as_str());
+        let e = self.settings.write().await.save(name, state);
+        if e.is_err() {
+            self.add_error(format!("Save state error: {}", e.unwrap_err()).as_str());
         }
     }
 
     async fn restore_state(&mut self, name: Option<&str>) {
-        for (block_name, st) in self.settings.load(name) {
+        for (block_name, st) in self.settings.read().await.load(name) {
             if let Ok(n) = AppBlock::from_str(block_name.as_str()) {
                 if let Some(b) = self.stateful_widgets.get_mut(&n) {
                     if let Ok(st) = state_from_str(&st) {
@@ -752,7 +753,7 @@ impl App {
     }
 
     async fn load_state(&mut self) {
-        let d = states_dialog::Dialog::new(&self.settings.states());
+        let d = states_dialog::Dialog::new(&self.settings).await;
         self.dialog = Some(Box::new(d));
     }
 

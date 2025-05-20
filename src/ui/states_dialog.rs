@@ -1,3 +1,5 @@
+use crate::state::StateSettings;
+
 use super::dialog::DialogTrait;
 use super::selectable_list::SelectableList;
 use super::{AppBlockWidget, style};
@@ -6,17 +8,21 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};
 use ratatui::widgets::{Block, Borders, ListItem, Widget};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 pub struct Dialog {
     states: SelectableList<String>,
+    settings: Arc<RwLock<Box<dyn StateSettings>>>,
     should_be_closed: bool,
     selected_state: Option<String>,
 }
 
 impl Dialog {
-    pub fn new(states: &[String]) -> Self {
+    pub async fn new(settings: &Arc<RwLock<Box<dyn StateSettings>>>) -> Self {
         Self {
-            states: SelectableList::new(states.to_vec(), Some(0)),
+            states: SelectableList::new(settings.read().await.states().to_vec(), Some(0)),
+            settings: settings.clone(),
             should_be_closed: false,
             selected_state: None,
         }
@@ -51,6 +57,12 @@ impl DialogTrait for Dialog {
             KeyCode::Char('k') | KeyCode::Up => self.states.select_previous().await,
             KeyCode::Char('g') | KeyCode::Home => self.states.select_first().await,
             KeyCode::Char('G') | KeyCode::End => self.states.select_last().await,
+            KeyCode::Char('d') => {
+                if let Some(s) = self.states.selected() {
+                    let _ = self.settings.write().await.remove(s);
+                    self.states.set_items(self.settings.read().await.states());
+                }
+            }
             KeyCode::Enter => {
                 self.should_be_closed = true;
                 if let Some(s) = self.states.selected() {
