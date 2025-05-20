@@ -69,6 +69,6 @@ impl DialogTrait for Dialog {
     }
 
     fn size(&self) -> Size {
-        Size::new(60, 5)
+        Size::new(30, 3)
     }
 }
