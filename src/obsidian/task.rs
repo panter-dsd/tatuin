@@ -3,6 +3,7 @@
 use super::project::Project;
 use crate::project::Project as ProjectTrait;
 use crate::task::{DateTimeUtc, Priority, State as TaskState, Task as TaskTrait};
+use sha256::digest;
 use std::any::Any;
 use std::fmt::{self, Write};
 
@@ -102,6 +103,13 @@ impl Task {
 }
 
 impl TaskTrait for Task {
+    fn id(&self) -> String {
+        digest(format!(
+            "{}:{}:{}:{}:{}",
+            self.file_path, self.start_pos, self.end_pos, self.state, self.text
+        ))
+    }
+
     fn text(&self) -> String {
         self.text.to_string()
     }
