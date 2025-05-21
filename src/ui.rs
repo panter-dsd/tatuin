@@ -258,8 +258,6 @@ impl App {
     }
 
     async fn load_tasks(&mut self) {
-        let selected_provider_name = self.providers.read().await.selected().map(|p| p.name());
-
         let project_id = self.selected_project_id().await;
 
         let errors = self
@@ -268,8 +266,6 @@ impl App {
             .await
             .load_tasks(
                 &mut self.providers.write().await.iter_mut(),
-                &selected_provider_name,
-                &project_id,
                 &self.filter_widget.read().await.filter(),
             )
             .await;
@@ -475,9 +471,27 @@ impl App {
         self.update_activity_state().await;
     }
 
-    fn set_reload(&mut self) {
+    async fn set_reload(&mut self) {
         match self.current_block {
-            AppBlock::Providers | AppBlock::Projects | AppBlock::Filter => {
+            AppBlock::Providers => {
+                let mut selected_providers = Vec::new();
+                if let Some(p) = self.providers.read().await.selected() {
+                    selected_providers.push(p.name());
+                }
+                self.tasks_widget
+                    .write()
+                    .await
+                    .set_providers_filter(&selected_providers);
+                self.load_projects().await;
+            }
+            AppBlock::Projects => {
+                let mut selected_projects = Vec::new();
+                if let Some(p) = self.projects.read().await.selected() {
+                    selected_projects.push(p.name());
+                }
+                self.tasks_widget.write().await.set_projects_filter(&selected_projects);
+            }
+            AppBlock::Filter => {
                 self.reload_tasks = true;
             }
             AppBlock::TaskList => {}
@@ -509,7 +523,7 @@ impl App {
             }
             _ => {}
         }
-        self.set_reload();
+        self.set_reload().await;
     }
 
     async fn select_previous(&mut self) {
@@ -529,7 +543,7 @@ impl App {
             }
             _ => {}
         }
-        self.set_reload();
+        self.set_reload().await;
     }
 
     async fn select_first(&mut self) {
@@ -543,7 +557,7 @@ impl App {
         if self.current_block == AppBlock::TaskList {
             self.set_current_task().await;
         }
-        self.set_reload();
+        self.set_reload().await;
     }
 
     async fn select_last(&mut self) {
@@ -557,7 +571,7 @@ impl App {
         if self.current_block == AppBlock::TaskList {
             self.set_current_task().await;
         }
-        self.set_reload();
+        self.set_reload().await;
     }
 
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {

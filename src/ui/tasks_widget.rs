@@ -22,13 +22,19 @@ use std::slice::IterMut;
 use super::shortcut::Shortcut;
 
 pub struct TasksWidget {
+    all_tasks: Vec<Box<dyn TaskTrait>>,
     tasks: SelectableList<Box<dyn TaskTrait>>,
+    providers_filter: Vec<String>,
+    projects_filter: Vec<String>,
 }
 
 impl Default for TasksWidget {
     fn default() -> Self {
         Self {
+            all_tasks: Vec::new(),
             tasks: SelectableList::default().shortcut(Shortcut::new(&['g', 't'])),
+            projects_filter: Vec::new(),
+            providers_filter: Vec::new(),
         }
     }
 }
@@ -61,6 +67,55 @@ impl AppBlockWidget for TasksWidget {
 }
 
 impl TasksWidget {
+    pub fn set_providers_filter(&mut self, providers: &[String]) {
+        self.providers_filter = providers.to_vec();
+        self.filter_tasks();
+    }
+
+    pub fn set_projects_filter(&mut self, projects: &[String]) {
+        self.projects_filter = projects.to_vec();
+        self.filter_tasks();
+    }
+
+    fn filter_tasks(&mut self) {
+        self.tasks.set_items(
+            self.all_tasks
+                .iter()
+                .filter(|t| {
+                    let mut result = true;
+                    if !self.providers_filter.is_empty() && !self.providers_filter.contains(&t.provider()) {
+                        result = false;
+                    }
+                    if let Some(tp) = t.project() {
+                        if !self.projects_filter.is_empty() && !self.projects_filter.contains(&tp.name()) {
+                            result = false;
+                        }
+                    }
+                    result
+                })
+                .map(|t| t.clone_boxed())
+                .collect(),
+        );
+        let state = if self.all_tasks.is_empty() {
+            ListState::default()
+        } else {
+            let selected_idx = self
+                .tasks
+                .state()
+                .selected()
+                .map(|i| {
+                    if i >= self.all_tasks.len() {
+                        self.all_tasks.len() - 1
+                    } else {
+                        i
+                    }
+                })
+                .unwrap_or_else(|| 0);
+            ListState::default().with_selected(Some(selected_idx))
+        };
+        self.tasks.set_state(state);
+    }
+
     pub fn tasks_projects(&self) -> Vec<Box<dyn ProjectTrait>> {
         let mut projects: Vec<Box<dyn ProjectTrait>> = Vec::new();
 
@@ -156,8 +211,6 @@ impl TasksWidget {
     pub async fn load_tasks(
         &mut self,
         providers: &mut IterMut<'_, Box<dyn ProviderTrait>>,
-        selected_provider_name: &Option<String>,
-        selected_project: &Option<String>,
         f: &Filter,
     ) -> Vec<Box<dyn Error>> {
         let mut all_tasks: Vec<Box<dyn task::Task>> = Vec::new();
@@ -165,25 +218,10 @@ impl TasksWidget {
         let mut errors = Vec::new();
 
         for p in providers {
-            if let Some(n) = &selected_provider_name {
-                if p.name() != *n {
-                    continue;
-                }
-            }
             let tasks = p.tasks(None, f).await;
 
             match tasks {
-                Ok(t) => all_tasks.append(
-                    &mut t
-                        .iter()
-                        .filter(|t| {
-                            selected_project.is_none()
-                                || t.project().is_none()
-                                || t.project().unwrap().id() == *selected_project.as_ref().unwrap()
-                        })
-                        .map(|t| t.clone_boxed())
-                        .collect::<Vec<Box<dyn TaskTrait>>>(),
-                ),
+                Ok(t) => all_tasks.append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>()),
                 Err(err) => errors.push((p.name(), err)),
             }
         }
@@ -195,20 +233,8 @@ impl TasksWidget {
                 .then_with(|| l.due().cmp(&r.due()))
         });
 
-        let state = if all_tasks.is_empty() {
-            ListState::default()
-        } else {
-            let selected_idx = self
-                .tasks
-                .state()
-                .selected()
-                .map(|i| if i >= all_tasks.len() { all_tasks.len() - 1 } else { i })
-                .unwrap_or_else(|| 0);
-            ListState::default().with_selected(Some(selected_idx))
-        };
-
-        self.tasks.set_items(all_tasks);
-        self.tasks.set_state(state);
+        self.all_tasks = all_tasks;
+        self.filter_tasks();
 
         errors
             .iter()
