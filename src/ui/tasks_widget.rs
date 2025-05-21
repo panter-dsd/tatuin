@@ -122,10 +122,8 @@ impl TasksWidget {
 
         provider.change_task_state(t.as_ref(), st).await
     }
-}
 
-impl Widget for &mut TasksWidget {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
         self.tasks.render(
             "Tasks",
             |t| {
