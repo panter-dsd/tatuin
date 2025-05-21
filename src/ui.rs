@@ -102,7 +102,6 @@ impl std::fmt::Display for KeyBuffer {
 
 pub struct App {
     should_exit: bool,
-    reload_tasks: bool,
     providers: Arc<RwLock<SelectableList<Box<dyn provider::Provider>>>>,
     projects: Arc<RwLock<SelectableList<Box<dyn project::Project>>>>,
     current_block: AppBlock,
@@ -132,7 +131,6 @@ impl App {
     pub fn new(providers: Vec<Box<dyn provider::Provider>>, settings: Box<dyn StateSettings>) -> Self {
         let mut s = Self {
             should_exit: false,
-            reload_tasks: true,
             current_block: AppBlock::TaskList,
             providers: Arc::new(RwLock::new(
                 SelectableList::new(providers, Some(0))
@@ -185,7 +183,6 @@ impl App {
 
         self.load_tasks().await;
         self.restore_state(None).await;
-        self.reload_tasks = true;
 
         terminal.hide_cursor()?;
 
@@ -201,11 +198,6 @@ impl App {
         let mut commit_changes_accepted = self.commit_changes_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
-            if self.reload_tasks {
-                self.load_tasks().await;
-                self.reload_tasks = false;
-            }
-
             if let Some(d) = &self.dialog {
                 if d.should_be_closed() {
                     self.close_dialog().await;
@@ -399,7 +391,7 @@ impl App {
             p.reload().await;
         }
 
-        self.reload_tasks = true;
+        self.load_tasks().await;
     }
 
     async fn change_check_state(&mut self) {
@@ -773,7 +765,7 @@ impl App {
                 self.add_error(e.to_string().as_str());
             }
 
-            self.reload_tasks = true;
+            self.load_tasks().await;
         }
     }
 }
