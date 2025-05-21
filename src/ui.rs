@@ -502,14 +502,16 @@ impl App {
         match self.current_block {
             AppBlock::Providers => {
                 self.projects.write().await.select_first().await;
+                self.update_task_filter().await;
+            }
+            AppBlock::Projects => {
+                self.update_task_filter().await;
             }
             AppBlock::TaskList => {
                 self.set_current_task().await;
             }
             _ => {}
         }
-
-        self.update_task_filter().await;
     }
 
     async fn select_previous(&mut self) {
@@ -523,13 +525,16 @@ impl App {
         match self.current_block {
             AppBlock::Providers => {
                 self.projects.write().await.select_first().await;
+                self.update_task_filter().await;
+            }
+            AppBlock::Projects => {
+                self.update_task_filter().await;
             }
             AppBlock::TaskList => {
                 self.set_current_task().await;
             }
             _ => {}
         }
-        self.update_task_filter().await;
     }
 
     async fn select_first(&mut self) {
@@ -554,10 +559,19 @@ impl App {
             .await
             .select_last()
             .await;
-        if self.current_block == AppBlock::TaskList {
-            self.set_current_task().await;
+        match self.current_block {
+            AppBlock::Providers => {
+                self.projects.write().await.select_first().await;
+                self.update_task_filter().await;
+            }
+            AppBlock::Projects => {
+                self.update_task_filter().await;
+            }
+            AppBlock::TaskList => {
+                self.set_current_task().await;
+            }
+            _ => {}
         }
-        self.update_task_filter().await;
     }
 
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
