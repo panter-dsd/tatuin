@@ -225,7 +225,7 @@ impl TasksWidget {
         let mut title = format!("Tasks ({})", self.tasks.len());
 
         if !changed.is_empty() {
-            title = format!("{title} (uncommited count {})", changed.len())
+            title = format!("{title} (uncommitted count {})", changed.len())
         }
 
         self.tasks.render(
@@ -244,12 +244,12 @@ impl TasksWidget {
                         None => style::NO_DATE_TASK_FG,
                     }
                 };
-                let (state, uncommited) = match changed.iter().find(|c| equal(c.task.as_ref(), t.as_ref())) {
+                let (state, uncommitted) = match changed.iter().find(|c| equal(c.task.as_ref(), t.as_ref())) {
                     Some(c) => (c.new_state.clone(), true),
                     None => (t.state(), false),
                 };
                 let mut lines = vec![
-                    Span::from(format!("[{}] ", state)),
+                    Span::from(format!("[{state}] ")),
                     Span::styled(t.text(), Style::default().fg(fg_color)),
                     Span::from(" ("),
                     Span::styled(
@@ -270,7 +270,7 @@ impl TasksWidget {
                     lines.push(Span::from(" 💬"));
                 }
 
-                if uncommited {
+                if uncommitted {
                     lines.push(Span::from(" 📤"));
                 }
 
