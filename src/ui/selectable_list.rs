@@ -82,14 +82,6 @@ impl<T> SelectableList<T> {
         self.state = state
     }
 
-    pub fn len(&self) -> usize {
-        self.items.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
-    }
-
     pub fn iter(&self) -> Iter<T> {
         self.items.iter()
     }

@@ -3,8 +3,7 @@
 use super::state::{StateSettings, StatefulObject};
 use crate::filter;
 use crate::state::{State, state_from_str, state_to_str};
-use crate::task::{Task as TaskTrait, due_group};
-use crate::{project, provider, task};
+use crate::{project, provider};
 use async_trait::async_trait;
 use color_eyre::Result;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -259,51 +258,25 @@ impl App {
     }
 
     async fn load_tasks(&mut self) {
-        let mut all_tasks: Vec<Box<dyn task::Task>> = Vec::new();
-
-        let selected_provider_name = if let Some(p) = self.providers.read().await.selected() {
-            p.name()
-        } else {
-            String::new()
-        };
-        let mut errors = Vec::new();
+        let selected_provider_name = self.providers.read().await.selected().map(|p| p.name());
 
         let project_id = self.selected_project_id().await;
 
-        for p in self.providers.write().await.iter_mut() {
-            if !selected_provider_name.is_empty() && p.name() != selected_provider_name {
-                continue;
-            }
+        let errors = self
+            .tasks_widget
+            .write()
+            .await
+            .load_tasks(
+                &mut self.providers.write().await.iter_mut(),
+                &selected_provider_name,
+                &project_id,
+                &self.filter_widget.read().await.filter(),
+            )
+            .await;
 
-            let tasks = p.tasks(None, &self.filter_widget.read().await.filter()).await;
-
-            match tasks {
-                Ok(t) => all_tasks.append(
-                    &mut t
-                        .iter()
-                        .filter(|t| {
-                            project_id.is_none()
-                                || t.project().is_none()
-                                || t.project().unwrap().id() == *project_id.as_ref().unwrap()
-                        })
-                        .map(|t| t.clone_boxed())
-                        .collect::<Vec<Box<dyn TaskTrait>>>(),
-                ),
-                Err(err) => errors.push((p.name(), err)),
-            }
+        for e in errors {
+            self.add_error(e.to_string().as_str());
         }
-
-        for (provider_name, err) in errors {
-            self.add_error(format!("Load provider {provider_name} projects failure: {err}").as_str())
-        }
-
-        all_tasks.sort_by(|l, r| {
-            due_group(l.as_ref())
-                .cmp(&due_group(r.as_ref()))
-                .then_with(|| r.priority().cmp(&l.priority()))
-                .then_with(|| l.due().cmp(&r.due()))
-        });
-        self.tasks_widget.write().await.set_tasks(all_tasks);
 
         if project_id.is_none() {
             self.load_projects().await;

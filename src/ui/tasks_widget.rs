@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 
 use super::AppBlockWidget;
+use crate::filter::Filter;
 use crate::project::Project as ProjectTrait;
 use crate::provider::Provider as ProviderTrait;
 use crate::state::StatefulObject;
 use crate::task;
-use crate::task::Task as TaskTrait;
+use crate::task::{Task as TaskTrait, due_group};
 use crate::ui::selectable_list::SelectableList;
 use crate::ui::style;
 use async_trait::async_trait;
@@ -13,8 +14,9 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{ListItem, ListState, Widget};
+use ratatui::widgets::{ListItem, ListState};
 use std::cmp::Ordering;
+use std::error::Error;
 use std::slice::IterMut;
 
 use super::shortcut::Shortcut;
@@ -59,24 +61,6 @@ impl AppBlockWidget for TasksWidget {
 }
 
 impl TasksWidget {
-    pub fn set_tasks(&mut self, tasks: Vec<Box<dyn task::Task>>) {
-        self.tasks.set_items(tasks);
-
-        let state = if self.tasks.is_empty() {
-            ListState::default()
-        } else {
-            let selected_idx = self
-                .tasks
-                .state()
-                .selected()
-                .map(|i| if i >= self.tasks.len() { self.tasks.len() - 1 } else { i })
-                .unwrap_or_else(|| 0);
-            ListState::default().with_selected(Some(selected_idx))
-        };
-
-        self.tasks.set_state(state);
-    }
-
     pub fn tasks_projects(&self) -> Vec<Box<dyn ProjectTrait>> {
         let mut projects: Vec<Box<dyn ProjectTrait>> = Vec::new();
 
@@ -167,6 +151,71 @@ impl TasksWidget {
             area,
             buf,
         );
+    }
+
+    pub async fn load_tasks(
+        &mut self,
+        providers: &mut IterMut<'_, Box<dyn ProviderTrait>>,
+        selected_provider_name: &Option<String>,
+        selected_project: &Option<String>,
+        f: &Filter,
+    ) -> Vec<Box<dyn Error>> {
+        let mut all_tasks: Vec<Box<dyn task::Task>> = Vec::new();
+
+        let mut errors = Vec::new();
+
+        for p in providers {
+            if let Some(n) = &selected_provider_name {
+                if p.name() != *n {
+                    continue;
+                }
+            }
+            let tasks = p.tasks(None, f).await;
+
+            match tasks {
+                Ok(t) => all_tasks.append(
+                    &mut t
+                        .iter()
+                        .filter(|t| {
+                            selected_project.is_none()
+                                || t.project().is_none()
+                                || t.project().unwrap().id() == *selected_project.as_ref().unwrap()
+                        })
+                        .map(|t| t.clone_boxed())
+                        .collect::<Vec<Box<dyn TaskTrait>>>(),
+                ),
+                Err(err) => errors.push((p.name(), err)),
+            }
+        }
+
+        all_tasks.sort_by(|l, r| {
+            due_group(l.as_ref())
+                .cmp(&due_group(r.as_ref()))
+                .then_with(|| r.priority().cmp(&l.priority()))
+                .then_with(|| l.due().cmp(&r.due()))
+        });
+
+        let state = if all_tasks.is_empty() {
+            ListState::default()
+        } else {
+            let selected_idx = self
+                .tasks
+                .state()
+                .selected()
+                .map(|i| if i >= all_tasks.len() { all_tasks.len() - 1 } else { i })
+                .unwrap_or_else(|| 0);
+            ListState::default().with_selected(Some(selected_idx))
+        };
+
+        self.tasks.set_items(all_tasks);
+        self.tasks.set_state(state);
+
+        errors
+            .iter()
+            .map(|(provider_name, err)| {
+                Box::<dyn Error>::from(format!("Load provider {provider_name} projects failure: {err}"))
+            })
+            .collect()
     }
 }
 
