@@ -588,7 +588,6 @@ impl App {
             Clear {}.render(area, buf);
             Paragraph::new(alert.to_string())
                 .block(block)
-                .centered()
                 .wrap(Wrap { trim: true })
                 .render(area, buf);
         }
