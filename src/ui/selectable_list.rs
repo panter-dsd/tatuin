@@ -16,6 +16,7 @@ pub struct SelectableList<T> {
     add_all_item: bool,
     shortcut: Option<Shortcut>,
     is_active: bool,
+    show_count_in_title: bool,
 }
 
 #[async_trait]
@@ -60,12 +61,18 @@ impl<T> SelectableList<T> {
             add_all_item: false,
             shortcut: None,
             is_active: false,
+            show_count_in_title: true,
         }
     }
 
     pub fn add_all_item(mut self) -> Self {
         self.add_all_item = true;
         self.state.select_first();
+        self
+    }
+
+    pub fn show_count_in_title(mut self, is_show: bool) -> Self {
+        self.show_count_in_title = is_show;
         self
     }
 
@@ -88,6 +95,10 @@ impl<T> SelectableList<T> {
 
     pub fn iter_mut(&mut self) -> IterMut<T> {
         self.items.iter_mut()
+    }
+
+    pub fn len(&self) -> usize {
+        self.items.len()
     }
 
     pub fn selected(&self) -> Option<&T> {
@@ -124,7 +135,11 @@ impl<T> SelectableList<T> {
 
         let header_title;
         if !title.is_empty() {
-            header_title = format!("{title} ({})", items.len());
+            header_title = if self.show_count_in_title {
+                format!("{title} ({})", items.len())
+            } else {
+                title.to_string()
+            };
             l = l.title(header_title.as_str());
         }
 

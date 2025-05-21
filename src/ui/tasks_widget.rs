@@ -3,10 +3,10 @@
 use super::AppBlockWidget;
 use crate::filter::Filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::Provider as ProviderTrait;
+use crate::provider::{Provider as ProviderTrait, TaskPatch};
 use crate::state::StatefulObject;
 use crate::task;
-use crate::task::{Task as TaskTrait, due_group};
+use crate::task::{State, Task as TaskTrait, due_group, equal};
 use crate::ui::selectable_list::SelectableList;
 use crate::ui::style;
 use async_trait::async_trait;
@@ -21,8 +21,14 @@ use std::slice::IterMut;
 
 use super::shortcut::Shortcut;
 
+struct ChangedState {
+    task: Box<dyn TaskTrait>,
+    new_state: State,
+}
+
 pub struct TasksWidget {
     all_tasks: Vec<Box<dyn TaskTrait>>,
+    changed_state_tasks: Vec<ChangedState>,
     tasks: SelectableList<Box<dyn TaskTrait>>,
     providers_filter: Vec<String>,
     projects_filter: Vec<String>,
@@ -32,7 +38,10 @@ impl Default for TasksWidget {
     fn default() -> Self {
         Self {
             all_tasks: Vec::new(),
-            tasks: SelectableList::default().shortcut(Shortcut::new(&['g', 't'])),
+            changed_state_tasks: Vec::new(),
+            tasks: SelectableList::default()
+                .shortcut(Shortcut::new(&['g', 't']))
+                .show_count_in_title(false),
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),
         }
@@ -141,10 +150,45 @@ impl TasksWidget {
         }
     }
 
-    pub async fn change_check_state(
-        &mut self,
-        providers: &mut IterMut<'_, Box<dyn ProviderTrait>>,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn has_changes(&self) -> bool {
+        !self.changed_state_tasks.is_empty()
+    }
+
+    pub async fn commit_changes(&mut self, providers: &mut IterMut<'_, Box<dyn ProviderTrait>>) -> Vec<Box<dyn Error>> {
+        let mut result = Vec::new();
+
+        for p in providers {
+            let name = p.name();
+            let patches = self
+                .changed_state_tasks
+                .iter()
+                .filter(|c| c.task.provider() == name)
+                .map(|c| TaskPatch {
+                    task: c.task.clone_boxed(),
+                    state: Some(c.new_state.clone()),
+                })
+                .collect::<Vec<TaskPatch>>();
+            let errors = p.patch_tasks(&patches).await;
+            for e in &errors {
+                result.push(Box::<dyn Error>::from(format!(
+                    "Provider {name} returns error when changing the task: {e}",
+                )));
+            }
+
+            for p in patches {
+                if !errors.iter().any(|pe| equal(p.task.as_ref(), pe.task.as_ref())) {
+                    self.changed_state_tasks
+                        .retain(|c| !equal(c.task.as_ref(), p.task.as_ref()));
+                }
+            }
+
+            p.reload().await;
+        }
+
+        result
+    }
+
+    pub async fn change_check_state(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let selected = self.tasks.selected();
         if selected.is_none() {
             return Ok(());
@@ -152,19 +196,40 @@ impl TasksWidget {
 
         let t = selected.unwrap();
 
-        let provider = providers.find(|p| p.name() == t.provider()).unwrap();
-        let st = match t.state() {
-            task::State::Completed => task::State::Uncompleted,
-            task::State::Uncompleted | task::State::InProgress => task::State::Completed,
-            task::State::Unknown(_) => task::State::Completed,
-        };
+        match self
+            .changed_state_tasks
+            .iter()
+            .position(|c| equal(c.task.as_ref(), t.as_ref()))
+        {
+            Some(p) => {
+                self.changed_state_tasks.remove(p);
+            }
+            None => {
+                let st = match t.state() {
+                    task::State::Completed => task::State::Uncompleted,
+                    task::State::Uncompleted | task::State::InProgress => task::State::Completed,
+                    task::State::Unknown(_) => task::State::Completed,
+                };
+                self.changed_state_tasks.push(ChangedState {
+                    task: t.clone_boxed(),
+                    new_state: st,
+                });
+            }
+        }
 
-        provider.change_task_state(t.as_ref(), st).await
+        Ok(())
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        let changed = &self.changed_state_tasks;
+        let mut title = format!("Tasks ({})", self.tasks.len());
+
+        if !changed.is_empty() {
+            title = format!("{title} (uncommited count {})", changed.len())
+        }
+
         self.tasks.render(
-            "Tasks",
+            title.as_str(),
             |t| {
                 let fg_color = {
                     match t.due() {
@@ -179,8 +244,12 @@ impl TasksWidget {
                         None => style::NO_DATE_TASK_FG,
                     }
                 };
+                let (state, uncommited) = match changed.iter().find(|c| equal(c.task.as_ref(), t.as_ref())) {
+                    Some(c) => (c.new_state.clone(), true),
+                    None => (t.state(), false),
+                };
                 let mut lines = vec![
-                    Span::from(format!("[{}] ", t.state())),
+                    Span::from(format!("[{}] ", state)),
                     Span::styled(t.text(), Style::default().fg(fg_color)),
                     Span::from(" ("),
                     Span::styled(
@@ -201,11 +270,32 @@ impl TasksWidget {
                     lines.push(Span::from(" 💬"));
                 }
 
+                if uncommited {
+                    lines.push(Span::from(" 📤"));
+                }
+
                 ListItem::from(Line::from(lines))
             },
             area,
             buf,
         );
+    }
+
+    fn remove_changed_tasks_that_are_not_exists_anymore(&mut self) {
+        let mut for_remove = Vec::new();
+        for (i, c) in self.changed_state_tasks.iter().enumerate() {
+            match self.all_tasks.iter().find(|t| equal(t.as_ref(), c.task.as_ref())) {
+                Some(t) => {
+                    if c.new_state != t.state() {
+                        for_remove.insert(0, i);
+                    }
+                }
+                None => for_remove.insert(0, i),
+            }
+        }
+        for i in for_remove {
+            self.changed_state_tasks.remove(i);
+        }
     }
 
     pub async fn load_tasks(
@@ -234,6 +324,7 @@ impl TasksWidget {
         });
 
         self.all_tasks = all_tasks;
+        self.remove_changed_tasks_that_are_not_exists_anymore();
         self.filter_tasks();
 
         errors

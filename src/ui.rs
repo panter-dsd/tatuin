@@ -120,6 +120,7 @@ pub struct App {
 
     load_state_shortcut: Shortcut,
     save_state_shortcut: Shortcut,
+    commit_changes_shortcut: Shortcut,
 
     dialog: Option<Box<dyn dialog::DialogTrait>>,
 
@@ -156,6 +157,7 @@ impl App {
             select_first_shortcut: Shortcut::new(&['g', 'g']),
             load_state_shortcut: Shortcut::new(&['s', 'l']),
             save_state_shortcut: Shortcut::new(&['s', 's']),
+            commit_changes_shortcut: Shortcut::new(&['c', 'c']),
             dialog: None,
             settings: Arc::new(RwLock::new(settings)),
         };
@@ -196,6 +198,7 @@ impl App {
         let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
         let mut load_state_accepted = self.load_state_shortcut.subscribe_to_accepted();
         let mut save_state_accepted = self.save_state_shortcut.subscribe_to_accepted();
+        let mut commit_changes_accepted = self.commit_changes_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
             if self.reload_tasks {
@@ -219,6 +222,7 @@ impl App {
                 _ = select_first_accepted.recv() => self.select_first().await,
                 _ = load_state_accepted.recv() => self.load_state().await,
                 _ = save_state_accepted.recv() => self.save_state_as(),
+                _ = commit_changes_accepted.recv() => self.commit_changes().await,
             }
         }
         Ok(())
@@ -311,6 +315,7 @@ impl App {
             &mut self.select_first_shortcut,
             &mut self.load_state_shortcut,
             &mut self.save_state_shortcut,
+            &mut self.commit_changes_shortcut,
         ];
         for s in shortcuts {
             match s.accept(&keys) {
@@ -400,16 +405,10 @@ impl App {
     async fn change_check_state(&mut self) {
         match self.current_block {
             AppBlock::TaskList => {
-                let result = self
-                    .tasks_widget
-                    .write()
-                    .await
-                    .change_check_state(&mut self.providers.write().await.iter_mut())
-                    .await;
+                let result = self.tasks_widget.write().await.change_check_state().await;
                 if let Err(e) = result {
                     self.alert = Some(format!("Change state error: {e}"))
                 }
-                self.reload_tasks = true;
             }
             AppBlock::Filter => {
                 self.filter_widget.write().await.change_check_state();
@@ -762,6 +761,23 @@ impl App {
             if !t.is_empty() {
                 self.save_state(Some(t.as_str())).await;
             }
+        }
+    }
+
+    async fn commit_changes(&mut self) {
+        if self.tasks_widget.read().await.has_changes() {
+            let errors = self
+                .tasks_widget
+                .write()
+                .await
+                .commit_changes(&mut self.providers.write().await.iter_mut())
+                .await;
+
+            for e in errors {
+                self.add_error(e.to_string().as_str());
+            }
+
+            self.reload_tasks = true;
         }
     }
 }
