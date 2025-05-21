@@ -282,20 +282,12 @@ impl TasksWidget {
     }
 
     fn remove_changed_tasks_that_are_not_exists_anymore(&mut self) {
-        let mut for_remove = Vec::new();
-        for (i, c) in self.changed_state_tasks.iter().enumerate() {
-            match self.all_tasks.iter().find(|t| equal(t.as_ref(), c.task.as_ref())) {
-                Some(t) => {
-                    if c.new_state != t.state() {
-                        for_remove.insert(0, i);
-                    }
-                }
-                None => for_remove.insert(0, i),
-            }
-        }
-        for i in for_remove {
-            self.changed_state_tasks.remove(i);
-        }
+        self.changed_state_tasks.retain(|c| {
+            self.all_tasks
+                .iter()
+                .find(|t| equal(t.as_ref(), c.task.as_ref()))
+                .is_some_and(|t| t.state() == c.task.state())
+        });
     }
 
     pub async fn load_tasks(
