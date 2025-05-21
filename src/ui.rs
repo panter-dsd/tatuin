@@ -12,7 +12,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect, Size};
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
+use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wrap};
 use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
@@ -470,32 +470,26 @@ impl App {
         self.update_activity_state().await;
     }
 
-    async fn set_reload(&mut self) {
-        match self.current_block {
-            AppBlock::Providers => {
-                let mut selected_providers = Vec::new();
-                if let Some(p) = self.providers.read().await.selected() {
-                    selected_providers.push(p.name());
-                }
-                self.tasks_widget
-                    .write()
-                    .await
-                    .set_providers_filter(&selected_providers);
-                self.load_projects().await;
-            }
-            AppBlock::Projects => {
-                let mut selected_projects = Vec::new();
-                if let Some(p) = self.projects.read().await.selected() {
-                    selected_projects.push(p.name());
-                }
-                self.tasks_widget.write().await.set_projects_filter(&selected_projects);
-            }
-            AppBlock::Filter => {
-                self.reload_tasks = true;
-            }
-            AppBlock::TaskList => {}
-            AppBlock::TaskInfo => {}
+    async fn update_task_filter(&mut self) {
+        let mut selected_providers = Vec::new();
+        if let Some(p) = self.providers.read().await.selected() {
+            selected_providers.push(p.name());
         }
+        self.tasks_widget
+            .write()
+            .await
+            .set_providers_filter(&selected_providers);
+
+        let mut selected_projects = Vec::new();
+        if let Some(p) = self.projects.read().await.selected() {
+            selected_projects.push(p.name());
+        }
+        self.tasks_widget.write().await.set_projects_filter(&selected_projects);
+
+        if self.current_block != AppBlock::Projects {
+            self.load_projects().await;
+        }
+        self.load_tasks().await;
     }
 
     async fn set_current_task(&mut self) {
@@ -522,7 +516,8 @@ impl App {
             }
             _ => {}
         }
-        self.set_reload().await;
+
+        self.update_task_filter().await;
     }
 
     async fn select_previous(&mut self) {
@@ -542,7 +537,7 @@ impl App {
             }
             _ => {}
         }
-        self.set_reload().await;
+        self.update_task_filter().await;
     }
 
     async fn select_first(&mut self) {
@@ -556,7 +551,7 @@ impl App {
         if self.current_block == AppBlock::TaskList {
             self.set_current_task().await;
         }
-        self.set_reload().await;
+        self.update_task_filter().await;
     }
 
     async fn select_last(&mut self) {
@@ -570,7 +565,7 @@ impl App {
         if self.current_block == AppBlock::TaskList {
             self.set_current_task().await;
         }
-        self.set_reload().await;
+        self.update_task_filter().await;
     }
 
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
@@ -597,11 +592,12 @@ impl App {
             let block = Block::bordered()
                 .border_style(Style::default().fg(Color::Red))
                 .title("Alert!");
-            let area = popup_area(area, Size::new(60, 5));
+            let area = popup_area(area, Size::new(area.width / 2, 40));
             Clear {}.render(area, buf);
             Paragraph::new(alert.to_string())
                 .block(block)
                 .centered()
+                .wrap(Wrap { trim: true })
                 .render(area, buf);
         }
 
@@ -735,7 +731,7 @@ impl App {
             }
         }
 
-        self.reload_tasks = true;
+        self.update_task_filter().await;
     }
 
     async fn load_state(&mut self) {
