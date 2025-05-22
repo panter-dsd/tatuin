@@ -11,11 +11,11 @@ use ratatui::widgets::{Block, Borders};
 pub struct Header<'a> {
     title: &'a str,
     is_active: bool,
-    shortcut: &'a Option<Shortcut>,
+    shortcut: Option<&'a Shortcut>,
 }
 
 impl<'a> Header<'a> {
-    pub fn new(title: &'a str, is_active: bool, shortcut: &'a Option<Shortcut>) -> Self {
+    pub fn new(title: &'a str, is_active: bool, shortcut: Option<&'a Shortcut>) -> Self {
         Self {
             title,
             is_active,

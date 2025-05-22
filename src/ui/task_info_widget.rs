@@ -17,7 +17,7 @@ use super::shortcut::Shortcut;
 pub struct TaskInfoWidget {
     is_active: bool,
     t: Option<Box<dyn TaskTrait>>,
-    shortcut: Option<Shortcut>,
+    shortcut: Shortcut,
 }
 
 impl Default for TaskInfoWidget {
@@ -25,7 +25,7 @@ impl Default for TaskInfoWidget {
         Self {
             is_active: false,
             t: None,
-            shortcut: Some(Shortcut::new(&['g', 'i'])),
+            shortcut: Shortcut::new(&['g', 'i']),
         }
     }
 }
@@ -33,11 +33,7 @@ impl Default for TaskInfoWidget {
 #[async_trait]
 impl AppBlockWidget for TaskInfoWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
-        if let Some(s) = &mut self.shortcut {
-            vec![s]
-        } else {
-            Vec::new()
-        }
+        vec![&mut self.shortcut]
     }
 
     fn set_active(&mut self, is_active: bool) {
@@ -58,7 +54,7 @@ impl TaskInfoWidget {
 
 impl Widget for &mut TaskInfoWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let h = Header::new("Task info", self.is_active, &self.shortcut);
+        let h = Header::new("Task info", self.is_active, Some(&self.shortcut));
 
         if let Some(t) = &self.t {
             let id = t.id();

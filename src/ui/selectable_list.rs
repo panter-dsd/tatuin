@@ -131,7 +131,10 @@ impl<T> SelectableList<T> {
             items.insert(0, ListItem::from("All"));
         }
 
-        let mut l = list::List::new(&items, self.is_active).shortcut(&self.shortcut);
+        let mut l = list::List::new(&items, self.is_active);
+        if let Some(s) = &self.shortcut {
+            l = l.shortcut(s);
+        }
 
         let header_title;
         if !title.is_empty() {

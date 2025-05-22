@@ -9,7 +9,6 @@ pub enum AcceptResult {
     Accepted,
 }
 
-#[derive(Clone)]
 pub struct Shortcut {
     keys: Vec<char>,
     current_input_keys: Vec<char>,
