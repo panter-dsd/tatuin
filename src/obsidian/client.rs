@@ -55,10 +55,14 @@ impl Client {
             let job = tokio::spawn(async move {
                 let _permit = semaphore.acquire().await.unwrap();
 
-                let parser = md_file::File::new(f.as_str());
-                let mut tasks = parser.tasks().await.unwrap();
-                for t in &mut tasks {
-                    t.set_root_path(p.to_string());
+                let mut tasks = Vec::new();
+
+                let mut parser = md_file::File::new(f.as_str());
+                if parser.open().is_ok() {
+                    tasks = parser.tasks().await.unwrap();
+                    for t in &mut tasks {
+                        t.set_root_path(p.to_string());
+                    }
                 }
                 drop(_permit);
                 tasks
@@ -83,8 +87,10 @@ impl Client {
     }
 
     pub async fn change_state(&self, t: &Task, s: State) -> Result<(), Box<dyn Error>> {
-        let f = md_file::File::new(&t.file_path);
-        f.change_state(t, s).await
+        let mut f = md_file::File::new(&t.file_path);
+        f.open()?;
+        f.change_state(t, s).await?;
+        f.flush()
     }
 
     pub async fn patch_tasks<'a>(&mut self, patches: &'a [TaskPatch<'a>]) -> Vec<PatchError> {
@@ -96,7 +102,19 @@ impl Client {
         }
 
         for file in files.iter().unique() {
-            let f = md_file::File::new(file);
+            let mut f = md_file::File::new(file);
+            if let Err(e) = f.open() {
+                errors.extend(
+                    patches
+                        .iter()
+                        .filter(|p| p.task.file_path.as_str().cmp(file) == Ordering::Equal)
+                        .map(|p| PatchError {
+                            task: p.task.clone(),
+                            error: e.to_string(),
+                        }),
+                );
+                continue;
+            }
             let mut file_patches = patches
                 .iter()
                 .filter(|p| p.task.file_path.as_str().cmp(file) == Ordering::Equal)
@@ -109,6 +127,17 @@ impl Client {
                         error: e.to_string(),
                     });
                 }
+            }
+            if let Err(e) = f.flush() {
+                errors.extend(
+                    patches
+                        .iter()
+                        .filter(|p| p.task.file_path.as_str().cmp(file) == Ordering::Equal)
+                        .map(|p| PatchError {
+                            task: p.task.clone(),
+                            error: e.to_string(),
+                        }),
+                );
             }
         }
 
