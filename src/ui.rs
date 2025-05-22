@@ -620,7 +620,7 @@ impl App {
     fn render_footer(&self, area: Rect, buf: &mut Buffer) {
         let mut lines = vec![
             Span::styled(
-                "Use ↓↑ to move up/down, Tab/BackTab to move between blocks. ",
+                "Use ↓↑ to move up/down, Tab/BackTab to move between blocks, ? for help. ",
                 style::FOOTER_KEYS_HELP_COLOR,
             ),
             Span::styled("Current date/time: ", style::FOOTER_DATETIME_LABEL_FG),
