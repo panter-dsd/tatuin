@@ -89,16 +89,17 @@ impl Client {
 
     pub async fn patch_tasks<'a>(&mut self, patches: &'a [TaskPatch<'a>]) -> Vec<PatchError> {
         let mut errors = Vec::new();
-        let mut files = Vec::new();
+
+        let mut files: Vec<&'a str> = Vec::new();
         for p in patches {
-            files.push(p.task.file_path.to_string());
+            files.push(&p.task.file_path);
         }
 
         for file in files.iter().unique() {
             let f = md_file::File::new(file);
             let mut file_patches = patches
                 .iter()
-                .filter(|p| p.task.file_path.cmp(file) == Ordering::Equal)
+                .filter(|p| p.task.file_path.as_str().cmp(file) == Ordering::Equal)
                 .collect::<Vec<&'a TaskPatch>>();
             file_patches.sort_by_key(|p| std::cmp::Reverse(p.task.start_pos));
             for p in file_patches {
