@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use std::sync::{Arc, RwLock};
 use tokio::sync::broadcast;
 
 #[derive(Clone)]
@@ -9,9 +10,13 @@ pub enum AcceptResult {
     Accepted,
 }
 
-pub struct Shortcut {
-    keys: Vec<char>,
+pub struct SharedData {
+    pub keys: Vec<char>,
     current_input_keys: Vec<char>,
+}
+
+pub struct Shortcut {
+    data: Arc<RwLock<SharedData>>,
     tx: broadcast::Sender<()>,
 }
 
@@ -20,10 +25,16 @@ impl Shortcut {
         let (tx, _) = broadcast::channel(1);
 
         Self {
-            keys: keys.to_vec(),
-            current_input_keys: Vec::new(),
+            data: Arc::new(RwLock::new(SharedData {
+                keys: keys.to_vec(),
+                current_input_keys: Vec::new(),
+            })),
             tx,
         }
+    }
+
+    pub fn internal_data(&self) -> Arc<RwLock<SharedData>> {
+        self.data.clone()
     }
 
     pub fn subscribe_to_accepted(&self) -> broadcast::Receiver<()> {
@@ -31,23 +42,24 @@ impl Shortcut {
     }
 
     pub fn current_input_keys(&self) -> Vec<char> {
-        self.current_input_keys.to_vec()
+        self.data.read().unwrap().current_input_keys.to_vec()
     }
 
     pub fn keys(&self) -> Vec<char> {
-        self.keys.to_vec()
+        self.data.read().unwrap().keys.to_vec()
     }
 
     pub fn accept(&mut self, keys: &[char]) -> AcceptResult {
-        self.current_input_keys.clear();
+        let mut d = self.data.write().unwrap();
+        d.current_input_keys.clear();
 
-        if self.keys == keys {
+        if d.keys == keys {
             // We don't care here about the send result.
             // Probably, there is no subscriber here.
             let _ = self.tx.send(());
             AcceptResult::Accepted
-        } else if self.keys.starts_with(keys) {
-            self.current_input_keys = keys.to_vec();
+        } else if d.keys.starts_with(keys) {
+            d.current_input_keys = keys.to_vec();
             AcceptResult::PartiallyAccepted
         } else {
             AcceptResult::NotAccepted

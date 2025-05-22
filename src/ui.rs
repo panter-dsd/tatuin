@@ -26,6 +26,7 @@ mod dialog;
 mod filter_widget;
 mod header;
 mod hyperlink;
+mod key_bindings_help_dialog;
 mod list;
 mod selectable_list;
 mod shortcut;
@@ -116,10 +117,12 @@ pub struct App {
     key_buffer: KeyBuffer,
 
     select_first_shortcut: Shortcut,
-
     load_state_shortcut: Shortcut,
     save_state_shortcut: Shortcut,
     commit_changes_shortcut: Shortcut,
+    show_keybindings_help_shortcut: Shortcut,
+
+    all_shortcuts: Vec<Arc<std::sync::RwLock<shortcut::SharedData>>>,
 
     dialog: Option<Box<dyn dialog::DialogTrait>>,
 
@@ -156,6 +159,8 @@ impl App {
             load_state_shortcut: Shortcut::new(&['s', 'l']),
             save_state_shortcut: Shortcut::new(&['s', 's']),
             commit_changes_shortcut: Shortcut::new(&['c', 'c']),
+            show_keybindings_help_shortcut: Shortcut::new(&['?']),
+            all_shortcuts: Vec::new(),
             dialog: None,
             settings: Arc::new(RwLock::new(settings)),
         };
@@ -167,6 +172,12 @@ impl App {
             .insert(AppBlock::TaskInfo, s.task_description_widget.clone());
         s.app_blocks.insert(AppBlock::Filter, s.filter_widget.clone());
 
+        s.all_shortcuts.push(s.select_first_shortcut.internal_data());
+        s.all_shortcuts.push(s.load_state_shortcut.internal_data());
+        s.all_shortcuts.push(s.save_state_shortcut.internal_data());
+        s.all_shortcuts.push(s.commit_changes_shortcut.internal_data());
+        s.all_shortcuts.push(s.show_keybindings_help_shortcut.internal_data());
+
         s.stateful_widgets.insert(AppBlock::Providers, s.providers.clone());
         s.stateful_widgets.insert(AppBlock::Projects, s.projects.clone());
         s.stateful_widgets.insert(AppBlock::TaskList, s.tasks_widget.clone());
@@ -176,6 +187,11 @@ impl App {
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        for b in self.app_blocks.values_mut() {
+            self.all_shortcuts
+                .extend(b.write().await.activate_shortcuts().iter().map(|s| s.internal_data()));
+        }
+
         if self.settings.read().await.states().is_empty() {
             // If there is no states, save the original as default
             self.save_state(None).await;
@@ -196,6 +212,7 @@ impl App {
         let mut load_state_accepted = self.load_state_shortcut.subscribe_to_accepted();
         let mut save_state_accepted = self.save_state_shortcut.subscribe_to_accepted();
         let mut commit_changes_accepted = self.commit_changes_shortcut.subscribe_to_accepted();
+        let mut show_keybindings_help_shortcut_accepted = self.show_keybindings_help_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
             if let Some(d) = &self.dialog {
@@ -215,6 +232,7 @@ impl App {
                 _ = load_state_accepted.recv() => self.load_state().await,
                 _ = save_state_accepted.recv() => self.save_state_as(),
                 _ = commit_changes_accepted.recv() => self.commit_changes().await,
+                _ = show_keybindings_help_shortcut_accepted.recv() => self.show_keybindings_help().await,
             }
         }
         Ok(())
@@ -308,6 +326,7 @@ impl App {
             &mut self.load_state_shortcut,
             &mut self.save_state_shortcut,
             &mut self.commit_changes_shortcut,
+            &mut self.show_keybindings_help_shortcut,
         ];
         for s in shortcuts {
             match s.accept(&keys) {
@@ -757,6 +776,11 @@ impl App {
 
             self.load_tasks().await;
         }
+    }
+
+    async fn show_keybindings_help(&mut self) {
+        let d = key_bindings_help_dialog::Dialog::new(&self.all_shortcuts);
+        self.dialog = Some(Box::new(d));
     }
 }
 
