@@ -4,6 +4,8 @@ use crate::filter;
 use crate::obsidian::md_file;
 use crate::obsidian::task::{State, Task};
 use crate::task::due_group;
+use itertools::Itertools;
+use std::cmp::Ordering;
 use std::error::Error;
 use std::fs;
 use std::path::Path;
@@ -11,6 +13,16 @@ use std::sync::Arc;
 use tokio::sync::Semaphore;
 
 const SIMULTANEOUS_JOB_COUNT: usize = 10;
+
+pub struct TaskPatch<'a> {
+    pub task: &'a Task,
+    pub state: State,
+}
+
+pub struct PatchError {
+    pub task: Task,
+    pub error: String,
+}
 
 pub struct Client {
     path: String,
@@ -73,6 +85,33 @@ impl Client {
     pub async fn change_state(&self, t: &Task, s: State) -> Result<(), Box<dyn Error>> {
         let f = md_file::File::new(&t.file_path);
         f.change_state(t, s).await
+    }
+
+    pub async fn patch_tasks<'a>(&mut self, patches: &'a [TaskPatch<'a>]) -> Vec<PatchError> {
+        let mut errors = Vec::new();
+        let mut files = Vec::new();
+        for p in patches {
+            files.push(p.task.file_path.to_string());
+        }
+
+        for file in files.iter().unique() {
+            let f = md_file::File::new(file);
+            let mut file_patches = patches
+                .iter()
+                .filter(|p| p.task.file_path.cmp(file) == Ordering::Equal)
+                .collect::<Vec<&'a TaskPatch>>();
+            file_patches.sort_by_key(|p| std::cmp::Reverse(p.task.start_pos));
+            for p in file_patches {
+                if let Err(e) = f.change_state(p.task, p.state.clone()).await {
+                    errors.push(PatchError {
+                        task: p.task.clone(),
+                        error: e.to_string(),
+                    });
+                }
+            }
+        }
+
+        errors
     }
 }
 

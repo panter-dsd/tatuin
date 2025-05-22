@@ -7,7 +7,7 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::Provider as ProviderTrait;
+use crate::provider::{PatchError, Provider as ProviderTrait, TaskPatch};
 use crate::task::{State, Task as TaskTrait};
 use async_trait::async_trait;
 use ratatui::style::Color;
@@ -66,6 +66,39 @@ impl ProviderTrait for Provider {
         };
 
         self.c.change_state(t, state.into()).await
+    }
+
+    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+        let mut client_patches = Vec::new();
+        let mut errors = Vec::new();
+        for p in patches.iter() {
+            let st = match &p.state {
+                Some(s) => s,
+                None => {
+                    errors.push(PatchError {
+                        task: p.task.clone_boxed(),
+                        error: "The only state changing is implemented".to_string(),
+                    });
+                    continue;
+                }
+            };
+            match p.task.as_any().downcast_ref::<task::Task>() {
+                Some(t) => client_patches.push(client::TaskPatch {
+                    task: t,
+                    state: st.clone().into(),
+                }),
+                None => panic!("Wrong casting!"),
+            };
+        }
+
+        for e in self.c.patch_tasks(&client_patches).await {
+            errors.push(PatchError {
+                task: e.task.clone_boxed(),
+                error: e.error,
+            })
+        }
+
+        errors
     }
 
     async fn reload(&mut self) {
