@@ -168,21 +168,22 @@ impl TasksWidget {
                     state: Some(c.new_state.clone()),
                 })
                 .collect::<Vec<TaskPatch>>();
-            let errors = p.patch_tasks(&patches).await;
-            for e in &errors {
-                result.push(Box::<dyn Error>::from(format!(
-                    "Provider {name} returns error when changing the task: {e}",
-                )));
-            }
 
-            for p in patches {
-                if !errors.iter().any(|pe| equal(p.task.as_ref(), pe.task.as_ref())) {
-                    self.changed_state_tasks
-                        .retain(|c| !equal(c.task.as_ref(), p.task.as_ref()));
+            if !patches.is_empty() {
+                let errors = p.patch_tasks(&patches).await;
+                result.extend(errors.iter().map(|e| {
+                    Box::<dyn Error>::from(format!("Provider {name} returns error when changing the task: {e}"))
+                }));
+
+                for p in patches {
+                    if !errors.iter().any(|pe| equal(p.task.as_ref(), pe.task.as_ref())) {
+                        self.changed_state_tasks
+                            .retain(|c| !equal(c.task.as_ref(), p.task.as_ref()));
+                    }
                 }
-            }
 
-            p.reload().await;
+                p.reload().await;
+            }
         }
 
         result
