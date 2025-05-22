@@ -3,8 +3,7 @@
 use super::state::{StateSettings, StatefulObject};
 use crate::filter;
 use crate::state::{State, state_from_str, state_to_str};
-use crate::task::{Task as TaskTrait, due_group};
-use crate::{project, provider, task};
+use crate::{project, provider};
 use async_trait::async_trait;
 use color_eyre::Result;
 use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
@@ -13,7 +12,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect, Size};
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget};
+use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wrap};
 use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
@@ -103,7 +102,6 @@ impl std::fmt::Display for KeyBuffer {
 
 pub struct App {
     should_exit: bool,
-    reload_tasks: bool,
     providers: Arc<RwLock<SelectableList<Box<dyn provider::Provider>>>>,
     projects: Arc<RwLock<SelectableList<Box<dyn project::Project>>>>,
     current_block: AppBlock,
@@ -121,6 +119,7 @@ pub struct App {
 
     load_state_shortcut: Shortcut,
     save_state_shortcut: Shortcut,
+    commit_changes_shortcut: Shortcut,
 
     dialog: Option<Box<dyn dialog::DialogTrait>>,
 
@@ -132,7 +131,6 @@ impl App {
     pub fn new(providers: Vec<Box<dyn provider::Provider>>, settings: Box<dyn StateSettings>) -> Self {
         let mut s = Self {
             should_exit: false,
-            reload_tasks: true,
             current_block: AppBlock::TaskList,
             providers: Arc::new(RwLock::new(
                 SelectableList::new(providers, Some(0))
@@ -157,6 +155,7 @@ impl App {
             select_first_shortcut: Shortcut::new(&['g', 'g']),
             load_state_shortcut: Shortcut::new(&['s', 'l']),
             save_state_shortcut: Shortcut::new(&['s', 's']),
+            commit_changes_shortcut: Shortcut::new(&['c', 'c']),
             dialog: None,
             settings: Arc::new(RwLock::new(settings)),
         };
@@ -184,7 +183,6 @@ impl App {
 
         self.load_tasks().await;
         self.restore_state(None).await;
-        self.reload_tasks = true;
 
         terminal.hide_cursor()?;
 
@@ -197,13 +195,9 @@ impl App {
         let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
         let mut load_state_accepted = self.load_state_shortcut.subscribe_to_accepted();
         let mut save_state_accepted = self.save_state_shortcut.subscribe_to_accepted();
+        let mut commit_changes_accepted = self.commit_changes_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
-            if self.reload_tasks {
-                self.load_tasks().await;
-                self.reload_tasks = false;
-            }
-
             if let Some(d) = &self.dialog {
                 if d.should_be_closed() {
                     self.close_dialog().await;
@@ -220,6 +214,7 @@ impl App {
                 _ = select_first_accepted.recv() => self.select_first().await,
                 _ = load_state_accepted.recv() => self.load_state().await,
                 _ = save_state_accepted.recv() => self.save_state_as(),
+                _ = commit_changes_accepted.recv() => self.commit_changes().await,
             }
         }
         Ok(())
@@ -259,51 +254,21 @@ impl App {
     }
 
     async fn load_tasks(&mut self) {
-        let mut all_tasks: Vec<Box<dyn task::Task>> = Vec::new();
-
-        let selected_provider_name = if let Some(p) = self.providers.read().await.selected() {
-            p.name()
-        } else {
-            String::new()
-        };
-        let mut errors = Vec::new();
-
         let project_id = self.selected_project_id().await;
 
-        for p in self.providers.write().await.iter_mut() {
-            if !selected_provider_name.is_empty() && p.name() != selected_provider_name {
-                continue;
-            }
+        let errors = self
+            .tasks_widget
+            .write()
+            .await
+            .load_tasks(
+                &mut self.providers.write().await.iter_mut(),
+                &self.filter_widget.read().await.filter(),
+            )
+            .await;
 
-            let tasks = p.tasks(None, &self.filter_widget.read().await.filter()).await;
-
-            match tasks {
-                Ok(t) => all_tasks.append(
-                    &mut t
-                        .iter()
-                        .filter(|t| {
-                            project_id.is_none()
-                                || t.project().is_none()
-                                || t.project().unwrap().id() == *project_id.as_ref().unwrap()
-                        })
-                        .map(|t| t.clone_boxed())
-                        .collect::<Vec<Box<dyn TaskTrait>>>(),
-                ),
-                Err(err) => errors.push((p.name(), err)),
-            }
+        for e in errors {
+            self.add_error(e.to_string().as_str());
         }
-
-        for (provider_name, err) in errors {
-            self.add_error(format!("Load provider {provider_name} projects failure: {err}").as_str())
-        }
-
-        all_tasks.sort_by(|l, r| {
-            due_group(l.as_ref())
-                .cmp(&due_group(r.as_ref()))
-                .then_with(|| r.priority().cmp(&l.priority()))
-                .then_with(|| l.due().cmp(&r.due()))
-        });
-        self.tasks_widget.write().await.set_tasks(all_tasks);
 
         if project_id.is_none() {
             self.load_projects().await;
@@ -342,6 +307,7 @@ impl App {
             &mut self.select_first_shortcut,
             &mut self.load_state_shortcut,
             &mut self.save_state_shortcut,
+            &mut self.commit_changes_shortcut,
         ];
         for s in shortcuts {
             match s.accept(&keys) {
@@ -425,22 +391,16 @@ impl App {
             p.reload().await;
         }
 
-        self.reload_tasks = true;
+        self.load_tasks().await;
     }
 
     async fn change_check_state(&mut self) {
         match self.current_block {
             AppBlock::TaskList => {
-                let result = self
-                    .tasks_widget
-                    .write()
-                    .await
-                    .change_check_state(&mut self.providers.write().await.iter_mut())
-                    .await;
+                let result = self.tasks_widget.write().await.change_check_state().await;
                 if let Err(e) = result {
                     self.alert = Some(format!("Change state error: {e}"))
                 }
-                self.reload_tasks = true;
             }
             AppBlock::Filter => {
                 self.filter_widget.write().await.change_check_state();
@@ -502,14 +462,26 @@ impl App {
         self.update_activity_state().await;
     }
 
-    fn set_reload(&mut self) {
-        match self.current_block {
-            AppBlock::Providers | AppBlock::Projects | AppBlock::Filter => {
-                self.reload_tasks = true;
-            }
-            AppBlock::TaskList => {}
-            AppBlock::TaskInfo => {}
+    async fn update_task_filter(&mut self) {
+        let mut selected_providers = Vec::new();
+        if let Some(p) = self.providers.read().await.selected() {
+            selected_providers.push(p.name());
         }
+        self.tasks_widget
+            .write()
+            .await
+            .set_providers_filter(&selected_providers);
+
+        let mut selected_projects = Vec::new();
+        if let Some(p) = self.projects.read().await.selected() {
+            selected_projects.push(p.name());
+        }
+        self.tasks_widget.write().await.set_projects_filter(&selected_projects);
+
+        if self.current_block != AppBlock::Projects {
+            self.load_projects().await;
+        }
+        self.load_tasks().await;
     }
 
     async fn set_current_task(&mut self) {
@@ -517,6 +489,22 @@ impl App {
             .write()
             .await
             .set_task(self.tasks_widget.read().await.selected_task());
+    }
+
+    async fn on_selection_changed(&mut self) {
+        match self.current_block {
+            AppBlock::Providers => {
+                self.projects.write().await.select_first().await;
+                self.update_task_filter().await;
+            }
+            AppBlock::Projects => {
+                self.update_task_filter().await;
+            }
+            AppBlock::TaskList => {
+                self.set_current_task().await;
+            }
+            _ => {}
+        }
     }
 
     async fn select_next(&mut self) {
@@ -527,16 +515,7 @@ impl App {
             .await
             .select_next()
             .await;
-        match self.current_block {
-            AppBlock::Providers => {
-                self.projects.write().await.select_first().await;
-            }
-            AppBlock::TaskList => {
-                self.set_current_task().await;
-            }
-            _ => {}
-        }
-        self.set_reload();
+        self.on_selection_changed().await;
     }
 
     async fn select_previous(&mut self) {
@@ -547,16 +526,7 @@ impl App {
             .await
             .select_previous()
             .await;
-        match self.current_block {
-            AppBlock::Providers => {
-                self.projects.write().await.select_first().await;
-            }
-            AppBlock::TaskList => {
-                self.set_current_task().await;
-            }
-            _ => {}
-        }
-        self.set_reload();
+        self.on_selection_changed().await;
     }
 
     async fn select_first(&mut self) {
@@ -567,10 +537,7 @@ impl App {
             .await
             .select_first()
             .await;
-        if self.current_block == AppBlock::TaskList {
-            self.set_current_task().await;
-        }
-        self.set_reload();
+        self.on_selection_changed().await;
     }
 
     async fn select_last(&mut self) {
@@ -581,10 +548,7 @@ impl App {
             .await
             .select_last()
             .await;
-        if self.current_block == AppBlock::TaskList {
-            self.set_current_task().await;
-        }
-        self.set_reload();
+        self.on_selection_changed().await;
     }
 
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
@@ -611,11 +575,11 @@ impl App {
             let block = Block::bordered()
                 .border_style(Style::default().fg(Color::Red))
                 .title("Alert!");
-            let area = popup_area(area, Size::new(60, 5));
+            let area = popup_area(area, Size::new(area.width / 2, 40));
             Clear {}.render(area, buf);
             Paragraph::new(alert.to_string())
                 .block(block)
-                .centered()
+                .wrap(Wrap { trim: true })
                 .render(area, buf);
         }
 
@@ -749,7 +713,7 @@ impl App {
             }
         }
 
-        self.reload_tasks = true;
+        self.update_task_filter().await;
     }
 
     async fn load_state(&mut self) {
@@ -775,6 +739,23 @@ impl App {
             if !t.is_empty() {
                 self.save_state(Some(t.as_str())).await;
             }
+        }
+    }
+
+    async fn commit_changes(&mut self) {
+        if self.tasks_widget.read().await.has_changes() {
+            let errors = self
+                .tasks_widget
+                .write()
+                .await
+                .commit_changes(&mut self.providers.write().await.iter_mut())
+                .await;
+
+            for e in errors {
+                self.add_error(e.to_string().as_str());
+            }
+
+            self.load_tasks().await;
         }
     }
 }

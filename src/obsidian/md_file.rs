@@ -14,27 +14,36 @@ const COMPLETED_EMOJI: char = '✅';
 
 pub struct File {
     file_path: String,
+    content: String,
 }
 
 impl File {
     pub fn new(file_path: &str) -> Self {
         Self {
             file_path: String::from(file_path),
+            content: String::new(),
         }
     }
 
-    pub async fn tasks(&self) -> Result<Vec<Task>, Box<dyn Error>> {
-        let content = fs::read_to_string(self.file_path.as_str())?;
-        self.tasks_from_content(content)
+    pub fn open(&mut self) -> Result<(), std::io::Error> {
+        self.content = fs::read_to_string(self.file_path.as_str())?;
+        Ok(())
     }
 
-    pub async fn change_state(&self, t: &Task, s: State) -> Result<(), Box<dyn Error>> {
-        let content = fs::read_to_string(self.file_path.as_str())?;
-        let content = self.change_state_in_content(t, s, content.as_str())?;
-        if let Err(err) = fs::write(self.file_path.as_str(), content) {
+    pub fn flush(&mut self) -> Result<(), Box<dyn Error>> {
+        if let Err(err) = fs::write(self.file_path.as_str(), &self.content) {
             return Err(Box::new(err));
         }
 
+        Ok(())
+    }
+
+    pub async fn tasks(&self) -> Result<Vec<Task>, Box<dyn Error>> {
+        self.tasks_from_content(&self.content)
+    }
+
+    pub async fn change_state(&mut self, t: &Task, s: State) -> Result<(), Box<dyn Error>> {
+        self.content = self.change_state_in_content(t, s, self.content.as_str())?;
         Ok(())
     }
 
@@ -68,7 +77,7 @@ impl File {
         None
     }
 
-    fn tasks_from_content(&self, content: String) -> Result<Vec<Task>, Box<dyn Error>> {
+    fn tasks_from_content(&self, content: &str) -> Result<Vec<Task>, Box<dyn Error>> {
         const SPLIT_TERMINATOR: &str = "\n";
 
         let mut result: Vec<Task> = Vec::new();
@@ -219,13 +228,9 @@ mod tests {
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
     async fn parse_not_exists_file_test() {
-        let p = File::new("/etc/file/not/exists");
-        let err = p.tasks().await.unwrap_err();
-        if let Some(error) = err.downcast_ref::<std::io::Error>() {
-            assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
-        } else {
-            panic!("Expected an IoError, but got a different error.");
-        }
+        let mut p = File::new("/etc/file/not/exists");
+        let err = p.open().unwrap_err();
+        assert_eq!(err.kind(), std::io::ErrorKind::NotFound);
     }
 
     #[test]
@@ -289,7 +294,7 @@ some another text
         let p = File::new("");
 
         for c in CASES {
-            let tasks = p.tasks_from_content(String::from(c.file_content)).unwrap();
+            let tasks = p.tasks_from_content(c.file_content).unwrap();
             assert_eq!(tasks.len(), c.count, "Test '{}' was failed", c.name);
         }
     }
@@ -428,14 +433,14 @@ some another text
         let p = File::new("");
 
         for c in cases {
-            let original_tasks = p.tasks_from_content(c.file_content_before.to_string()).unwrap();
+            let original_tasks = p.tasks_from_content(c.file_content_before).unwrap();
             let mut tasks = original_tasks.clone();
             let mut result = c.file_content_before.to_string();
             for i in 0..original_tasks.len() {
                 let r = p.change_state_in_content(&tasks[i], State::Completed, result.as_str());
                 assert!(r.is_ok(), "{}: {}", c.name, r.unwrap_err());
                 result = r.unwrap();
-                tasks = p.tasks_from_content(result.to_string()).unwrap();
+                tasks = p.tasks_from_content(&result).unwrap();
             }
             assert_eq!(c.file_content_after, result, "Test '{}' was failed", c.name);
         }
@@ -513,14 +518,14 @@ some another text
         let p = File::new("");
 
         for c in CASES {
-            let original_tasks = p.tasks_from_content(c.file_content_before.to_string()).unwrap();
+            let original_tasks = p.tasks_from_content(c.file_content_before).unwrap();
             let mut tasks = original_tasks.clone();
             let mut result = c.file_content_before.to_string();
             for i in 0..original_tasks.len() {
                 let r = p.change_state_in_content(&tasks[i], State::Uncompleted, result.as_str());
                 assert!(r.is_ok(), "{}: {}", c.name, r.unwrap_err());
                 result = r.unwrap();
-                tasks = p.tasks_from_content(result.to_string()).unwrap();
+                tasks = p.tasks_from_content(&result).unwrap();
             }
             assert_eq!(c.file_content_after, result, "Test '{}' was failed", c.name);
         }
@@ -531,7 +536,7 @@ some another text
         let content = "Some text
 - [ ] Task
 Some another text";
-        let tasks = File::new("").tasks_from_content(content.to_string());
+        let tasks = File::new("").tasks_from_content(content);
         assert!(tasks.is_ok());
 
         let tasks = tasks.unwrap();
@@ -545,7 +550,7 @@ Some another text";
         let content = "Какой-то текст
 - [ ] Задача
 Какой-то другой текст";
-        let tasks = File::new("").tasks_from_content(content.to_string());
+        let tasks = File::new("").tasks_from_content(content);
         assert!(tasks.is_ok());
 
         let tasks = tasks.unwrap();

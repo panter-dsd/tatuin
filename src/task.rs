@@ -12,7 +12,7 @@ use std::fmt::Write;
 
 pub type DateTimeUtc = DateTime<Utc>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum State {
     Unknown(char),
     Uncompleted,
@@ -88,6 +88,10 @@ pub trait Task: Send + Sync {
     fn as_any(&self) -> &dyn Any;
 
     fn clone_boxed(&self) -> Box<dyn Task>;
+}
+
+pub fn equal(l: &dyn Task, r: &dyn Task) -> bool {
+    l.id() == r.id() && l.provider() == r.provider()
 }
 
 pub fn datetime_to_str(t: Option<DateTimeUtc>) -> String {
