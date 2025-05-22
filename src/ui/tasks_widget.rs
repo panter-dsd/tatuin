@@ -226,7 +226,10 @@ impl TasksWidget {
         let mut title = format!("Tasks ({})", self.tasks.len());
 
         if !changed.is_empty() {
-            title = format!("{title} (uncommitted count {})", changed.len())
+            title = format!(
+                "{title} (uncommitted count {}, use 'c'+'c' to commit them)",
+                changed.len()
+            )
         }
 
         self.tasks.render(
