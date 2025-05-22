@@ -25,7 +25,7 @@ impl Default for TaskInfoWidget {
         Self {
             is_active: false,
             t: None,
-            shortcut: Shortcut::new(&['g', 'i']),
+            shortcut: Shortcut::new("Activate Task Info block", &['g', 'i']),
         }
     }
 }

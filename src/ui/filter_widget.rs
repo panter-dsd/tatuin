@@ -86,8 +86,8 @@ impl FilterWidget {
             filter: f,
             filter_state_state: ListState::default(),
             filter_due_state: ListState::default(),
-            state_shortcut: Shortcut::new(&['g', 's']),
-            due_shortcut: Shortcut::new(&['g', 'd']),
+            state_shortcut: Shortcut::new("Activate Filter->State block", &['g', 's']),
+            due_shortcut: Shortcut::new("Activate Filter->Due block", &['g', 'd']),
         }));
 
         tokio::spawn({

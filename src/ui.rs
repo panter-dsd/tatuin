@@ -138,12 +138,12 @@ impl App {
             providers: Arc::new(RwLock::new(
                 SelectableList::new(providers, Some(0))
                     .add_all_item()
-                    .shortcut(Shortcut::new(&['g', 'v'])),
+                    .shortcut(Shortcut::new("Activate Providers block", &['g', 'v'])),
             )),
             projects: Arc::new(RwLock::new(
                 SelectableList::default()
                     .add_all_item()
-                    .shortcut(Shortcut::new(&['g', 'p'])),
+                    .shortcut(Shortcut::new("Activate Projects block", &['g', 'p'])),
             )),
             filter_widget: filter_widget::FilterWidget::new(filter::Filter {
                 states: vec![filter::FilterState::Uncompleted],
@@ -155,11 +155,11 @@ impl App {
             app_blocks: HashMap::new(),
             stateful_widgets: HashMap::new(),
             key_buffer: KeyBuffer::default(),
-            select_first_shortcut: Shortcut::new(&['g', 'g']),
-            load_state_shortcut: Shortcut::new(&['s', 'l']),
-            save_state_shortcut: Shortcut::new(&['s', 's']),
-            commit_changes_shortcut: Shortcut::new(&['c', 'c']),
-            show_keybindings_help_shortcut: Shortcut::new(&['?']),
+            select_first_shortcut: Shortcut::new("Select first", &['g', 'g']),
+            load_state_shortcut: Shortcut::new("Load state", &['s', 'l']),
+            save_state_shortcut: Shortcut::new("Save the current state", &['s', 's']),
+            commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']),
+            show_keybindings_help_shortcut: Shortcut::new("Show help", &['?']),
             all_shortcuts: Vec::new(),
             dialog: None,
             settings: Arc::new(RwLock::new(settings)),

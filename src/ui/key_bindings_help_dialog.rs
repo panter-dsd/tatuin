@@ -23,17 +23,21 @@ pub struct Dialog {
 
 impl Dialog {
     pub fn new(shortcuts: &[Arc<RwLock<SharedData>>]) -> Self {
+        let mut s: Vec<Shortcut> = shortcuts
+            .iter()
+            .map(|s| {
+                let d = s.read().unwrap();
+                Shortcut {
+                    name: d.name.clone(),
+                    keys: String::from_iter(d.keys.iter()),
+                }
+            })
+            .collect();
+
+        s.sort_by_key(|s| s.name.clone());
+
         Self {
-            shortcuts: shortcuts
-                .iter()
-                .map(|s| {
-                    let d = s.read().unwrap();
-                    Shortcut {
-                        name: "Some".to_string(),
-                        keys: String::from_iter(d.keys.iter()),
-                    }
-                })
-                .collect(),
+            shortcuts: s,
             should_be_closed: false,
         }
     }

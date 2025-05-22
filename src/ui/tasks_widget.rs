@@ -40,7 +40,7 @@ impl Default for TasksWidget {
             all_tasks: Vec::new(),
             changed_state_tasks: Vec::new(),
             tasks: SelectableList::default()
-                .shortcut(Shortcut::new(&['g', 't']))
+                .shortcut(Shortcut::new("Activate Tasks block", &['g', 't']))
                 .show_count_in_title(false),
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),

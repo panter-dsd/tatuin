@@ -11,6 +11,7 @@ pub enum AcceptResult {
 }
 
 pub struct SharedData {
+    pub name: String,
     pub keys: Vec<char>,
     current_input_keys: Vec<char>,
 }
@@ -21,11 +22,12 @@ pub struct Shortcut {
 }
 
 impl Shortcut {
-    pub fn new(keys: &[char]) -> Self {
+    pub fn new(name: &str, keys: &[char]) -> Self {
         let (tx, _) = broadcast::channel(1);
 
         Self {
             data: Arc::new(RwLock::new(SharedData {
+                name: name.to_string(),
                 keys: keys.to_vec(),
                 current_input_keys: Vec::new(),
             })),
