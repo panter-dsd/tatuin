@@ -836,6 +836,18 @@ notices = ["Copyright (c) 2015 The Rust Project Developers"]
 repository = "https://github.com/withoutboats/heck"
 
 [[dependencies]]
+name = "hex"
+version = "0.4.3"
+description = "Encoding and decoding data into/from hexadecimal representation."
+license = "MIT OR Apache-2.0"
+notices = [
+  "Copyright (c) 2013-2014 The Rust Project Developers.",
+  "Copyright (c) 2015-2020 The rust-hex Developers",
+]
+authors = ["KokaKiwi <kokakiwi@kokakiwi.net>"]
+repository = "https://github.com/KokaKiwi/rust-hex"
+
+[[dependencies]]
 name = "http"
 version = "1.3.1"
 description = """
@@ -1113,6 +1125,15 @@ repository = "https://github.com/polyfill-rs/is_terminal_polyfill"
 [[dependencies]]
 name = "itertools"
 version = "0.13.0"
+description = "Extra iterator adaptors, iterator methods, free functions, and macros."
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2015"]
+authors = ["bluss"]
+repository = "https://github.com/rust-itertools/itertools"
+
+[[dependencies]]
+name = "itertools"
+version = "0.14.0"
 description = "Extra iterator adaptors, iterator methods, free functions, and macros."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015"]
@@ -1872,6 +1893,18 @@ notices = [
 ]
 authors = ["RustCrypto Developers"]
 repository = "https://github.com/RustCrypto/hashes"
+
+[[dependencies]]
+name = "sha256"
+version = "1.6.0"
+description = "sha256 crypto digest"
+license = "MIT OR Apache-2.0"
+notices = [
+  "Copyright (c) 2021-present baoyachi and others",
+  "Copyright [2022] [baoyachi of copyright owner]",
+]
+authors = ["baoyachi <liaoymxsdl@gmail.com>"]
+repository = "https://github.com/baoyachi/sha256-rs"
 
 [[dependencies]]
 name = "sharded-slab"
