@@ -596,7 +596,7 @@ impl App {
             ),
             Span::styled("Current date/time: ", style::FOOTER_DATETIME_LABEL_FG),
             Span::styled(
-                chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
                 style::FOOTER_DATETIME_FG,
             ),
         ];
