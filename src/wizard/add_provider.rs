@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 use std::path;
 
-const AVAILABLE_PROVIDERS: &[&str] = &[
+pub const AVAILABLE_PROVIDERS: &[&str] = &[
     obsidian::PROVIDER_NAME,
     todoist::PROVIDER_NAME,
     gitlab_todo::PROVIDER_NAME,
