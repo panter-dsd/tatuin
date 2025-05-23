@@ -9,7 +9,7 @@ pub struct List<'a, T> {
     items: &'a [T],
     is_active: bool,
     title: Option<&'a str>,
-    shortcut: &'a Option<Shortcut>,
+    shortcut: Option<&'a Shortcut>,
 }
 
 impl<'a, T> List<'a, T>
@@ -22,7 +22,7 @@ where
             items,
             is_active,
             title: None,
-            shortcut: &None,
+            shortcut: None,
         }
     }
 
@@ -31,8 +31,8 @@ where
         self
     }
 
-    pub fn shortcut(mut self, s: &'a Option<Shortcut>) -> Self {
-        self.shortcut = s;
+    pub fn shortcut(mut self, s: &'a Shortcut) -> Self {
+        self.shortcut.replace(s);
         self
     }
 

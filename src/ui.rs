@@ -16,7 +16,6 @@ use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wra
 use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
-use std::fmt::Write;
 use std::hash::Hash;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -26,6 +25,8 @@ mod dialog;
 mod filter_widget;
 mod header;
 mod hyperlink;
+mod key_bindings_help_dialog;
+mod key_buffer;
 mod list;
 mod selectable_list;
 mod shortcut;
@@ -66,40 +67,6 @@ trait AppBlockWidget {
     async fn select_last(&mut self);
 }
 
-#[derive(Default)]
-struct KeyBuffer {
-    keys: Vec<char>,
-}
-
-impl KeyBuffer {
-    fn push(&mut self, key: char) -> Vec<char> {
-        const MAX_KEYS_COUNT: usize = 2;
-        if self.keys.len() == MAX_KEYS_COUNT {
-            self.clear();
-        }
-        self.keys.push(key);
-        self.keys.to_vec()
-    }
-
-    fn clear(&mut self) {
-        self.keys.clear();
-    }
-
-    fn is_empty(&self) -> bool {
-        self.keys.is_empty()
-    }
-}
-
-impl std::fmt::Display for KeyBuffer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for c in &self.keys {
-            f.write_char(*c)?
-        }
-
-        Ok(())
-    }
-}
-
 pub struct App {
     should_exit: bool,
     providers: Arc<RwLock<SelectableList<Box<dyn provider::Provider>>>>,
@@ -113,13 +80,16 @@ pub struct App {
     alert: Option<String>,
     app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
     stateful_widgets: HashMap<AppBlock, Arc<RwLock<dyn StatefulObject>>>,
-    key_buffer: KeyBuffer,
+    key_buffer: key_buffer::KeyBuffer,
 
     select_first_shortcut: Shortcut,
-
+    select_last_shortcut: Shortcut,
     load_state_shortcut: Shortcut,
     save_state_shortcut: Shortcut,
     commit_changes_shortcut: Shortcut,
+    show_keybindings_help_shortcut: Shortcut,
+
+    all_shortcuts: Vec<Arc<std::sync::RwLock<shortcut::SharedData>>>,
 
     dialog: Option<Box<dyn dialog::DialogTrait>>,
 
@@ -135,12 +105,12 @@ impl App {
             providers: Arc::new(RwLock::new(
                 SelectableList::new(providers, Some(0))
                     .add_all_item()
-                    .shortcut(Shortcut::new(&['g', 'v'])),
+                    .shortcut(Shortcut::new("Activate Providers block", &['g', 'v'])),
             )),
             projects: Arc::new(RwLock::new(
                 SelectableList::default()
                     .add_all_item()
-                    .shortcut(Shortcut::new(&['g', 'p'])),
+                    .shortcut(Shortcut::new("Activate Projects block", &['g', 'p'])),
             )),
             filter_widget: filter_widget::FilterWidget::new(filter::Filter {
                 states: vec![filter::FilterState::Uncompleted],
@@ -151,11 +121,14 @@ impl App {
             alert: None,
             app_blocks: HashMap::new(),
             stateful_widgets: HashMap::new(),
-            key_buffer: KeyBuffer::default(),
-            select_first_shortcut: Shortcut::new(&['g', 'g']),
-            load_state_shortcut: Shortcut::new(&['s', 'l']),
-            save_state_shortcut: Shortcut::new(&['s', 's']),
-            commit_changes_shortcut: Shortcut::new(&['c', 'c']),
+            key_buffer: key_buffer::KeyBuffer::default(),
+            select_first_shortcut: Shortcut::new("Select first", &['g', 'g']),
+            select_last_shortcut: Shortcut::new("Select last", &['G']),
+            load_state_shortcut: Shortcut::new("Load state", &['s', 'l']),
+            save_state_shortcut: Shortcut::new("Save the current state", &['s', 's']),
+            commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']),
+            show_keybindings_help_shortcut: Shortcut::new("Show help", &['?']),
+            all_shortcuts: Vec::new(),
             dialog: None,
             settings: Arc::new(RwLock::new(settings)),
         };
@@ -167,6 +140,13 @@ impl App {
             .insert(AppBlock::TaskInfo, s.task_description_widget.clone());
         s.app_blocks.insert(AppBlock::Filter, s.filter_widget.clone());
 
+        s.all_shortcuts.push(s.select_first_shortcut.internal_data());
+        s.all_shortcuts.push(s.select_last_shortcut.internal_data());
+        s.all_shortcuts.push(s.load_state_shortcut.internal_data());
+        s.all_shortcuts.push(s.save_state_shortcut.internal_data());
+        s.all_shortcuts.push(s.commit_changes_shortcut.internal_data());
+        s.all_shortcuts.push(s.show_keybindings_help_shortcut.internal_data());
+
         s.stateful_widgets.insert(AppBlock::Providers, s.providers.clone());
         s.stateful_widgets.insert(AppBlock::Projects, s.projects.clone());
         s.stateful_widgets.insert(AppBlock::TaskList, s.tasks_widget.clone());
@@ -176,6 +156,11 @@ impl App {
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        for b in self.app_blocks.values_mut() {
+            self.all_shortcuts
+                .extend(b.write().await.activate_shortcuts().iter().map(|s| s.internal_data()));
+        }
+
         if self.settings.read().await.states().is_empty() {
             // If there is no states, save the original as default
             self.save_state(None).await;
@@ -193,9 +178,11 @@ impl App {
         let mut events = EventStream::new();
 
         let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
+        let mut select_last_accepted = self.select_last_shortcut.subscribe_to_accepted();
         let mut load_state_accepted = self.load_state_shortcut.subscribe_to_accepted();
         let mut save_state_accepted = self.save_state_shortcut.subscribe_to_accepted();
         let mut commit_changes_accepted = self.commit_changes_shortcut.subscribe_to_accepted();
+        let mut show_keybindings_help_shortcut_accepted = self.show_keybindings_help_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
             if let Some(d) = &self.dialog {
@@ -212,9 +199,11 @@ impl App {
                     }
                 },
                 _ = select_first_accepted.recv() => self.select_first().await,
+                _ = select_last_accepted.recv() => self.select_last().await,
                 _ = load_state_accepted.recv() => self.load_state().await,
                 _ = save_state_accepted.recv() => self.save_state_as(),
                 _ = commit_changes_accepted.recv() => self.commit_changes().await,
+                _ = show_keybindings_help_shortcut_accepted.recv() => self.show_keybindings_help().await,
             }
         }
         Ok(())
@@ -305,9 +294,11 @@ impl App {
 
         let shortcuts = vec![
             &mut self.select_first_shortcut,
+            &mut self.select_last_shortcut,
             &mut self.load_state_shortcut,
             &mut self.save_state_shortcut,
             &mut self.commit_changes_shortcut,
+            &mut self.show_keybindings_help_shortcut,
         ];
         for s in shortcuts {
             match s.accept(&keys) {
@@ -358,7 +349,6 @@ impl App {
             }
             KeyCode::Char('j') | KeyCode::Down => self.select_next().await,
             KeyCode::Char('k') | KeyCode::Up => self.select_previous().await,
-            KeyCode::Char('G') | KeyCode::End => self.select_last().await,
             KeyCode::Char('l') | KeyCode::Right => {
                 const BLOCKS: [AppBlock; 3] = [AppBlock::Providers, AppBlock::Projects, AppBlock::Filter];
 
@@ -601,7 +591,7 @@ impl App {
     fn render_footer(&self, area: Rect, buf: &mut Buffer) {
         let mut lines = vec![
             Span::styled(
-                "Use ↓↑ to move up/down, Tab/BackTab to move between blocks. ",
+                "Use ↓↑ to move up/down, Tab/BackTab to move between blocks, ? for help. ",
                 style::FOOTER_KEYS_HELP_COLOR,
             ),
             Span::styled("Current date/time: ", style::FOOTER_DATETIME_LABEL_FG),
@@ -757,6 +747,11 @@ impl App {
 
             self.load_tasks().await;
         }
+    }
+
+    async fn show_keybindings_help(&mut self) {
+        let d = key_bindings_help_dialog::Dialog::new(&self.all_shortcuts);
+        self.dialog = Some(Box::new(d));
     }
 }
 

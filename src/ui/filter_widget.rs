@@ -86,8 +86,8 @@ impl FilterWidget {
             filter: f,
             filter_state_state: ListState::default(),
             filter_due_state: ListState::default(),
-            state_shortcut: Shortcut::new(&['g', 's']),
-            due_shortcut: Shortcut::new(&['g', 'd']),
+            state_shortcut: Shortcut::new("Activate Filter->State block", &['g', 's']),
+            due_shortcut: Shortcut::new("Activate Filter->Due block", &['g', 'd']),
         }));
 
         tokio::spawn({
@@ -187,7 +187,7 @@ impl FilterWidget {
         StatefulWidget::render(
             list::List::new(&items, self.is_active && self.current_block == FilterBlock::State)
                 .title("Task state")
-                .shortcut(&Some(self.state_shortcut.clone()))
+                .shortcut(&self.state_shortcut)
                 .widget(),
             area,
             buf,
@@ -207,7 +207,7 @@ impl FilterWidget {
         StatefulWidget::render(
             list::List::new(&items, self.is_active && self.current_block == FilterBlock::Due)
                 .title("Task due")
-                .shortcut(&Some(self.due_shortcut.clone()))
+                .shortcut(&self.due_shortcut)
                 .widget(),
             area,
             buf,
@@ -222,7 +222,7 @@ impl Widget for &mut FilterWidget {
         let [filter_state_area, filter_due_area] =
             Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(body_area);
 
-        header::Header::new("Filter", self.is_active, &None)
+        header::Header::new("Filter", self.is_active, None)
             .block()
             .render(header_area, buf);
         self.render_filter_state(filter_state_area, buf);
