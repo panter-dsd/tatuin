@@ -21,7 +21,7 @@ pub struct Client {
 impl Client {
     pub fn new(api_key: &str) -> Self {
         let mut headers = HeaderMap::new();
-        headers.insert("Authorization", format!("Bearer {}", api_key).parse().unwrap());
+        headers.insert("Authorization", format!("Bearer {api_key}").parse().unwrap());
         Self {
             default_header: headers,
             client: reqwest::Client::new(),

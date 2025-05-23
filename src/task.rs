@@ -94,13 +94,16 @@ pub fn equal(l: &dyn Task, r: &dyn Task) -> bool {
     l.id() == r.id() && l.provider() == r.provider()
 }
 
-pub fn datetime_to_str(t: Option<DateTimeUtc>) -> String {
+pub fn datetime_to_str<Tz: TimeZone>(t: Option<DateTimeUtc>, tz: &Tz) -> String
+where
+    <Tz as TimeZone>::Offset: std::fmt::Display,
+{
     if let Some(d) = t {
         if d.time() == chrono::NaiveTime::default() {
             return d.format("%Y-%m-%d").to_string();
         }
 
-        return d.format("%Y-%m-%d %H:%M:%S").to_string();
+        return d.with_timezone(tz).format("%Y-%m-%d %H:%M:%S %Z").to_string();
     }
 
     String::from("-")
@@ -111,7 +114,7 @@ pub fn format(t: &dyn Task) -> String {
         "- [{}] {} ({}) ({})",
         t.state(),
         t.text(),
-        format!("due: {}", datetime_to_str(t.due())).blue(),
+        format!("due: {}", datetime_to_str(t.due(), &Local::now().timezone())).blue(),
         t.place().green()
     )
 }
