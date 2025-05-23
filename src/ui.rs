@@ -83,6 +83,7 @@ pub struct App {
     key_buffer: key_buffer::KeyBuffer,
 
     select_first_shortcut: Shortcut,
+    select_last_shortcut: Shortcut,
     load_state_shortcut: Shortcut,
     save_state_shortcut: Shortcut,
     commit_changes_shortcut: Shortcut,
@@ -122,6 +123,7 @@ impl App {
             stateful_widgets: HashMap::new(),
             key_buffer: key_buffer::KeyBuffer::default(),
             select_first_shortcut: Shortcut::new("Select first", &['g', 'g']),
+            select_last_shortcut: Shortcut::new("Select last", &['G']),
             load_state_shortcut: Shortcut::new("Load state", &['s', 'l']),
             save_state_shortcut: Shortcut::new("Save the current state", &['s', 's']),
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']),
@@ -139,6 +141,7 @@ impl App {
         s.app_blocks.insert(AppBlock::Filter, s.filter_widget.clone());
 
         s.all_shortcuts.push(s.select_first_shortcut.internal_data());
+        s.all_shortcuts.push(s.select_last_shortcut.internal_data());
         s.all_shortcuts.push(s.load_state_shortcut.internal_data());
         s.all_shortcuts.push(s.save_state_shortcut.internal_data());
         s.all_shortcuts.push(s.commit_changes_shortcut.internal_data());
@@ -175,6 +178,7 @@ impl App {
         let mut events = EventStream::new();
 
         let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
+        let mut select_last_accepted = self.select_last_shortcut.subscribe_to_accepted();
         let mut load_state_accepted = self.load_state_shortcut.subscribe_to_accepted();
         let mut save_state_accepted = self.save_state_shortcut.subscribe_to_accepted();
         let mut commit_changes_accepted = self.commit_changes_shortcut.subscribe_to_accepted();
@@ -195,6 +199,7 @@ impl App {
                     }
                 },
                 _ = select_first_accepted.recv() => self.select_first().await,
+                _ = select_last_accepted.recv() => self.select_last().await,
                 _ = load_state_accepted.recv() => self.load_state().await,
                 _ = save_state_accepted.recv() => self.save_state_as(),
                 _ = commit_changes_accepted.recv() => self.commit_changes().await,
@@ -289,6 +294,7 @@ impl App {
 
         let shortcuts = vec![
             &mut self.select_first_shortcut,
+            &mut self.select_last_shortcut,
             &mut self.load_state_shortcut,
             &mut self.save_state_shortcut,
             &mut self.commit_changes_shortcut,
@@ -343,7 +349,6 @@ impl App {
             }
             KeyCode::Char('j') | KeyCode::Down => self.select_next().await,
             KeyCode::Char('k') | KeyCode::Up => self.select_previous().await,
-            KeyCode::Char('G') | KeyCode::End => self.select_last().await,
             KeyCode::Char('l') | KeyCode::Right => {
                 const BLOCKS: [AppBlock; 3] = [AppBlock::Providers, AppBlock::Projects, AppBlock::Filter];
 
