@@ -16,7 +16,6 @@ use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wra
 use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
-use std::fmt::Write;
 use std::hash::Hash;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -27,6 +26,7 @@ mod filter_widget;
 mod header;
 mod hyperlink;
 mod key_bindings_help_dialog;
+mod key_buffer;
 mod list;
 mod selectable_list;
 mod shortcut;
@@ -67,40 +67,6 @@ trait AppBlockWidget {
     async fn select_last(&mut self);
 }
 
-#[derive(Default)]
-struct KeyBuffer {
-    keys: Vec<char>,
-}
-
-impl KeyBuffer {
-    fn push(&mut self, key: char) -> Vec<char> {
-        const MAX_KEYS_COUNT: usize = 2;
-        if self.keys.len() == MAX_KEYS_COUNT {
-            self.clear();
-        }
-        self.keys.push(key);
-        self.keys.to_vec()
-    }
-
-    fn clear(&mut self) {
-        self.keys.clear();
-    }
-
-    fn is_empty(&self) -> bool {
-        self.keys.is_empty()
-    }
-}
-
-impl std::fmt::Display for KeyBuffer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for c in &self.keys {
-            f.write_char(*c)?
-        }
-
-        Ok(())
-    }
-}
-
 pub struct App {
     should_exit: bool,
     providers: Arc<RwLock<SelectableList<Box<dyn provider::Provider>>>>,
@@ -114,7 +80,7 @@ pub struct App {
     alert: Option<String>,
     app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
     stateful_widgets: HashMap<AppBlock, Arc<RwLock<dyn StatefulObject>>>,
-    key_buffer: KeyBuffer,
+    key_buffer: key_buffer::KeyBuffer,
 
     select_first_shortcut: Shortcut,
     load_state_shortcut: Shortcut,
@@ -154,7 +120,7 @@ impl App {
             alert: None,
             app_blocks: HashMap::new(),
             stateful_widgets: HashMap::new(),
-            key_buffer: KeyBuffer::default(),
+            key_buffer: key_buffer::KeyBuffer::default(),
             select_first_shortcut: Shortcut::new("Select first", &['g', 'g']),
             load_state_shortcut: Shortcut::new("Load state", &['s', 'l']),
             save_state_shortcut: Shortcut::new("Save the current state", &['s', 's']),
