@@ -47,7 +47,7 @@ This command will guide you through setting up the integration for the specified
 
 ## Screenshots
 
-![link](./assets/screenshots/main.png)
+![Main screenshot](https://raw.github.com/panter-dsd/tatuin/master/assets/screenshots/main.png?raw=true "Main screenshot")
 
 ## Contributing
 
