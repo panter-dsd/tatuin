@@ -10,6 +10,7 @@ use crate::task::{State, Task as TaskTrait, due_group, equal};
 use crate::ui::selectable_list::SelectableList;
 use crate::ui::style;
 use async_trait::async_trait;
+use chrono::Local;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
@@ -224,6 +225,7 @@ impl TasksWidget {
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let changed = &self.changed_state_tasks;
         let mut title = format!("Tasks ({})", self.tasks.len());
+        let tz = Local::now().timezone();
 
         if !changed.is_empty() {
             title = format!(
@@ -257,7 +259,7 @@ impl TasksWidget {
                     Span::styled(t.text(), Style::default().fg(fg_color)),
                     Span::from(" ("),
                     Span::styled(
-                        format!("due: {}", task::datetime_to_str(t.due())),
+                        format!("due: {}", task::datetime_to_str(t.due(), &tz)),
                         Style::default().fg(Color::Blue),
                     ),
                     Span::from(") ("),

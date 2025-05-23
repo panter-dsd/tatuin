@@ -5,6 +5,7 @@ use crate::task;
 use crate::task::Task as TaskTrait;
 use crate::ui::style;
 use async_trait::async_trait;
+use chrono::Local;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style, Stylize};
@@ -55,6 +56,7 @@ impl TaskInfoWidget {
 impl Widget for &mut TaskInfoWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let h = Header::new("Task info", self.is_active, Some(&self.shortcut));
+        let tz = Local::now().timezone();
 
         if let Some(t) = &self.t {
             let id = t.id();
@@ -68,13 +70,13 @@ impl Widget for &mut TaskInfoWidget {
 
             let due;
             if t.due().is_some() {
-                due = task::datetime_to_str(t.due());
+                due = task::datetime_to_str(t.due(), &tz);
                 text.push(styled_line("Due", &due));
             }
 
             let completed_at;
             if t.completed_at().is_some() {
-                completed_at = task::datetime_to_str(t.completed_at());
+                completed_at = task::datetime_to_str(t.completed_at(), &tz);
                 text.push(styled_line("Completed at", &completed_at));
             }
 
@@ -90,14 +92,14 @@ impl Widget for &mut TaskInfoWidget {
             }
 
             let created_at;
-            if let Some(d) = t.created_at() {
-                created_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
+            if t.created_at().is_some() {
+                created_at = task::datetime_to_str(t.created_at(), &tz);
                 text.push(styled_line("Created", &created_at));
             }
 
             let updated_at;
-            if let Some(d) = t.updated_at() {
-                updated_at = d.format("%Y-%m-%d %H:%M:%S").to_string();
+            if t.updated_at().is_some() {
+                updated_at = task::datetime_to_str(t.updated_at(), &tz);
                 text.push(styled_line("Updated", &updated_at));
             }
 
