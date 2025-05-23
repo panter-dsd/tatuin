@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::{dialog::DialogTrait, shortcut::SharedData, style};
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
