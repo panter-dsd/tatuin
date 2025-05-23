@@ -32,6 +32,7 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
+    Providers {},
     Tasks {
         #[arg(short, long)]
         state: Option<Vec<filter::FilterState>>,
@@ -143,14 +144,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if !providers.is_empty() {
         providers.sort_by_key(|p| p.name());
-
-        println!(
-            "Loaded providers: {}",
-            providers.iter().map(|p| p.name()).collect::<Vec<String>>().join(", ")
-        );
     }
 
     match &cli.command {
+        Some(Commands::Providers {}) => {
+            println!("Available providers: {}", wizard::AVAILABLE_PROVIDERS.join(", "));
+        }
         Some(Commands::Tasks { state, due, provider }) => {
             let f = filter::Filter {
                 states: state_to_filter(state),
