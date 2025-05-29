@@ -184,6 +184,8 @@ impl App {
         let mut commit_changes_accepted = self.commit_changes_shortcut.subscribe_to_accepted();
         let mut show_keybindings_help_shortcut_accepted = self.show_keybindings_help_shortcut.subscribe_to_accepted();
 
+        let mut need_refresh = true;
+
         while !self.should_exit {
             if let Some(d) = &self.dialog {
                 if d.should_be_closed() {
@@ -191,11 +193,21 @@ impl App {
                 }
             }
 
+            if need_refresh {
+                self.draw(&mut terminal).await;
+            }
+
             tokio::select! {
-                _ = interval.tick() => { self.draw(&mut terminal).await; },
+                _ = interval.tick() => {
+                    if need_refresh {
+                        self.draw(&mut terminal).await;
+                    }
+                    need_refresh = false;
+                },
                 Some(Ok(event)) = events.next() => {
                     if let Event::Key(key) = event {
-                        self.handle_key(key).await
+                        self.handle_key(key).await;
+                        need_refresh = true;
                     }
                 },
                 _ = select_first_accepted.recv() => self.select_first().await,
