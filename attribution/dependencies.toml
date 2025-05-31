@@ -233,7 +233,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.24"
+version = "1.2.25"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -270,7 +270,7 @@ repository = "https://github.com/chronotope/chrono"
 
 [[dependencies]]
 name = "clap"
-version = "4.5.38"
+version = "4.5.39"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -278,7 +278,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_builder"
-version = "4.5.38"
+version = "4.5.39"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015-2022 Kevin B. Knapp and Clap Contributors"]
@@ -302,7 +302,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "color-eyre"
-version = "0.6.4"
+version = "0.6.5"
 description = "An error report handler for panics and eyre::Reports for colorful, consistent, and well formatted error reports for all kinds of errors."
 license = "MIT OR Apache-2.0"
 authors = ["Jane Lusby <jlusby@yaah.dev>"]
@@ -310,7 +310,7 @@ repository = "https://github.com/eyre-rs/eyre"
 
 [[dependencies]]
 name = "color-spantrace"
-version = "0.2.2"
+version = "0.3.0"
 description = "A pretty printer for tracing_error::SpanTrace based on color-backtrace"
 license = "MIT OR Apache-2.0"
 authors = ["Jane Lusby <jlusby@yaah.dev>"]
@@ -937,7 +937,7 @@ homepage = "https://hyper.rs"
 
 [[dependencies]]
 name = "hyper-util"
-version = "0.1.12"
+version = "0.1.13"
 description = "hyper utilities"
 license = "MIT"
 notices = ["Copyright (c) 2023-2025 Sean McArthur"]
@@ -1115,6 +1115,15 @@ authors = ["Kris Price <kris@krisprice.nz>"]
 repository = "https://github.com/krisprice/ipnet"
 
 [[dependencies]]
+name = "iri-string"
+version = "0.7.8"
+description = "IRI as string types"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright 2019-2024 YOSHIOKA Takuma"]
+authors = ["YOSHIOKA Takuma <nop_thread@nops.red>"]
+repository = "https://github.com/lo48576/iri-string"
+
+[[dependencies]]
 name = "is_terminal_polyfill"
 version = "1.70.1"
 description = "Polyfill for `is_terminal` stdlib feature for use with older MSRVs"
@@ -1229,7 +1238,7 @@ repository = "https://github.com/LukasKalbertodt/litrs/"
 
 [[dependencies]]
 name = "lock_api"
-version = "0.4.12"
+version = "0.4.13"
 description = "Wrappers to create fully-featured Mutex and RwLock types. Compatible with no_std."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2016 The Rust Project Developers"]
@@ -1299,7 +1308,7 @@ repository = "https://github.com/Frommi/miniz_oxide/tree/master/miniz_oxide"
 
 [[dependencies]]
 name = "mio"
-version = "1.0.3"
+version = "1.0.4"
 description = "Lightweight non-blocking I/O."
 license = "MIT"
 notices = ["Copyright (c) 2014 Carl Lerche and other MIO contributors"]
@@ -1367,7 +1376,7 @@ repository = "https://github.com/polyfill-rs/once_cell_polyfill"
 
 [[dependencies]]
 name = "openssl"
-version = "0.10.72"
+version = "0.10.73"
 description = "OpenSSL bindings"
 license = "Apache-2.0"
 notices = ["Copyright 2011-2017 Google Inc."]
@@ -1394,7 +1403,7 @@ repository = "https://github.com/alexcrichton/openssl-probe"
 
 [[dependencies]]
 name = "openssl-sys"
-version = "0.9.108"
+version = "0.9.109"
 description = "FFI bindings to OpenSSL"
 license = "MIT"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -1424,7 +1433,7 @@ repository = "https://github.com/owo-colors/owo-colors"
 
 [[dependencies]]
 name = "parking_lot"
-version = "0.12.3"
+version = "0.12.4"
 description = "More compact and efficient implementations of the standard synchronization primitives."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2016 The Rust Project Developers"]
@@ -1433,7 +1442,7 @@ repository = "https://github.com/Amanieu/parking_lot"
 
 [[dependencies]]
 name = "parking_lot_core"
-version = "0.9.10"
+version = "0.9.11"
 description = "An advanced API for creating custom synchronization primitives."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2016 The Rust Project Developers"]
@@ -1644,7 +1653,7 @@ repository = "https://github.com/rust-lang/regex/tree/master/regex-syntax"
 
 [[dependencies]]
 name = "reqwest"
-version = "0.12.15"
+version = "0.12.18"
 description = "higher level HTTP client library"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -1732,17 +1741,6 @@ notices = [
   "Copyright (c) 2016, Joseph Birr-Pixton <jpixton@gmail.com>",
 ]
 repository = "https://github.com/rustls/rustls"
-
-[[dependencies]]
-name = "rustls-pemfile"
-version = "2.2.0"
-description = "Basic .pem file parser for keys and certificates"
-license = "Apache-2.0 OR ISC OR MIT"
-notices = [
-  "Copyright (c) 2016 Joseph Birr-Pixton <jpixton@gmail.com>",
-  "Copyright (c) 2016, Joseph Birr-Pixton <jpixton@gmail.com>",
-]
-repository = "https://github.com/rustls/pemfile"
 
 [[dependencies]]
 name = "rustls-pki-types"
@@ -2000,7 +1998,7 @@ repository = "https://github.com/servo/rust-smallvec"
 
 [[dependencies]]
 name = "socket2"
-version = "0.5.9"
+version = "0.5.10"
 description = """
 Utilities for handling networking sockets with a maximal amount of configuration
 possible intended.
@@ -2235,7 +2233,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "tokio"
-version = "1.45.0"
+version = "1.45.1"
 description = """
 An event-driven, non-blocking I/O platform for writing asynchronous I/O
 backed applications.
@@ -2361,6 +2359,15 @@ license = "MIT"
 notices = ["Copyright (c) 2019 Tower Contributors"]
 authors = ["Tower Maintainers <team@tower-rs.com>"]
 repository = "https://github.com/tower-rs/tower"
+
+[[dependencies]]
+name = "tower-http"
+version = "0.6.4"
+description = "Tower middleware and utilities for HTTP clients and servers"
+license = "MIT"
+notices = ["Copyright (c) 2019-2021 Tower Contributors"]
+authors = ["Tower Maintainers <team@tower-rs.com>"]
+repository = "https://github.com/tower-rs/tower-http"
 
 [[dependencies]]
 name = "tower-layer"
