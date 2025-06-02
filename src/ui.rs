@@ -17,6 +17,7 @@ use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::io::Write;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::{OnceCell, RwLock};
