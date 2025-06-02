@@ -50,7 +50,10 @@ impl AppBlockWidget for TaskInfoWidget {
     async fn select_previous(&mut self) {}
     async fn select_first(&mut self) {}
     async fn select_last(&mut self) {}
+}
 
+#[async_trait]
+impl MouseHandler for TaskInfoWidget {
     async fn handle_mouse(&mut self, ev: &MouseEvent) {
         if let Some(w) = &mut self.url_widget {
             w.handle_mouse(ev).await;

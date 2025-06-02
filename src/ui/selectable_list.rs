@@ -2,9 +2,11 @@
 
 use super::AppBlockWidget;
 use super::list;
+use super::mouse_handler::MouseHandler;
 use super::shortcut::Shortcut;
 use crate::state::{State, StatefulObject};
 use async_trait::async_trait;
+use crossterm::event::MouseEvent;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::widgets::{ListItem, ListState, StatefulWidget};
@@ -51,6 +53,14 @@ where
     async fn select_last(&mut self) {
         self.state.select_last();
     }
+}
+
+#[async_trait]
+impl<T> MouseHandler for SelectableList<T>
+where
+    T: Send,
+{
+    async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }
 
 impl<T> SelectableList<T> {

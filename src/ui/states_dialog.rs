@@ -3,9 +3,11 @@
 use crate::state::StateSettings;
 
 use super::dialog::DialogTrait;
+use super::mouse_handler::MouseHandler;
 use super::selectable_list::SelectableList;
 use super::{AppBlockWidget, style};
 use async_trait::async_trait;
+use crossterm::event::MouseEvent;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};
@@ -86,4 +88,9 @@ impl DialogTrait for Dialog {
     fn size(&self) -> Size {
         Size::new(70, 10)
     }
+}
+
+#[async_trait]
+impl MouseHandler for Dialog {
+    async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }

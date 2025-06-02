@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 
+use super::mouse_handler::MouseHandler;
 use crate::filter::{Due, Filter, FilterState};
 use crate::state::StatefulObject;
 use async_trait::async_trait;
+use crossterm::event::MouseEvent;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -76,6 +78,11 @@ impl AppBlockWidget for FilterWidget {
             FilterBlock::Due => self.filter_due_state.select_last(),
         }
     }
+}
+
+#[async_trait]
+impl MouseHandler for FilterWidget {
+    async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }
 
 impl FilterWidget {

@@ -41,6 +41,7 @@ mod tasks_widget;
 mod text_input_dialog;
 use crossterm::execute;
 mod hyperlink_widget;
+use mouse_handler::MouseHandler;
 use selectable_list::SelectableList;
 use strum::{Display, EnumString};
 use tokio_stream::StreamExt;
@@ -63,7 +64,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 ];
 
 #[async_trait]
-trait AppBlockWidget: Send {
+trait AppBlockWidget: Send + MouseHandler {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut>;
     fn set_active(&mut self, is_active: bool);
 
@@ -71,7 +72,6 @@ trait AppBlockWidget: Send {
     async fn select_previous(&mut self);
     async fn select_first(&mut self);
     async fn select_last(&mut self);
-    async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }
 
 pub struct App {
