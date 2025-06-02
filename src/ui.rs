@@ -6,7 +6,10 @@ use crate::state::{State, state_from_str, state_to_str};
 use crate::{project, provider};
 use async_trait::async_trait;
 use color_eyre::Result;
-use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{
+    DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
+    MouseEvent,
+};
 use ratatui::DefaultTerminal;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Rect, Size};
@@ -17,6 +20,7 @@ use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::io::Write;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::{OnceCell, RwLock};
@@ -34,6 +38,7 @@ pub mod style;
 mod task_info_widget;
 mod tasks_widget;
 mod text_input_dialog;
+use crossterm::execute;
 use selectable_list::SelectableList;
 use strum::{Display, EnumString};
 use tokio_stream::StreamExt;
@@ -56,7 +61,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 ];
 
 #[async_trait]
-trait AppBlockWidget {
+trait AppBlockWidget: Send {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut>;
     fn set_active(&mut self, is_active: bool);
 
@@ -64,6 +69,7 @@ trait AppBlockWidget {
     async fn select_previous(&mut self);
     async fn select_first(&mut self);
     async fn select_last(&mut self);
+    async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }
 
 pub struct App {
@@ -155,6 +161,7 @@ impl App {
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        execute!(std::io::stdout(), EnableMouseCapture)?;
         for b in self.app_blocks.values_mut() {
             self.all_shortcuts
                 .extend(b.write().await.activate_shortcuts().iter().map(|s| s.internal_data()));
@@ -192,9 +199,15 @@ impl App {
 
             tokio::select! {
                 Some(Ok(event)) = events.next() => {
-                    if let Event::Key(key) = event {
-                        self.handle_key(key).await;
-                    }
+                    match event {
+                        Event::Key(key) => {
+                            self.handle_key(key).await;
+                        },
+                        Event::Mouse(ev) => {
+                            self.handle_mouse(ev).await;
+                        },
+                        _ => {},
+                    };
                 },
                 _ = select_first_accepted.recv() => self.select_first().await,
                 _ = select_last_accepted.recv() => self.select_last().await,
@@ -204,7 +217,15 @@ impl App {
                 _ = show_keybindings_help_shortcut_accepted.recv() => self.show_keybindings_help().await,
             }
         }
+
+        execute!(std::io::stdout(), DisableMouseCapture)?;
         Ok(())
+    }
+
+    async fn handle_mouse(&mut self, ev: MouseEvent) {
+        for b in self.app_blocks.values_mut() {
+            b.write().await.handle_mouse(&ev).await;
+        }
     }
 
     async fn draw(&mut self, terminal: &mut DefaultTerminal) {

@@ -81,6 +81,11 @@ pub trait Task: Send + Sync {
     fn place(&self) -> String {
         String::new()
     }
+
+    fn url(&self) -> String {
+        String::new()
+    }
+
     fn provider(&self) -> String;
 
     fn project(&self) -> Option<Box<dyn ProjectTrait>>;
