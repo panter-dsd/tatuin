@@ -17,9 +17,9 @@ use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::io::Write;
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::Duration;
 use tokio::sync::{OnceCell, RwLock};
 mod dialog;
 mod filter_widget;
@@ -173,8 +173,6 @@ impl App {
 
         self.tasks_widget.write().await.set_active(true);
 
-        let period = Duration::from_secs_f32(1.0 / 60.0);
-        let mut interval = tokio::time::interval(period);
         let mut events = EventStream::new();
 
         let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
@@ -184,8 +182,6 @@ impl App {
         let mut commit_changes_accepted = self.commit_changes_shortcut.subscribe_to_accepted();
         let mut show_keybindings_help_shortcut_accepted = self.show_keybindings_help_shortcut.subscribe_to_accepted();
 
-        let mut need_refresh = true;
-
         while !self.should_exit {
             if let Some(d) = &self.dialog {
                 if d.should_be_closed() {
@@ -193,21 +189,12 @@ impl App {
                 }
             }
 
-            if need_refresh {
-                self.draw(&mut terminal).await;
-            }
+            self.draw(&mut terminal).await;
 
             tokio::select! {
-                _ = interval.tick() => {
-                    if need_refresh {
-                        self.draw(&mut terminal).await;
-                    }
-                    need_refresh = false;
-                },
                 Some(Ok(event)) = events.next() => {
                     if let Event::Key(key) = event {
                         self.handle_key(key).await;
-                        need_refresh = true;
                     }
                 },
                 _ = select_first_accepted.recv() => self.select_first().await,
@@ -229,6 +216,7 @@ impl App {
         self.render(area, buf).await;
         let _ = terminal.flush();
         terminal.swap_buffers();
+        let _ = terminal.backend_mut().flush();
     }
 
     async fn load_projects(&mut self) {
