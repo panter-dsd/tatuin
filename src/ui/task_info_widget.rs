@@ -1,34 +1,28 @@
 // SPDX-License-Identifier: MIT
 
 use super::AppBlockWidget;
+use super::hyperlink_widget::HyperlinkWidget;
 use crate::task;
 use crate::task::Task as TaskTrait;
 use crate::ui::style;
 use async_trait::async_trait;
 use chrono::Local;
-use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::MouseEvent;
 use ratatui::buffer::Buffer;
-use ratatui::layout::Position;
-use ratatui::layout::Rect;
+use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style, Stylize};
-use ratatui::text::{Line, Span};
+use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Paragraph, Widget, Wrap};
-use std::process::Command;
 
 use super::header::Header;
+use super::mouse_handler::MouseHandler;
 use super::shortcut::Shortcut;
-
-struct UrlUnderCursor {
-    rect: Rect,
-    url: String,
-}
 
 pub struct TaskInfoWidget {
     is_active: bool,
     t: Option<Box<dyn TaskTrait>>,
     shortcut: Shortcut,
-    url_under_cursor: Option<UrlUnderCursor>,
-    mouse_pos: Position,
+    url_widget: Option<HyperlinkWidget>,
 }
 
 impl Default for TaskInfoWidget {
@@ -37,8 +31,7 @@ impl Default for TaskInfoWidget {
             is_active: false,
             t: None,
             shortcut: Shortcut::new("Activate Task Info block", &['g', 'i']),
-            url_under_cursor: None,
-            mouse_pos: Position::default(),
+            url_widget: None,
         }
     }
 }
@@ -59,44 +52,28 @@ impl AppBlockWidget for TaskInfoWidget {
     async fn select_last(&mut self) {}
 
     async fn handle_mouse(&mut self, ev: &MouseEvent) {
-        let position = Position::new(ev.column, ev.row);
-        match ev.kind {
-            MouseEventKind::Up(button) => {
-                if button == MouseButton::Left {
-                    if let Some(u) = &self.url_under_cursor {
-                        if u.rect.contains(position) {
-                            // Call the `open` command
-                            let status = Command::new("open")
-                                .arg(&u.url)
-                                .status()
-                                .expect("Failed to execute command");
-
-                            // Check if the command was successful
-                            if !status.success() {
-                                eprintln!("Failed to open {}", u.url);
-                            }
-                        }
-                    }
-                }
-            }
-            MouseEventKind::Moved => {
-                self.mouse_pos = position;
-            }
-            _ => {}
+        if let Some(w) = &mut self.url_widget {
+            w.handle_mouse(ev).await;
         }
     }
 }
 
 impl TaskInfoWidget {
     pub fn set_task(&mut self, t: Option<Box<dyn TaskTrait>>) {
-        self.t = t
+        self.t = t;
+
+        if let Some(t) = &self.t {
+            let url = t.url();
+            if !url.is_empty() {
+                self.url_widget
+                    .replace(HyperlinkWidget::new("Open in Obsidian", url.as_str()));
+            }
+        }
     }
 }
 
 impl Widget for &mut TaskInfoWidget {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        self.url_under_cursor = None;
-
         let h = Header::new("Task info", self.is_active, Some(&self.shortcut));
         let tz = Local::now().timezone();
 
@@ -133,27 +110,18 @@ impl Widget for &mut TaskInfoWidget {
                 }
             }
 
-            let url = t.url();
-            if !url.is_empty() {
-                let mut url_rect = area;
-                url_rect.y += text.len() as u16 + 1;
-                url_rect.height = 1;
-
+            if let Some(w) = &mut self.url_widget {
                 const LABEL: &str = "Url";
-                const VALUE: &str = "Open in Obsidian";
-                if url_rect.contains(self.mouse_pos) {
-                    self.url_under_cursor = Some(UrlUnderCursor {
-                        rect: url_rect,
-                        url: url.to_string(),
-                    });
-                    text.push(styled_line(
-                        LABEL,
-                        VALUE,
-                        Some(|s| s.fg(style::URL_UNDER_MOUSE_COLOR).underlined()),
-                    ));
-                } else {
-                    text.push(styled_line(LABEL, VALUE, Some(|s| s.fg(style::URL_COLOR).underlined())));
-                }
+
+                w.set_pos(
+                    area,
+                    Position::new(
+                        area.x + Text::from(LABEL).width() as u16 + 1,
+                        area.y + text.len() as u16 + 1,
+                    ),
+                );
+                text.push(styled_line(LABEL, "", None));
+                w.render(buf);
             }
 
             let created_at;
