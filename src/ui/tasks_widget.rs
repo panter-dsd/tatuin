@@ -45,6 +45,7 @@ pub struct TasksWidget {
 
     commit_changes_shortcut: Shortcut,
     complete_uncomplete_shortcut: Shortcut,
+    in_progress_shortcut: Shortcut,
     last_filter: Filter,
 }
 
@@ -57,6 +58,7 @@ impl AppBlockWidget for TasksWidget {
         vec![
             &mut self.commit_changes_shortcut,
             &mut self.complete_uncomplete_shortcut,
+            &mut self.in_progress_shortcut,
         ]
     }
 
@@ -94,6 +96,7 @@ impl TasksWidget {
             providers_filter: Vec::new(),
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
             complete_uncomplete_shortcut: Shortcut::new("Complete/uncomplete the task", &[' ']),
+            in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
             last_filter: Filter::default(),
         }));
         tokio::spawn({
@@ -101,6 +104,7 @@ impl TasksWidget {
             async move {
                 let mut commit_changes_rx = s.read().await.commit_changes_shortcut.subscribe_to_accepted();
                 let mut complete_uncomplete_rx = s.read().await.complete_uncomplete_shortcut.subscribe_to_accepted();
+                let mut in_progress_rx = s.read().await.in_progress_shortcut.subscribe_to_accepted();
                 loop {
                     tokio::select! {
                         _ = commit_changes_rx.recv() => {
@@ -110,6 +114,7 @@ impl TasksWidget {
                             }
                         },
                         _ = complete_uncomplete_rx.recv() => s.write().await.change_check_state(None).await,
+                        _ = in_progress_rx.recv() => s.write().await.change_check_state(Some(task::State::InProgress)).await,
                     }
                 }
             }
@@ -247,6 +252,9 @@ impl TasksWidget {
         {
             current_state = self.changed_state_tasks[i].new_state.clone();
             self.changed_state_tasks.remove(i);
+            if state.as_ref().is_some_and(|s| *s == current_state) {
+                return; // We undo the change
+            }
         }
         let new_state = state.unwrap_or(match current_state {
             task::State::Completed => task::State::Uncompleted,
