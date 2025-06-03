@@ -67,6 +67,9 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 #[async_trait]
 trait AppBlockWidget: Send + MouseHandler {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut>;
+    fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        Vec::new()
+    }
     fn set_active(&mut self, is_active: bool);
 
     async fn select_next(&mut self);
@@ -175,8 +178,11 @@ impl App {
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         execute!(std::io::stdout(), EnableMouseCapture)?;
         for b in self.app_blocks.values_mut() {
+            let mut b = b.write().await;
             self.all_shortcuts
-                .extend(b.write().await.activate_shortcuts().iter().map(|s| s.internal_data()));
+                .extend(b.activate_shortcuts().iter().map(|s| s.internal_data()));
+            self.all_shortcuts
+                .extend(b.shortcuts().iter().map(|s| s.internal_data()));
         }
 
         if self.settings.read().await.states().is_empty() {
@@ -308,7 +314,8 @@ impl App {
 
         let keys = self.key_buffer.push(code);
         for (t, b) in &self.app_blocks {
-            for s in b.write().await.activate_shortcuts() {
+            let mut b = b.write().await;
+            for s in b.activate_shortcuts() {
                 match s.accept(&keys) {
                     AcceptResult::Accepted => {
                         self.key_buffer.clear();
@@ -317,6 +324,19 @@ impl App {
                     }
                     AcceptResult::PartiallyAccepted => found_shortcut = true,
                     AcceptResult::NotAccepted => {}
+                }
+            }
+            for s in b.shortcuts() {
+                if s.is_global() || self.current_block == *t {
+                    match s.accept(&keys) {
+                        AcceptResult::Accepted => {
+                            self.key_buffer.clear();
+                            self.current_block = t.clone();
+                            found_shortcut = true;
+                        }
+                        AcceptResult::PartiallyAccepted => found_shortcut = true,
+                        AcceptResult::NotAccepted => {}
+                    }
                 }
             }
         }

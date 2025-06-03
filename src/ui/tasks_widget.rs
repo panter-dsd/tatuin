@@ -51,6 +51,9 @@ impl AppBlockWidget for TasksWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         self.tasks.activate_shortcuts()
     }
+    fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        vec![&mut self.commit_changes_shortcut]
+    }
 
     fn set_active(&mut self, is_active: bool) {
         self.tasks.set_active(is_active);
@@ -84,7 +87,7 @@ impl TasksWidget {
                 .show_count_in_title(false),
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),
-            commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']),
+            commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
         }));
         tokio::spawn({
             let s = s.clone();
