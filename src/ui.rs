@@ -433,12 +433,6 @@ impl App {
 
     async fn change_check_state(&mut self) {
         match self.current_block {
-            AppBlock::TaskList => {
-                let result = self.tasks_widget.write().await.change_check_state().await;
-                if let Err(e) = result {
-                    self.alert = Some(format!("Change state error: {e}"))
-                }
-            }
             AppBlock::Filter => {
                 self.filter_widget.write().await.change_check_state();
                 self.projects.write().await.select_first().await;

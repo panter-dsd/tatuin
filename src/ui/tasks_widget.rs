@@ -44,6 +44,7 @@ pub struct TasksWidget {
     projects_filter: Vec<String>,
 
     commit_changes_shortcut: Shortcut,
+    complete_uncomplete_shortcut: Shortcut,
     last_filter: Filter,
 }
 
@@ -53,7 +54,10 @@ impl AppBlockWidget for TasksWidget {
         self.tasks.activate_shortcuts()
     }
     fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
-        vec![&mut self.commit_changes_shortcut]
+        vec![
+            &mut self.commit_changes_shortcut,
+            &mut self.complete_uncomplete_shortcut,
+        ]
     }
 
     fn set_active(&mut self, is_active: bool) {
@@ -89,12 +93,14 @@ impl TasksWidget {
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
+            complete_uncomplete_shortcut: Shortcut::new("Complete/uncomplete the task", &[' ']),
             last_filter: Filter::default(),
         }));
         tokio::spawn({
             let s = s.clone();
             async move {
                 let mut commit_changes_rx = s.read().await.commit_changes_shortcut.subscribe_to_accepted();
+                let mut complete_uncomplete_rx = s.read().await.complete_uncomplete_shortcut.subscribe_to_accepted();
                 loop {
                     tokio::select! {
                         _ = commit_changes_rx.recv() => {
@@ -102,7 +108,8 @@ impl TasksWidget {
                             if s.has_changes() {
                                 s.commit_changes().await;
                             }
-                        }
+                        },
+                        _ = complete_uncomplete_rx.recv() => s.write().await.change_check_state().await,
                     }
                 }
             }
@@ -224,10 +231,10 @@ impl TasksWidget {
         // result // TODO: implement me
     }
 
-    pub async fn change_check_state(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn change_check_state(&mut self) {
         let selected = self.tasks.selected();
         if selected.is_none() {
-            return Ok(());
+            return;
         }
 
         let t = selected.unwrap();
@@ -252,8 +259,6 @@ impl TasksWidget {
                 });
             }
         }
-
-        Ok(())
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
