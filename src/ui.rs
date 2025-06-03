@@ -21,6 +21,7 @@ use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::io::Write;
+use std::slice::IterMut;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::{OnceCell, RwLock};
@@ -94,7 +95,6 @@ pub struct App {
     select_last_shortcut: Shortcut,
     load_state_shortcut: Shortcut,
     save_state_shortcut: Shortcut,
-    commit_changes_shortcut: Shortcut,
     show_keybindings_help_shortcut: Shortcut,
 
     all_shortcuts: Vec<Arc<std::sync::RwLock<shortcut::SharedData>>>,
@@ -104,17 +104,27 @@ pub struct App {
     settings: Arc<RwLock<Box<dyn StateSettings>>>,
 }
 
+impl<T> tasks_widget::ProvidersStorage<T> for SelectableList<T>
+where
+    T: Send + Sync,
+{
+    fn items(&mut self) -> IterMut<'_, T> {
+        self.items.iter_mut()
+    }
+}
+
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
 impl App {
     pub fn new(providers: Vec<Box<dyn provider::Provider>>, settings: Box<dyn StateSettings>) -> Self {
+        let providers_widget = Arc::new(RwLock::new(
+            SelectableList::new(providers, Some(0))
+                .add_all_item()
+                .shortcut(Shortcut::new("Activate Providers block", &['g', 'v'])),
+        ));
         let mut s = Self {
             should_exit: false,
             current_block: AppBlock::TaskList,
-            providers: Arc::new(RwLock::new(
-                SelectableList::new(providers, Some(0))
-                    .add_all_item()
-                    .shortcut(Shortcut::new("Activate Providers block", &['g', 'v'])),
-            )),
+            providers: providers_widget.clone(),
             projects: Arc::new(RwLock::new(
                 SelectableList::default()
                     .add_all_item()
@@ -124,7 +134,7 @@ impl App {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
-            tasks_widget: Arc::new(RwLock::new(tasks_widget::TasksWidget::default())),
+            tasks_widget: tasks_widget::TasksWidget::new(providers_widget.clone()),
             task_description_widget: Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default())),
             home_link: HyperlinkWidget::new("[Homepage]", "https://github.com/panter-dsd/tatuin"),
             alert: None,
@@ -135,7 +145,6 @@ impl App {
             select_last_shortcut: Shortcut::new("Select last", &['G']),
             load_state_shortcut: Shortcut::new("Load state", &['s', 'l']),
             save_state_shortcut: Shortcut::new("Save the current state", &['s', 's']),
-            commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']),
             show_keybindings_help_shortcut: Shortcut::new("Show help", &['?']),
             all_shortcuts: Vec::new(),
             dialog: None,
@@ -153,7 +162,6 @@ impl App {
         s.all_shortcuts.push(s.select_last_shortcut.internal_data());
         s.all_shortcuts.push(s.load_state_shortcut.internal_data());
         s.all_shortcuts.push(s.save_state_shortcut.internal_data());
-        s.all_shortcuts.push(s.commit_changes_shortcut.internal_data());
         s.all_shortcuts.push(s.show_keybindings_help_shortcut.internal_data());
 
         s.stateful_widgets.insert(AppBlock::Providers, s.providers.clone());
@@ -189,7 +197,6 @@ impl App {
         let mut select_last_accepted = self.select_last_shortcut.subscribe_to_accepted();
         let mut load_state_accepted = self.load_state_shortcut.subscribe_to_accepted();
         let mut save_state_accepted = self.save_state_shortcut.subscribe_to_accepted();
-        let mut commit_changes_accepted = self.commit_changes_shortcut.subscribe_to_accepted();
         let mut show_keybindings_help_shortcut_accepted = self.show_keybindings_help_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
@@ -217,7 +224,6 @@ impl App {
                 _ = select_last_accepted.recv() => self.select_last().await,
                 _ = load_state_accepted.recv() => self.load_state().await,
                 _ = save_state_accepted.recv() => self.save_state_as(),
-                _ = commit_changes_accepted.recv() => self.commit_changes().await,
                 _ = show_keybindings_help_shortcut_accepted.recv() => self.show_keybindings_help().await,
             }
         }
@@ -322,7 +328,6 @@ impl App {
             &mut self.select_last_shortcut,
             &mut self.load_state_shortcut,
             &mut self.save_state_shortcut,
-            &mut self.commit_changes_shortcut,
             &mut self.show_keybindings_help_shortcut,
         ];
         for s in shortcuts {
@@ -763,22 +768,22 @@ impl App {
         }
     }
 
-    async fn commit_changes(&mut self) {
-        if self.tasks_widget.read().await.has_changes() {
-            let errors = self
-                .tasks_widget
-                .write()
-                .await
-                .commit_changes(&mut self.providers.write().await.iter_mut())
-                .await;
-
-            for e in errors {
-                self.add_error(e.to_string().as_str());
-            }
-
-            self.load_tasks().await;
-        }
-    }
+    // async fn commit_changes(&mut self) {
+    //     if self.tasks_widget.read().await.has_changes() {
+    //         let errors = self
+    //             .tasks_widget
+    //             .write()
+    //             .await
+    //             .commit_changes(&mut self.providers.write().await.iter_mut())
+    //             .await;
+    //
+    //         for e in errors {
+    //             self.add_error(e.to_string().as_str());
+    //         }
+    //
+    //         self.load_tasks().await;
+    //     }
+    // }
 
     async fn show_keybindings_help(&mut self) {
         let d = key_bindings_help_dialog::Dialog::new(&self.all_shortcuts);

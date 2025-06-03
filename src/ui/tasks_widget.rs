@@ -21,8 +21,14 @@ use ratatui::widgets::{ListItem, ListState};
 use std::cmp::Ordering;
 use std::error::Error;
 use std::slice::IterMut;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use super::shortcut::Shortcut;
+
+pub trait ProvidersStorage<T>: Send + Sync {
+    fn items(&mut self) -> IterMut<'_, T>;
+}
 
 struct ChangedState {
     task: Box<dyn TaskTrait>,
@@ -30,25 +36,14 @@ struct ChangedState {
 }
 
 pub struct TasksWidget {
+    providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
     all_tasks: Vec<Box<dyn TaskTrait>>,
     changed_state_tasks: Vec<ChangedState>,
     tasks: SelectableList<Box<dyn TaskTrait>>,
     providers_filter: Vec<String>,
     projects_filter: Vec<String>,
-}
 
-impl Default for TasksWidget {
-    fn default() -> Self {
-        Self {
-            all_tasks: Vec::new(),
-            changed_state_tasks: Vec::new(),
-            tasks: SelectableList::default()
-                .shortcut(Shortcut::new("Activate Tasks block", &['g', 't']))
-                .show_count_in_title(false),
-            projects_filter: Vec::new(),
-            providers_filter: Vec::new(),
-        }
-    }
+    commit_changes_shortcut: Shortcut,
 }
 
 #[async_trait]
@@ -79,6 +74,36 @@ impl AppBlockWidget for TasksWidget {
 }
 
 impl TasksWidget {
+    pub fn new(providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>) -> Arc<RwLock<Self>> {
+        let s = Arc::new(RwLock::new(Self {
+            providers_storage,
+            all_tasks: Vec::new(),
+            changed_state_tasks: Vec::new(),
+            tasks: SelectableList::default()
+                .shortcut(Shortcut::new("Activate Tasks block", &['g', 't']))
+                .show_count_in_title(false),
+            projects_filter: Vec::new(),
+            providers_filter: Vec::new(),
+            commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']),
+        }));
+        tokio::spawn({
+            let s = s.clone();
+            async move {
+                let mut rx = s.read().await.commit_changes_shortcut.subscribe_to_accepted();
+                loop {
+                    if rx.recv().await.is_err() {
+                        return;
+                    }
+
+                    let mut s = s.write().await;
+                    if s.has_changes() {
+                        s.commit_changes().await;
+                    }
+                }
+            }
+        });
+        s
+    }
     pub fn set_providers_filter(&mut self, providers: &[String]) {
         self.providers_filter = providers.to_vec();
         self.filter_tasks();
@@ -157,10 +182,10 @@ impl TasksWidget {
         !self.changed_state_tasks.is_empty()
     }
 
-    pub async fn commit_changes(&mut self, providers: &mut IterMut<'_, Box<dyn ProviderTrait>>) -> Vec<Box<dyn Error>> {
-        let mut result = Vec::new();
+    pub async fn commit_changes(&mut self) {
+        // let mut result = Vec::new();
 
-        for p in providers {
+        for p in self.providers_storage.write().await.items() {
             let name = p.name();
             let patches = self
                 .changed_state_tasks
@@ -174,9 +199,9 @@ impl TasksWidget {
 
             if !patches.is_empty() {
                 let errors = p.patch_tasks(&patches).await;
-                result.extend(errors.iter().map(|e| {
-                    Box::<dyn Error>::from(format!("Provider {name} returns error when changing the task: {e}"))
-                }));
+                // result.extend(errors.iter().map(|e| {
+                //     Box::<dyn Error>::from(format!("Provider {name} returns error when changing the task: {e}"))
+                // }));
 
                 for p in patches {
                     if !errors.iter().any(|pe| equal(p.task.as_ref(), pe.task.as_ref())) {
@@ -189,7 +214,7 @@ impl TasksWidget {
             }
         }
 
-        result
+        // result // TODO: implement me
     }
 
     pub async fn change_check_state(&mut self) -> Result<(), Box<dyn std::error::Error>> {

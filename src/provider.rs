@@ -24,7 +24,7 @@ impl std::fmt::Display for PatchError {
 }
 
 #[async_trait]
-pub trait Provider: Send {
+pub trait Provider: Send + Sync {
     fn name(&self) -> String;
     fn type_name(&self) -> String;
     async fn tasks(
