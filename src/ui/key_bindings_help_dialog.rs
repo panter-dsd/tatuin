@@ -23,7 +23,7 @@ pub struct Dialog {
     should_be_closed: bool,
 }
 
-fn keys_to_str(keys: &Vec<char>) -> String {
+fn keys_to_str(keys: &[char]) -> String {
     let mut s = String::new();
     for c in keys {
         if *c == ' ' {
