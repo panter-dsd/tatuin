@@ -103,10 +103,11 @@ impl FilterWidget {
                 let mut state_rx = s.read().await.state_shortcut.subscribe_to_accepted();
                 let mut due_rx = s.read().await.due_shortcut.subscribe_to_accepted();
                 loop {
-                    tokio::select! {
-                        _ = state_rx.recv() => s.write().await.current_block = FilterBlock::State,
-                        _ = due_rx.recv() => s.write().await.current_block = FilterBlock::Due,
-                    }
+                    let block = tokio::select! {
+                        _ = state_rx.recv() => FilterBlock::State,
+                        _ = due_rx.recv() => FilterBlock::Due,
+                    };
+                    s.write().await.current_block = block;
                 }
             }
         });
