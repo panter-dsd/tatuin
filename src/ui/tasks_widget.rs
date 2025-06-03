@@ -342,7 +342,7 @@ impl TasksWidget {
 
             match tasks {
                 Ok(t) => all_tasks.append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>()),
-                Err(err) => errors.push((p.name(), format!("{err}"))),
+                Err(err) => errors.push((p.name(), err.to_string())),
             }
         }
 
