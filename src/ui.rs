@@ -6,10 +6,13 @@ use crate::state::{State, state_from_str, state_to_str};
 use crate::{project, provider};
 use async_trait::async_trait;
 use color_eyre::Result;
-use crossterm::event::{Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use crossterm::event::{
+    DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
+    MouseEvent,
+};
 use ratatui::DefaultTerminal;
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Flex, Layout, Rect, Size};
+use ratatui::layout::{Constraint, Flex, Layout, Position, Rect, Size};
 use ratatui::style::{Color, Style, Stylize};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wrap};
@@ -24,10 +27,10 @@ use tokio::sync::{OnceCell, RwLock};
 mod dialog;
 mod filter_widget;
 mod header;
-mod hyperlink;
 mod key_bindings_help_dialog;
 mod key_buffer;
 mod list;
+mod mouse_handler;
 mod selectable_list;
 mod shortcut;
 mod states_dialog;
@@ -35,6 +38,10 @@ pub mod style;
 mod task_info_widget;
 mod tasks_widget;
 mod text_input_dialog;
+use crossterm::execute;
+mod hyperlink_widget;
+use hyperlink_widget::HyperlinkWidget;
+use mouse_handler::MouseHandler;
 use selectable_list::SelectableList;
 use strum::{Display, EnumString};
 use tokio_stream::StreamExt;
@@ -57,7 +64,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 ];
 
 #[async_trait]
-trait AppBlockWidget {
+trait AppBlockWidget: Send + MouseHandler {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut>;
     fn set_active(&mut self, is_active: bool);
 
@@ -76,6 +83,7 @@ pub struct App {
     filter_widget: Arc<RwLock<filter_widget::FilterWidget>>,
     tasks_widget: Arc<RwLock<tasks_widget::TasksWidget>>,
     task_description_widget: Arc<RwLock<task_info_widget::TaskInfoWidget>>,
+    home_link: HyperlinkWidget,
 
     alert: Option<String>,
     app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
@@ -118,6 +126,7 @@ impl App {
             }),
             tasks_widget: Arc::new(RwLock::new(tasks_widget::TasksWidget::default())),
             task_description_widget: Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default())),
+            home_link: HyperlinkWidget::new("[Homepage]", "https://github.com/panter-dsd/tatuin"),
             alert: None,
             app_blocks: HashMap::new(),
             stateful_widgets: HashMap::new(),
@@ -156,6 +165,7 @@ impl App {
     }
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
+        execute!(std::io::stdout(), EnableMouseCapture)?;
         for b in self.app_blocks.values_mut() {
             self.all_shortcuts
                 .extend(b.write().await.activate_shortcuts().iter().map(|s| s.internal_data()));
@@ -193,9 +203,15 @@ impl App {
 
             tokio::select! {
                 Some(Ok(event)) = events.next() => {
-                    if let Event::Key(key) = event {
-                        self.handle_key(key).await;
-                    }
+                    match event {
+                        Event::Key(key) => {
+                            self.handle_key(key).await;
+                        },
+                        Event::Mouse(ev) => {
+                            self.handle_mouse(ev).await;
+                        },
+                        _ => {},
+                    };
                 },
                 _ = select_first_accepted.recv() => self.select_first().await,
                 _ = select_last_accepted.recv() => self.select_last().await,
@@ -205,7 +221,16 @@ impl App {
                 _ = show_keybindings_help_shortcut_accepted.recv() => self.show_keybindings_help().await,
             }
         }
+
+        execute!(std::io::stdout(), DisableMouseCapture)?;
         Ok(())
+    }
+
+    async fn handle_mouse(&mut self, ev: MouseEvent) {
+        for b in self.app_blocks.values_mut() {
+            b.write().await.handle_mouse(&ev).await;
+        }
+        self.home_link.handle_mouse(&ev).await;
     }
 
     async fn draw(&mut self, terminal: &mut DefaultTerminal) {
@@ -588,7 +613,7 @@ impl App {
             .render(area, buf);
     }
 
-    fn render_footer(&self, area: Rect, buf: &mut Buffer) {
+    fn render_footer(&mut self, area: Rect, buf: &mut Buffer) {
         let mut lines = vec![
             Span::styled(
                 "Use ↓↑ to move up/down, Tab/BackTab to move between blocks, ? for help. ",
@@ -607,8 +632,14 @@ impl App {
         }
 
         Paragraph::new(Line::from(lines)).centered().render(area, buf);
-        let link = hyperlink::Hyperlink::new("[Homepage]", "https://github.com/panter-dsd/tatuin");
-        link.render(area, buf);
+        self.render_home_link(area, buf);
+    }
+
+    fn render_home_link(&mut self, area: Rect, buf: &mut Buffer) {
+        let s = self.home_link.size();
+        let pos = Position::new(area.x + area.width - s.width, area.y + area.height - s.height);
+        self.home_link.set_pos(area, pos);
+        self.home_link.render(buf);
     }
 
     async fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {

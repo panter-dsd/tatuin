@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use super::AppBlockWidget;
+use super::mouse_handler::MouseHandler;
 use crate::filter::Filter;
 use crate::project::Project as ProjectTrait;
 use crate::provider::{Provider as ProviderTrait, TaskPatch};
@@ -11,6 +12,7 @@ use crate::ui::selectable_list::SelectableList;
 use crate::ui::style;
 use async_trait::async_trait;
 use chrono::Local;
+use crossterm::event::MouseEvent;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
@@ -342,4 +344,9 @@ impl StatefulObject for TasksWidget {
     fn restore(&mut self, state: crate::state::State) {
         self.tasks.restore(state);
     }
+}
+
+#[async_trait]
+impl MouseHandler for TasksWidget {
+    async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }

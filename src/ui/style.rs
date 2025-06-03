@@ -6,6 +6,9 @@ use ratatui::style::{Color, Modifier, Style};
 
 pub const PINK_COLOR: Color = Color::Rgb(255, 192, 203);
 
+pub const URL_UNDER_MOUSE_COLOR: Color = Color::Blue;
+pub const URL_COLOR: Color = Color::White;
+
 pub const OVERDUE_TASK_FG: Color = Color::LightRed;
 pub const TODAY_TASK_FG: Color = Color::White;
 pub const FUTURE_TASK_FG: Color = Color::LightGreen;
