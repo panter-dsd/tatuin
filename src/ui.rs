@@ -431,13 +431,10 @@ impl App {
     }
 
     async fn change_check_state(&mut self) {
-        match self.current_block {
-            AppBlock::Filter => {
-                self.filter_widget.write().await.change_check_state();
-                self.projects.write().await.select_first().await;
-                self.reload().await;
-            }
-            _ => {}
+        if self.current_block == AppBlock::Filter {
+            self.filter_widget.write().await.change_check_state();
+            self.projects.write().await.select_first().await;
+            self.reload().await;
         }
     }
 
