@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::{Position, Rect},
+    layout::{Position, Rect, Size},
     style::{Style, Stylize},
     text::Text,
     widgets::{Paragraph, Widget, Wrap},
@@ -35,6 +35,10 @@ impl HyperlinkWidget {
             std::cmp::min(area.width, Text::from(self.text.as_str()).width() as u16),
             1,
         )
+    }
+
+    pub fn size(&self) -> Size {
+        Size::new(Text::from(self.text.as_str()).width() as u16, 1)
     }
 
     pub fn render(&self, buf: &mut Buffer) {
