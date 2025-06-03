@@ -100,26 +100,13 @@ impl FilterWidget {
         tokio::spawn({
             let s = s.clone();
             async move {
-                let mut rx = s.read().await.state_shortcut.subscribe_to_accepted();
+                let mut state_rx = s.read().await.state_shortcut.subscribe_to_accepted();
+                let mut due_rx = s.read().await.due_shortcut.subscribe_to_accepted();
                 loop {
-                    if rx.recv().await.is_err() {
-                        return;
+                    tokio::select! {
+                        _ = state_rx.recv() => s.write().await.current_block = FilterBlock::State,
+                        _ = due_rx.recv() => s.write().await.current_block = FilterBlock::Due,
                     }
-
-                    s.write().await.current_block = FilterBlock::State;
-                }
-            }
-        });
-        tokio::spawn({
-            let s = s.clone();
-            async move {
-                let mut rx = s.read().await.due_shortcut.subscribe_to_accepted();
-                loop {
-                    if rx.recv().await.is_err() {
-                        return;
-                    }
-
-                    s.write().await.current_block = FilterBlock::Due;
                 }
             }
         });
