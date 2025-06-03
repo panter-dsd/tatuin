@@ -328,7 +328,6 @@ impl App {
                     match s.accept(&keys) {
                         AcceptResult::Accepted => {
                             self.key_buffer.clear();
-                            self.current_block = t.clone();
                             found_shortcut = true;
                         }
                         AcceptResult::PartiallyAccepted => found_shortcut = true,
