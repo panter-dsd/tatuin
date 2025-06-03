@@ -109,7 +109,7 @@ impl TasksWidget {
                                 s.commit_changes().await;
                             }
                         },
-                        _ = complete_uncomplete_rx.recv() => s.write().await.change_check_state().await,
+                        _ = complete_uncomplete_rx.recv() => s.write().await.change_check_state(None).await,
                     }
                 }
             }
@@ -231,33 +231,33 @@ impl TasksWidget {
         // result // TODO: implement me
     }
 
-    async fn change_check_state(&mut self) {
+    async fn change_check_state(&mut self, state: Option<State>) {
         let selected = self.tasks.selected();
         if selected.is_none() {
             return;
         }
 
         let t = selected.unwrap();
+        let mut current_state = t.state();
 
-        match self
+        if let Some(i) = self
             .changed_state_tasks
             .iter()
             .position(|c| equal(c.task.as_ref(), t.as_ref()))
         {
-            Some(p) => {
-                self.changed_state_tasks.remove(p);
-            }
-            None => {
-                let st = match t.state() {
-                    task::State::Completed => task::State::Uncompleted,
-                    task::State::Uncompleted | task::State::InProgress => task::State::Completed,
-                    task::State::Unknown(_) => task::State::Completed,
-                };
-                self.changed_state_tasks.push(ChangedState {
-                    task: t.clone_boxed(),
-                    new_state: st,
-                });
-            }
+            current_state = self.changed_state_tasks[i].new_state.clone();
+            self.changed_state_tasks.remove(i);
+        }
+        let new_state = state.unwrap_or(match current_state {
+            task::State::Completed => task::State::Uncompleted,
+            task::State::Uncompleted | task::State::InProgress | task::State::Unknown(_) => task::State::Completed,
+        });
+
+        if new_state != t.state() {
+            self.changed_state_tasks.push(ChangedState {
+                task: t.clone_boxed(),
+                new_state,
+            });
         }
     }
 
