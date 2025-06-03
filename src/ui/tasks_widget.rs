@@ -231,7 +231,7 @@ impl TasksWidget {
         // result // TODO: implement me
     }
 
-    pub async fn change_check_state(&mut self) {
+    async fn change_check_state(&mut self) {
         let selected = self.tasks.selected();
         if selected.is_none() {
             return;
