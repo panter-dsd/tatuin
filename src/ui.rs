@@ -111,8 +111,8 @@ impl<T> tasks_widget::ProvidersStorage<T> for SelectableList<T>
 where
     T: Send + Sync,
 {
-    fn items(&mut self) -> IterMut<'_, T> {
-        self.items.iter_mut()
+    fn iter_mut(&mut self) -> IterMut<'_, T> {
+        self.iter_mut()
     }
 }
 
@@ -286,10 +286,7 @@ impl App {
             .tasks_widget
             .write()
             .await
-            .load_tasks(
-                &mut self.providers.write().await.iter_mut(),
-                &self.filter_widget.read().await.filter(),
-            )
+            .load_tasks(&self.filter_widget.read().await.filter())
             .await;
 
         for e in errors {

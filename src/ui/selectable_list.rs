@@ -13,7 +13,7 @@ use ratatui::widgets::{ListItem, ListState, StatefulWidget};
 use std::slice::{Iter, IterMut};
 
 pub struct SelectableList<T> {
-    pub items: Vec<T>,
+    items: Vec<T>,
     state: ListState,
     add_all_item: bool,
     shortcut: Option<Shortcut>,

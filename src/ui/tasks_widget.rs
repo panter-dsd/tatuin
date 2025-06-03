@@ -27,7 +27,7 @@ use tokio::sync::RwLock;
 use super::shortcut::Shortcut;
 
 pub trait ProvidersStorage<T>: Send + Sync {
-    fn items(&mut self) -> IterMut<'_, T>;
+    fn iter_mut(&mut self) -> IterMut<'_, T>;
 }
 
 struct ChangedState {
@@ -44,6 +44,7 @@ pub struct TasksWidget {
     projects_filter: Vec<String>,
 
     commit_changes_shortcut: Shortcut,
+    last_filter: Filter,
 }
 
 #[async_trait]
@@ -88,6 +89,7 @@ impl TasksWidget {
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
+            last_filter: Filter::default(),
         }));
         tokio::spawn({
             let s = s.clone();
@@ -188,7 +190,7 @@ impl TasksWidget {
     pub async fn commit_changes(&mut self) {
         // let mut result = Vec::new();
 
-        for p in self.providers_storage.write().await.items() {
+        for p in self.providers_storage.write().await.iter_mut() {
             let name = p.name();
             let patches = self
                 .changed_state_tasks
@@ -216,6 +218,8 @@ impl TasksWidget {
                 p.reload().await;
             }
         }
+
+        self.load_tasks(&self.last_filter.clone()).await;
 
         // result // TODO: implement me
     }
@@ -326,21 +330,19 @@ impl TasksWidget {
         });
     }
 
-    pub async fn load_tasks(
-        &mut self,
-        providers: &mut IterMut<'_, Box<dyn ProviderTrait>>,
-        f: &Filter,
-    ) -> Vec<Box<dyn Error>> {
+    pub async fn load_tasks(&mut self, f: &Filter) -> Vec<Box<dyn Error + Send + Sync>> {
+        self.last_filter = f.clone();
+
         let mut all_tasks: Vec<Box<dyn task::Task>> = Vec::new();
 
         let mut errors = Vec::new();
 
-        for p in providers {
+        for p in self.providers_storage.write().await.iter_mut() {
             let tasks = p.tasks(None, f).await;
 
             match tasks {
                 Ok(t) => all_tasks.append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>()),
-                Err(err) => errors.push((p.name(), err)),
+                Err(err) => errors.push((p.name(), format!("{err}"))),
             }
         }
 
@@ -358,7 +360,7 @@ impl TasksWidget {
         errors
             .iter()
             .map(|(provider_name, err)| {
-                Box::<dyn Error>::from(format!("Load provider {provider_name} projects failure: {err}"))
+                Box::<dyn Error + Send + Sync>::from(format!("Load provider {provider_name} projects failure: {err}"))
             })
             .collect()
     }
