@@ -94,15 +94,15 @@ impl TasksWidget {
         tokio::spawn({
             let s = s.clone();
             async move {
-                let mut rx = s.read().await.commit_changes_shortcut.subscribe_to_accepted();
+                let mut commit_changes_rx = s.read().await.commit_changes_shortcut.subscribe_to_accepted();
                 loop {
-                    if rx.recv().await.is_err() {
-                        return;
-                    }
-
-                    let mut s = s.write().await;
-                    if s.has_changes() {
-                        s.commit_changes().await;
+                    tokio::select! {
+                        _ = commit_changes_rx.recv() => {
+                            let mut s = s.write().await;
+                            if s.has_changes() {
+                                s.commit_changes().await;
+                            }
+                        }
                     }
                 }
             }
