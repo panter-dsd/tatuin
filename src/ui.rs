@@ -775,23 +775,6 @@ impl App {
         }
     }
 
-    // async fn commit_changes(&mut self) {
-    //     if self.tasks_widget.read().await.has_changes() {
-    //         let errors = self
-    //             .tasks_widget
-    //             .write()
-    //             .await
-    //             .commit_changes(&mut self.providers.write().await.iter_mut())
-    //             .await;
-    //
-    //         for e in errors {
-    //             self.add_error(e.to_string().as_str());
-    //         }
-    //
-    //         self.load_tasks().await;
-    //     }
-    // }
-
     async fn show_keybindings_help(&mut self) {
         let d = key_bindings_help_dialog::Dialog::new(&self.all_shortcuts);
         self.dialog = Some(Box::new(d));
