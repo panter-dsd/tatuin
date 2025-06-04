@@ -44,7 +44,7 @@ pub struct TasksWidget {
     projects_filter: Vec<String>,
 
     commit_changes_shortcut: Shortcut,
-    complete_uncomplete_shortcut: Shortcut,
+    swap_completed_state_shortcut: Shortcut,
     in_progress_shortcut: Shortcut,
     last_filter: Filter,
 }
@@ -57,7 +57,7 @@ impl AppBlockWidget for TasksWidget {
     fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
         vec![
             &mut self.commit_changes_shortcut,
-            &mut self.complete_uncomplete_shortcut,
+            &mut self.swap_completed_state_shortcut,
             &mut self.in_progress_shortcut,
         ]
     }
@@ -95,7 +95,7 @@ impl TasksWidget {
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
-            complete_uncomplete_shortcut: Shortcut::new("Complete/uncomplete the task", &[' ']),
+            swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
             last_filter: Filter::default(),
         }));
@@ -103,7 +103,7 @@ impl TasksWidget {
             let s = s.clone();
             async move {
                 let mut commit_changes_rx = s.read().await.commit_changes_shortcut.subscribe_to_accepted();
-                let mut complete_uncomplete_rx = s.read().await.complete_uncomplete_shortcut.subscribe_to_accepted();
+                let mut swap_completed_state_rx = s.read().await.swap_completed_state_shortcut.subscribe_to_accepted();
                 let mut in_progress_rx = s.read().await.in_progress_shortcut.subscribe_to_accepted();
                 loop {
                     tokio::select! {
@@ -113,7 +113,7 @@ impl TasksWidget {
                                 s.commit_changes().await;
                             }
                         },
-                        _ = complete_uncomplete_rx.recv() => s.write().await.change_check_state(None).await,
+                        _ = swap_completed_state_rx.recv() => s.write().await.change_check_state(None).await,
                         _ = in_progress_rx.recv() => s.write().await.change_check_state(Some(task::State::InProgress)).await,
                     }
                 }
