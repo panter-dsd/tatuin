@@ -19,10 +19,22 @@ use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{ListItem, ListState};
 use std::cmp::Ordering;
-use std::error::Error;
 use std::slice::IterMut;
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use super::shortcut::Shortcut;
+
+pub trait ProvidersStorage<T>: Send + Sync {
+    fn iter_mut(&mut self) -> IterMut<'_, T>;
+}
+
+pub trait ErrorLoggerTrait: Send + Sync {
+    fn add_error(&mut self, message: &str);
+    fn add_errors(&mut self, messages: &[&str]);
+}
+
+type ErrorLogger = Arc<RwLock<dyn ErrorLoggerTrait>>;
 
 struct ChangedState {
     task: Box<dyn TaskTrait>,
@@ -30,31 +42,31 @@ struct ChangedState {
 }
 
 pub struct TasksWidget {
+    providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
+    error_logger: ErrorLogger,
     all_tasks: Vec<Box<dyn TaskTrait>>,
     changed_state_tasks: Vec<ChangedState>,
     tasks: SelectableList<Box<dyn TaskTrait>>,
     providers_filter: Vec<String>,
     projects_filter: Vec<String>,
-}
 
-impl Default for TasksWidget {
-    fn default() -> Self {
-        Self {
-            all_tasks: Vec::new(),
-            changed_state_tasks: Vec::new(),
-            tasks: SelectableList::default()
-                .shortcut(Shortcut::new("Activate Tasks block", &['g', 't']))
-                .show_count_in_title(false),
-            projects_filter: Vec::new(),
-            providers_filter: Vec::new(),
-        }
-    }
+    commit_changes_shortcut: Shortcut,
+    swap_completed_state_shortcut: Shortcut,
+    in_progress_shortcut: Shortcut,
+    last_filter: Filter,
 }
 
 #[async_trait]
 impl AppBlockWidget for TasksWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         self.tasks.activate_shortcuts()
+    }
+    fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        vec![
+            &mut self.commit_changes_shortcut,
+            &mut self.swap_completed_state_shortcut,
+            &mut self.in_progress_shortcut,
+        ]
     }
 
     fn set_active(&mut self, is_active: bool) {
@@ -79,6 +91,47 @@ impl AppBlockWidget for TasksWidget {
 }
 
 impl TasksWidget {
+    pub fn new(
+        providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
+        error_logger: ErrorLogger,
+    ) -> Arc<RwLock<Self>> {
+        let s = Arc::new(RwLock::new(Self {
+            providers_storage,
+            error_logger,
+            all_tasks: Vec::new(),
+            changed_state_tasks: Vec::new(),
+            tasks: SelectableList::default()
+                .shortcut(Shortcut::new("Activate Tasks block", &['g', 't']))
+                .show_count_in_title(false),
+            projects_filter: Vec::new(),
+            providers_filter: Vec::new(),
+            commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
+            swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
+            in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
+            last_filter: Filter::default(),
+        }));
+        tokio::spawn({
+            let s = s.clone();
+            async move {
+                let mut commit_changes_rx = s.read().await.commit_changes_shortcut.subscribe_to_accepted();
+                let mut swap_completed_state_rx = s.read().await.swap_completed_state_shortcut.subscribe_to_accepted();
+                let mut in_progress_rx = s.read().await.in_progress_shortcut.subscribe_to_accepted();
+                loop {
+                    tokio::select! {
+                        _ = commit_changes_rx.recv() => {
+                            let mut s = s.write().await;
+                            if s.has_changes() {
+                                s.commit_changes().await;
+                            }
+                        },
+                        _ = swap_completed_state_rx.recv() => s.write().await.change_check_state(None).await,
+                        _ = in_progress_rx.recv() => s.write().await.change_check_state(Some(task::State::InProgress)).await,
+                    }
+                }
+            }
+        });
+        s
+    }
     pub fn set_providers_filter(&mut self, providers: &[String]) {
         self.providers_filter = providers.to_vec();
         self.filter_tasks();
@@ -157,10 +210,8 @@ impl TasksWidget {
         !self.changed_state_tasks.is_empty()
     }
 
-    pub async fn commit_changes(&mut self, providers: &mut IterMut<'_, Box<dyn ProviderTrait>>) -> Vec<Box<dyn Error>> {
-        let mut result = Vec::new();
-
-        for p in providers {
+    pub async fn commit_changes(&mut self) {
+        for p in self.providers_storage.write().await.iter_mut() {
             let name = p.name();
             let patches = self
                 .changed_state_tasks
@@ -174,9 +225,13 @@ impl TasksWidget {
 
             if !patches.is_empty() {
                 let errors = p.patch_tasks(&patches).await;
-                result.extend(errors.iter().map(|e| {
-                    Box::<dyn Error>::from(format!("Provider {name} returns error when changing the task: {e}"))
-                }));
+
+                let mut error_logger = self.error_logger.write().await;
+                for e in &errors {
+                    error_logger.add_error(
+                        format!("Provider {name} returns error when changing the task: {}", e.error).as_str(),
+                    );
+                }
 
                 for p in patches {
                     if !errors.iter().any(|pe| equal(p.task.as_ref(), pe.task.as_ref())) {
@@ -189,39 +244,40 @@ impl TasksWidget {
             }
         }
 
-        result
+        self.load_tasks(&self.last_filter.clone()).await;
     }
 
-    pub async fn change_check_state(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    async fn change_check_state(&mut self, state: Option<State>) {
         let selected = self.tasks.selected();
         if selected.is_none() {
-            return Ok(());
+            return;
         }
 
         let t = selected.unwrap();
+        let mut current_state = t.state();
 
-        match self
+        if let Some(i) = self
             .changed_state_tasks
             .iter()
             .position(|c| equal(c.task.as_ref(), t.as_ref()))
         {
-            Some(p) => {
-                self.changed_state_tasks.remove(p);
-            }
-            None => {
-                let st = match t.state() {
-                    task::State::Completed => task::State::Uncompleted,
-                    task::State::Uncompleted | task::State::InProgress => task::State::Completed,
-                    task::State::Unknown(_) => task::State::Completed,
-                };
-                self.changed_state_tasks.push(ChangedState {
-                    task: t.clone_boxed(),
-                    new_state: st,
-                });
+            current_state = self.changed_state_tasks[i].new_state.clone();
+            self.changed_state_tasks.remove(i);
+            if state.as_ref().is_some_and(|s| *s == current_state) {
+                return; // We undo the change
             }
         }
+        let new_state = state.unwrap_or(match current_state {
+            task::State::Completed => task::State::Uncompleted,
+            task::State::Uncompleted | task::State::InProgress | task::State::Unknown(_) => task::State::Completed,
+        });
 
-        Ok(())
+        if new_state != t.state() {
+            self.changed_state_tasks.push(ChangedState {
+                task: t.clone_boxed(),
+                new_state,
+            });
+        }
     }
 
     pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
@@ -298,23 +354,27 @@ impl TasksWidget {
         });
     }
 
-    pub async fn load_tasks(
-        &mut self,
-        providers: &mut IterMut<'_, Box<dyn ProviderTrait>>,
-        f: &Filter,
-    ) -> Vec<Box<dyn Error>> {
+    pub async fn load_tasks(&mut self, f: &Filter) {
+        self.last_filter = f.clone();
+
         let mut all_tasks: Vec<Box<dyn task::Task>> = Vec::new();
 
         let mut errors = Vec::new();
-
-        for p in providers {
+        for p in self.providers_storage.write().await.iter_mut() {
             let tasks = p.tasks(None, f).await;
 
             match tasks {
                 Ok(t) => all_tasks.append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>()),
-                Err(err) => errors.push((p.name(), err)),
+                Err(err) => {
+                    errors.push(format!("Load provider {} projects failure: {err}", p.name()));
+                }
             }
         }
+
+        self.error_logger
+            .write()
+            .await
+            .add_errors(&errors.iter().map(|m| m.as_str()).collect::<Vec<&str>>());
 
         all_tasks.sort_by(|l, r| {
             due_group(l.as_ref())
@@ -326,13 +386,10 @@ impl TasksWidget {
         self.all_tasks = all_tasks;
         self.remove_changed_tasks_that_are_not_exists_anymore();
         self.filter_tasks();
+    }
 
-        errors
-            .iter()
-            .map(|(provider_name, err)| {
-                Box::<dyn Error>::from(format!("Load provider {provider_name} projects failure: {err}"))
-            })
-            .collect()
+    pub async fn reload(&mut self) {
+        self.changed_state_tasks.clear();
     }
 }
 

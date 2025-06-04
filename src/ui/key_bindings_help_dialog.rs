@@ -23,6 +23,18 @@ pub struct Dialog {
     should_be_closed: bool,
 }
 
+fn keys_to_str(keys: &[char]) -> String {
+    let mut s = String::new();
+    for c in keys {
+        if *c == ' ' {
+            s.push_str("space ");
+        } else {
+            s.push(*c)
+        }
+    }
+    s
+}
+
 impl Dialog {
     pub fn new(shortcuts: &[Arc<RwLock<SharedData>>]) -> Self {
         let mut s: Vec<Shortcut> = shortcuts
@@ -31,7 +43,7 @@ impl Dialog {
                 let d = s.read().unwrap();
                 Shortcut {
                     name: d.name.clone(),
-                    keys: String::from_iter(d.keys.iter()),
+                    keys: keys_to_str(&d.keys),
                 }
             })
             .collect();

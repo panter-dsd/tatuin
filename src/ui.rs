@@ -21,8 +21,10 @@ use shortcut::{AcceptResult, Shortcut};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::io::Write;
+use std::slice::IterMut;
 use std::str::FromStr;
 use std::sync::Arc;
+use tasks_widget::ErrorLoggerTrait;
 use tokio::sync::{OnceCell, RwLock};
 mod dialog;
 mod filter_widget;
@@ -66,12 +68,48 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 #[async_trait]
 trait AppBlockWidget: Send + MouseHandler {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut>;
+    fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
+        Vec::new()
+    }
     fn set_active(&mut self, is_active: bool);
 
     async fn select_next(&mut self);
     async fn select_previous(&mut self);
     async fn select_first(&mut self);
     async fn select_last(&mut self);
+}
+
+struct ErrorLogger {
+    errors: Vec<String>,
+}
+
+impl ErrorLogger {
+    fn new() -> Self {
+        Self { errors: Vec::new() }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.errors.is_empty()
+    }
+
+    fn alert(&self) -> String {
+        self.errors.join("\n")
+    }
+
+    fn clear(&mut self) {
+        self.errors.clear();
+    }
+}
+
+impl ErrorLoggerTrait for ErrorLogger {
+    fn add_error(&mut self, message: &str) {
+        self.errors.push(message.to_string())
+    }
+
+    fn add_errors(&mut self, messages: &[&str]) {
+        self.errors
+            .extend(messages.iter().map(|m| m.to_string()).collect::<Vec<String>>());
+    }
 }
 
 pub struct App {
@@ -85,7 +123,7 @@ pub struct App {
     task_description_widget: Arc<RwLock<task_info_widget::TaskInfoWidget>>,
     home_link: HyperlinkWidget,
 
-    alert: Option<String>,
+    error_logger: Arc<RwLock<ErrorLogger>>,
     app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
     stateful_widgets: HashMap<AppBlock, Arc<RwLock<dyn StatefulObject>>>,
     key_buffer: key_buffer::KeyBuffer,
@@ -94,7 +132,6 @@ pub struct App {
     select_last_shortcut: Shortcut,
     load_state_shortcut: Shortcut,
     save_state_shortcut: Shortcut,
-    commit_changes_shortcut: Shortcut,
     show_keybindings_help_shortcut: Shortcut,
 
     all_shortcuts: Vec<Arc<std::sync::RwLock<shortcut::SharedData>>>,
@@ -104,17 +141,28 @@ pub struct App {
     settings: Arc<RwLock<Box<dyn StateSettings>>>,
 }
 
+impl<T> tasks_widget::ProvidersStorage<T> for SelectableList<T>
+where
+    T: Send + Sync,
+{
+    fn iter_mut(&mut self) -> IterMut<'_, T> {
+        self.iter_mut()
+    }
+}
+
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
 impl App {
     pub fn new(providers: Vec<Box<dyn provider::Provider>>, settings: Box<dyn StateSettings>) -> Self {
+        let providers_widget = Arc::new(RwLock::new(
+            SelectableList::new(providers, Some(0))
+                .add_all_item()
+                .shortcut(Shortcut::new("Activate Providers block", &['g', 'v'])),
+        ));
+        let error_logger = Arc::new(RwLock::new(ErrorLogger::new()));
         let mut s = Self {
             should_exit: false,
             current_block: AppBlock::TaskList,
-            providers: Arc::new(RwLock::new(
-                SelectableList::new(providers, Some(0))
-                    .add_all_item()
-                    .shortcut(Shortcut::new("Activate Providers block", &['g', 'v'])),
-            )),
+            providers: providers_widget.clone(),
             projects: Arc::new(RwLock::new(
                 SelectableList::default()
                     .add_all_item()
@@ -124,10 +172,10 @@ impl App {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
-            tasks_widget: Arc::new(RwLock::new(tasks_widget::TasksWidget::default())),
+            tasks_widget: tasks_widget::TasksWidget::new(providers_widget.clone(), error_logger.clone()),
             task_description_widget: Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default())),
             home_link: HyperlinkWidget::new("[Homepage]", "https://github.com/panter-dsd/tatuin"),
-            alert: None,
+            error_logger: error_logger.clone(),
             app_blocks: HashMap::new(),
             stateful_widgets: HashMap::new(),
             key_buffer: key_buffer::KeyBuffer::default(),
@@ -135,7 +183,6 @@ impl App {
             select_last_shortcut: Shortcut::new("Select last", &['G']),
             load_state_shortcut: Shortcut::new("Load state", &['s', 'l']),
             save_state_shortcut: Shortcut::new("Save the current state", &['s', 's']),
-            commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']),
             show_keybindings_help_shortcut: Shortcut::new("Show help", &['?']),
             all_shortcuts: Vec::new(),
             dialog: None,
@@ -153,7 +200,6 @@ impl App {
         s.all_shortcuts.push(s.select_last_shortcut.internal_data());
         s.all_shortcuts.push(s.load_state_shortcut.internal_data());
         s.all_shortcuts.push(s.save_state_shortcut.internal_data());
-        s.all_shortcuts.push(s.commit_changes_shortcut.internal_data());
         s.all_shortcuts.push(s.show_keybindings_help_shortcut.internal_data());
 
         s.stateful_widgets.insert(AppBlock::Providers, s.providers.clone());
@@ -167,8 +213,11 @@ impl App {
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         execute!(std::io::stdout(), EnableMouseCapture)?;
         for b in self.app_blocks.values_mut() {
+            let mut b = b.write().await;
             self.all_shortcuts
-                .extend(b.write().await.activate_shortcuts().iter().map(|s| s.internal_data()));
+                .extend(b.activate_shortcuts().iter().map(|s| s.internal_data()));
+            self.all_shortcuts
+                .extend(b.shortcuts().iter().map(|s| s.internal_data()));
         }
 
         if self.settings.read().await.states().is_empty() {
@@ -189,7 +238,6 @@ impl App {
         let mut select_last_accepted = self.select_last_shortcut.subscribe_to_accepted();
         let mut load_state_accepted = self.load_state_shortcut.subscribe_to_accepted();
         let mut save_state_accepted = self.save_state_shortcut.subscribe_to_accepted();
-        let mut commit_changes_accepted = self.commit_changes_shortcut.subscribe_to_accepted();
         let mut show_keybindings_help_shortcut_accepted = self.show_keybindings_help_shortcut.subscribe_to_accepted();
 
         while !self.should_exit {
@@ -217,7 +265,6 @@ impl App {
                 _ = select_last_accepted.recv() => self.select_last().await,
                 _ = load_state_accepted.recv() => self.load_state().await,
                 _ = save_state_accepted.recv() => self.save_state_as(),
-                _ = commit_changes_accepted.recv() => self.commit_changes().await,
                 _ = show_keybindings_help_shortcut_accepted.recv() => self.show_keybindings_help().await,
             }
         }
@@ -256,11 +303,8 @@ impl App {
             .set_state(ListState::default().with_selected(Some(0)));
     }
 
-    fn add_error(&mut self, message: &str) {
-        self.alert = match self.alert.as_ref() {
-            Some(s) => Some(format!("{s}\n{message}")),
-            None => Some(message.to_string()),
-        }
+    async fn add_error(&mut self, message: &str) {
+        self.error_logger.write().await.add_error(message);
     }
 
     async fn selected_project_id(&self) -> Option<String> {
@@ -270,19 +314,11 @@ impl App {
     async fn load_tasks(&mut self) {
         let project_id = self.selected_project_id().await;
 
-        let errors = self
-            .tasks_widget
+        self.tasks_widget
             .write()
             .await
-            .load_tasks(
-                &mut self.providers.write().await.iter_mut(),
-                &self.filter_widget.read().await.filter(),
-            )
+            .load_tasks(&self.filter_widget.read().await.filter())
             .await;
-
-        for e in errors {
-            self.add_error(e.to_string().as_str());
-        }
 
         if project_id.is_none() {
             self.load_projects().await;
@@ -302,7 +338,8 @@ impl App {
 
         let keys = self.key_buffer.push(code);
         for (t, b) in &self.app_blocks {
-            for s in b.write().await.activate_shortcuts() {
+            let mut b = b.write().await;
+            for s in b.activate_shortcuts() {
                 match s.accept(&keys) {
                     AcceptResult::Accepted => {
                         self.key_buffer.clear();
@@ -311,6 +348,18 @@ impl App {
                     }
                     AcceptResult::PartiallyAccepted => found_shortcut = true,
                     AcceptResult::NotAccepted => {}
+                }
+            }
+            for s in b.shortcuts() {
+                if s.is_global() || self.current_block == *t {
+                    match s.accept(&keys) {
+                        AcceptResult::Accepted => {
+                            self.key_buffer.clear();
+                            found_shortcut = true;
+                        }
+                        AcceptResult::PartiallyAccepted => found_shortcut = true,
+                        AcceptResult::NotAccepted => {}
+                    }
                 }
             }
         }
@@ -322,7 +371,6 @@ impl App {
             &mut self.select_last_shortcut,
             &mut self.load_state_shortcut,
             &mut self.save_state_shortcut,
-            &mut self.commit_changes_shortcut,
             &mut self.show_keybindings_help_shortcut,
         ];
         for s in shortcuts {
@@ -357,10 +405,10 @@ impl App {
 
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => {
-                if self.alert.is_some() {
-                    self.alert = None;
-                } else {
+                if self.error_logger.read().await.is_empty() {
                     self.should_exit = true;
+                } else {
+                    self.error_logger.write().await.clear();
                 }
             }
             KeyCode::Char('h') | KeyCode::Left => {
@@ -406,23 +454,15 @@ impl App {
             p.reload().await;
         }
 
+        self.tasks_widget.write().await.reload().await;
         self.load_tasks().await;
     }
 
     async fn change_check_state(&mut self) {
-        match self.current_block {
-            AppBlock::TaskList => {
-                let result = self.tasks_widget.write().await.change_check_state().await;
-                if let Err(e) = result {
-                    self.alert = Some(format!("Change state error: {e}"))
-                }
-            }
-            AppBlock::Filter => {
-                self.filter_widget.write().await.change_check_state();
-                self.projects.write().await.select_first().await;
-                self.reload().await;
-            }
-            _ => {}
+        if self.current_block == AppBlock::Filter {
+            self.filter_widget.write().await.change_check_state();
+            self.projects.write().await.select_first().await;
+            self.reload().await;
         }
     }
 
@@ -586,13 +626,13 @@ impl App {
         self.render_tasks(list_area, buf).await;
         self.render_task_description(task_description_area, buf).await;
 
-        if let Some(alert) = &mut self.alert {
+        if !self.error_logger.read().await.is_empty() {
             let block = Block::bordered()
                 .border_style(Style::default().fg(Color::Red))
                 .title("Alert!");
             let area = popup_area(area, Size::new(area.width / 2, 40));
             Clear {}.render(area, buf);
-            Paragraph::new(alert.to_string())
+            Paragraph::new(self.error_logger.read().await.alert())
                 .block(block)
                 .wrap(Wrap { trim: true })
                 .render(area, buf);
@@ -714,12 +754,13 @@ impl App {
         }
 
         for e in errors {
-            self.add_error(e.as_str());
+            self.add_error(e.as_str()).await;
         }
 
         let e = self.settings.write().await.save(name, state);
         if e.is_err() {
-            self.add_error(format!("Save state error: {}", e.unwrap_err()).as_str());
+            self.add_error(format!("Save state error: {}", e.unwrap_err()).as_str())
+                .await;
         }
     }
 
@@ -760,23 +801,6 @@ impl App {
             if !t.is_empty() {
                 self.save_state(Some(t.as_str())).await;
             }
-        }
-    }
-
-    async fn commit_changes(&mut self) {
-        if self.tasks_widget.read().await.has_changes() {
-            let errors = self
-                .tasks_widget
-                .write()
-                .await
-                .commit_changes(&mut self.providers.write().await.iter_mut())
-                .await;
-
-            for e in errors {
-                self.add_error(e.to_string().as_str());
-            }
-
-            self.load_tasks().await;
         }
     }
 
