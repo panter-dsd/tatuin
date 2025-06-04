@@ -245,8 +245,6 @@ impl TasksWidget {
         }
 
         self.load_tasks(&self.last_filter.clone()).await;
-
-        // result // TODO: implement me
     }
 
     async fn change_check_state(&mut self, state: Option<State>) {
