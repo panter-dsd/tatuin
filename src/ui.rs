@@ -123,7 +123,7 @@ pub struct App {
     task_description_widget: Arc<RwLock<task_info_widget::TaskInfoWidget>>,
     home_link: HyperlinkWidget,
 
-    alert: Arc<RwLock<ErrorLogger>>,
+    error_logger: Arc<RwLock<ErrorLogger>>,
     app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
     stateful_widgets: HashMap<AppBlock, Arc<RwLock<dyn StatefulObject>>>,
     key_buffer: key_buffer::KeyBuffer,
@@ -175,7 +175,7 @@ impl App {
             tasks_widget: tasks_widget::TasksWidget::new(providers_widget.clone(), error_logger.clone()),
             task_description_widget: Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default())),
             home_link: HyperlinkWidget::new("[Homepage]", "https://github.com/panter-dsd/tatuin"),
-            alert: error_logger.clone(),
+            error_logger: error_logger.clone(),
             app_blocks: HashMap::new(),
             stateful_widgets: HashMap::new(),
             key_buffer: key_buffer::KeyBuffer::default(),
@@ -304,7 +304,7 @@ impl App {
     }
 
     async fn add_error(&mut self, message: &str) {
-        self.alert.write().await.add_error(message);
+        self.error_logger.write().await.add_error(message);
     }
 
     async fn selected_project_id(&self) -> Option<String> {
@@ -405,10 +405,10 @@ impl App {
 
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => {
-                if self.alert.read().await.is_empty() {
+                if self.error_logger.read().await.is_empty() {
                     self.should_exit = true;
                 } else {
-                    self.alert.write().await.clear();
+                    self.error_logger.write().await.clear();
                 }
             }
             KeyCode::Char('h') | KeyCode::Left => {
@@ -626,13 +626,13 @@ impl App {
         self.render_tasks(list_area, buf).await;
         self.render_task_description(task_description_area, buf).await;
 
-        if !self.alert.read().await.is_empty() {
+        if !self.error_logger.read().await.is_empty() {
             let block = Block::bordered()
                 .border_style(Style::default().fg(Color::Red))
                 .title("Alert!");
             let area = popup_area(area, Size::new(area.width / 2, 40));
             Clear {}.render(area, buf);
-            Paragraph::new(self.alert.read().await.alert())
+            Paragraph::new(self.error_logger.read().await.alert())
                 .block(block)
                 .wrap(Wrap { trim: true })
                 .render(area, buf);
