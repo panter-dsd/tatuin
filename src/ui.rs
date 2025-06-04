@@ -24,6 +24,7 @@ use std::io::Write;
 use std::slice::IterMut;
 use std::str::FromStr;
 use std::sync::Arc;
+use tasks_widget::ErrorLoggerTrait;
 use tokio::sync::{OnceCell, RwLock};
 mod dialog;
 mod filter_widget;
@@ -78,6 +79,39 @@ trait AppBlockWidget: Send + MouseHandler {
     async fn select_last(&mut self);
 }
 
+struct ErrorLogger {
+    errors: Vec<String>,
+}
+
+impl ErrorLogger {
+    fn new() -> Self {
+        Self { errors: Vec::new() }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.errors.is_empty()
+    }
+
+    fn alert(&self) -> String {
+        self.errors.join("\n")
+    }
+
+    fn clear(&mut self) {
+        self.errors.clear();
+    }
+}
+
+impl ErrorLoggerTrait for ErrorLogger {
+    fn add_error(&mut self, message: &str) {
+        self.errors.push(message.to_string())
+    }
+
+    fn add_errors(&mut self, messages: &[&str]) {
+        self.errors
+            .extend(messages.iter().map(|m| m.to_string()).collect::<Vec<String>>());
+    }
+}
+
 pub struct App {
     should_exit: bool,
     providers: Arc<RwLock<SelectableList<Box<dyn provider::Provider>>>>,
@@ -89,7 +123,7 @@ pub struct App {
     task_description_widget: Arc<RwLock<task_info_widget::TaskInfoWidget>>,
     home_link: HyperlinkWidget,
 
-    alert: Option<String>,
+    alert: Arc<RwLock<ErrorLogger>>,
     app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
     stateful_widgets: HashMap<AppBlock, Arc<RwLock<dyn StatefulObject>>>,
     key_buffer: key_buffer::KeyBuffer,
@@ -124,6 +158,7 @@ impl App {
                 .add_all_item()
                 .shortcut(Shortcut::new("Activate Providers block", &['g', 'v'])),
         ));
+        let error_logger = Arc::new(RwLock::new(ErrorLogger::new()));
         let mut s = Self {
             should_exit: false,
             current_block: AppBlock::TaskList,
@@ -137,10 +172,10 @@ impl App {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
-            tasks_widget: tasks_widget::TasksWidget::new(providers_widget.clone()),
+            tasks_widget: tasks_widget::TasksWidget::new(providers_widget.clone(), error_logger.clone()),
             task_description_widget: Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default())),
             home_link: HyperlinkWidget::new("[Homepage]", "https://github.com/panter-dsd/tatuin"),
-            alert: None,
+            alert: error_logger.clone(),
             app_blocks: HashMap::new(),
             stateful_widgets: HashMap::new(),
             key_buffer: key_buffer::KeyBuffer::default(),
@@ -268,11 +303,8 @@ impl App {
             .set_state(ListState::default().with_selected(Some(0)));
     }
 
-    fn add_error(&mut self, message: &str) {
-        self.alert = match self.alert.as_ref() {
-            Some(s) => Some(format!("{s}\n{message}")),
-            None => Some(message.to_string()),
-        }
+    async fn add_error(&mut self, message: &str) {
+        self.alert.write().await.add_error(message);
     }
 
     async fn selected_project_id(&self) -> Option<String> {
@@ -282,16 +314,11 @@ impl App {
     async fn load_tasks(&mut self) {
         let project_id = self.selected_project_id().await;
 
-        let errors = self
-            .tasks_widget
+        self.tasks_widget
             .write()
             .await
             .load_tasks(&self.filter_widget.read().await.filter())
             .await;
-
-        for e in errors {
-            self.add_error(e.to_string().as_str());
-        }
 
         if project_id.is_none() {
             self.load_projects().await;
@@ -378,10 +405,10 @@ impl App {
 
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => {
-                if self.alert.is_some() {
-                    self.alert = None;
-                } else {
+                if self.alert.read().await.is_empty() {
                     self.should_exit = true;
+                } else {
+                    self.alert.write().await.clear();
                 }
             }
             KeyCode::Char('h') | KeyCode::Left => {
@@ -427,6 +454,7 @@ impl App {
             p.reload().await;
         }
 
+        self.tasks_widget.write().await.reload().await;
         self.load_tasks().await;
     }
 
@@ -598,13 +626,13 @@ impl App {
         self.render_tasks(list_area, buf).await;
         self.render_task_description(task_description_area, buf).await;
 
-        if let Some(alert) = &mut self.alert {
+        if !self.alert.read().await.is_empty() {
             let block = Block::bordered()
                 .border_style(Style::default().fg(Color::Red))
                 .title("Alert!");
             let area = popup_area(area, Size::new(area.width / 2, 40));
             Clear {}.render(area, buf);
-            Paragraph::new(alert.to_string())
+            Paragraph::new(self.alert.read().await.alert())
                 .block(block)
                 .wrap(Wrap { trim: true })
                 .render(area, buf);
@@ -726,12 +754,13 @@ impl App {
         }
 
         for e in errors {
-            self.add_error(e.as_str());
+            self.add_error(e.as_str()).await;
         }
 
         let e = self.settings.write().await.save(name, state);
         if e.is_err() {
-            self.add_error(format!("Save state error: {}", e.unwrap_err()).as_str());
+            self.add_error(format!("Save state error: {}", e.unwrap_err()).as_str())
+                .await;
         }
     }
 

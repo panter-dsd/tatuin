@@ -19,7 +19,6 @@ use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{ListItem, ListState};
 use std::cmp::Ordering;
-use std::error::Error;
 use std::slice::IterMut;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -30,6 +29,13 @@ pub trait ProvidersStorage<T>: Send + Sync {
     fn iter_mut(&mut self) -> IterMut<'_, T>;
 }
 
+pub trait ErrorLoggerTrait: Send + Sync {
+    fn add_error(&mut self, message: &str);
+    fn add_errors(&mut self, messages: &[&str]);
+}
+
+type ErrorLogger = Arc<RwLock<dyn ErrorLoggerTrait>>;
+
 struct ChangedState {
     task: Box<dyn TaskTrait>,
     new_state: State,
@@ -37,6 +43,7 @@ struct ChangedState {
 
 pub struct TasksWidget {
     providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
+    error_logger: ErrorLogger,
     all_tasks: Vec<Box<dyn TaskTrait>>,
     changed_state_tasks: Vec<ChangedState>,
     tasks: SelectableList<Box<dyn TaskTrait>>,
@@ -84,9 +91,13 @@ impl AppBlockWidget for TasksWidget {
 }
 
 impl TasksWidget {
-    pub fn new(providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>) -> Arc<RwLock<Self>> {
+    pub fn new(
+        providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
+        error_logger: ErrorLogger,
+    ) -> Arc<RwLock<Self>> {
         let s = Arc::new(RwLock::new(Self {
             providers_storage,
+            error_logger,
             all_tasks: Vec::new(),
             changed_state_tasks: Vec::new(),
             tasks: SelectableList::default()
@@ -200,8 +211,6 @@ impl TasksWidget {
     }
 
     pub async fn commit_changes(&mut self) {
-        // let mut result = Vec::new();
-
         for p in self.providers_storage.write().await.iter_mut() {
             let name = p.name();
             let patches = self
@@ -216,9 +225,13 @@ impl TasksWidget {
 
             if !patches.is_empty() {
                 let errors = p.patch_tasks(&patches).await;
-                // result.extend(errors.iter().map(|e| {
-                //     Box::<dyn Error>::from(format!("Provider {name} returns error when changing the task: {e}"))
-                // }));
+
+                let mut error_logger = self.error_logger.write().await;
+                for e in &errors {
+                    error_logger.add_error(
+                        format!("Provider {name} returns error when changing the task: {}", e.error).as_str(),
+                    );
+                }
 
                 for p in patches {
                     if !errors.iter().any(|pe| equal(p.task.as_ref(), pe.task.as_ref())) {
@@ -343,21 +356,27 @@ impl TasksWidget {
         });
     }
 
-    pub async fn load_tasks(&mut self, f: &Filter) -> Vec<Box<dyn Error + Send + Sync>> {
+    pub async fn load_tasks(&mut self, f: &Filter) {
         self.last_filter = f.clone();
 
         let mut all_tasks: Vec<Box<dyn task::Task>> = Vec::new();
 
         let mut errors = Vec::new();
-
         for p in self.providers_storage.write().await.iter_mut() {
             let tasks = p.tasks(None, f).await;
 
             match tasks {
                 Ok(t) => all_tasks.append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>()),
-                Err(err) => errors.push((p.name(), err.to_string())),
+                Err(err) => {
+                    errors.push(format!("Load provider {} projects failure: {err}", p.name()));
+                }
             }
         }
+
+        self.error_logger
+            .write()
+            .await
+            .add_errors(&errors.iter().map(|m| m.as_str()).collect::<Vec<&str>>());
 
         all_tasks.sort_by(|l, r| {
             due_group(l.as_ref())
@@ -369,13 +388,10 @@ impl TasksWidget {
         self.all_tasks = all_tasks;
         self.remove_changed_tasks_that_are_not_exists_anymore();
         self.filter_tasks();
+    }
 
-        errors
-            .iter()
-            .map(|(provider_name, err)| {
-                Box::<dyn Error + Send + Sync>::from(format!("Load provider {provider_name} projects failure: {err}"))
-            })
-            .collect()
+    pub async fn reload(&mut self) {
+        self.changed_state_tasks.clear();
     }
 }
 
