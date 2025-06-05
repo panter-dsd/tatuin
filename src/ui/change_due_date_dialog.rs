@@ -16,15 +16,37 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};
 use ratatui::widgets::{Block, Borders, ListItem, Widget};
+use std::fmt;
 
 const FOOTER: &str = "Use j/k (up/down) for moving and Enter for applying";
+
+#[derive(Clone)]
+pub enum Due {
+    Today,
+    Tomorrow,
+    ThisWeekend,
+    NextWeek,
+    NoDate,
+}
+
+impl fmt::Display for Due {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Due::Today => write!(f, "Today"),
+            Due::Tomorrow => write!(f, "Tomorrow"),
+            Due::ThisWeekend => write!(f, "This weekend"),
+            Due::NextWeek => write!(f, "Next week (Monday)"),
+            Due::NoDate => write!(f, "No date"),
+        }
+    }
+}
 
 pub struct Dialog {
     title: String,
     width: u16,
-    items: SelectableList<String>,
+    items: SelectableList<Due>,
     should_be_closed: bool,
-    selected_item: Option<String>,
+    selected_item: Option<Due>,
 }
 
 impl Dialog {
@@ -36,13 +58,7 @@ impl Dialog {
             title,
             width: std::cmp::max(title_width, footer_width),
             items: SelectableList::new(
-                vec![
-                    String::from("Today"),
-                    String::from("Tomorrow"),
-                    String::from("This weekend"),
-                    String::from("Next week(Monday)"),
-                    String::from("No date"),
-                ],
+                vec![Due::Today, Due::Tomorrow, Due::ThisWeekend, Due::NextWeek, Due::NoDate],
                 Some(0),
             ),
             should_be_closed: false,
@@ -50,7 +66,7 @@ impl Dialog {
         }
     }
 
-    pub fn selected_state(&self) -> &Option<String> {
+    pub fn selected(&self) -> &Option<Due> {
         &self.selected_item
     }
 }
@@ -67,7 +83,7 @@ impl DialogTrait for Dialog {
         Widget::render(&b, area, buf);
 
         self.items
-            .render("", |s| ListItem::from(s.as_str()), b.inner(area), buf);
+            .render("", |s| ListItem::from(s.to_string()), b.inner(area), buf);
     }
 
     fn should_be_closed(&self) -> bool {
