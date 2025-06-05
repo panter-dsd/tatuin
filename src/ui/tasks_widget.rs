@@ -3,6 +3,7 @@
 use super::AppBlockWidget;
 use super::change_due_date_dialog;
 use super::dialog::DialogTrait;
+use super::keyboard_handler::KeyboardHandler;
 use super::mouse_handler::MouseHandler;
 use crate::filter::Filter;
 use crate::project::Project as ProjectTrait;
@@ -14,6 +15,7 @@ use crate::ui::selectable_list::SelectableList;
 use crate::ui::style;
 use async_trait::async_trait;
 use chrono::Local;
+use crossterm::event::KeyEvent;
 use crossterm::event::MouseEvent;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -453,4 +455,20 @@ impl StatefulObject for TasksWidget {
 #[async_trait]
 impl MouseHandler for TasksWidget {
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
+}
+
+#[async_trait]
+impl KeyboardHandler for TasksWidget {
+    async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        if let Some(d) = &mut self.change_due_dalog {
+            if d.handle_key(key).await {
+                if d.should_be_closed() {
+                    self.change_due_dalog = None;
+                }
+                return true;
+            }
+        }
+
+        false
+    }
 }

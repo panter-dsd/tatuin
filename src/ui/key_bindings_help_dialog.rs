@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use super::{dialog::DialogTrait, shortcut::SharedData, style};
+use super::{dialog::DialogTrait, keyboard_handler::KeyboardHandler, shortcut::SharedData, style};
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
@@ -81,12 +81,6 @@ impl DialogTrait for Dialog {
         List::new(items).block(b).render(area, buf);
     }
 
-    async fn handle_key(&mut self, key: KeyEvent) {
-        if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
-            self.should_be_closed = true;
-        }
-    }
-
     fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }
@@ -98,5 +92,17 @@ impl DialogTrait for Dialog {
     fn size(&self) -> Size {
         let count: u16 = self.shortcuts.len().try_into().unwrap_or_default();
         Size::new(70, count + 2)
+    }
+}
+
+#[async_trait]
+impl KeyboardHandler for Dialog {
+    async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
+            self.should_be_closed = true;
+            return true;
+        }
+
+        false
     }
 }

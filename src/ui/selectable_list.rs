@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: MIT
 
 use super::AppBlockWidget;
+use super::keyboard_handler::KeyboardHandler;
 use super::list;
 use super::mouse_handler::MouseHandler;
 use super::shortcut::Shortcut;
 use crate::state::{State, StatefulObject};
 use async_trait::async_trait;
-use crossterm::event::MouseEvent;
+use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};
 use ratatui::widgets::{ListItem, ListState, StatefulWidget};
 use std::slice::{Iter, IterMut};
 
-const DEFAULT_WIDTH: u16 = 100;
+const DEFAULT_WIDTH: u16 = 10;
 
 pub struct SelectableList<T> {
     items: Vec<T>,
@@ -65,6 +66,16 @@ where
     T: Send,
 {
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
+}
+
+#[async_trait]
+impl<T> KeyboardHandler for SelectableList<T>
+where
+    T: Send,
+{
+    async fn handle_key(&mut self, _key: KeyEvent) -> bool {
+        false
+    }
 }
 
 impl<T> SelectableList<T> {

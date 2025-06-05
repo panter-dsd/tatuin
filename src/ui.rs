@@ -10,6 +10,7 @@ use crossterm::event::{
     DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
     MouseEvent,
 };
+use keyboard_handler::KeyboardHandler;
 use ratatui::DefaultTerminal;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Position, Rect, Size};
@@ -43,6 +44,7 @@ mod tasks_widget;
 mod text_input_dialog;
 use crossterm::execute;
 mod hyperlink_widget;
+mod keyboard_handler;
 use hyperlink_widget::HyperlinkWidget;
 use mouse_handler::MouseHandler;
 use selectable_list::SelectableList;
@@ -67,7 +69,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 ];
 
 #[async_trait]
-trait AppBlockWidget: Send + MouseHandler {
+trait AppBlockWidget: Send + MouseHandler + KeyboardHandler {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut>;
     fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
         Vec::new()
@@ -391,6 +393,18 @@ impl App {
     async fn handle_key(&mut self, key: KeyEvent) {
         if let Some(d) = &mut self.dialog {
             d.handle_key(key).await;
+            return;
+        }
+
+        let handled_by_current_block = self
+            .app_blocks
+            .get_mut(&self.current_block)
+            .unwrap()
+            .write()
+            .await
+            .handle_key(key)
+            .await;
+        if handled_by_current_block {
             return;
         }
 
