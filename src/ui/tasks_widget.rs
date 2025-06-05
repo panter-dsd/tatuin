@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 use super::AppBlockWidget;
+use super::change_due_date_dialog;
+use super::dialog::DialogTrait;
 use super::mouse_handler::MouseHandler;
 use crate::filter::Filter;
 use crate::project::Project as ProjectTrait;
@@ -17,7 +19,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{ListItem, ListState};
+use ratatui::widgets::{Clear, ListItem, ListState, Widget};
 use std::cmp::Ordering;
 use std::slice::IterMut;
 use std::sync::Arc;
@@ -53,7 +55,11 @@ pub struct TasksWidget {
     commit_changes_shortcut: Shortcut,
     swap_completed_state_shortcut: Shortcut,
     in_progress_shortcut: Shortcut,
+    change_due_shortcut: Shortcut,
+
     last_filter: Filter,
+
+    change_due_dalog: Option<change_due_date_dialog::Dialog>,
 }
 
 #[async_trait]
@@ -66,6 +72,7 @@ impl AppBlockWidget for TasksWidget {
             &mut self.commit_changes_shortcut,
             &mut self.swap_completed_state_shortcut,
             &mut self.in_progress_shortcut,
+            &mut self.change_due_shortcut,
         ]
     }
 
@@ -108,7 +115,9 @@ impl TasksWidget {
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
             swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
+            change_due_shortcut: Shortcut::new("Change due date of the task", &['c', 'd']),
             last_filter: Filter::default(),
+            change_due_dalog: None,
         }));
         tokio::spawn({
             let s = s.clone();
@@ -116,6 +125,7 @@ impl TasksWidget {
                 let mut commit_changes_rx = s.read().await.commit_changes_shortcut.subscribe_to_accepted();
                 let mut swap_completed_state_rx = s.read().await.swap_completed_state_shortcut.subscribe_to_accepted();
                 let mut in_progress_rx = s.read().await.in_progress_shortcut.subscribe_to_accepted();
+                let mut change_due_rx = s.read().await.change_due_shortcut.subscribe_to_accepted();
                 loop {
                     tokio::select! {
                         _ = commit_changes_rx.recv() => {
@@ -126,6 +136,7 @@ impl TasksWidget {
                         },
                         _ = swap_completed_state_rx.recv() => s.write().await.change_check_state(None).await,
                         _ = in_progress_rx.recv() => s.write().await.change_check_state(Some(task::State::InProgress)).await,
+                        _ = change_due_rx.recv() => s.write().await.change_due_date().await,
                     }
                 }
             }
@@ -280,7 +291,7 @@ impl TasksWidget {
         }
     }
 
-    pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
+    pub async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let changed = &self.changed_state_tasks;
         let mut title = format!("Tasks ({})", self.tasks.len());
         let tz = Local::now().timezone();
@@ -343,6 +354,31 @@ impl TasksWidget {
             area,
             buf,
         );
+
+        if self.change_due_dalog.is_some() {
+            self.render_change_due_dialog(area, buf).await;
+        }
+    }
+
+    async fn render_change_due_dialog(&mut self, area: Rect, buf: &mut Buffer) {
+        if let Some(d) = &mut self.change_due_dalog {
+            let size = d.size();
+            let idx = self.tasks.selected_index().unwrap_or(0) as u16;
+
+            let mut y = area.y + 1 /*title*/ + idx+1/*right below the item*/;
+            if area.height - y < size.height {
+                y = area.y + area.height - size.height;
+            }
+
+            let mut area = area;
+            area.y = y;
+            area.height = size.height;
+            area.x += 1; //TODO: constant
+            area.width = std::cmp::min(size.width, area.width - area.x);
+
+            Clear {}.render(area, buf);
+            d.render(area, buf).await;
+        }
     }
 
     fn remove_changed_tasks_that_are_not_exists_anymore(&mut self) {
@@ -390,6 +426,17 @@ impl TasksWidget {
 
     pub async fn reload(&mut self) {
         self.changed_state_tasks.clear();
+    }
+
+    async fn change_due_date(&mut self) {
+        let selected = self.tasks.selected();
+        if selected.is_none() {
+            return;
+        }
+
+        let t = selected.unwrap();
+        let d = change_due_date_dialog::Dialog::new(t.due());
+        self.change_due_dalog = Some(d);
     }
 }
 

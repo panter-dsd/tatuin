@@ -26,6 +26,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 use tasks_widget::ErrorLoggerTrait;
 use tokio::sync::{OnceCell, RwLock};
+mod change_due_date_dialog;
 mod dialog;
 mod filter_widget;
 mod header;
@@ -720,7 +721,7 @@ impl App {
     }
 
     async fn render_tasks(&mut self, area: Rect, buf: &mut Buffer) {
-        self.tasks_widget.write().await.render(area, buf)
+        self.tasks_widget.write().await.render(area, buf).await
     }
 
     async fn render_task_description(&mut self, area: Rect, buf: &mut Buffer) {
