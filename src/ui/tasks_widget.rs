@@ -138,7 +138,7 @@ impl TasksWidget {
                         },
                         _ = swap_completed_state_rx.recv() => s.write().await.change_check_state(None).await,
                         _ = in_progress_rx.recv() => s.write().await.change_check_state(Some(task::State::InProgress)).await,
-                        _ = change_due_rx.recv() => s.write().await.change_due_date().await,
+                        _ = change_due_rx.recv() => s.write().await.show_change_due_date_dialog().await,
                     }
                 }
             }
@@ -430,7 +430,7 @@ impl TasksWidget {
         self.changed_state_tasks.clear();
     }
 
-    async fn change_due_date(&mut self) {
+    async fn show_change_due_date_dialog(&mut self) {
         let selected = self.tasks.selected();
         if selected.is_none() {
             return;
@@ -439,6 +439,15 @@ impl TasksWidget {
         let t = selected.unwrap();
         let d = change_due_date_dialog::Dialog::new(t.due());
         self.change_due_dalog = Some(d);
+    }
+
+    async fn change_due_date(&mut self, due: &change_due_date_dialog::Due) {
+        let selected = self.tasks.selected();
+        if selected.is_none() {
+            return;
+        }
+
+        let _t = selected.unwrap();
     }
 }
 
@@ -460,15 +469,24 @@ impl MouseHandler for TasksWidget {
 #[async_trait]
 impl KeyboardHandler for TasksWidget {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
-        if let Some(d) = &mut self.change_due_dalog {
-            if d.handle_key(key).await {
-                if d.should_be_closed() {
-                    self.change_due_dalog = None;
-                }
-                return true;
+        let mut handled = false;
+
+        let new_due = if let Some(d) = &mut self.change_due_dalog {
+            handled = d.handle_key(key).await;
+            if handled && d.should_be_closed() {
+                let due = d.selected().clone();
+                self.change_due_dalog = None;
+                due
+            } else {
+                None
             }
+        } else {
+            None
+        };
+        if let Some(due) = new_due {
+            self.change_due_date(&due).await;
         }
 
-        false
+        handled
     }
 }
