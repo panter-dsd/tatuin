@@ -7,14 +7,40 @@ use async_trait::async_trait;
 use ratatui::style::Color;
 use std::error::Error;
 
+#[derive(Clone)]
+pub enum DuePatchItem {
+    Today,
+    Tomorrow,
+    ThisWeekend,
+    NextWeek,
+    NoDate,
+}
+
 pub struct TaskPatch {
     pub task: Box<dyn TaskTrait>,
     pub state: Option<State>,
+    pub due: Option<DuePatchItem>,
+}
+
+impl TaskPatch {
+    pub fn is_empty(&self) -> bool {
+        self.state.is_none() && self.due.is_none()
+    }
+
+    pub fn is_task(&self, task: &dyn TaskTrait) -> bool {
+        self.task.id() == task.id() && self.task.provider() == task.provider()
+    }
 }
 
 pub struct PatchError {
     pub task: Box<dyn TaskTrait>,
     pub error: String,
+}
+
+impl PatchError {
+    pub fn is_task(&self, task: &dyn TaskTrait) -> bool {
+        self.task.id() == task.id() && self.task.provider() == task.provider()
+    }
 }
 
 impl std::fmt::Display for PatchError {

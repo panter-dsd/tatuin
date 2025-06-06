@@ -95,10 +95,6 @@ pub trait Task: Send + Sync {
     fn clone_boxed(&self) -> Box<dyn Task>;
 }
 
-pub fn equal(l: &dyn Task, r: &dyn Task) -> bool {
-    l.id() == r.id() && l.provider() == r.provider()
-}
-
 pub fn datetime_to_str<Tz: TimeZone>(t: Option<DateTimeUtc>, tz: &Tz) -> String
 where
     <Tz as TimeZone>::Offset: std::fmt::Display,

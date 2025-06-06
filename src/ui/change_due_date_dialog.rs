@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use crate::provider::DuePatchItem;
 use crate::task::DateTimeUtc;
 use chrono::Local;
 use ratatui::text::Text;
@@ -20,23 +21,14 @@ use std::fmt;
 
 const FOOTER: &str = "Use j/k (up/down) for moving and Enter for applying";
 
-#[derive(Clone)]
-pub enum Due {
-    Today,
-    Tomorrow,
-    ThisWeekend,
-    NextWeek,
-    NoDate,
-}
-
-impl fmt::Display for Due {
+impl fmt::Display for DuePatchItem {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Due::Today => write!(f, "Today"),
-            Due::Tomorrow => write!(f, "Tomorrow"),
-            Due::ThisWeekend => write!(f, "This weekend"),
-            Due::NextWeek => write!(f, "Next week (Monday)"),
-            Due::NoDate => write!(f, "No date"),
+            DuePatchItem::Today => write!(f, "Today"),
+            DuePatchItem::Tomorrow => write!(f, "Tomorrow"),
+            DuePatchItem::ThisWeekend => write!(f, "This weekend"),
+            DuePatchItem::NextWeek => write!(f, "Next week (Monday)"),
+            DuePatchItem::NoDate => write!(f, "No date"),
         }
     }
 }
@@ -44,9 +36,9 @@ impl fmt::Display for Due {
 pub struct Dialog {
     title: String,
     width: u16,
-    items: SelectableList<Due>,
+    items: SelectableList<DuePatchItem>,
     should_be_closed: bool,
-    selected_item: Option<Due>,
+    selected_item: Option<DuePatchItem>,
 }
 
 impl Dialog {
@@ -58,7 +50,13 @@ impl Dialog {
             title,
             width: std::cmp::max(title_width, footer_width),
             items: SelectableList::new(
-                vec![Due::Today, Due::Tomorrow, Due::ThisWeekend, Due::NextWeek, Due::NoDate],
+                vec![
+                    DuePatchItem::Today,
+                    DuePatchItem::Tomorrow,
+                    DuePatchItem::ThisWeekend,
+                    DuePatchItem::NextWeek,
+                    DuePatchItem::NoDate,
+                ],
                 Some(0),
             ),
             should_be_closed: false,
@@ -66,7 +64,7 @@ impl Dialog {
         }
     }
 
-    pub fn selected(&self) -> &Option<Due> {
+    pub fn selected(&self) -> &Option<DuePatchItem> {
         &self.selected_item
     }
 }
