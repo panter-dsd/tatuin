@@ -8,7 +8,7 @@ mod task;
 use crate::filter;
 use crate::project::Project as ProjectTrait;
 use crate::provider::{PatchError, Provider as ProviderTrait, TaskPatch};
-use crate::task::{State, Task as TaskTrait};
+use crate::task::Task as TaskTrait;
 use async_trait::async_trait;
 use ratatui::style::Color;
 use std::error::Error;
@@ -57,15 +57,6 @@ impl ProviderTrait for Provider {
 
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>> {
         Ok(Vec::new())
-    }
-
-    async fn change_task_state(&mut self, task: &dyn TaskTrait, state: State) -> Result<(), Box<dyn Error>> {
-        let t: &task::Task = match task.as_any().downcast_ref::<task::Task>() {
-            Some(t) => t,
-            None => panic!("Wrong casting!"),
-        };
-
-        self.c.change_state(t, state.into()).await
     }
 
     async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {

@@ -86,13 +86,6 @@ impl Client {
         Ok(tasks)
     }
 
-    pub async fn change_state(&self, t: &Task, s: State) -> Result<(), Box<dyn Error>> {
-        let mut f = md_file::File::new(&t.file_path);
-        f.open()?;
-        f.change_state(t, s).await?;
-        f.flush()
-    }
-
     pub async fn patch_tasks<'a>(&mut self, patches: &'a [TaskPatch<'a>]) -> Vec<PatchError> {
         let mut errors = Vec::new();
 

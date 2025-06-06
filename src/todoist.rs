@@ -6,7 +6,7 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::Provider as ProviderTrait;
+use crate::provider::{PatchError, Provider as ProviderTrait, TaskPatch};
 use crate::task::{State, Task as TaskTrait};
 use ratatui::style::Color;
 use std::cmp::Ordering;
@@ -136,21 +136,33 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn change_task_state(&mut self, task: &dyn TaskTrait, state: State) -> Result<(), Box<dyn Error>> {
-        match state {
-            State::Completed => {
-                let result = self.c.close_task(task.id().as_str()).await;
-                if result.is_ok() {
-                    self.tasks.clear()
+    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+        let mut errors = Vec::new();
+
+        for p in patches {
+            if let Some(state) = &p.state {
+                match state {
+                    State::Completed => match self.c.close_task(p.task.id().as_str()).await {
+                        Ok(_) => self.tasks.clear(),
+                        Err(e) => errors.push(PatchError {
+                            task: p.task.clone_boxed(),
+                            error: e.to_string(),
+                        }),
+                    },
+                    State::InProgress | State::Unknown(_) => errors.push(PatchError {
+                        task: p.task.clone_boxed(),
+                        error: format!("The state {state} is unsupported"),
+                    }),
+                    State::Uncompleted => {
+                        todo!("implement me")
+                    }
                 }
-                result
-            }
-            State::InProgress | State::Unknown(_) => Err(Box::<dyn Error>::from("wrong state")),
-            State::Uncompleted => {
-                todo!("implement me")
             }
         }
+
+        errors
     }
+
     async fn reload(&mut self) {
         self.projects.clear();
         self.tasks.clear();
