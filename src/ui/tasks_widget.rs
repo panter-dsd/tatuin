@@ -54,6 +54,7 @@ pub struct TasksWidget {
     swap_completed_state_shortcut: Shortcut,
     in_progress_shortcut: Shortcut,
     change_due_shortcut: Shortcut,
+    undo_changes_shortcut: Shortcut,
 
     last_filter: Filter,
 
@@ -71,6 +72,7 @@ impl AppBlockWidget for TasksWidget {
             &mut self.swap_completed_state_shortcut,
             &mut self.in_progress_shortcut,
             &mut self.change_due_shortcut,
+            &mut self.undo_changes_shortcut,
         ]
     }
 
@@ -114,6 +116,7 @@ impl TasksWidget {
             swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
             change_due_shortcut: Shortcut::new("Change due date of the task", &['c', 'd']),
+            undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
             last_filter: Filter::default(),
             change_due_dalog: None,
         }));
@@ -124,6 +127,7 @@ impl TasksWidget {
                 let mut swap_completed_state_rx = s.read().await.swap_completed_state_shortcut.subscribe_to_accepted();
                 let mut in_progress_rx = s.read().await.in_progress_shortcut.subscribe_to_accepted();
                 let mut change_due_rx = s.read().await.change_due_shortcut.subscribe_to_accepted();
+                let mut undo_changes_rx = s.read().await.undo_changes_shortcut.subscribe_to_accepted();
                 loop {
                     tokio::select! {
                         _ = commit_changes_rx.recv() => {
@@ -135,6 +139,7 @@ impl TasksWidget {
                         _ = swap_completed_state_rx.recv() => s.write().await.change_check_state(None).await,
                         _ = in_progress_rx.recv() => s.write().await.change_check_state(Some(task::State::InProgress)).await,
                         _ = change_due_rx.recv() => s.write().await.show_change_due_date_dialog().await,
+                        _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
                     }
                 }
             }
@@ -463,6 +468,16 @@ impl TasksWidget {
                 due: Some(due.clone()),
             }),
         }
+    }
+
+    async fn undo_changes(&mut self) {
+        let selected = self.tasks.selected();
+        if selected.is_none() {
+            return;
+        }
+
+        let t = selected.unwrap();
+        self.changed_tasks.retain(|p| !p.is_task(t.as_ref()));
     }
 }
 
