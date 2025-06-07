@@ -153,9 +153,13 @@ impl ProviderTrait for Provider {
                         task: p.task.clone_boxed(),
                         error: format!("The state {state} is unsupported"),
                     }),
-                    State::Uncompleted => {
-                        todo!("implement me")
-                    }
+                    State::Uncompleted => match self.c.reopen_task(p.task.id().as_str()).await {
+                        Ok(_) => self.tasks.clear(),
+                        Err(e) => errors.push(PatchError {
+                            task: p.task.clone_boxed(),
+                            error: e.to_string(),
+                        }),
+                    },
                 }
             }
         }

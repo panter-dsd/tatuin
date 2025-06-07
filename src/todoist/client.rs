@@ -206,6 +206,22 @@ impl Client {
             resp.status().as_str()
         )))
     }
+
+    pub async fn reopen_task(&self, task_id: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let resp = self
+            .client
+            .post(format!("{BASE_URL}/tasks/{task_id}/reopen"))
+            .headers(self.default_header.clone())
+            .send()
+            .await?;
+        if resp.status().is_success() {
+            return Ok(());
+        }
+        Err(Box::<dyn std::error::Error>::from(format!(
+            "wrong status: {}",
+            resp.status().as_str()
+        )))
+    }
 }
 
 #[allow(dead_code)]
