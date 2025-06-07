@@ -121,6 +121,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn test_patch_due_to_date() {
         struct Case<'a> {
             name: &'a str,
