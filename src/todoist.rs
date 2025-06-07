@@ -6,7 +6,7 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{PatchError, Provider as ProviderTrait, TaskPatch};
+use crate::provider::{DuePatchItem, PatchError, Provider as ProviderTrait, TaskPatch};
 use crate::task::{State, Task as TaskTrait};
 use ratatui::style::Color;
 use std::cmp::Ordering;
@@ -160,6 +160,25 @@ impl ProviderTrait for Provider {
                             error: e.to_string(),
                         }),
                     },
+                }
+            }
+
+            if p.due.is_some() {
+                let r = client::UpdateTaskRequest {
+                    due_string: p.due.as_ref().map(|due| match due {
+                        DuePatchItem::NoDate => "no date",
+                        DuePatchItem::Today => "today",
+                        DuePatchItem::Tomorrow => "tomorrow",
+                        DuePatchItem::ThisWeekend => "weekend",
+                        DuePatchItem::NextWeek => "next week",
+                    }),
+                };
+                match self.c.update_task(p.task.id().as_str(), &r).await {
+                    Ok(_) => self.tasks.clear(),
+                    Err(e) => errors.push(PatchError {
+                        task: p.task.clone_boxed(),
+                        error: e.to_string(),
+                    }),
                 }
             }
         }
