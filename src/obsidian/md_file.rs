@@ -8,6 +8,8 @@ use std::error::Error;
 use std::fs;
 use std::sync::LazyLock;
 
+use super::patch::TaskPatch;
+
 static TASK_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\s*-\ \[(.)\]\ (.*)$").unwrap());
 const DUE_EMOJI: char = '📅';
 const COMPLETED_EMOJI: char = '✅';
@@ -42,8 +44,8 @@ impl File {
         self.tasks_from_content(&self.content)
     }
 
-    pub async fn change_state(&mut self, t: &Task, s: State) -> Result<(), Box<dyn Error>> {
-        self.content = self.change_state_in_content(t, s, self.content.as_str())?;
+    pub async fn patch_task(&mut self, p: &TaskPatch<'_>) -> Result<(), Box<dyn Error>> {
+        self.content = self.patch_task_in_content(p, self.content.as_str())?;
         Ok(())
     }
 
@@ -95,7 +97,8 @@ impl File {
         Ok(result)
     }
 
-    fn change_state_in_content(&self, t: &Task, s: State, content: &str) -> Result<String, Box<dyn Error>> {
+    fn patch_task_in_content(&self, p: &TaskPatch, content: &str) -> Result<String, Box<dyn Error>> {
+        let t = p.task;
         let line = content
             .chars()
             .skip(t.start_pos)
@@ -117,9 +120,11 @@ impl File {
             }
         }
 
+        let state = p.state.as_ref().unwrap_or(&t.state);
+
         let mut pos_found = false;
         let mut found = false;
-        let result: String = content
+        let mut result: String = content
             .chars()
             .enumerate()
             .map(|(i, c)| {
@@ -127,7 +132,7 @@ impl File {
                 if i > t.start_pos && !found {
                     if pos_found {
                         found = true;
-                        result = char::from(s.clone());
+                        result = char::from(state.clone());
                     } else {
                         pos_found = c == '[';
                     }
@@ -136,7 +141,19 @@ impl File {
             })
             .collect();
 
-        if s == State::Completed {
+        if let Some(due) = p.due {
+            let task: String = result.chars().skip(t.start_pos).take(t.end_pos - t.start_pos).collect();
+            let (task, _) = extract_date_after_emoji(task.as_str(), DUE_EMOJI);
+
+            let mut chapters = vec![result.chars().take(t.start_pos).collect::<String>(), task];
+            if due != DateTimeUtc::from_timestamp(0, 0).unwrap() {
+                chapters.push(format!(" {DUE_EMOJI} {}", due.format("%Y-%m-%d")));
+            }
+            chapters.push(result.chars().skip(t.end_pos).collect::<String>());
+            result = chapters.join("");
+        }
+
+        if p.state.as_ref().is_some_and(|s| *s == State::Completed) {
             Ok([
                 result.chars().take(t.end_pos).collect::<String>(),
                 format!(" {COMPLETED_EMOJI} {}", chrono::Utc::now().format("%Y-%m-%d")),
@@ -437,7 +454,14 @@ some another text
             let mut tasks = original_tasks.clone();
             let mut result = c.file_content_before.to_string();
             for i in 0..original_tasks.len() {
-                let r = p.change_state_in_content(&tasks[i], State::Completed, result.as_str());
+                let r = p.patch_task_in_content(
+                    &TaskPatch {
+                        task: &tasks[i],
+                        state: Some(State::Completed),
+                        due: None,
+                    },
+                    result.as_str(),
+                );
                 assert!(r.is_ok(), "{}: {}", c.name, r.unwrap_err());
                 result = r.unwrap();
                 tasks = p.tasks_from_content(&result).unwrap();
@@ -522,7 +546,14 @@ some another text
             let mut tasks = original_tasks.clone();
             let mut result = c.file_content_before.to_string();
             for i in 0..original_tasks.len() {
-                let r = p.change_state_in_content(&tasks[i], State::Uncompleted, result.as_str());
+                let r = p.patch_task_in_content(
+                    &TaskPatch {
+                        task: &tasks[i],
+                        state: Some(State::Uncompleted),
+                        due: None,
+                    },
+                    result.as_str(),
+                );
                 assert!(r.is_ok(), "{}: {}", c.name, r.unwrap_err());
                 result = r.unwrap();
                 tasks = p.tasks_from_content(&result).unwrap();
