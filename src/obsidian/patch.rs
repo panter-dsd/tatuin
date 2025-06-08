@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::task::DateTimeUtc;
 
 use super::task::{State, Task};
