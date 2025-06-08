@@ -4,7 +4,7 @@ use crate::filter;
 use crate::gitlab::client::Client;
 use crate::gitlab::structs;
 use crate::project::Project as ProjectTrait;
-use crate::provider::Provider as ProviderTrait;
+use crate::provider::{PatchError, Provider as ProviderTrait, TaskPatch};
 use crate::task::{DateTimeUtc, State, Task as TaskTrait};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use ratatui::style::Color;
@@ -198,17 +198,30 @@ impl ProviderTrait for Provider {
         Ok(Vec::new())
     }
 
-    async fn change_task_state(&mut self, task: &dyn TaskTrait, state: State) -> Result<(), Box<dyn Error>> {
-        match state {
-            State::Completed => {
-                let result = self.client.mark_todo_as_done(task.id().as_str()).await;
-                if result.is_ok() {
-                    self.tasks.clear()
+    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+        let mut errors = Vec::new();
+
+        for p in patches {
+            if let Some(state) = &p.state {
+                match state {
+                    State::Completed => match self.client.mark_todo_as_done(p.task.id().as_str()).await {
+                        Ok(_) => self.tasks.clear(),
+                        Err(e) => errors.push(PatchError {
+                            task: p.task.clone_boxed(),
+                            error: e.to_string(),
+                        }),
+                    },
+                    State::InProgress | State::Uncompleted | State::Unknown(_) => {
+                        errors.push(PatchError {
+                            task: p.task.clone_boxed(),
+                            error: format!("The state {state} is unsupported"),
+                        });
+                    }
                 }
-                result
             }
-            State::InProgress | State::Uncompleted | State::Unknown(_) => Err(Box::<dyn Error>::from("wrong state")),
         }
+
+        errors
     }
 
     async fn reload(&mut self) {

@@ -4,7 +4,7 @@ use crate::filter;
 use crate::github::client::Client;
 use crate::github::structs;
 use crate::project::Project as ProjectTrait;
-use crate::provider::Provider as ProviderTrait;
+use crate::provider::{PatchError, Provider as ProviderTrait, TaskPatch};
 use crate::task::due_group;
 use crate::task::{DateTimeUtc, State, Task as TaskTrait};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
@@ -161,8 +161,8 @@ impl ProviderTrait for Provider {
         Ok(Vec::new())
     }
 
-    async fn change_task_state(&mut self, _task: &dyn TaskTrait, _state: State) -> Result<(), Box<dyn Error>> {
-        Ok(())
+    async fn patch_tasks(&mut self, _patches: &[TaskPatch]) -> Vec<PatchError> {
+        Vec::new()
     }
 
     async fn reload(&mut self) {

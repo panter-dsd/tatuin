@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: MIT
 
 use super::AppBlockWidget;
+use super::keyboard_handler::KeyboardHandler;
 use super::list;
 use super::mouse_handler::MouseHandler;
 use super::shortcut::Shortcut;
 use crate::state::{State, StatefulObject};
 use async_trait::async_trait;
-use crossterm::event::MouseEvent;
+use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::buffer::Buffer;
-use ratatui::layout::Rect;
+use ratatui::layout::{Rect, Size};
 use ratatui::widgets::{ListItem, ListState, StatefulWidget};
 use std::slice::{Iter, IterMut};
+
+const DEFAULT_WIDTH: u16 = 10;
 
 pub struct SelectableList<T> {
     items: Vec<T>,
@@ -19,6 +22,8 @@ pub struct SelectableList<T> {
     shortcut: Option<Shortcut>,
     is_active: bool,
     show_count_in_title: bool,
+
+    width: u16,
 }
 
 #[async_trait]
@@ -63,6 +68,16 @@ where
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }
 
+#[async_trait]
+impl<T> KeyboardHandler for SelectableList<T>
+where
+    T: Send,
+{
+    async fn handle_key(&mut self, _key: KeyEvent) -> bool {
+        false
+    }
+}
+
 impl<T> SelectableList<T> {
     pub fn new(items: Vec<T>, selected: Option<usize>) -> Self {
         Self {
@@ -72,6 +87,7 @@ impl<T> SelectableList<T> {
             shortcut: None,
             is_active: false,
             show_count_in_title: true,
+            width: DEFAULT_WIDTH, // will be recalculated after the first render
         }
     }
 
@@ -99,11 +115,11 @@ impl<T> SelectableList<T> {
         self.state = state
     }
 
-    pub fn iter(&self) -> Iter<T> {
+    pub fn iter(&self) -> Iter<'_, T> {
         self.items.iter()
     }
 
-    pub fn iter_mut(&mut self) -> IterMut<T> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         self.items.iter_mut()
     }
 
@@ -131,6 +147,10 @@ impl<T> SelectableList<T> {
         }
     }
 
+    pub fn selected_index(&self) -> Option<usize> {
+        self.state.selected()
+    }
+
     pub fn state(&mut self) -> &mut ListState {
         &mut self.state
     }
@@ -140,6 +160,12 @@ impl<T> SelectableList<T> {
         if self.add_all_item {
             items.insert(0, ListItem::from("All"));
         }
+
+        self.width = items
+            .iter()
+            .map(|item| item.width())
+            .max()
+            .unwrap_or(DEFAULT_WIDTH as usize) as u16;
 
         let mut l = list::List::new(&items, self.is_active);
         if let Some(s) = &self.shortcut {
@@ -157,6 +183,10 @@ impl<T> SelectableList<T> {
         }
 
         StatefulWidget::render(l.widget(), area, buf, &mut self.state);
+    }
+
+    pub fn size(&self) -> Size {
+        Size::new(self.width, self.items.len() as u16)
     }
 }
 

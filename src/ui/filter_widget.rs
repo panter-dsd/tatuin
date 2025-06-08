@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 
+use super::keyboard_handler::KeyboardHandler;
 use super::mouse_handler::MouseHandler;
 use crate::filter::{Due, Filter, FilterState};
 use crate::state::StatefulObject;
 use async_trait::async_trait;
-use crossterm::event::MouseEvent;
+use crossterm::event::{KeyEvent, MouseEvent};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -83,6 +84,13 @@ impl AppBlockWidget for FilterWidget {
 #[async_trait]
 impl MouseHandler for FilterWidget {
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
+}
+
+#[async_trait]
+impl KeyboardHandler for FilterWidget {
+    async fn handle_key(&mut self, _key: KeyEvent) -> bool {
+        false
+    }
 }
 
 impl FilterWidget {

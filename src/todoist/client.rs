@@ -5,12 +5,18 @@ use crate::project::Project as ProjectTrait;
 use crate::todoist::project::Project;
 use crate::todoist::task::Task;
 use reqwest::header::HeaderMap;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+use std::error::Error;
 use url::Url;
 use url_builder::URLBuilder;
 use urlencoding::encode;
 
 const BASE_URL: &str = "https://todoist.com/api/v1";
+
+#[derive(Serialize)]
+pub struct UpdateTaskRequest<'a> {
+    pub due_string: Option<&'a str>,
+}
 
 pub struct Client {
     default_header: HeaderMap,
@@ -32,7 +38,7 @@ impl Client {
         &self,
         project_id: &Option<String>,
         f: &filter::Filter,
-    ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<Task>, Box<dyn Error>> {
         let mut result: Vec<Task> = Vec::new();
 
         let mut cursor = None;
@@ -94,7 +100,7 @@ impl Client {
         &self,
         project: &Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Task>, Box<dyn std::error::Error>> {
+    ) -> Result<Vec<Task>, Box<dyn Error>> {
         let mut result: Vec<Task> = Vec::new();
 
         let u = Url::parse(BASE_URL).unwrap();
@@ -146,7 +152,7 @@ impl Client {
         Ok(result)
     }
 
-    pub async fn projects(&self) -> Result<Vec<Project>, Box<dyn std::error::Error>> {
+    pub async fn projects(&self) -> Result<Vec<Project>, Box<dyn Error>> {
         let mut result: Vec<Project> = Vec::new();
 
         let mut cursor = None;
@@ -178,7 +184,7 @@ impl Client {
         Ok(result)
     }
 
-    pub async fn project(&self, id: &str) -> Result<Project, Box<dyn std::error::Error>> {
+    pub async fn project(&self, id: &str) -> Result<Project, Box<dyn Error>> {
         let resp = self
             .client
             .get(format!("{BASE_URL}/projects/{id}"))
@@ -191,7 +197,7 @@ impl Client {
         Ok(resp)
     }
 
-    pub async fn close_task(&self, task_id: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn close_task(&self, task_id: &str) -> Result<(), Box<dyn Error>> {
         let resp = self
             .client
             .post(format!("{BASE_URL}/tasks/{task_id}/close"))
@@ -201,9 +207,43 @@ impl Client {
         if resp.status().is_success() {
             return Ok(());
         }
-        Err(Box::<dyn std::error::Error>::from(format!(
+        Err(Box::<dyn Error>::from(format!(
             "wrong status: {}",
             resp.status().as_str()
+        )))
+    }
+
+    pub async fn reopen_task(&self, task_id: &str) -> Result<(), Box<dyn Error>> {
+        let resp = self
+            .client
+            .post(format!("{BASE_URL}/tasks/{task_id}/reopen"))
+            .headers(self.default_header.clone())
+            .send()
+            .await?;
+        if resp.status().is_success() {
+            return Ok(());
+        }
+        Err(Box::<dyn Error>::from(format!(
+            "wrong status: {}",
+            resp.status().as_str()
+        )))
+    }
+
+    pub async fn update_task(&self, task_id: &str, r: &UpdateTaskRequest<'_>) -> Result<(), Box<dyn Error>> {
+        let resp = self
+            .client
+            .post(format!("{BASE_URL}/tasks/{task_id}"))
+            .json(r)
+            .headers(self.default_header.clone())
+            .send()
+            .await?;
+        if resp.status().is_success() {
+            return Ok(());
+        }
+        Err(Box::<dyn Error>::from(format!(
+            "wrong status {}: {}",
+            resp.status().as_str(),
+            resp.text().await.unwrap_or("unknown".to_string())
         )))
     }
 }

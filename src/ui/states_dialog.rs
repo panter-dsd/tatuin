@@ -3,6 +3,7 @@
 use crate::state::StateSettings;
 
 use super::dialog::DialogTrait;
+use super::keyboard_handler::KeyboardHandler;
 use super::mouse_handler::MouseHandler;
 use super::selectable_list::SelectableList;
 use super::{AppBlockWidget, style};
@@ -52,7 +53,27 @@ impl DialogTrait for Dialog {
             .render("", |s| ListItem::from(s.as_str()), b.inner(area), buf);
     }
 
-    async fn handle_key(&mut self, key: KeyEvent) {
+    fn should_be_closed(&self) -> bool {
+        self.should_be_closed
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn size(&self) -> Size {
+        Size::new(70, 10)
+    }
+}
+
+#[async_trait]
+impl MouseHandler for Dialog {
+    async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
+}
+
+#[async_trait]
+impl KeyboardHandler for Dialog {
+    async fn handle_key(&mut self, key: KeyEvent) -> bool {
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => {
                 self.should_be_closed = true;
@@ -73,24 +94,11 @@ impl DialogTrait for Dialog {
                     self.selected_state = Some(s.clone());
                 }
             }
-            _ => {}
+            _ => {
+                return false;
+            }
         }
-    }
 
-    fn should_be_closed(&self) -> bool {
-        self.should_be_closed
+        true
     }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn size(&self) -> Size {
-        Size::new(70, 10)
-    }
-}
-
-#[async_trait]
-impl MouseHandler for Dialog {
-    async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }

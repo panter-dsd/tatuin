@@ -2,12 +2,13 @@
 
 use super::AppBlockWidget;
 use super::hyperlink_widget::HyperlinkWidget;
+use super::keyboard_handler::KeyboardHandler;
 use crate::task;
 use crate::task::Task as TaskTrait;
 use crate::ui::style;
 use async_trait::async_trait;
 use chrono::Local;
-use crossterm::event::MouseEvent;
+use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Position, Rect};
 use ratatui::style::{Modifier, Style, Stylize};
@@ -58,6 +59,13 @@ impl MouseHandler for TaskInfoWidget {
         if let Some(w) = &mut self.url_widget {
             w.handle_mouse(ev).await;
         }
+    }
+}
+
+#[async_trait]
+impl KeyboardHandler for TaskInfoWidget {
+    async fn handle_key(&mut self, _key: KeyEvent) -> bool {
+        false
     }
 }
 

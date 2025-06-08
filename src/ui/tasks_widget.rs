@@ -1,23 +1,28 @@
 // SPDX-License-Identifier: MIT
 
 use super::AppBlockWidget;
+use super::change_due_date_dialog;
+use super::dialog::DialogTrait;
+use super::keyboard_handler::KeyboardHandler;
 use super::mouse_handler::MouseHandler;
 use crate::filter::Filter;
 use crate::project::Project as ProjectTrait;
+use crate::provider::DuePatchItem;
 use crate::provider::{Provider as ProviderTrait, TaskPatch};
 use crate::state::StatefulObject;
 use crate::task;
-use crate::task::{State, Task as TaskTrait, due_group, equal};
+use crate::task::{State, Task as TaskTrait, due_group};
 use crate::ui::selectable_list::SelectableList;
 use crate::ui::style;
 use async_trait::async_trait;
 use chrono::Local;
+use crossterm::event::KeyEvent;
 use crossterm::event::MouseEvent;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{ListItem, ListState};
+use ratatui::widgets::{Clear, ListItem, ListState, Widget};
 use std::cmp::Ordering;
 use std::slice::IterMut;
 use std::sync::Arc;
@@ -36,16 +41,11 @@ pub trait ErrorLoggerTrait: Send + Sync {
 
 type ErrorLogger = Arc<RwLock<dyn ErrorLoggerTrait>>;
 
-struct ChangedState {
-    task: Box<dyn TaskTrait>,
-    new_state: State,
-}
-
 pub struct TasksWidget {
     providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
     error_logger: ErrorLogger,
     all_tasks: Vec<Box<dyn TaskTrait>>,
-    changed_state_tasks: Vec<ChangedState>,
+    changed_tasks: Vec<TaskPatch>,
     tasks: SelectableList<Box<dyn TaskTrait>>,
     providers_filter: Vec<String>,
     projects_filter: Vec<String>,
@@ -53,7 +53,12 @@ pub struct TasksWidget {
     commit_changes_shortcut: Shortcut,
     swap_completed_state_shortcut: Shortcut,
     in_progress_shortcut: Shortcut,
+    change_due_shortcut: Shortcut,
+    undo_changes_shortcut: Shortcut,
+
     last_filter: Filter,
+
+    change_due_dalog: Option<change_due_date_dialog::Dialog>,
 }
 
 #[async_trait]
@@ -66,6 +71,8 @@ impl AppBlockWidget for TasksWidget {
             &mut self.commit_changes_shortcut,
             &mut self.swap_completed_state_shortcut,
             &mut self.in_progress_shortcut,
+            &mut self.change_due_shortcut,
+            &mut self.undo_changes_shortcut,
         ]
     }
 
@@ -99,7 +106,7 @@ impl TasksWidget {
             providers_storage,
             error_logger,
             all_tasks: Vec::new(),
-            changed_state_tasks: Vec::new(),
+            changed_tasks: Vec::new(),
             tasks: SelectableList::default()
                 .shortcut(Shortcut::new("Activate Tasks block", &['g', 't']))
                 .show_count_in_title(false),
@@ -108,7 +115,10 @@ impl TasksWidget {
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
             swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
+            change_due_shortcut: Shortcut::new("Change due date of the task", &['c', 'd']),
+            undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
             last_filter: Filter::default(),
+            change_due_dalog: None,
         }));
         tokio::spawn({
             let s = s.clone();
@@ -116,6 +126,8 @@ impl TasksWidget {
                 let mut commit_changes_rx = s.read().await.commit_changes_shortcut.subscribe_to_accepted();
                 let mut swap_completed_state_rx = s.read().await.swap_completed_state_shortcut.subscribe_to_accepted();
                 let mut in_progress_rx = s.read().await.in_progress_shortcut.subscribe_to_accepted();
+                let mut change_due_rx = s.read().await.change_due_shortcut.subscribe_to_accepted();
+                let mut undo_changes_rx = s.read().await.undo_changes_shortcut.subscribe_to_accepted();
                 loop {
                     tokio::select! {
                         _ = commit_changes_rx.recv() => {
@@ -126,6 +138,8 @@ impl TasksWidget {
                         },
                         _ = swap_completed_state_rx.recv() => s.write().await.change_check_state(None).await,
                         _ = in_progress_rx.recv() => s.write().await.change_check_state(Some(task::State::InProgress)).await,
+                        _ = change_due_rx.recv() => s.write().await.show_change_due_date_dialog().await,
+                        _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
                     }
                 }
             }
@@ -207,19 +221,20 @@ impl TasksWidget {
     }
 
     pub fn has_changes(&self) -> bool {
-        !self.changed_state_tasks.is_empty()
+        !self.changed_tasks.is_empty()
     }
 
     pub async fn commit_changes(&mut self) {
         for p in self.providers_storage.write().await.iter_mut() {
             let name = p.name();
             let patches = self
-                .changed_state_tasks
+                .changed_tasks
                 .iter()
                 .filter(|c| c.task.provider() == name)
                 .map(|c| TaskPatch {
                     task: c.task.clone_boxed(),
-                    state: Some(c.new_state.clone()),
+                    state: c.state.clone(),
+                    due: c.due.clone(),
                 })
                 .collect::<Vec<TaskPatch>>();
 
@@ -234,9 +249,8 @@ impl TasksWidget {
                 }
 
                 for p in patches {
-                    if !errors.iter().any(|pe| equal(p.task.as_ref(), pe.task.as_ref())) {
-                        self.changed_state_tasks
-                            .retain(|c| !equal(c.task.as_ref(), p.task.as_ref()));
+                    if !errors.iter().any(|pe| pe.is_task(p.task.as_ref())) {
+                        self.changed_tasks.retain(|c| !c.is_task(p.task.as_ref()));
                     }
                 }
 
@@ -256,15 +270,16 @@ impl TasksWidget {
         let t = selected.unwrap();
         let mut current_state = t.state();
 
-        if let Some(i) = self
-            .changed_state_tasks
-            .iter()
-            .position(|c| equal(c.task.as_ref(), t.as_ref()))
-        {
-            current_state = self.changed_state_tasks[i].new_state.clone();
-            self.changed_state_tasks.remove(i);
-            if state.as_ref().is_some_and(|s| *s == current_state) {
-                return; // We undo the change
+        if let Some(p) = self.changed_tasks.iter_mut().find(|c| c.is_task(t.as_ref())) {
+            if let Some(s) = &p.state {
+                current_state = s.clone();
+                p.state = None;
+                if state.as_ref().is_some_and(|s| *s == current_state) {
+                    if p.is_empty() {
+                        self.changed_tasks.retain(|c| !c.is_task(t.as_ref()));
+                    }
+                    return; // We undo the change
+                }
             }
         }
         let new_state = state.unwrap_or(match current_state {
@@ -273,15 +288,19 @@ impl TasksWidget {
         });
 
         if new_state != t.state() {
-            self.changed_state_tasks.push(ChangedState {
-                task: t.clone_boxed(),
-                new_state,
-            });
+            match self.changed_tasks.iter_mut().find(|p| p.is_task(t.as_ref())) {
+                Some(p) => p.state = Some(new_state),
+                None => self.changed_tasks.push(TaskPatch {
+                    task: t.clone_boxed(),
+                    state: Some(new_state),
+                    due: None,
+                }),
+            }
         }
     }
 
-    pub fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let changed = &self.changed_state_tasks;
+    pub async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        let changed = &self.changed_tasks;
         let mut title = format!("Tasks ({})", self.tasks.len());
         let tz = Local::now().timezone();
 
@@ -308,18 +327,24 @@ impl TasksWidget {
                         None => style::NO_DATE_TASK_FG,
                     }
                 };
-                let (state, uncommitted) = match changed.iter().find(|c| equal(c.task.as_ref(), t.as_ref())) {
-                    Some(c) => (c.new_state.clone(), true),
-                    None => (t.state(), false),
-                };
+                let mut state = t.state();
+                let mut due = task::datetime_to_str(t.due(), &tz);
+                let mut uncommitted = false;
+                if let Some(patch) = changed.iter().find(|c| c.is_task(t.as_ref())) {
+                    uncommitted = !patch.is_empty();
+                    if let Some(s) = &patch.state {
+                        state = s.clone();
+                    }
+                    if let Some(d) = &patch.due {
+                        due = d.to_string();
+                    }
+                }
+
                 let mut lines = vec![
                     Span::from(format!("[{state}] ")),
                     Span::styled(t.text(), Style::default().fg(fg_color)),
                     Span::from(" ("),
-                    Span::styled(
-                        format!("due: {}", task::datetime_to_str(t.due(), &tz)),
-                        Style::default().fg(Color::Blue),
-                    ),
+                    Span::styled(format!("due: {due}"), Style::default().fg(Color::Blue)),
                     Span::from(") ("),
                     Span::styled(
                         format!("Priority: {}", t.priority()),
@@ -343,13 +368,38 @@ impl TasksWidget {
             area,
             buf,
         );
+
+        if self.change_due_dalog.is_some() {
+            self.render_change_due_dialog(area, buf).await;
+        }
+    }
+
+    async fn render_change_due_dialog(&mut self, area: Rect, buf: &mut Buffer) {
+        if let Some(d) = &mut self.change_due_dalog {
+            let size = d.size();
+            let idx = self.tasks.selected_index().unwrap_or(0) as u16;
+
+            let mut y = area.y + 1 /*title*/ + idx+1/*right below the item*/;
+            if area.height - y < size.height {
+                y = area.y + area.height - size.height;
+            }
+
+            let mut area = area;
+            area.y = y;
+            area.height = size.height;
+            area.x += 1; //TODO: constant
+            area.width = std::cmp::min(size.width, area.width - area.x);
+
+            Clear {}.render(area, buf);
+            d.render(area, buf).await;
+        }
     }
 
     fn remove_changed_tasks_that_are_not_exists_anymore(&mut self) {
-        self.changed_state_tasks.retain(|c| {
+        self.changed_tasks.retain(|c| {
             self.all_tasks
                 .iter()
-                .find(|t| equal(t.as_ref(), c.task.as_ref()))
+                .find(|t| c.is_task(t.as_ref()))
                 .is_some_and(|t| t.state() == c.task.state())
         });
     }
@@ -389,7 +439,45 @@ impl TasksWidget {
     }
 
     pub async fn reload(&mut self) {
-        self.changed_state_tasks.clear();
+        self.changed_tasks.clear();
+    }
+
+    async fn show_change_due_date_dialog(&mut self) {
+        let selected = self.tasks.selected();
+        if selected.is_none() {
+            return;
+        }
+
+        let t = selected.unwrap();
+        let d = change_due_date_dialog::Dialog::new(t.due());
+        self.change_due_dalog = Some(d);
+    }
+
+    async fn change_due_date(&mut self, due: &DuePatchItem) {
+        let selected = self.tasks.selected();
+        if selected.is_none() {
+            return;
+        }
+
+        let t = selected.unwrap();
+        match self.changed_tasks.iter_mut().find(|p| p.is_task(t.as_ref())) {
+            Some(p) => p.due = Some(due.clone()),
+            None => self.changed_tasks.push(TaskPatch {
+                task: t.clone_boxed(),
+                state: None,
+                due: Some(due.clone()),
+            }),
+        }
+    }
+
+    async fn undo_changes(&mut self) {
+        let selected = self.tasks.selected();
+        if selected.is_none() {
+            return;
+        }
+
+        let t = selected.unwrap();
+        self.changed_tasks.retain(|p| !p.is_task(t.as_ref()));
     }
 }
 
@@ -406,4 +494,29 @@ impl StatefulObject for TasksWidget {
 #[async_trait]
 impl MouseHandler for TasksWidget {
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
+}
+
+#[async_trait]
+impl KeyboardHandler for TasksWidget {
+    async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        let mut handled = false;
+
+        let new_due = if let Some(d) = &mut self.change_due_dalog {
+            handled = d.handle_key(key).await;
+            if handled && d.should_be_closed() {
+                let due = d.selected().clone();
+                self.change_due_dalog = None;
+                due
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        if let Some(due) = new_due {
+            self.change_due_date(&due).await;
+        }
+
+        handled
+    }
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use super::dialog::DialogTrait;
+use super::keyboard_handler::KeyboardHandler;
 use super::style;
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent};
@@ -41,7 +42,22 @@ impl DialogTrait for Dialog {
         Paragraph::new(self.text.clone() + "_").block(b).render(area, buf);
     }
 
-    async fn handle_key(&mut self, key: KeyEvent) {
+    fn should_be_closed(&self) -> bool {
+        self.should_be_closed
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn size(&self) -> Size {
+        Size::new(30, 3)
+    }
+}
+
+#[async_trait]
+impl KeyboardHandler for Dialog {
+    async fn handle_key(&mut self, key: KeyEvent) -> bool {
         match key.code {
             KeyCode::Esc => {
                 self.should_be_closed = true;
@@ -58,19 +74,10 @@ impl DialogTrait for Dialog {
             KeyCode::Enter => {
                 self.should_be_closed = true;
             }
-            _ => {}
+            _ => {
+                return false;
+            }
         }
-    }
-
-    fn should_be_closed(&self) -> bool {
-        self.should_be_closed
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn size(&self) -> Size {
-        Size::new(30, 3)
+        true
     }
 }

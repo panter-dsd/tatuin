@@ -7,14 +7,40 @@ use async_trait::async_trait;
 use ratatui::style::Color;
 use std::error::Error;
 
+#[derive(Clone)]
+pub enum DuePatchItem {
+    Today,
+    Tomorrow,
+    ThisWeekend,
+    NextWeek,
+    NoDate,
+}
+
 pub struct TaskPatch {
     pub task: Box<dyn TaskTrait>,
     pub state: Option<State>,
+    pub due: Option<DuePatchItem>,
+}
+
+impl TaskPatch {
+    pub fn is_empty(&self) -> bool {
+        self.state.is_none() && self.due.is_none()
+    }
+
+    pub fn is_task(&self, task: &dyn TaskTrait) -> bool {
+        self.task.id() == task.id() && self.task.provider() == task.provider()
+    }
 }
 
 pub struct PatchError {
     pub task: Box<dyn TaskTrait>,
     pub error: String,
+}
+
+impl PatchError {
+    pub fn is_task(&self, task: &dyn TaskTrait) -> bool {
+        self.task.id() == task.id() && self.task.provider() == task.provider()
+    }
 }
 
 impl std::fmt::Display for PatchError {
@@ -33,23 +59,7 @@ pub trait Provider: Send + Sync {
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn Error>>;
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>>;
-    async fn change_task_state(&mut self, task: &dyn TaskTrait, state: State) -> Result<(), Box<dyn Error>>;
-    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
-        let mut errors = Vec::new();
-
-        for patch in patches.iter() {
-            if let Some(s) = &patch.state {
-                if let Err(e) = self.change_task_state(patch.task.as_ref(), s.clone()).await {
-                    errors.push(PatchError {
-                        task: patch.task.clone_boxed(),
-                        error: e.to_string(),
-                    });
-                }
-            }
-        }
-
-        errors
-    }
+    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError>;
     async fn reload(&mut self);
     fn color(&self) -> Color;
 }

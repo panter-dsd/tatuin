@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use super::patch::{PatchError, TaskPatch};
 use crate::filter;
 use crate::obsidian::md_file;
 use crate::obsidian::task::{State, Task};
@@ -13,16 +14,6 @@ use std::sync::Arc;
 use tokio::sync::Semaphore;
 
 const SIMULTANEOUS_JOB_COUNT: usize = 10;
-
-pub struct TaskPatch<'a> {
-    pub task: &'a Task,
-    pub state: State,
-}
-
-pub struct PatchError {
-    pub task: Task,
-    pub error: String,
-}
 
 pub struct Client {
     path: String,
@@ -86,13 +77,6 @@ impl Client {
         Ok(tasks)
     }
 
-    pub async fn change_state(&self, t: &Task, s: State) -> Result<(), Box<dyn Error>> {
-        let mut f = md_file::File::new(&t.file_path);
-        f.open()?;
-        f.change_state(t, s).await?;
-        f.flush()
-    }
-
     pub async fn patch_tasks<'a>(&mut self, patches: &'a [TaskPatch<'a>]) -> Vec<PatchError> {
         let mut errors = Vec::new();
 
@@ -121,7 +105,7 @@ impl Client {
                 .collect::<Vec<&'a TaskPatch>>();
             file_patches.sort_by_key(|p| std::cmp::Reverse(p.task.start_pos));
             for p in file_patches {
-                if let Err(e) = f.change_state(p.task, p.state.clone()).await {
+                if let Err(e) = f.patch_task(p).await {
                     errors.push(PatchError {
                         task: p.task.clone(),
                         error: e.to_string(),
