@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-use crate::provider::DuePatchItem;
-use crate::task::DateTimeUtc;
-use chrono::Local;
+use std::fmt::Display;
+
 use ratatui::text::Text;
 
 use super::dialog::DialogTrait;
@@ -10,67 +9,50 @@ use super::keyboard_handler::KeyboardHandler;
 use super::mouse_handler::MouseHandler;
 use super::selectable_list::SelectableList;
 use super::{AppBlockWidget, style};
-use crate::task::datetime_to_str;
 use async_trait::async_trait;
 use crossterm::event::MouseEvent;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Rect, Size};
 use ratatui::widgets::{Block, Borders, ListItem, Widget};
-use std::fmt;
 
 const FOOTER: &str = "Use j/k (up/down) for moving and Enter for applying";
 
-impl fmt::Display for DuePatchItem {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            DuePatchItem::Today => write!(f, "Today"),
-            DuePatchItem::Tomorrow => write!(f, "Tomorrow"),
-            DuePatchItem::ThisWeekend => write!(f, "This weekend"),
-            DuePatchItem::NextWeek => write!(f, "Next week (Monday)"),
-            DuePatchItem::NoDate => write!(f, "No date"),
-        }
-    }
-}
-
-pub struct Dialog {
+pub struct Dialog<T> {
     title: String,
     width: u16,
-    items: SelectableList<DuePatchItem>,
+    items: SelectableList<T>,
     should_be_closed: bool,
-    selected_item: Option<DuePatchItem>,
+    selected_item: Option<T>,
 }
 
-impl Dialog {
-    pub fn new(due: Option<DateTimeUtc>) -> Self {
-        let title = format!("Current due {}", datetime_to_str(due, &Local::now().timezone()));
+impl<T> Dialog<T>
+where
+    T: Display + Clone,
+{
+    pub fn new(items: &[T], current: &str) -> Self {
+        let title = format!("Current value: {current}");
         let title_width = Text::from(title.as_str()).width() as u16;
         let footer_width = Text::from(FOOTER).width() as u16;
         Self {
             title,
             width: std::cmp::max(title_width, footer_width),
-            items: SelectableList::new(
-                vec![
-                    DuePatchItem::Today,
-                    DuePatchItem::Tomorrow,
-                    DuePatchItem::ThisWeekend,
-                    DuePatchItem::NextWeek,
-                    DuePatchItem::NoDate,
-                ],
-                Some(0),
-            ),
+            items: SelectableList::new(items.to_vec(), Some(0)),
             should_be_closed: false,
             selected_item: None,
         }
     }
 
-    pub fn selected(&self) -> &Option<DuePatchItem> {
+    pub fn selected(&self) -> &Option<T> {
         &self.selected_item
     }
 }
 
 #[async_trait]
-impl DialogTrait for Dialog {
+impl<T> DialogTrait for Dialog<T>
+where
+    T: Display + Clone + Send + Sync + 'static,
+{
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default()
             .title_alignment(ratatui::layout::Alignment::Center)
@@ -101,12 +83,18 @@ impl DialogTrait for Dialog {
 }
 
 #[async_trait]
-impl MouseHandler for Dialog {
+impl<T> MouseHandler for Dialog<T>
+where
+    T: Send,
+{
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }
 
 #[async_trait]
-impl KeyboardHandler for Dialog {
+impl<T> KeyboardHandler for Dialog<T>
+where
+    T: Send + Clone,
+{
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => {

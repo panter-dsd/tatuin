@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: MIT
 
 use super::AppBlockWidget;
-use super::change_due_date_dialog;
-use super::dialog::DialogTrait;
 use super::keyboard_handler::KeyboardHandler;
+use super::list_dialog;
 use super::mouse_handler::MouseHandler;
 use crate::filter::Filter;
 use crate::project::Project as ProjectTrait;
 use crate::provider::DuePatchItem;
 use crate::provider::{Provider as ProviderTrait, TaskPatch};
 use crate::state::StatefulObject;
-use crate::task;
+use crate::task::{self, Priority, datetime_to_str};
 use crate::task::{State, Task as TaskTrait, due_group};
 use crate::ui::selectable_list::SelectableList;
-use crate::ui::style;
+use crate::ui::{dialog, style};
 use async_trait::async_trait;
 use chrono::Local;
 use crossterm::event::KeyEvent;
@@ -29,6 +28,18 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use super::shortcut::Shortcut;
+
+impl std::fmt::Display for DuePatchItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DuePatchItem::Today => write!(f, "Today"),
+            DuePatchItem::Tomorrow => write!(f, "Tomorrow"),
+            DuePatchItem::ThisWeekend => write!(f, "This weekend"),
+            DuePatchItem::NextWeek => write!(f, "Next week (Monday)"),
+            DuePatchItem::NoDate => write!(f, "No date"),
+        }
+    }
+}
 
 pub trait ProvidersStorage<T>: Send + Sync {
     fn iter_mut(&mut self) -> IterMut<'_, T>;
@@ -54,11 +65,12 @@ pub struct TasksWidget {
     swap_completed_state_shortcut: Shortcut,
     in_progress_shortcut: Shortcut,
     change_due_shortcut: Shortcut,
+    change_priority_shortcut: Shortcut,
     undo_changes_shortcut: Shortcut,
 
     last_filter: Filter,
 
-    change_due_dalog: Option<change_due_date_dialog::Dialog>,
+    change_dalog: Option<Box<dyn dialog::DialogTrait>>,
 }
 
 #[async_trait]
@@ -72,6 +84,7 @@ impl AppBlockWidget for TasksWidget {
             &mut self.swap_completed_state_shortcut,
             &mut self.in_progress_shortcut,
             &mut self.change_due_shortcut,
+            &mut self.change_priority_shortcut,
             &mut self.undo_changes_shortcut,
         ]
     }
@@ -116,9 +129,10 @@ impl TasksWidget {
             swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
             change_due_shortcut: Shortcut::new("Change due date of the task", &['c', 'd']),
+            change_priority_shortcut: Shortcut::new("Change priority of the task", &['c', 'p']),
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
             last_filter: Filter::default(),
-            change_due_dalog: None,
+            change_dalog: None,
         }));
         tokio::spawn({
             let s = s.clone();
@@ -127,6 +141,7 @@ impl TasksWidget {
                 let mut swap_completed_state_rx = s.read().await.swap_completed_state_shortcut.subscribe_to_accepted();
                 let mut in_progress_rx = s.read().await.in_progress_shortcut.subscribe_to_accepted();
                 let mut change_due_rx = s.read().await.change_due_shortcut.subscribe_to_accepted();
+                let mut change_priority_rx = s.read().await.change_priority_shortcut.subscribe_to_accepted();
                 let mut undo_changes_rx = s.read().await.undo_changes_shortcut.subscribe_to_accepted();
                 loop {
                     tokio::select! {
@@ -139,6 +154,7 @@ impl TasksWidget {
                         _ = swap_completed_state_rx.recv() => s.write().await.change_check_state(None).await,
                         _ = in_progress_rx.recv() => s.write().await.change_check_state(Some(task::State::InProgress)).await,
                         _ = change_due_rx.recv() => s.write().await.show_change_due_date_dialog().await,
+                        _ = change_priority_rx.recv() => s.write().await.show_change_priority_dialog().await,
                         _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
                     }
                 }
@@ -235,6 +251,7 @@ impl TasksWidget {
                     task: c.task.clone_boxed(),
                     state: c.state.clone(),
                     due: c.due.clone(),
+                    priority: c.priority.clone(),
                 })
                 .collect::<Vec<TaskPatch>>();
 
@@ -294,6 +311,7 @@ impl TasksWidget {
                     task: t.clone_boxed(),
                     state: Some(new_state),
                     due: None,
+                    priority: None,
                 }),
             }
         }
@@ -329,6 +347,7 @@ impl TasksWidget {
                 };
                 let mut state = t.state();
                 let mut due = task::datetime_to_str(t.due(), &tz);
+                let mut priority = t.priority();
                 let mut uncommitted = false;
                 if let Some(patch) = changed.iter().find(|c| c.is_task(t.as_ref())) {
                     uncommitted = !patch.is_empty();
@@ -338,6 +357,9 @@ impl TasksWidget {
                     if let Some(d) = &patch.due {
                         due = d.to_string();
                     }
+                    if let Some(p) = &patch.priority {
+                        priority = p.clone();
+                    }
                 }
 
                 let mut lines = vec![
@@ -346,10 +368,7 @@ impl TasksWidget {
                     Span::from(" ("),
                     Span::styled(format!("due: {due}"), Style::default().fg(Color::Blue)),
                     Span::from(") ("),
-                    Span::styled(
-                        format!("Priority: {}", t.priority()),
-                        style::priority_color(&t.priority()),
-                    ),
+                    Span::styled(format!("Priority: {}", priority), style::priority_color(&priority)),
                     Span::from(") ("),
                     Span::styled(t.place(), Style::default().fg(Color::Yellow)),
                     Span::from(")"),
@@ -369,13 +388,13 @@ impl TasksWidget {
             buf,
         );
 
-        if self.change_due_dalog.is_some() {
+        if self.change_dalog.is_some() {
             self.render_change_due_dialog(area, buf).await;
         }
     }
 
     async fn render_change_due_dialog(&mut self, area: Rect, buf: &mut Buffer) {
-        if let Some(d) = &mut self.change_due_dalog {
+        if let Some(d) = &mut self.change_dalog {
             let size = d.size();
             let idx = self.tasks.selected_index().unwrap_or(0) as u16;
 
@@ -449,8 +468,38 @@ impl TasksWidget {
         }
 
         let t = selected.unwrap();
-        let d = change_due_date_dialog::Dialog::new(t.due());
-        self.change_due_dalog = Some(d);
+        let d = list_dialog::Dialog::new(
+            &[
+                DuePatchItem::Today,
+                DuePatchItem::Tomorrow,
+                DuePatchItem::ThisWeekend,
+                DuePatchItem::NextWeek,
+                DuePatchItem::NoDate,
+            ],
+            datetime_to_str(t.due(), &Local::now().timezone()).as_str(),
+        );
+        self.change_dalog = Some(Box::new(d));
+    }
+
+    async fn show_change_priority_dialog(&mut self) {
+        let selected = self.tasks.selected();
+        if selected.is_none() {
+            return;
+        }
+
+        let t = selected.unwrap();
+        let d = list_dialog::Dialog::new(
+            &[
+                Priority::Normal,
+                Priority::Lowest,
+                Priority::Low,
+                Priority::Medium,
+                Priority::High,
+                Priority::Highest,
+            ],
+            t.priority().to_string().as_str(),
+        );
+        self.change_dalog = Some(Box::new(d));
     }
 
     async fn change_due_date(&mut self, due: &DuePatchItem) {
@@ -466,6 +515,25 @@ impl TasksWidget {
                 task: t.clone_boxed(),
                 state: None,
                 due: Some(due.clone()),
+                priority: None,
+            }),
+        }
+    }
+
+    async fn change_priority(&mut self, priority: &Priority) {
+        let selected = self.tasks.selected();
+        if selected.is_none() {
+            return;
+        }
+
+        let t = selected.unwrap();
+        match self.changed_tasks.iter_mut().find(|p| p.is_task(t.as_ref())) {
+            Some(p) => p.priority = Some(priority.clone()),
+            None => self.changed_tasks.push(TaskPatch {
+                task: t.clone_boxed(),
+                state: None,
+                due: None,
+                priority: Some(priority.clone()),
             }),
         }
     }
@@ -501,20 +569,26 @@ impl KeyboardHandler for TasksWidget {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         let mut handled = false;
 
-        let new_due = if let Some(d) = &mut self.change_due_dalog {
+        let mut new_due = None;
+        let mut new_priority = None;
+
+        if let Some(d) = &mut self.change_dalog {
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
-                let due = d.selected().clone();
-                self.change_due_dalog = None;
-                due
-            } else {
-                None
+                if let Some(d) = d.as_any().downcast_ref::<list_dialog::Dialog<DuePatchItem>>() {
+                    new_due = d.selected().clone();
+                }
+                if let Some(d) = d.as_any().downcast_ref::<list_dialog::Dialog<Priority>>() {
+                    new_priority = d.selected().clone();
+                }
+                self.change_dalog = None;
             }
-        } else {
-            None
         };
         if let Some(due) = new_due {
             self.change_due_date(&due).await;
+        }
+        if let Some(p) = new_priority {
+            self.change_priority(&p).await;
         }
 
         handled

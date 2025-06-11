@@ -2,7 +2,7 @@
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::task::{State, Task as TaskTrait};
+use crate::task::{Priority, State, Task as TaskTrait};
 use async_trait::async_trait;
 use ratatui::style::Color;
 use std::error::Error;
@@ -20,11 +20,12 @@ pub struct TaskPatch {
     pub task: Box<dyn TaskTrait>,
     pub state: Option<State>,
     pub due: Option<DuePatchItem>,
+    pub priority: Option<Priority>,
 }
 
 impl TaskPatch {
     pub fn is_empty(&self) -> bool {
-        self.state.is_none() && self.due.is_none()
+        self.state.is_none() && self.due.is_none() && self.priority.is_none()
     }
 
     pub fn is_task(&self, task: &dyn TaskTrait) -> bool {

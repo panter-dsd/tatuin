@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use std::any::Any;
 
 #[async_trait]
-pub trait DialogTrait: KeyboardHandler {
+pub trait DialogTrait: KeyboardHandler + Send + Sync {
     async fn render(&mut self, area: Rect, buf: &mut Buffer);
     fn should_be_closed(&self) -> bool;
     fn as_any(&self) -> &dyn Any;
