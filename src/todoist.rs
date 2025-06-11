@@ -163,7 +163,7 @@ impl ProviderTrait for Provider {
                 }
             }
 
-            if p.due.is_some() {
+            if p.due.is_some() || p.priority.is_some() {
                 let r = client::UpdateTaskRequest {
                     due_string: p.due.as_ref().map(|due| match due {
                         DuePatchItem::NoDate => "no date",
@@ -172,6 +172,7 @@ impl ProviderTrait for Provider {
                         DuePatchItem::ThisWeekend => "weekend",
                         DuePatchItem::NextWeek => "next week",
                     }),
+                    priority: p.priority.as_ref().map(task::priority_to_int),
                 };
                 match self.c.update_task(p.task.id().as_str(), &r).await {
                     Ok(_) => self.tasks.clear(),
