@@ -54,7 +54,7 @@ impl File {
             let text = String::from(&caps[2]);
             let (text, due) = extract_date_after_emoji(text.as_str(), DUE_EMOJI);
             let (text, completed_at) = extract_date_after_emoji(text.as_str(), COMPLETED_EMOJI);
-            let (text, priority) = parse_priority(text.as_str());
+            let (text, priority) = extract_priority(text.as_str());
             return Some(Task {
                 file_path: self.file_path.to_string(),
                 start_pos: pos,
@@ -153,6 +153,19 @@ impl File {
             result = chapters.join("");
         }
 
+        if let Some(p) = &p.priority {
+            let task: String = result.chars().skip(t.start_pos).take(t.end_pos - t.start_pos).collect();
+            let (task, _) = extract_priority(task.as_str());
+
+            result = [
+                result.chars().take(t.start_pos).collect::<String>(),
+                task,
+                priority_to_str(p).to_string(),
+                result.chars().skip(t.end_pos).collect::<String>(),
+            ]
+            .join("");
+        }
+
         if p.state.as_ref().is_some_and(|s| *s == State::Completed) {
             Ok([
                 result.chars().take(t.end_pos).collect::<String>(),
@@ -203,23 +216,38 @@ fn extract_date_after_emoji(text: &str, emoji: char) -> (String, Option<DateTime
     (text.to_string(), None)
 }
 
-fn parse_priority(text: &str) -> (String, Priority) {
-    let symbols = vec![
-        ('⏬', Priority::Lowest),
-        ('🔽', Priority::Low),
-        ('🔼', Priority::Medium),
-        ('⏫', Priority::High),
-        ('🔺', Priority::Highest),
-    ];
+const PRIORITY_CHARS: [char; 5] = ['⏬', '🔽', '🔼', '⏫', '🔺'];
+const fn char_to_priority(c: char) -> Priority {
+    match c {
+        '⏬' => Priority::Lowest,
+        '🔽' => Priority::Low,
+        '🔼' => Priority::Medium,
+        '⏫' => Priority::High,
+        '🔺' => Priority::Highest,
+        _ => Priority::Normal,
+    }
+}
+const fn priority_to_str(p: &Priority) -> &str {
+    match p {
+        Priority::Lowest => "⏬",
+        Priority::Low => "🔽",
+        Priority::Medium => "🔼",
+        Priority::High => "⏫",
+        Priority::Highest => "🔺",
+        Priority::Normal => "",
+    }
+}
+
+fn extract_priority(text: &str) -> (String, Priority) {
     let mut symbol_indexes = Vec::new();
-    for (s, p) in symbols {
+    for s in PRIORITY_CHARS {
         if let Some(idx) = text.chars().position(|c| c == s) {
             if idx != 0
                 && text.chars().nth(idx - 1).unwrap_or(' ') == ' '
                 && idx != text.len() - 1
                 && text.chars().nth(idx + 1).unwrap_or(' ') == ' '
             {
-                symbol_indexes.push((p, idx));
+                symbol_indexes.push((char_to_priority(s), idx));
             }
         }
     }
@@ -459,6 +487,7 @@ some another text
                         task: &tasks[i],
                         state: Some(State::Completed),
                         due: None,
+                        priority: None,
                     },
                     result.as_str(),
                 );
@@ -551,6 +580,7 @@ some another text
                         task: &tasks[i],
                         state: Some(State::Uncompleted),
                         due: None,
+                        priority: None,
                     },
                     result.as_str(),
                 );
@@ -644,7 +674,7 @@ Some another text";
         ];
 
         for c in cases {
-            let (s, p) = parse_priority(c.line);
+            let (s, p) = extract_priority(c.line);
             assert_eq!(p, c.expected_priority, "Test {} was failed", c.name);
             assert_eq!(s, c.expected_string, "Test {} was failed", c.name);
         }

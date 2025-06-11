@@ -71,6 +71,7 @@ impl ProviderTrait for Provider {
                     task: t,
                     state: p.state.clone().map(|s| s.into()),
                     due: p.due.clone().map(|due| patch_due_to_date(&now, &due)),
+                    priority: p.priority.clone(),
                 }),
                 None => panic!("Wrong casting!"),
             };

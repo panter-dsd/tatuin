@@ -149,12 +149,7 @@ impl TaskTrait for Task {
     }
 
     fn priority(&self) -> Priority {
-        match self.priority.unwrap_or_default() {
-            2 => Priority::Medium,
-            3 => Priority::High,
-            4 => Priority::Highest,
-            _ => Priority::Normal,
-        }
+        int_to_priority(self.priority.unwrap_or_default())
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -163,5 +158,23 @@ impl TaskTrait for Task {
 
     fn clone_boxed(&self) -> Box<dyn TaskTrait> {
         Box::new(self.clone())
+    }
+}
+
+pub const fn int_to_priority(p: i32) -> Priority {
+    match p {
+        2 => Priority::Medium,
+        3 => Priority::High,
+        4 => Priority::Highest,
+        _ => Priority::Normal,
+    }
+}
+
+pub const fn priority_to_int(p: &Priority) -> i32 {
+    match p {
+        Priority::Medium => 2,
+        Priority::High => 3,
+        Priority::Highest => 4,
+        _ => 1,
     }
 }

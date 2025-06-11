@@ -16,6 +16,7 @@ const BASE_URL: &str = "https://todoist.com/api/v1";
 #[derive(Serialize)]
 pub struct UpdateTaskRequest<'a> {
     pub due_string: Option<&'a str>,
+    pub priority: Option<i32>,
 }
 
 pub struct Client {
