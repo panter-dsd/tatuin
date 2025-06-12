@@ -2,36 +2,11 @@
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::task::{Priority, State, Task as TaskTrait};
+use crate::task::Task as TaskTrait;
+use crate::task_patch::TaskPatch;
 use async_trait::async_trait;
 use ratatui::style::Color;
 use std::error::Error;
-
-#[derive(Clone)]
-pub enum DuePatchItem {
-    Today,
-    Tomorrow,
-    ThisWeekend,
-    NextWeek,
-    NoDate,
-}
-
-pub struct TaskPatch {
-    pub task: Box<dyn TaskTrait>,
-    pub state: Option<State>,
-    pub due: Option<DuePatchItem>,
-    pub priority: Option<Priority>,
-}
-
-impl TaskPatch {
-    pub fn is_empty(&self) -> bool {
-        self.state.is_none() && self.due.is_none() && self.priority.is_none()
-    }
-
-    pub fn is_task(&self, task: &dyn TaskTrait) -> bool {
-        self.task.id() == task.id() && self.task.provider() == task.provider()
-    }
-}
 
 pub struct PatchError {
     pub task: Box<dyn TaskTrait>,

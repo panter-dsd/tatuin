@@ -5,12 +5,13 @@ use super::keyboard_handler::KeyboardHandler;
 use super::list_dialog;
 use super::mouse_handler::MouseHandler;
 use crate::filter::Filter;
+use crate::patched_task::PatchedTask;
 use crate::project::Project as ProjectTrait;
-use crate::provider::DuePatchItem;
-use crate::provider::{Provider as ProviderTrait, TaskPatch};
+use crate::provider::Provider as ProviderTrait;
 use crate::state::StatefulObject;
 use crate::task::{self, Priority, datetime_to_str};
 use crate::task::{State, Task as TaskTrait, due_group};
+use crate::task_patch::{DuePatchItem, TaskPatch};
 use crate::ui::selectable_list::SelectableList;
 use crate::ui::{dialog, style};
 use async_trait::async_trait;
@@ -229,11 +230,13 @@ impl TasksWidget {
     }
 
     pub fn selected_task(&self) -> Option<Box<dyn TaskTrait>> {
-        if let Some(t) = self.tasks.selected() {
-            Some(t.clone_boxed())
-        } else {
-            None
+        let t = self.tasks.selected().map(|t| t.clone_boxed());
+        if t.is_none() {
+            return t;
         }
+        let t = t.unwrap();
+        let p = self.changed_tasks.iter().find(|p| p.is_task(t.as_ref())).cloned();
+        Some(Box::new(PatchedTask::new(t, p)))
     }
 
     pub fn has_changes(&self) -> bool {
@@ -368,7 +371,7 @@ impl TasksWidget {
                     Span::from(" ("),
                     Span::styled(format!("due: {due}"), Style::default().fg(Color::Blue)),
                     Span::from(") ("),
-                    Span::styled(format!("Priority: {}", priority), style::priority_color(&priority)),
+                    Span::styled(format!("Priority: {priority}"), style::priority_color(&priority)),
                     Span::from(") ("),
                     Span::styled(t.place(), Style::default().fg(Color::Yellow)),
                     Span::from(")"),

@@ -250,6 +250,7 @@ impl App {
                 }
             }
 
+            self.set_current_task().await;
             self.draw(&mut terminal).await;
 
             tokio::select! {

@@ -6,8 +6,9 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{DuePatchItem, PatchError, Provider as ProviderTrait, TaskPatch};
+use crate::provider::{PatchError, Provider as ProviderTrait};
 use crate::task::{State, Task as TaskTrait};
+use crate::task_patch::{DuePatchItem, TaskPatch};
 use ratatui::style::Color;
 use std::cmp::Ordering;
 use std::error::Error;
