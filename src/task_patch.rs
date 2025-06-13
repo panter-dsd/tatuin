@@ -75,81 +75,80 @@ mod tests {
             name: &'a str,
             due: DuePatchItem,
             now: DateTimeUtc,
-            result: DateTimeUtc,
+            result: Option<DateTimeUtc>,
         }
         let cases: &[Case] = &[
             Case {
                 name: "no date",
                 due: DuePatchItem::NoDate,
                 now: clear_time(&chrono::Utc::now()),
-                result: DateTimeUtc::default(),
+                result: None,
             },
             Case {
                 name: "today",
                 due: DuePatchItem::Today,
                 now: clear_time(&chrono::Utc::now()),
-                result: clear_time(&chrono::Utc::now()),
+                result: Some(clear_time(&chrono::Utc::now())),
             },
             Case {
                 name: "tomorrow",
                 due: DuePatchItem::Tomorrow,
                 now: clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap()),
-                result: clear_time(&DateTimeUtc::from_timestamp(1749340800, 0).unwrap()),
+                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749340800, 0).unwrap())),
             },
             Case {
                 name: "this weekend for Monday",
                 due: DuePatchItem::ThisWeekend,
                 now: clear_time(&DateTimeUtc::from_timestamp(1748822400, 0).unwrap()),
-                result: clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap()),
+                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap())),
             },
             Case {
                 name: "this weekend for Friday",
                 due: DuePatchItem::ThisWeekend,
                 now: clear_time(&DateTimeUtc::from_timestamp(1749168000, 0).unwrap()),
-                result: clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap()),
+                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap())),
             },
             Case {
                 name: "this weekend for Saturday",
                 due: DuePatchItem::ThisWeekend,
                 now: clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap()),
-                result: clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap()),
+                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap())),
             },
             Case {
                 name: "this weekend for Sunday",
                 due: DuePatchItem::ThisWeekend,
                 now: clear_time(&DateTimeUtc::from_timestamp(1749340800, 0).unwrap()),
-                result: clear_time(&DateTimeUtc::from_timestamp(1749340800, 0).unwrap()),
+                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749340800, 0).unwrap())),
             },
             Case {
                 name: "next week for Monday",
                 due: DuePatchItem::NextWeek,
                 now: clear_time(&DateTimeUtc::from_timestamp(1748822400, 0).unwrap()),
-                result: clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap()),
+                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap())),
             },
             Case {
                 name: "next week for Friday",
                 due: DuePatchItem::NextWeek,
                 now: clear_time(&DateTimeUtc::from_timestamp(1749168000, 0).unwrap()),
-                result: clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap()),
+                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap())),
             },
             Case {
                 name: "next week for Saturday",
                 due: DuePatchItem::NextWeek,
                 now: clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap()),
-                result: clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap()),
+                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap())),
             },
             Case {
                 name: "next week for Sunday",
                 due: DuePatchItem::NextWeek,
                 now: clear_time(&DateTimeUtc::from_timestamp(1749340800, 0).unwrap()),
-                result: clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap()),
+                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap())),
             },
         ];
 
         for c in cases {
             let result = c.due.to_date(&c.now);
-            assert!(result.is_some());
-            assert_eq!(result.unwrap(), c.result, "Test '{}' was failed", c.name);
+            assert_eq!(result, c.result, "Test '{}' was failed", c.name);
         }
     }
 }
