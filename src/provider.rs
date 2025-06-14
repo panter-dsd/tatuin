@@ -3,27 +3,10 @@
 use crate::filter;
 use crate::project::Project as ProjectTrait;
 use crate::task::Task as TaskTrait;
-use crate::task_patch::TaskPatch;
+use crate::task_patch::{PatchError, TaskPatch};
 use async_trait::async_trait;
 use ratatui::style::Color;
 use std::error::Error;
-
-pub struct PatchError {
-    pub task: Box<dyn TaskTrait>,
-    pub error: String,
-}
-
-impl PatchError {
-    pub fn is_task(&self, task: &dyn TaskTrait) -> bool {
-        self.task.id() == task.id() && self.task.provider() == task.provider()
-    }
-}
-
-impl std::fmt::Display for PatchError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Error patching task with id {}: {}", self.task.id(), self.error)
-    }
-}
 
 #[async_trait]
 pub trait Provider: Send + Sync {

@@ -8,9 +8,9 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{PatchError, Provider as ProviderTrait};
+use crate::provider::Provider as ProviderTrait;
 use crate::task::Task as TaskTrait;
-use crate::task_patch::TaskPatch;
+use crate::task_patch::{PatchError, TaskPatch};
 use async_trait::async_trait;
 use ratatui::style::Color;
 use std::error::Error;
