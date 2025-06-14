@@ -195,11 +195,11 @@ impl App {
             app_blocks: HashMap::new(),
             stateful_widgets: HashMap::new(),
             key_buffer: key_buffer::KeyBuffer::default(),
-            select_first_shortcut: Shortcut::new("Select first", &['g', 'g']),
-            select_last_shortcut: Shortcut::new("Select last", &['G']),
-            load_state_shortcut: Shortcut::new("Load state", &['s', 'l']),
-            save_state_shortcut: Shortcut::new("Save the current state", &['s', 's']),
-            show_keybindings_help_shortcut: Shortcut::new("Show help", &['?']),
+            select_first_shortcut: Shortcut::new("Select first", &['g', 'g']).global(),
+            select_last_shortcut: Shortcut::new("Select last", &['G']).global(),
+            load_state_shortcut: Shortcut::new("Load state", &['s', 'l']).global(),
+            save_state_shortcut: Shortcut::new("Save the current state", &['s', 's']).global(),
+            show_keybindings_help_shortcut: Shortcut::new("Show help", &['?']).global(),
             all_shortcuts: Vec::new(),
             dialog: None,
             settings: Arc::new(RwLock::new(settings)),
@@ -229,8 +229,11 @@ impl App {
         execute!(std::io::stdout(), EnableMouseCapture)?;
         for b in self.app_blocks.values_mut() {
             let mut b = b.write().await;
-            self.all_shortcuts
-                .extend(b.activate_shortcuts().iter().map(|s| s.internal_data()));
+            self.all_shortcuts.extend(b.activate_shortcuts().iter().map(|s| {
+                let d = s.internal_data();
+                d.write().unwrap().is_global = true;
+                d
+            }));
             self.all_shortcuts
                 .extend(b.shortcuts().iter().map(|s| s.internal_data()));
         }
@@ -826,7 +829,23 @@ impl App {
     }
 
     async fn show_keybindings_help(&mut self) {
-        let d = key_bindings_help_dialog::Dialog::new(&self.all_shortcuts);
+        let current_block = self.app_blocks.get_mut(&self.current_block).unwrap();
+        let d = key_bindings_help_dialog::Dialog::new(
+            &current_block
+                .write()
+                .await
+                .shortcuts()
+                .iter()
+                .filter(|s| !s.is_global())
+                .map(|s| s.internal_data())
+                .collect::<Vec<Arc<std::sync::RwLock<shortcut::SharedData>>>>(),
+            &self
+                .all_shortcuts
+                .iter()
+                .filter(|s| s.read().unwrap().is_global)
+                .cloned()
+                .collect::<Vec<Arc<std::sync::RwLock<shortcut::SharedData>>>>(),
+        );
         self.dialog = Some(Box::new(d));
     }
 }
