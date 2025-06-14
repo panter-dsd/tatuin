@@ -50,12 +50,17 @@ pub trait ErrorLoggerTrait: Send + Sync {
     fn add_error(&mut self, message: &str);
     fn add_errors(&mut self, messages: &[&str]);
 }
-
 type ErrorLogger = Arc<RwLock<dyn ErrorLoggerTrait>>;
+
+pub trait TaskInfoViewerTrait: Send + Sync {
+    fn set_task(&mut self, task: Option<Box<dyn TaskTrait>>);
+}
+type TaskInfoViewer = Arc<RwLock<dyn TaskInfoViewerTrait>>;
 
 pub struct TasksWidget {
     providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
     error_logger: ErrorLogger,
+    task_info_viewer: TaskInfoViewer,
     all_tasks: Vec<Box<dyn TaskTrait>>,
     changed_tasks: Vec<TaskPatch>,
     tasks: SelectableList<Box<dyn TaskTrait>>,
@@ -96,18 +101,22 @@ impl AppBlockWidget for TasksWidget {
 
     async fn select_next(&mut self) {
         self.tasks.select_next().await;
+        self.task_info_viewer.write().await.set_task(self.selected_task());
     }
 
     async fn select_previous(&mut self) {
         self.tasks.select_previous().await;
+        self.task_info_viewer.write().await.set_task(self.selected_task());
     }
 
     async fn select_first(&mut self) {
         self.tasks.select_first().await;
+        self.task_info_viewer.write().await.set_task(self.selected_task());
     }
 
     async fn select_last(&mut self) {
         self.tasks.select_last().await;
+        self.task_info_viewer.write().await.set_task(self.selected_task());
     }
 }
 
@@ -115,10 +124,12 @@ impl TasksWidget {
     pub fn new(
         providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
         error_logger: ErrorLogger,
+        task_info_viewer: TaskInfoViewer,
     ) -> Arc<RwLock<Self>> {
         let s = Arc::new(RwLock::new(Self {
             providers_storage,
             error_logger,
+            task_info_viewer,
             all_tasks: Vec::new(),
             changed_tasks: Vec::new(),
             tasks: SelectableList::default()
@@ -458,6 +469,7 @@ impl TasksWidget {
         self.all_tasks = all_tasks;
         self.remove_changed_tasks_that_are_not_exists_anymore();
         self.filter_tasks();
+        self.task_info_viewer.write().await.set_task(self.selected_task());
     }
 
     pub async fn reload(&mut self) {
@@ -572,10 +584,12 @@ impl KeyboardHandler for TasksWidget {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         let mut handled = false;
 
+        let mut need_to_update_view = false;
         let mut new_due = None;
         let mut new_priority = None;
 
         if let Some(d) = &mut self.change_dalog {
+            need_to_update_view = true;
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
                 if let Some(d) = d.as_any().downcast_ref::<list_dialog::Dialog<DuePatchItem>>() {
@@ -592,6 +606,10 @@ impl KeyboardHandler for TasksWidget {
         }
         if let Some(p) = new_priority {
             self.change_priority(&p).await;
+        }
+
+        if need_to_update_view {
+            self.task_info_viewer.write().await.set_task(self.selected_task());
         }
 
         handled

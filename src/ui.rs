@@ -123,7 +123,7 @@ pub struct App {
 
     filter_widget: Arc<RwLock<filter_widget::FilterWidget>>,
     tasks_widget: Arc<RwLock<tasks_widget::TasksWidget>>,
-    task_description_widget: Arc<RwLock<task_info_widget::TaskInfoWidget>>,
+    task_info_widget: Arc<RwLock<task_info_widget::TaskInfoWidget>>,
     home_link: HyperlinkWidget,
 
     error_logger: Arc<RwLock<ErrorLogger>>,
@@ -153,6 +153,12 @@ where
     }
 }
 
+impl tasks_widget::TaskInfoViewerTrait for task_info_widget::TaskInfoWidget {
+    fn set_task(&mut self, task: Option<Box<dyn crate::task::Task>>) {
+        self.set_task(task);
+    }
+}
+
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
 impl App {
     pub fn new(providers: Vec<Box<dyn provider::Provider>>, settings: Box<dyn StateSettings>) -> Self {
@@ -162,6 +168,7 @@ impl App {
                 .shortcut(Shortcut::new("Activate Providers block", &['g', 'v'])),
         ));
         let error_logger = Arc::new(RwLock::new(ErrorLogger::new()));
+        let task_info_widget = Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default()));
         let mut s = Self {
             should_exit: false,
             current_block: AppBlock::TaskList,
@@ -175,8 +182,12 @@ impl App {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
-            tasks_widget: tasks_widget::TasksWidget::new(providers_widget.clone(), error_logger.clone()),
-            task_description_widget: Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default())),
+            tasks_widget: tasks_widget::TasksWidget::new(
+                providers_widget.clone(),
+                error_logger.clone(),
+                task_info_widget.clone(),
+            ),
+            task_info_widget,
             home_link: HyperlinkWidget::new("[Homepage]", "https://github.com/panter-dsd/tatuin"),
             error_logger: error_logger.clone(),
             app_blocks: HashMap::new(),
@@ -195,8 +206,7 @@ impl App {
         s.app_blocks.insert(AppBlock::Providers, s.providers.clone());
         s.app_blocks.insert(AppBlock::Projects, s.projects.clone());
         s.app_blocks.insert(AppBlock::TaskList, s.tasks_widget.clone());
-        s.app_blocks
-            .insert(AppBlock::TaskInfo, s.task_description_widget.clone());
+        s.app_blocks.insert(AppBlock::TaskInfo, s.task_info_widget.clone());
         s.app_blocks.insert(AppBlock::Filter, s.filter_widget.clone());
 
         s.all_shortcuts.push(s.select_first_shortcut.internal_data());
@@ -250,7 +260,6 @@ impl App {
                 }
             }
 
-            self.set_current_task().await;
             self.draw(&mut terminal).await;
 
             tokio::select! {
@@ -327,8 +336,6 @@ impl App {
         if project_id.is_none() {
             self.load_projects().await;
         }
-
-        self.set_current_task().await;
     }
 
     async fn handle_shortcuts(&mut self, key: &KeyEvent) -> bool {
@@ -555,13 +562,6 @@ impl App {
         self.load_tasks().await;
     }
 
-    async fn set_current_task(&mut self) {
-        self.task_description_widget
-            .write()
-            .await
-            .set_task(self.tasks_widget.read().await.selected_task());
-    }
-
     async fn on_selection_changed(&mut self) {
         match self.current_block {
             AppBlock::Providers => {
@@ -570,9 +570,6 @@ impl App {
             }
             AppBlock::Projects => {
                 self.update_task_filter().await;
-            }
-            AppBlock::TaskList => {
-                self.set_current_task().await;
             }
             _ => {}
         }
@@ -740,7 +737,7 @@ impl App {
     }
 
     async fn render_task_description(&mut self, area: Rect, buf: &mut Buffer) {
-        self.task_description_widget.write().await.render(area, buf)
+        self.task_info_widget.write().await.render(area, buf)
     }
 
     async fn render_filters(&mut self, area: Rect, buf: &mut Buffer) {
