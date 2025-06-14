@@ -5,12 +5,13 @@ use super::keyboard_handler::KeyboardHandler;
 use super::list_dialog;
 use super::mouse_handler::MouseHandler;
 use crate::filter::Filter;
+use crate::patched_task::PatchedTask;
 use crate::project::Project as ProjectTrait;
-use crate::provider::DuePatchItem;
-use crate::provider::{Provider as ProviderTrait, TaskPatch};
+use crate::provider::Provider as ProviderTrait;
 use crate::state::StatefulObject;
 use crate::task::{self, Priority, datetime_to_str};
 use crate::task::{State, Task as TaskTrait, due_group};
+use crate::task_patch::{DuePatchItem, TaskPatch};
 use crate::ui::selectable_list::SelectableList;
 use crate::ui::{dialog, style};
 use async_trait::async_trait;
@@ -25,7 +26,7 @@ use ratatui::widgets::{Clear, ListItem, ListState, Widget};
 use std::cmp::Ordering;
 use std::slice::IterMut;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, mpsc};
 
 use super::shortcut::Shortcut;
 
@@ -49,17 +50,23 @@ pub trait ErrorLoggerTrait: Send + Sync {
     fn add_error(&mut self, message: &str);
     fn add_errors(&mut self, messages: &[&str]);
 }
-
 type ErrorLogger = Arc<RwLock<dyn ErrorLoggerTrait>>;
+
+pub trait TaskInfoViewerTrait: Send + Sync {
+    fn set_task(&mut self, task: Option<Box<dyn TaskTrait>>);
+}
+type TaskInfoViewer = Arc<RwLock<dyn TaskInfoViewerTrait>>;
 
 pub struct TasksWidget {
     providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
     error_logger: ErrorLogger,
+    task_info_viewer: TaskInfoViewer,
     all_tasks: Vec<Box<dyn TaskTrait>>,
     changed_tasks: Vec<TaskPatch>,
     tasks: SelectableList<Box<dyn TaskTrait>>,
     providers_filter: Vec<String>,
     projects_filter: Vec<String>,
+    redraw_tx: Option<mpsc::UnboundedSender<()>>,
 
     commit_changes_shortcut: Shortcut,
     swap_completed_state_shortcut: Shortcut,
@@ -95,18 +102,26 @@ impl AppBlockWidget for TasksWidget {
 
     async fn select_next(&mut self) {
         self.tasks.select_next().await;
+        self.update_task_info_view().await;
     }
 
     async fn select_previous(&mut self) {
         self.tasks.select_previous().await;
+        self.update_task_info_view().await;
     }
 
     async fn select_first(&mut self) {
         self.tasks.select_first().await;
+        self.update_task_info_view().await;
     }
 
     async fn select_last(&mut self) {
         self.tasks.select_last().await;
+        self.update_task_info_view().await;
+    }
+
+    fn set_redraw_tx(&mut self, tx: mpsc::UnboundedSender<()>) {
+        self.redraw_tx = Some(tx)
     }
 }
 
@@ -114,10 +129,12 @@ impl TasksWidget {
     pub fn new(
         providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
         error_logger: ErrorLogger,
+        task_info_viewer: TaskInfoViewer,
     ) -> Arc<RwLock<Self>> {
         let s = Arc::new(RwLock::new(Self {
             providers_storage,
             error_logger,
+            task_info_viewer,
             all_tasks: Vec::new(),
             changed_tasks: Vec::new(),
             tasks: SelectableList::default()
@@ -125,6 +142,7 @@ impl TasksWidget {
                 .show_count_in_title(false),
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),
+            redraw_tx: None,
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
             swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
@@ -156,6 +174,11 @@ impl TasksWidget {
                         _ = change_due_rx.recv() => s.write().await.show_change_due_date_dialog().await,
                         _ = change_priority_rx.recv() => s.write().await.show_change_priority_dialog().await,
                         _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
+                    }
+
+                    s.write().await.update_task_info_view().await;
+                    if let Some(tx) = &s.read().await.redraw_tx {
+                        let _ = tx.send(());
                     }
                 }
             }
@@ -229,11 +252,13 @@ impl TasksWidget {
     }
 
     pub fn selected_task(&self) -> Option<Box<dyn TaskTrait>> {
-        if let Some(t) = self.tasks.selected() {
-            Some(t.clone_boxed())
-        } else {
-            None
+        let t = self.tasks.selected().map(|t| t.clone_boxed());
+        if t.is_none() {
+            return t;
         }
+        let t = t.unwrap();
+        let p = self.changed_tasks.iter().find(|p| p.is_task(t.as_ref())).cloned();
+        Some(Box::new(PatchedTask::new(t, p)))
     }
 
     pub fn has_changes(&self) -> bool {
@@ -368,7 +393,7 @@ impl TasksWidget {
                     Span::from(" ("),
                     Span::styled(format!("due: {due}"), Style::default().fg(Color::Blue)),
                     Span::from(") ("),
-                    Span::styled(format!("Priority: {}", priority), style::priority_color(&priority)),
+                    Span::styled(format!("Priority: {priority}"), style::priority_color(&priority)),
                     Span::from(") ("),
                     Span::styled(t.place(), Style::default().fg(Color::Yellow)),
                     Span::from(")"),
@@ -455,6 +480,7 @@ impl TasksWidget {
         self.all_tasks = all_tasks;
         self.remove_changed_tasks_that_are_not_exists_anymore();
         self.filter_tasks();
+        self.update_task_info_view().await;
     }
 
     pub async fn reload(&mut self) {
@@ -547,6 +573,10 @@ impl TasksWidget {
         let t = selected.unwrap();
         self.changed_tasks.retain(|p| !p.is_task(t.as_ref()));
     }
+
+    async fn update_task_info_view(&mut self) {
+        self.task_info_viewer.write().await.set_task(self.selected_task());
+    }
 }
 
 impl StatefulObject for TasksWidget {
@@ -569,10 +599,12 @@ impl KeyboardHandler for TasksWidget {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         let mut handled = false;
 
+        let mut need_to_update_view = false;
         let mut new_due = None;
         let mut new_priority = None;
 
         if let Some(d) = &mut self.change_dalog {
+            need_to_update_view = true;
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
                 if let Some(d) = d.as_any().downcast_ref::<list_dialog::Dialog<DuePatchItem>>() {
@@ -589,6 +621,10 @@ impl KeyboardHandler for TasksWidget {
         }
         if let Some(p) = new_priority {
             self.change_priority(&p).await;
+        }
+
+        if need_to_update_view {
+            self.update_task_info_view().await;
         }
 
         handled
