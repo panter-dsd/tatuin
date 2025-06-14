@@ -4,14 +4,16 @@ use super::{dialog::DialogTrait, keyboard_handler::KeyboardHandler, shortcut::Sh
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
-    layout::{Rect, Size},
-    style::{Style, Stylize},
+    layout::{Constraint, Layout, Rect, Size},
+    style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, List, Widget},
+    widgets::{Block, Borders, List, Paragraph, Widget},
 };
 
 use async_trait::async_trait;
 use std::sync::{Arc, RwLock};
+
+const ALIGN_CENTER: ratatui::layout::Alignment = ratatui::layout::Alignment::Center;
 
 struct Shortcut {
     name: String,
@@ -19,7 +21,8 @@ struct Shortcut {
 }
 
 pub struct Dialog {
-    shortcuts: Vec<Shortcut>,
+    active_block_shortcuts: Vec<Shortcut>,
+    global_shortcuts: Vec<Shortcut>,
     should_be_closed: bool,
 }
 
@@ -35,23 +38,28 @@ fn keys_to_str(keys: &[char]) -> String {
     s
 }
 
-impl Dialog {
-    pub fn new(shortcuts: &[Arc<RwLock<SharedData>>]) -> Self {
-        let mut s: Vec<Shortcut> = shortcuts
-            .iter()
-            .map(|s| {
-                let d = s.read().unwrap();
-                Shortcut {
-                    name: d.name.clone(),
-                    keys: keys_to_str(&d.keys),
-                }
-            })
-            .collect();
+fn shared_data_to_shortcut(s: &Arc<RwLock<SharedData>>) -> Shortcut {
+    let d = s.read().unwrap();
+    Shortcut {
+        name: d.name.clone(),
+        keys: keys_to_str(&d.keys),
+    }
+}
 
-        s.sort_by_key(|s| s.name.clone());
+impl Dialog {
+    pub fn new(
+        active_block_shortcuts: &[Arc<RwLock<SharedData>>],
+        global_shortcuts: &[Arc<RwLock<SharedData>>],
+    ) -> Self {
+        let mut active: Vec<Shortcut> = active_block_shortcuts.iter().map(shared_data_to_shortcut).collect();
+        let mut global: Vec<Shortcut> = global_shortcuts.iter().map(shared_data_to_shortcut).collect();
+
+        active.sort_by_key(|s| s.name.clone());
+        global.sort_by_key(|s| s.name.clone());
 
         Self {
-            shortcuts: s,
+            active_block_shortcuts: active,
+            global_shortcuts: global,
             should_be_closed: false,
         }
     }
@@ -61,15 +69,48 @@ impl Dialog {
 impl DialogTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default()
-            .title_alignment(ratatui::layout::Alignment::Center)
+            .title_alignment(ALIGN_CENTER)
             .title_top("Key bindings")
             .title_bottom("Press q or Esc to close")
             .borders(Borders::ALL)
             .border_style(style::BORDER_COLOR);
+
         Widget::render(&b, area, buf);
 
-        let items = self
-            .shortcuts
+        let mut area = area;
+        area.y += 1;
+        area.height -= 2;
+        area.x += 1;
+        area.width -= 2;
+
+        let [active_area, global_area] = Layout::vertical([
+            Constraint::Length(self.active_block_shortcuts.len() as u16 + 1),
+            Constraint::Fill(1),
+        ])
+        .areas(area);
+
+        if self.active_block_shortcuts.is_empty() {
+            Paragraph::new("There are no shortcut keys in the active panel")
+                .alignment(ALIGN_CENTER)
+                .style(style::WARNING_TEXT_STYLE)
+                .render(active_area, buf);
+        } else {
+            let active_items = self
+                .active_block_shortcuts
+                .iter()
+                .map(|s| {
+                    Line::from(vec![
+                        Span::styled(format!("{}: ", s.name), Style::new().bold()),
+                        Span::raw(s.keys.clone()),
+                    ])
+                })
+                .collect::<Vec<Line>>();
+            let active_block = Block::default().title_alignment(ALIGN_CENTER).title_top("Active block");
+            List::new(active_items).block(active_block).render(active_area, buf);
+        }
+
+        let global_items = self
+            .global_shortcuts
             .iter()
             .map(|s| {
                 Line::from(vec![
@@ -78,7 +119,10 @@ impl DialogTrait for Dialog {
                 ])
             })
             .collect::<Vec<Line>>();
-        List::new(items).block(b).render(area, buf);
+        let global_block = Block::default()
+            .title_alignment(ratatui::layout::Alignment::Center)
+            .title_top("Global shortcuts");
+        List::new(global_items).block(global_block).render(global_area, buf);
     }
 
     fn should_be_closed(&self) -> bool {
@@ -90,8 +134,8 @@ impl DialogTrait for Dialog {
     }
 
     fn size(&self) -> Size {
-        let count: u16 = self.shortcuts.len().try_into().unwrap_or_default();
-        Size::new(70, count + 2)
+        let count = (self.active_block_shortcuts.len() + self.global_shortcuts.len()) as u16;
+        Size::new(70, count + 2/*head_tail*/ * 2 /*subheads*/)
     }
 }
 
