@@ -26,7 +26,7 @@ use ratatui::widgets::{Clear, ListItem, ListState, Widget};
 use std::cmp::Ordering;
 use std::slice::IterMut;
 use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, mpsc};
 
 use super::shortcut::Shortcut;
 
@@ -66,6 +66,7 @@ pub struct TasksWidget {
     tasks: SelectableList<Box<dyn TaskTrait>>,
     providers_filter: Vec<String>,
     projects_filter: Vec<String>,
+    redraw_tx: Option<mpsc::UnboundedSender<()>>,
 
     commit_changes_shortcut: Shortcut,
     swap_completed_state_shortcut: Shortcut,
@@ -101,22 +102,26 @@ impl AppBlockWidget for TasksWidget {
 
     async fn select_next(&mut self) {
         self.tasks.select_next().await;
-        self.task_info_viewer.write().await.set_task(self.selected_task());
+        self.update_task_info_view().await;
     }
 
     async fn select_previous(&mut self) {
         self.tasks.select_previous().await;
-        self.task_info_viewer.write().await.set_task(self.selected_task());
+        self.update_task_info_view().await;
     }
 
     async fn select_first(&mut self) {
         self.tasks.select_first().await;
-        self.task_info_viewer.write().await.set_task(self.selected_task());
+        self.update_task_info_view().await;
     }
 
     async fn select_last(&mut self) {
         self.tasks.select_last().await;
-        self.task_info_viewer.write().await.set_task(self.selected_task());
+        self.update_task_info_view().await;
+    }
+
+    fn set_redraw_tx(&mut self, tx: mpsc::UnboundedSender<()>) {
+        self.redraw_tx = Some(tx)
     }
 }
 
@@ -137,6 +142,7 @@ impl TasksWidget {
                 .show_count_in_title(false),
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),
+            redraw_tx: None,
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
             swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
@@ -168,6 +174,11 @@ impl TasksWidget {
                         _ = change_due_rx.recv() => s.write().await.show_change_due_date_dialog().await,
                         _ = change_priority_rx.recv() => s.write().await.show_change_priority_dialog().await,
                         _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
+                    }
+
+                    s.write().await.update_task_info_view().await;
+                    if let Some(tx) = &s.read().await.redraw_tx {
+                        let _ = tx.send(());
                     }
                 }
             }
@@ -469,7 +480,7 @@ impl TasksWidget {
         self.all_tasks = all_tasks;
         self.remove_changed_tasks_that_are_not_exists_anymore();
         self.filter_tasks();
-        self.task_info_viewer.write().await.set_task(self.selected_task());
+        self.update_task_info_view().await;
     }
 
     pub async fn reload(&mut self) {
@@ -562,6 +573,10 @@ impl TasksWidget {
         let t = selected.unwrap();
         self.changed_tasks.retain(|p| !p.is_task(t.as_ref()));
     }
+
+    async fn update_task_info_view(&mut self) {
+        self.task_info_viewer.write().await.set_task(self.selected_task());
+    }
 }
 
 impl StatefulObject for TasksWidget {
@@ -609,7 +624,7 @@ impl KeyboardHandler for TasksWidget {
         }
 
         if need_to_update_view {
-            self.task_info_viewer.write().await.set_task(self.selected_task());
+            self.update_task_info_view().await;
         }
 
         handled

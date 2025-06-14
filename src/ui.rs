@@ -26,6 +26,7 @@ use std::slice::IterMut;
 use std::str::FromStr;
 use std::sync::Arc;
 use tasks_widget::ErrorLoggerTrait;
+use tokio::sync::mpsc;
 use tokio::sync::{OnceCell, RwLock};
 mod dialog;
 mod filter_widget;
@@ -80,6 +81,7 @@ trait AppBlockWidget: Send + MouseHandler + KeyboardHandler {
     async fn select_previous(&mut self);
     async fn select_first(&mut self);
     async fn select_last(&mut self);
+    fn set_redraw_tx(&mut self, _tx: mpsc::UnboundedSender<()>) {}
 }
 
 struct ErrorLogger {
@@ -245,6 +247,11 @@ impl App {
 
         self.tasks_widget.write().await.set_active(true);
 
+        let (redraw_tx, mut redraw_rx) = mpsc::unbounded_channel::<()>();
+        for b in self.app_blocks.values_mut() {
+            b.write().await.set_redraw_tx(redraw_tx.clone());
+        }
+
         let mut events = EventStream::new();
 
         let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
@@ -263,6 +270,7 @@ impl App {
             self.draw(&mut terminal).await;
 
             tokio::select! {
+                _ = redraw_rx.recv() => {},
                 Some(Ok(event)) = events.next() => {
                     match event {
                         Event::Key(key) => {
