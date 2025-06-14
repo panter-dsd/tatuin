@@ -12,7 +12,8 @@ pub enum DuePatchItem {
 }
 
 fn clear_time(dt: &DateTimeUtc) -> DateTimeUtc {
-    dt.with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap()).unwrap()
+    const NULL_TIME: NaiveTime = NaiveTime::from_hms_opt(0, 0, 0).unwrap();
+    dt.with_time(NULL_TIME).unwrap()
 }
 
 fn add_days(dt: &DateTimeUtc, days: u64) -> DateTimeUtc {
@@ -68,6 +69,10 @@ impl Clone for TaskPatch {
 mod tests {
     use super::*;
 
+    fn dt_from_unixtime(secs: i64) -> DateTimeUtc {
+        clear_time(&DateTimeUtc::from_timestamp(secs, 0).unwrap())
+    }
+
     #[test]
     #[cfg_attr(miri, ignore)]
     fn test_patch_due_to_date() {
@@ -93,56 +98,56 @@ mod tests {
             Case {
                 name: "tomorrow",
                 due: DuePatchItem::Tomorrow,
-                now: clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap()),
-                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749340800, 0).unwrap())),
+                now: dt_from_unixtime(1749254400),
+                result: Some(dt_from_unixtime(1749340800)),
             },
             Case {
                 name: "this weekend for Monday",
                 due: DuePatchItem::ThisWeekend,
-                now: clear_time(&DateTimeUtc::from_timestamp(1748822400, 0).unwrap()),
-                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap())),
+                now: dt_from_unixtime(1748822400),
+                result: Some(dt_from_unixtime(1749254400)),
             },
             Case {
                 name: "this weekend for Friday",
                 due: DuePatchItem::ThisWeekend,
-                now: clear_time(&DateTimeUtc::from_timestamp(1749168000, 0).unwrap()),
-                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap())),
+                now: dt_from_unixtime(1749168000),
+                result: Some(dt_from_unixtime(1749254400)),
             },
             Case {
                 name: "this weekend for Saturday",
                 due: DuePatchItem::ThisWeekend,
-                now: clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap()),
-                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap())),
+                now: dt_from_unixtime(1749254400),
+                result: Some(dt_from_unixtime(1749254400)),
             },
             Case {
                 name: "this weekend for Sunday",
                 due: DuePatchItem::ThisWeekend,
-                now: clear_time(&DateTimeUtc::from_timestamp(1749340800, 0).unwrap()),
-                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749340800, 0).unwrap())),
+                now: dt_from_unixtime(1749340800),
+                result: Some(dt_from_unixtime(1749340800)),
             },
             Case {
                 name: "next week for Monday",
                 due: DuePatchItem::NextWeek,
-                now: clear_time(&DateTimeUtc::from_timestamp(1748822400, 0).unwrap()),
-                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap())),
+                now: dt_from_unixtime(1748822400),
+                result: Some(dt_from_unixtime(1749427200)),
             },
             Case {
                 name: "next week for Friday",
                 due: DuePatchItem::NextWeek,
-                now: clear_time(&DateTimeUtc::from_timestamp(1749168000, 0).unwrap()),
-                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap())),
+                now: dt_from_unixtime(1749168000),
+                result: Some(dt_from_unixtime(1749427200)),
             },
             Case {
                 name: "next week for Saturday",
                 due: DuePatchItem::NextWeek,
-                now: clear_time(&DateTimeUtc::from_timestamp(1749254400, 0).unwrap()),
-                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap())),
+                now: dt_from_unixtime(1749254400),
+                result: Some(dt_from_unixtime(1749427200)),
             },
             Case {
                 name: "next week for Sunday",
                 due: DuePatchItem::NextWeek,
-                now: clear_time(&DateTimeUtc::from_timestamp(1749340800, 0).unwrap()),
-                result: Some(clear_time(&DateTimeUtc::from_timestamp(1749427200, 0).unwrap())),
+                now: dt_from_unixtime(1749340800),
+                result: Some(dt_from_unixtime(1749427200)),
             },
         ];
 
