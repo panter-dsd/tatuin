@@ -4,7 +4,7 @@ use super::{dialog::DialogTrait, keyboard_handler::KeyboardHandler, shortcut::Sh
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Layout, Rect, Size},
+    layout::{Alignment, Constraint, Layout, Rect, Size},
     style::{Style, Stylize},
     text::{Line, Span},
     widgets::{Block, Borders, List, Paragraph, Widget},
@@ -12,8 +12,6 @@ use ratatui::{
 
 use async_trait::async_trait;
 use std::sync::{Arc, RwLock};
-
-const ALIGN_CENTER: ratatui::layout::Alignment = ratatui::layout::Alignment::Center;
 
 struct Shortcut {
     name: String,
@@ -69,7 +67,7 @@ impl Dialog {
 impl DialogTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default()
-            .title_alignment(ALIGN_CENTER)
+            .title_alignment(Alignment::Center)
             .title_top("Key bindings")
             .title_bottom("Press q or Esc to close")
             .borders(Borders::ALL)
@@ -91,7 +89,7 @@ impl DialogTrait for Dialog {
 
         if self.active_block_shortcuts.is_empty() {
             Paragraph::new("There are no shortcut keys in the active panel")
-                .alignment(ALIGN_CENTER)
+                .alignment(Alignment::Center)
                 .style(style::WARNING_TEXT_STYLE)
                 .render(active_area, buf);
         } else {
@@ -105,7 +103,9 @@ impl DialogTrait for Dialog {
                     ])
                 })
                 .collect::<Vec<Line>>();
-            let active_block = Block::default().title_alignment(ALIGN_CENTER).title_top("Active block");
+            let active_block = Block::default()
+                .title_alignment(Alignment::Center)
+                .title_top("Active block");
             List::new(active_items).block(active_block).render(active_area, buf);
         }
 
