@@ -277,9 +277,9 @@ impl App {
         self.tasks_widget.write().await.set_active(true);
 
         let (redraw_tx, mut redraw_rx) = mpsc::unbounded_channel::<()>();
-        let (set_pos_tx, mut set_pos_rx) = mpsc::unbounded_channel::<Option<Position>>();
+        let (set_cursor_pos_tx, mut set_cursor_pos_rx) = mpsc::unbounded_channel::<Option<Position>>();
         let dh = {
-            let d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, set_pos_tx));
+            let d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, set_cursor_pos_tx));
             Arc::new(RwLock::new(d))
         };
 
@@ -308,8 +308,8 @@ impl App {
 
             tokio::select! {
                 _ = redraw_rx.recv() => {},
-                pos = set_pos_rx.recv() => {
-                    self.cursor_pos = pos.unwrap();
+                Some(pos) = set_cursor_pos_rx.recv() => {
+                    self.cursor_pos = pos;
                 },
                 Some(Ok(event)) = events.next() => {
                     match event {
