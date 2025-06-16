@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 
 use super::dialog::DialogTrait;
+use super::draw_helper::DrawHelper;
 use super::keyboard_handler::KeyboardHandler;
 use super::style;
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Rect, Size};
+use ratatui::layout::{Position, Rect, Size};
 use ratatui::widgets::{Block, Borders, Paragraph, Widget};
 use regex::Regex;
 
@@ -15,15 +16,19 @@ pub struct Dialog {
     text: String,
     input_re: Regex,
     should_be_closed: bool,
+    draw_helper: DrawHelper,
+    last_cursor_pos: Position,
 }
 
 impl Dialog {
-    pub fn new(title: &str, input_re: Regex) -> Self {
+    pub fn new(title: &str, input_re: Regex, draw_helper: DrawHelper) -> Self {
         Self {
             title: title.to_string(),
             text: String::new(),
             input_re,
             should_be_closed: false,
+            draw_helper,
+            last_cursor_pos: Position::default(),
         }
     }
 
@@ -39,7 +44,15 @@ impl DialogTrait for Dialog {
             .title(self.title.clone())
             .borders(Borders::ALL)
             .border_style(style::BORDER_COLOR);
-        Paragraph::new(self.text.clone() + "_").block(b).render(area, buf);
+        Paragraph::new(self.text.clone()).block(b).render(area, buf);
+
+        if !self.should_be_closed {
+            let pos = Position::new(area.x + self.text.len() as u16 + 1, area.y + 1);
+            if pos != self.last_cursor_pos {
+                self.draw_helper.write().await.set_cursor_pos(pos);
+                self.last_cursor_pos = pos;
+            }
+        }
     }
 
     fn should_be_closed(&self) -> bool {
@@ -77,6 +90,10 @@ impl KeyboardHandler for Dialog {
             _ => {
                 return false;
             }
+        }
+
+        if self.should_be_closed {
+            self.draw_helper.write().await.hide_cursor();
         }
         true
     }

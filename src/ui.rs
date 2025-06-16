@@ -87,22 +87,24 @@ trait AppBlockWidget: Send + MouseHandler + KeyboardHandler {
 
 struct DrawHelper {
     tx: mpsc::UnboundedSender<()>,
-    terminal: Arc<RwLock<DefaultTerminal>>,
+    set_pos_tx: mpsc::UnboundedSender<Option<Position>>,
 }
 
 impl DrawHelper {
-    fn new(tx: mpsc::UnboundedSender<()>, terminal: Arc<RwLock<DefaultTerminal>>) -> Self {
-        Self { tx, terminal }
+    fn new(tx: mpsc::UnboundedSender<()>, set_pos_tx: mpsc::UnboundedSender<Option<Position>>) -> Self {
+        Self { tx, set_pos_tx }
     }
 }
 
-#[async_trait]
 impl draw_helper::DrawHelperTrait for DrawHelper {
     fn redraw(&mut self) {
         let _ = self.tx.send(());
     }
-    async fn set_cursor_pos(&mut self, pos: Position) {
-        let _ = self.terminal.write().await.set_cursor_position(pos);
+    fn set_cursor_pos(&mut self, pos: Position) {
+        let _ = self.set_pos_tx.send(Some(pos));
+    }
+    fn hide_cursor(&mut self) {
+        let _ = self.set_pos_tx.send(None);
     }
 }
 
@@ -144,6 +146,7 @@ pub struct App {
     providers: Arc<RwLock<SelectableList<Box<dyn provider::Provider>>>>,
     projects: Arc<RwLock<SelectableList<Box<dyn project::Project>>>>,
     current_block: AppBlock,
+    draw_helper: Option<draw_helper::DrawHelper>,
 
     filter_widget: Arc<RwLock<filter_widget::FilterWidget>>,
     tasks_widget: Arc<RwLock<tasks_widget::TasksWidget>>,
@@ -166,6 +169,7 @@ pub struct App {
     dialog: Option<Box<dyn dialog::DialogTrait>>,
 
     settings: Arc<RwLock<Box<dyn StateSettings>>>,
+    cursor_pos: Option<Position>,
 }
 
 impl<T> tasks_widget::ProvidersStorage<T> for SelectableList<T>
@@ -196,6 +200,7 @@ impl App {
         let mut s = Self {
             should_exit: false,
             current_block: AppBlock::TaskList,
+            draw_helper: None,
             providers: providers_widget.clone(),
             projects: Arc::new(RwLock::new(
                 SelectableList::default()
@@ -225,6 +230,7 @@ impl App {
             all_shortcuts: Vec::new(),
             dialog: None,
             settings: Arc::new(RwLock::new(settings)),
+            cursor_pos: None,
         };
 
         s.app_blocks.insert(AppBlock::Providers, s.providers.clone());
@@ -268,17 +274,16 @@ impl App {
         self.load_tasks().await;
         self.restore_state(None).await;
 
-        terminal.hide_cursor()?;
-
         self.tasks_widget.write().await.set_active(true);
 
-        let term = Arc::new(RwLock::new(terminal));
-
         let (redraw_tx, mut redraw_rx) = mpsc::unbounded_channel::<()>();
+        let (set_pos_tx, mut set_pos_rx) = mpsc::unbounded_channel::<Option<Position>>();
         let dh = {
-            let d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, term.clone()));
+            let d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, set_pos_tx));
             Arc::new(RwLock::new(d))
         };
+
+        self.draw_helper = Some(dh.clone());
 
         for b in self.app_blocks.values_mut() {
             b.write().await.set_draw_helper(dh.clone());
@@ -299,10 +304,13 @@ impl App {
                 }
             }
 
-            self.draw(&term).await;
+            self.draw(&mut terminal).await;
 
             tokio::select! {
                 _ = redraw_rx.recv() => {},
+                pos = set_pos_rx.recv() => {
+                    self.cursor_pos = pos.unwrap();
+                },
                 Some(Ok(event)) = events.next() => {
                     match event {
                         Event::Key(key) => {
@@ -333,14 +341,23 @@ impl App {
         self.home_link.handle_mouse(&ev).await;
     }
 
-    async fn draw(&mut self, terminal: &Arc<RwLock<DefaultTerminal>>) {
-        let terminal = &mut terminal.write().await;
+    async fn draw(&mut self, terminal: &mut DefaultTerminal) {
         let _ = terminal.autoresize();
         let mut frame = terminal.get_frame();
         let area = frame.area();
         let buf = frame.buffer_mut();
         self.render(area, buf).await;
         let _ = terminal.flush();
+
+        match self.cursor_pos {
+            Some(pos) => {
+                let _ = terminal.show_cursor();
+                let _ = terminal.set_cursor_position(pos);
+            }
+            None => {
+                let _ = terminal.hide_cursor();
+            }
+        }
         terminal.swap_buffers();
         let _ = terminal.backend_mut().flush();
     }
@@ -786,7 +803,11 @@ impl App {
     }
 
     fn save_state_as(&mut self) {
-        let d = text_input_dialog::Dialog::new("State name", Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap());
+        let d = text_input_dialog::Dialog::new(
+            "State name",
+            Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap(),
+            self.draw_helper.as_ref().unwrap().clone(),
+        );
         self.dialog = Some(Box::new(d));
     }
 
