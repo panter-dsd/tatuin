@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use super::AppBlockWidget;
+use super::draw_helper::DrawHelper;
 use super::keyboard_handler::KeyboardHandler;
 use super::list_dialog;
 use super::mouse_handler::MouseHandler;
@@ -26,7 +27,7 @@ use ratatui::widgets::{Clear, ListItem, ListState, Widget};
 use std::cmp::Ordering;
 use std::slice::IterMut;
 use std::sync::Arc;
-use tokio::sync::{RwLock, mpsc};
+use tokio::sync::RwLock;
 
 use super::shortcut::Shortcut;
 
@@ -66,7 +67,7 @@ pub struct TasksWidget {
     tasks: SelectableList<Box<dyn TaskTrait>>,
     providers_filter: Vec<String>,
     projects_filter: Vec<String>,
-    redraw_tx: Option<mpsc::UnboundedSender<()>>,
+    draw_helper: Option<DrawHelper>,
 
     commit_changes_shortcut: Shortcut,
     swap_completed_state_shortcut: Shortcut,
@@ -120,8 +121,8 @@ impl AppBlockWidget for TasksWidget {
         self.update_task_info_view().await;
     }
 
-    fn set_redraw_tx(&mut self, tx: mpsc::UnboundedSender<()>) {
-        self.redraw_tx = Some(tx)
+    fn set_draw_helper(&mut self, dh: DrawHelper) {
+        self.draw_helper = Some(dh)
     }
 }
 
@@ -142,7 +143,7 @@ impl TasksWidget {
                 .show_count_in_title(false),
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),
-            redraw_tx: None,
+            draw_helper: None,
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
             swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
@@ -177,8 +178,8 @@ impl TasksWidget {
                     }
 
                     s.write().await.update_task_info_view().await;
-                    if let Some(tx) = &s.read().await.redraw_tx {
-                        let _ = tx.send(());
+                    if let Some(dh) = &s.read().await.draw_helper {
+                        dh.write().await.redraw();
                     }
                 }
             }

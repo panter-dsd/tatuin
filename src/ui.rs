@@ -47,6 +47,7 @@ use crossterm::execute;
 mod hyperlink_widget;
 mod keyboard_handler;
 use hyperlink_widget::HyperlinkWidget;
+mod draw_helper;
 use mouse_handler::MouseHandler;
 use selectable_list::SelectableList;
 use strum::{Display, EnumString};
@@ -81,7 +82,28 @@ trait AppBlockWidget: Send + MouseHandler + KeyboardHandler {
     async fn select_previous(&mut self);
     async fn select_first(&mut self);
     async fn select_last(&mut self);
-    fn set_redraw_tx(&mut self, _tx: mpsc::UnboundedSender<()>) {}
+    fn set_draw_helper(&mut self, _h: draw_helper::DrawHelper) {}
+}
+
+struct DrawHelper {
+    tx: mpsc::UnboundedSender<()>,
+    terminal: Arc<RwLock<DefaultTerminal>>,
+}
+
+impl DrawHelper {
+    fn new(tx: mpsc::UnboundedSender<()>, terminal: Arc<RwLock<DefaultTerminal>>) -> Self {
+        Self { tx, terminal }
+    }
+}
+
+#[async_trait]
+impl draw_helper::DrawHelperTrait for DrawHelper {
+    fn redraw(&mut self) {
+        let _ = self.tx.send(());
+    }
+    async fn set_cursor_pos(&mut self, pos: Position) {
+        let _ = self.terminal.write().await.set_cursor_position(pos);
+    }
 }
 
 struct ErrorLogger {
@@ -250,9 +272,16 @@ impl App {
 
         self.tasks_widget.write().await.set_active(true);
 
+        let term = Arc::new(RwLock::new(terminal));
+
         let (redraw_tx, mut redraw_rx) = mpsc::unbounded_channel::<()>();
+        let dh = {
+            let d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, term.clone()));
+            Arc::new(RwLock::new(d))
+        };
+
         for b in self.app_blocks.values_mut() {
-            b.write().await.set_redraw_tx(redraw_tx.clone());
+            b.write().await.set_draw_helper(dh.clone());
         }
 
         let mut events = EventStream::new();
@@ -270,7 +299,7 @@ impl App {
                 }
             }
 
-            self.draw(&mut terminal).await;
+            self.draw(&term).await;
 
             tokio::select! {
                 _ = redraw_rx.recv() => {},
@@ -304,7 +333,8 @@ impl App {
         self.home_link.handle_mouse(&ev).await;
     }
 
-    async fn draw(&mut self, terminal: &mut DefaultTerminal) {
+    async fn draw(&mut self, terminal: &Arc<RwLock<DefaultTerminal>>) {
+        let terminal = &mut terminal.write().await;
         let _ = terminal.autoresize();
         let mut frame = terminal.get_frame();
         let area = frame.area();
