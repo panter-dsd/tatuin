@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-use super::dialog::DialogTrait;
-use super::draw_helper::DrawHelper;
-use super::keyboard_handler::KeyboardHandler;
-use super::style;
+use super::{
+    dialog::DialogTrait, draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler,
+    style, widget::WidgetTrait,
+};
 use async_trait::async_trait;
-use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Position, Rect, Size};
-use ratatui::widgets::{Block, Borders, Paragraph, Widget};
+use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Position, Rect, Size},
+    widgets::{Block, Borders, Paragraph, Widget},
+};
 use regex::Regex;
 
 pub struct Dialog {
@@ -38,7 +40,7 @@ impl Dialog {
 }
 
 #[async_trait]
-impl DialogTrait for Dialog {
+impl WidgetTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default()
             .title(self.title.clone())
@@ -55,16 +57,19 @@ impl DialogTrait for Dialog {
         }
     }
 
+    fn size(&self) -> Size {
+        Size::new(30, 3)
+    }
+}
+
+#[async_trait]
+impl DialogTrait for Dialog {
     fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
         self
-    }
-
-    fn size(&self) -> Size {
-        Size::new(30, 3)
     }
 }
 
@@ -97,4 +102,9 @@ impl KeyboardHandler for Dialog {
         }
         true
     }
+}
+
+#[async_trait]
+impl MouseHandler for Dialog {
+    async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }

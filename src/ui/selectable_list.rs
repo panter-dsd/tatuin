@@ -6,6 +6,7 @@ use super::list;
 use super::mouse_handler::MouseHandler;
 use super::shortcut::Shortcut;
 use crate::state::{State, StatefulObject};
+use crate::ui::widget::WidgetTrait;
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::buffer::Buffer;
@@ -29,7 +30,7 @@ pub struct SelectableList<T> {
 #[async_trait]
 impl<T> AppBlockWidget for SelectableList<T>
 where
-    T: Send,
+    T: Send + Sync,
 {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         if let Some(s) = &mut self.shortcut {
@@ -57,6 +58,20 @@ where
 
     async fn select_last(&mut self) {
         self.state.select_last();
+    }
+}
+
+#[async_trait]
+impl<T> WidgetTrait for SelectableList<T>
+where
+    T: Send + Sync,
+{
+    async fn render(&mut self, _area: Rect, _buf: &mut Buffer) {
+        panic!("Don't use this method!")
+    }
+
+    fn size(&self) -> Size {
+        Size::new(self.width, self.items.len() as u16)
     }
 }
 
@@ -183,10 +198,6 @@ impl<T> SelectableList<T> {
         }
 
         StatefulWidget::render(l.widget(), area, buf, &mut self.state);
-    }
-
-    pub fn size(&self) -> Size {
-        Size::new(self.width, self.items.len() as u16)
     }
 }
 

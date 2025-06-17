@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 
+mod widget;
 use super::state::{StateSettings, StatefulObject};
 use crate::filter;
 use crate::state::{State, state_from_str, state_to_str};
+use crate::ui::dialog::DialogTrait;
 use crate::{project, provider};
 use async_trait::async_trait;
 use color_eyre::Result;
@@ -10,7 +12,6 @@ use crossterm::event::{
     DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
     MouseEvent,
 };
-use keyboard_handler::KeyboardHandler;
 use ratatui::DefaultTerminal;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Flex, Layout, Position, Rect, Size};
@@ -28,6 +29,7 @@ use std::sync::Arc;
 use tasks_widget::ErrorLoggerTrait;
 use tokio::sync::mpsc;
 use tokio::sync::{OnceCell, RwLock};
+use widget::WidgetTrait;
 mod dialog;
 mod filter_widget;
 mod header;
@@ -71,7 +73,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 ];
 
 #[async_trait]
-trait AppBlockWidget: Send + MouseHandler + KeyboardHandler {
+trait AppBlockWidget: WidgetTrait {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut>;
     fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
         Vec::new()
@@ -82,7 +84,6 @@ trait AppBlockWidget: Send + MouseHandler + KeyboardHandler {
     async fn select_previous(&mut self);
     async fn select_first(&mut self);
     async fn select_last(&mut self);
-    fn set_draw_helper(&mut self, _h: draw_helper::DrawHelper) {}
 }
 
 struct DrawHelper {
@@ -795,11 +796,11 @@ impl App {
     }
 
     async fn render_task_description(&mut self, area: Rect, buf: &mut Buffer) {
-        self.task_info_widget.write().await.render(area, buf)
+        self.task_info_widget.write().await.render(area, buf).await
     }
 
     async fn render_filters(&mut self, area: Rect, buf: &mut Buffer) {
-        self.filter_widget.write().await.render(area, buf)
+        self.filter_widget.write().await.render(area, buf).await
     }
 
     fn save_state_as(&mut self) {
@@ -861,7 +862,7 @@ impl App {
     async fn close_dialog(&mut self) {
         let d = self.dialog.take().unwrap();
 
-        if let Some(d) = &d.as_any().downcast_ref::<states_dialog::Dialog>() {
+        if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<states_dialog::Dialog>() {
             let mut state_to_restore = String::new();
             if let Some(s) = d.selected_state() {
                 state_to_restore = s.clone();
@@ -871,7 +872,7 @@ impl App {
             }
         }
 
-        if let Some(d) = &d.as_any().downcast_ref::<text_input_dialog::Dialog>() {
+        if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<text_input_dialog::Dialog>() {
             let t = d.text();
             if !t.is_empty() {
                 self.save_state(Some(t.as_str())).await;

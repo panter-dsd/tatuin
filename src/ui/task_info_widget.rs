@@ -3,6 +3,7 @@
 use super::AppBlockWidget;
 use super::hyperlink_widget::HyperlinkWidget;
 use super::keyboard_handler::KeyboardHandler;
+use super::widget::WidgetTrait;
 use crate::task;
 use crate::task::Task as TaskTrait;
 use crate::ui::style;
@@ -10,7 +11,7 @@ use async_trait::async_trait;
 use chrono::Local;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::buffer::Buffer;
-use ratatui::layout::{Position, Rect};
+use ratatui::layout::{Position, Rect, Size};
 use ratatui::style::{Modifier, Style, Stylize};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Paragraph, Widget, Wrap};
@@ -83,8 +84,9 @@ impl TaskInfoWidget {
     }
 }
 
-impl Widget for &mut TaskInfoWidget {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+#[async_trait]
+impl WidgetTrait for TaskInfoWidget {
+    async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let h = Header::new("Task info", self.is_active, Some(&self.shortcut));
         let tz = Local::now().timezone();
 
@@ -158,6 +160,10 @@ impl Widget for &mut TaskInfoWidget {
                 .wrap(Wrap { trim: false })
                 .render(area, buf);
         };
+    }
+
+    fn size(&self) -> Size {
+        Size::default()
     }
 }
 
