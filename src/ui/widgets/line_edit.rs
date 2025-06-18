@@ -5,6 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
+    text::Text,
     widgets::{Block, Borders, Paragraph, Widget},
 };
 use regex::Regex;
@@ -39,13 +40,19 @@ impl LineEdit {
 impl WidgetTrait for LineEdit {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default().borders(Borders::ALL).border_style(style::BORDER_COLOR);
-        Paragraph::new(self.text.clone()).block(b).render(area, buf);
+
+        let inner_area = b.inner(area);
+        let mut text = self.text.clone();
+        let text_width = Text::from(text.clone()).width() as u16;
+        if text_width >= inner_area.width - 1 {
+            let count_to_drop = (text_width + 1 - inner_area.width) as usize;
+            text.drain(..count_to_drop);
+        }
+
+        Paragraph::new(text.clone()).block(b).render(area, buf);
 
         if let Some(dh) = &self.draw_helper {
-            let pos = Position::new(
-                std::cmp::min(area.x + self.text.len() as u16 + 1, area.x + area.width - 2),
-                area.y + 1,
-            );
+            let pos = Position::new(area.x + text.len() as u16 + 1, area.y + 1);
 
             if pos != self.last_cursor_pos {
                 dh.write().await.set_cursor_pos(pos);
