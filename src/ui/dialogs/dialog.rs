@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use super::widget::WidgetTrait;
+use crate::ui::widgets::WidgetTrait;
 
 use async_trait::async_trait;
 use std::any::Any;

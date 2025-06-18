@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-use super::{
-    dialog::DialogTrait, draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, line_edit::LineEdit,
-    mouse_handler::MouseHandler, style, widget::WidgetTrait,
+use super::DialogTrait;
+use crate::ui::{
+    draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style, widgets::LineEdit,
+    widgets::WidgetTrait,
 };
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};

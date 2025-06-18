@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: MIT
 
-use super::AppBlockWidget;
-use super::keyboard_handler::KeyboardHandler;
-use super::list;
-use super::mouse_handler::MouseHandler;
-use super::shortcut::Shortcut;
+use super::{
+    AppBlockWidget, keyboard_handler::KeyboardHandler, list, mouse_handler::MouseHandler, shortcut::Shortcut,
+    widgets::WidgetTrait,
+};
 use crate::state::{State, StatefulObject};
-use crate::ui::widget::WidgetTrait;
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Rect, Size};
-use ratatui::widgets::{ListItem, ListState, StatefulWidget};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Rect, Size},
+    widgets::{ListItem, ListState, StatefulWidget},
+};
 use std::slice::{Iter, IterMut};
 
 const DEFAULT_WIDTH: u16 = 10;

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-use super::{
-    dialog::DialogTrait, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::SharedData, style,
-    widget::WidgetTrait,
+use super::DialogTrait;
+use crate::ui::{
+    keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::SharedData, style, widgets::WidgetTrait,
 };
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{

@@ -2,9 +2,10 @@
 
 use crate::state::StateSettings;
 
-use super::{
-    AppBlockWidget, dialog::DialogTrait, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler,
-    selectable_list::SelectableList, style, widget::WidgetTrait,
+use super::DialogTrait;
+use crate::ui::{
+    AppBlockWidget, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, selectable_list::SelectableList,
+    style, widgets::WidgetTrait,
 };
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};

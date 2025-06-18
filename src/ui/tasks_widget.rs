@@ -1,37 +1,31 @@
 // SPDX-License-Identifier: MIT
 
-use super::AppBlockWidget;
-use super::draw_helper::DrawHelper;
-use super::keyboard_handler::KeyboardHandler;
-use super::list_dialog;
-use super::mouse_handler::MouseHandler;
-use super::widget::WidgetTrait;
-use crate::filter::Filter;
-use crate::patched_task::PatchedTask;
-use crate::project::Project as ProjectTrait;
-use crate::provider::Provider as ProviderTrait;
-use crate::state::StatefulObject;
-use crate::task::{self, Priority, datetime_to_str};
-use crate::task::{State, Task as TaskTrait, due_group};
-use crate::task_patch::{DuePatchItem, TaskPatch};
-use crate::ui::dialog::DialogTrait;
-use crate::ui::selectable_list::SelectableList;
-use crate::ui::{dialog, style};
+use super::{
+    AppBlockWidget, dialogs::DialogTrait, dialogs::ListDialog, draw_helper::DrawHelper,
+    keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, selectable_list::SelectableList,
+    shortcut::Shortcut, style, widgets::WidgetTrait,
+};
+use crate::{
+    filter::Filter,
+    patched_task::PatchedTask,
+    project::Project as ProjectTrait,
+    provider::Provider as ProviderTrait,
+    state::StatefulObject,
+    task::{self, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
+    task_patch::{DuePatchItem, TaskPatch},
+};
 use async_trait::async_trait;
 use chrono::Local;
-use crossterm::event::KeyEvent;
-use crossterm::event::MouseEvent;
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Rect, Size};
-use ratatui::style::{Color, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Clear, ListItem, ListState, Widget};
-use std::cmp::Ordering;
-use std::slice::IterMut;
-use std::sync::Arc;
+use crossterm::event::{KeyEvent, MouseEvent};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Rect, Size},
+    style::{Color, Style},
+    text::{Line, Span},
+    widgets::{Clear, ListItem, ListState, Widget},
+};
+use std::{cmp::Ordering, slice::IterMut, sync::Arc};
 use tokio::sync::RwLock;
-
-use super::shortcut::Shortcut;
 
 impl std::fmt::Display for DuePatchItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -80,7 +74,7 @@ pub struct TasksWidget {
 
     last_filter: Filter,
 
-    change_dalog: Option<Box<dyn dialog::DialogTrait>>,
+    change_dalog: Option<Box<dyn DialogTrait>>,
 }
 
 #[async_trait]
@@ -417,7 +411,7 @@ impl TasksWidget {
         }
 
         let t = selected.unwrap();
-        let d = list_dialog::Dialog::new(
+        let d = ListDialog::new(
             &[
                 DuePatchItem::Today,
                 DuePatchItem::Tomorrow,
@@ -437,7 +431,7 @@ impl TasksWidget {
         }
 
         let t = selected.unwrap();
-        let d = list_dialog::Dialog::new(
+        let d = ListDialog::new(
             &[
                 Priority::Normal,
                 Priority::Lowest,
@@ -530,10 +524,10 @@ impl KeyboardHandler for TasksWidget {
             need_to_update_view = true;
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<list_dialog::Dialog<DuePatchItem>>() {
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DuePatchItem>>() {
                     new_due = d.selected().clone();
                 }
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<list_dialog::Dialog<Priority>>() {
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<Priority>>() {
                     new_priority = d.selected().clone();
                 }
                 self.change_dalog = None;

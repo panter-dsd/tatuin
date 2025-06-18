@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: MIT
 
-use super::keyboard_handler::KeyboardHandler;
-use super::mouse_handler::MouseHandler;
-use crate::filter::{Due, Filter, FilterState};
-use crate::state::StatefulObject;
-use crate::ui::widget::WidgetTrait;
+use super::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, widgets::WidgetTrait};
+use crate::{
+    filter::{Due, Filter, FilterState},
+    state::StatefulObject,
+};
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Layout, Rect, Size};
-use ratatui::widgets::{ListItem, ListState, StatefulWidget, Widget};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Constraint, Layout, Rect, Size},
+    widgets::{ListItem, ListState, StatefulWidget, Widget},
+};
 
-use super::list;
-use super::shortcut::Shortcut;
-use super::{AppBlockWidget, header};
+use super::{AppBlockWidget, header, list, shortcut::Shortcut};
 
 const POSSIBLE_STATES: [FilterState; 4] = [
     FilterState::Completed,

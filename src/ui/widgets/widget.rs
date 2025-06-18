@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use super::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler};
+use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler};
 
 use ratatui::{
     buffer::Buffer,

@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-mod line_edit;
-mod widget;
+mod widgets;
 use super::{
     filter, project, provider,
     state::{State, StateSettings, StatefulObject, state_from_str, state_to_str},
-    ui::dialog::DialogTrait,
+    ui::{
+        dialogs::{DialogTrait, KeyBindingsHelpDialog, StatesDialog, TextInputDialog},
+        widgets::WidgetTrait,
+    },
 };
 use async_trait::async_trait;
 use color_eyre::Result;
@@ -26,22 +28,17 @@ use shortcut::{AcceptResult, Shortcut};
 use std::{collections::HashMap, hash::Hash, io::Write, slice::IterMut, str::FromStr, sync::Arc};
 use tasks_widget::ErrorLoggerTrait;
 use tokio::sync::{OnceCell, RwLock, mpsc};
-use widget::WidgetTrait;
-mod dialog;
+mod dialogs;
 mod filter_widget;
 mod header;
-mod key_bindings_help_dialog;
 mod key_buffer;
 mod list;
-mod list_dialog;
 mod mouse_handler;
 mod selectable_list;
 mod shortcut;
-mod states_dialog;
 pub mod style;
 mod task_info_widget;
 mod tasks_widget;
-mod text_input_dialog;
 use crossterm::execute;
 mod hyperlink_widget;
 mod keyboard_handler;
@@ -164,7 +161,7 @@ pub struct App {
 
     all_shortcuts: Vec<Arc<std::sync::RwLock<shortcut::SharedData>>>,
 
-    dialog: Option<Box<dyn dialog::DialogTrait>>,
+    dialog: Option<Box<dyn DialogTrait>>,
 
     settings: Arc<RwLock<Box<dyn StateSettings>>>,
     cursor_pos: Option<Position>,
@@ -801,8 +798,7 @@ impl App {
     }
 
     fn save_state_as(&mut self) {
-        let mut d =
-            text_input_dialog::Dialog::new("State name", Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap());
+        let mut d = TextInputDialog::new("State name", Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap());
         d.set_draw_helper(self.draw_helper.as_ref().unwrap().clone());
         self.dialog = Some(Box::new(d));
     }
@@ -850,14 +846,14 @@ impl App {
     }
 
     async fn load_state(&mut self) {
-        let d = states_dialog::Dialog::new(&self.settings).await;
+        let d = StatesDialog::new(&self.settings).await;
         self.dialog = Some(Box::new(d));
     }
 
     async fn close_dialog(&mut self) {
         let d = self.dialog.take().unwrap();
 
-        if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<states_dialog::Dialog>() {
+        if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<StatesDialog>() {
             let mut state_to_restore = String::new();
             if let Some(s) = d.selected_state() {
                 state_to_restore = s.clone();
@@ -867,7 +863,7 @@ impl App {
             }
         }
 
-        if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<text_input_dialog::Dialog>() {
+        if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<TextInputDialog>() {
             let t = d.text();
             if !t.is_empty() {
                 self.save_state(Some(t.as_str())).await;
@@ -877,7 +873,7 @@ impl App {
 
     async fn show_keybindings_help(&mut self) {
         let current_block = self.app_blocks.get_mut(&self.current_block).unwrap();
-        let d = key_bindings_help_dialog::Dialog::new(
+        let d = KeyBindingsHelpDialog::new(
             &current_block
                 .write()
                 .await

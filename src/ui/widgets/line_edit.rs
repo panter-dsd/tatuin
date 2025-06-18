@@ -1,6 +1,5 @@
-use super::{
-    draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style, widget::WidgetTrait,
-};
+use super::WidgetTrait;
+use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{

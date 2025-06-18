@@ -2,12 +2,12 @@
 
 use std::fmt::Display;
 
-use super::{
-    dialog::DialogTrait,
+use super::DialogTrait;
+use crate::ui::{
     keyboard_handler::KeyboardHandler,
     mouse_handler::MouseHandler,
     selectable_list::SelectableList,
-    widget::WidgetTrait,
+    widgets::WidgetTrait,
     {AppBlockWidget, style},
 };
 use async_trait::async_trait;
