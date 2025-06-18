@@ -2,17 +2,18 @@
 
 use crate::state::StateSettings;
 
-use super::dialog::DialogTrait;
-use super::keyboard_handler::KeyboardHandler;
-use super::mouse_handler::MouseHandler;
-use super::selectable_list::SelectableList;
-use super::{AppBlockWidget, style};
+use super::DialogTrait;
+use crate::ui::{
+    AppBlockWidget, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, selectable_list::SelectableList,
+    style, widgets::WidgetTrait,
+};
 use async_trait::async_trait;
-use crossterm::event::MouseEvent;
-use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Rect, Size};
-use ratatui::widgets::{Block, Borders, ListItem, Widget};
+use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Rect, Size},
+    widgets::{Block, Borders, ListItem, Widget},
+};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -39,7 +40,7 @@ impl Dialog {
 }
 
 #[async_trait]
-impl DialogTrait for Dialog {
+impl WidgetTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default()
             .title_alignment(ratatui::layout::Alignment::Center)
@@ -53,16 +54,19 @@ impl DialogTrait for Dialog {
             .render("", |s| ListItem::from(s.as_str()), b.inner(area), buf);
     }
 
+    fn size(&self) -> Size {
+        Size::new(70, 10)
+    }
+}
+
+#[async_trait]
+impl DialogTrait for Dialog {
     fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
         self
-    }
-
-    fn size(&self) -> Size {
-        Size::new(70, 10)
     }
 }
 

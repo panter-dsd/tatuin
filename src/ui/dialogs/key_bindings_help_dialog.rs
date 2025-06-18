@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-use super::{dialog::DialogTrait, keyboard_handler::KeyboardHandler, shortcut::SharedData, style};
-use crossterm::event::{KeyCode, KeyEvent};
+use super::DialogTrait;
+use crate::ui::{
+    keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::SharedData, style, widgets::WidgetTrait,
+};
+use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Layout, Rect, Size},
@@ -64,7 +67,7 @@ impl Dialog {
 }
 
 #[async_trait]
-impl DialogTrait for Dialog {
+impl WidgetTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default()
             .title_alignment(Alignment::Center)
@@ -125,17 +128,20 @@ impl DialogTrait for Dialog {
         List::new(global_items).block(global_block).render(global_area, buf);
     }
 
+    fn size(&self) -> Size {
+        let count = (self.active_block_shortcuts.len() + self.global_shortcuts.len()) as u16;
+        Size::new(70, count + 2/*head_tail*/ * 2 /*subheads*/)
+    }
+}
+
+#[async_trait]
+impl DialogTrait for Dialog {
     fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
         self
-    }
-
-    fn size(&self) -> Size {
-        let count = (self.active_block_shortcuts.len() + self.global_shortcuts.len()) as u16;
-        Size::new(70, count + 2/*head_tail*/ * 2 /*subheads*/)
     }
 }
 
@@ -149,4 +155,9 @@ impl KeyboardHandler for Dialog {
 
         false
     }
+}
+
+#[async_trait]
+impl MouseHandler for Dialog {
+    async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }

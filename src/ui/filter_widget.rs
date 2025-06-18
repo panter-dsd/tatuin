@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: MIT
 
-use super::keyboard_handler::KeyboardHandler;
-use super::mouse_handler::MouseHandler;
-use crate::filter::{Due, Filter, FilterState};
-use crate::state::StatefulObject;
+use super::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, widgets::WidgetTrait};
+use crate::{
+    filter::{Due, Filter, FilterState},
+    state::StatefulObject,
+};
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Layout, Rect};
-use ratatui::widgets::{ListItem, ListState, StatefulWidget, Widget};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Constraint, Layout, Rect, Size},
+    widgets::{ListItem, ListState, StatefulWidget, Widget},
+};
 
-use super::list;
-use super::shortcut::Shortcut;
-use super::{AppBlockWidget, header};
+use super::{AppBlockWidget, header, list, shortcut::Shortcut};
 
 const POSSIBLE_STATES: [FilterState; 4] = [
     FilterState::Completed,
@@ -219,8 +220,9 @@ impl FilterWidget {
     }
 }
 
-impl Widget for &mut FilterWidget {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+#[async_trait]
+impl WidgetTrait for FilterWidget {
+    async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let [header_area, body_area] = Layout::vertical([Constraint::Length(1), Constraint::Fill(1)]).areas(area);
         let [filter_state_area, filter_due_area] =
             Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(body_area);
@@ -230,6 +232,10 @@ impl Widget for &mut FilterWidget {
             .render(header_area, buf);
         self.render_filter_state(filter_state_area, buf);
         self.render_filter_due(filter_due_area, buf);
+    }
+
+    fn size(&self) -> Size {
+        Size::default()
     }
 }
 

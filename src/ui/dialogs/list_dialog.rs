@@ -2,19 +2,22 @@
 
 use std::fmt::Display;
 
-use ratatui::text::Text;
-
-use super::dialog::DialogTrait;
-use super::keyboard_handler::KeyboardHandler;
-use super::mouse_handler::MouseHandler;
-use super::selectable_list::SelectableList;
-use super::{AppBlockWidget, style};
+use super::DialogTrait;
+use crate::ui::{
+    keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler,
+    selectable_list::SelectableList,
+    widgets::WidgetTrait,
+    {AppBlockWidget, style},
+};
 use async_trait::async_trait;
-use crossterm::event::MouseEvent;
-use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Rect, Size};
-use ratatui::widgets::{Block, Borders, ListItem, Widget};
+use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
+use ratatui::{
+    buffer::Buffer,
+    layout::{Rect, Size},
+    text::Text,
+    widgets::{Block, Borders, ListItem, Widget},
+};
 
 const FOOTER: &str = "Use j/k (up/down) for moving and Enter for applying";
 
@@ -49,7 +52,7 @@ where
 }
 
 #[async_trait]
-impl<T> DialogTrait for Dialog<T>
+impl<T> WidgetTrait for Dialog<T>
 where
     T: Display + Clone + Send + Sync + 'static,
 {
@@ -66,19 +69,25 @@ where
             .render("", |s| ListItem::from(s.to_string()), b.inner(area), buf);
     }
 
+    fn size(&self) -> Size {
+        let mut s = self.items.size();
+        s.height += 2;
+        s.width = std::cmp::max(s.width, self.width) + 2;
+        s
+    }
+}
+
+#[async_trait]
+impl<T> DialogTrait for Dialog<T>
+where
+    T: Display + Clone + Send + Sync + 'static,
+{
     fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
         self
-    }
-
-    fn size(&self) -> Size {
-        let mut s = self.items.size();
-        s.height += 2;
-        s.width = std::cmp::max(s.width, self.width) + 2;
-        s
     }
 }
 
@@ -93,7 +102,7 @@ where
 #[async_trait]
 impl<T> KeyboardHandler for Dialog<T>
 where
-    T: Send + Clone,
+    T: Send + Sync + Clone + 'static,
 {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         match key.code {

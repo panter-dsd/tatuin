@@ -1,52 +1,49 @@
 // SPDX-License-Identifier: MIT
 
-use super::state::{StateSettings, StatefulObject};
-use crate::filter;
-use crate::state::{State, state_from_str, state_to_str};
-use crate::{project, provider};
+mod widgets;
+use super::{
+    filter, project, provider,
+    state::{State, StateSettings, StatefulObject, state_from_str, state_to_str},
+    ui::{
+        dialogs::{DialogTrait, KeyBindingsHelpDialog, StatesDialog, TextInputDialog},
+        widgets::WidgetTrait,
+    },
+};
 use async_trait::async_trait;
 use color_eyre::Result;
 use crossterm::event::{
     DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
     MouseEvent,
 };
-use keyboard_handler::KeyboardHandler;
-use ratatui::DefaultTerminal;
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Flex, Layout, Position, Rect, Size};
-use ratatui::style::{Color, Style, Stylize};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wrap};
+use ratatui::{
+    DefaultTerminal,
+    buffer::Buffer,
+    layout::{Constraint, Flex, Layout, Position, Rect, Size},
+    style::{Color, Style, Stylize},
+    text::{Line, Span},
+    widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wrap},
+};
 use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
-use std::collections::HashMap;
-use std::hash::Hash;
-use std::io::Write;
-use std::slice::IterMut;
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{collections::HashMap, hash::Hash, io::Write, slice::IterMut, str::FromStr, sync::Arc};
 use tasks_widget::ErrorLoggerTrait;
-use tokio::sync::mpsc;
-use tokio::sync::{OnceCell, RwLock};
-mod dialog;
+use tokio::sync::{OnceCell, RwLock, mpsc};
+mod dialogs;
 mod filter_widget;
 mod header;
-mod key_bindings_help_dialog;
 mod key_buffer;
 mod list;
-mod list_dialog;
 mod mouse_handler;
 mod selectable_list;
 mod shortcut;
-mod states_dialog;
 pub mod style;
 mod task_info_widget;
 mod tasks_widget;
-mod text_input_dialog;
 use crossterm::execute;
 mod hyperlink_widget;
 mod keyboard_handler;
 use hyperlink_widget::HyperlinkWidget;
+mod draw_helper;
 use mouse_handler::MouseHandler;
 use selectable_list::SelectableList;
 use strum::{Display, EnumString};
@@ -70,7 +67,7 @@ const BLOCK_ORDER: [AppBlock; 5] = [
 ];
 
 #[async_trait]
-trait AppBlockWidget: Send + MouseHandler + KeyboardHandler {
+trait AppBlockWidget: WidgetTrait {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut>;
     fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
         Vec::new()
@@ -81,7 +78,29 @@ trait AppBlockWidget: Send + MouseHandler + KeyboardHandler {
     async fn select_previous(&mut self);
     async fn select_first(&mut self);
     async fn select_last(&mut self);
-    fn set_redraw_tx(&mut self, _tx: mpsc::UnboundedSender<()>) {}
+}
+
+struct DrawHelper {
+    tx: mpsc::UnboundedSender<()>,
+    set_pos_tx: mpsc::UnboundedSender<Option<Position>>,
+}
+
+impl DrawHelper {
+    fn new(tx: mpsc::UnboundedSender<()>, set_pos_tx: mpsc::UnboundedSender<Option<Position>>) -> Self {
+        Self { tx, set_pos_tx }
+    }
+}
+
+impl draw_helper::DrawHelperTrait for DrawHelper {
+    fn redraw(&mut self) {
+        let _ = self.tx.send(());
+    }
+    fn set_cursor_pos(&mut self, pos: Position) {
+        let _ = self.set_pos_tx.send(Some(pos));
+    }
+    fn hide_cursor(&mut self) {
+        let _ = self.set_pos_tx.send(None);
+    }
 }
 
 struct ErrorLogger {
@@ -122,6 +141,7 @@ pub struct App {
     providers: Arc<RwLock<SelectableList<Box<dyn provider::Provider>>>>,
     projects: Arc<RwLock<SelectableList<Box<dyn project::Project>>>>,
     current_block: AppBlock,
+    draw_helper: Option<draw_helper::DrawHelper>,
 
     filter_widget: Arc<RwLock<filter_widget::FilterWidget>>,
     tasks_widget: Arc<RwLock<tasks_widget::TasksWidget>>,
@@ -141,9 +161,10 @@ pub struct App {
 
     all_shortcuts: Vec<Arc<std::sync::RwLock<shortcut::SharedData>>>,
 
-    dialog: Option<Box<dyn dialog::DialogTrait>>,
+    dialog: Option<Box<dyn DialogTrait>>,
 
     settings: Arc<RwLock<Box<dyn StateSettings>>>,
+    cursor_pos: Option<Position>,
 }
 
 impl<T> tasks_widget::ProvidersStorage<T> for SelectableList<T>
@@ -174,6 +195,7 @@ impl App {
         let mut s = Self {
             should_exit: false,
             current_block: AppBlock::TaskList,
+            draw_helper: None,
             providers: providers_widget.clone(),
             projects: Arc::new(RwLock::new(
                 SelectableList::default()
@@ -203,6 +225,7 @@ impl App {
             all_shortcuts: Vec::new(),
             dialog: None,
             settings: Arc::new(RwLock::new(settings)),
+            cursor_pos: None,
         };
 
         s.app_blocks.insert(AppBlock::Providers, s.providers.clone());
@@ -246,13 +269,19 @@ impl App {
         self.load_tasks().await;
         self.restore_state(None).await;
 
-        terminal.hide_cursor()?;
-
         self.tasks_widget.write().await.set_active(true);
 
         let (redraw_tx, mut redraw_rx) = mpsc::unbounded_channel::<()>();
+        let (set_cursor_pos_tx, mut set_cursor_pos_rx) = mpsc::unbounded_channel::<Option<Position>>();
+        let dh = {
+            let d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, set_cursor_pos_tx));
+            Arc::new(RwLock::new(d))
+        };
+
+        self.draw_helper = Some(dh.clone());
+
         for b in self.app_blocks.values_mut() {
-            b.write().await.set_redraw_tx(redraw_tx.clone());
+            b.write().await.set_draw_helper(dh.clone());
         }
 
         let mut events = EventStream::new();
@@ -274,6 +303,9 @@ impl App {
 
             tokio::select! {
                 _ = redraw_rx.recv() => {},
+                Some(pos) = set_cursor_pos_rx.recv() => {
+                    self.cursor_pos = pos;
+                },
                 Some(Ok(event)) = events.next() => {
                     match event {
                         Event::Key(key) => {
@@ -311,6 +343,16 @@ impl App {
         let buf = frame.buffer_mut();
         self.render(area, buf).await;
         let _ = terminal.flush();
+
+        match self.cursor_pos {
+            Some(pos) => {
+                let _ = terminal.show_cursor();
+                let _ = terminal.set_cursor_position(pos);
+            }
+            None => {
+                let _ = terminal.hide_cursor();
+            }
+        }
         terminal.swap_buffers();
         let _ = terminal.backend_mut().flush();
     }
@@ -748,15 +790,16 @@ impl App {
     }
 
     async fn render_task_description(&mut self, area: Rect, buf: &mut Buffer) {
-        self.task_info_widget.write().await.render(area, buf)
+        self.task_info_widget.write().await.render(area, buf).await
     }
 
     async fn render_filters(&mut self, area: Rect, buf: &mut Buffer) {
-        self.filter_widget.write().await.render(area, buf)
+        self.filter_widget.write().await.render(area, buf).await
     }
 
     fn save_state_as(&mut self) {
-        let d = text_input_dialog::Dialog::new("State name", Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap());
+        let mut d = TextInputDialog::new("State name", Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap());
+        d.set_draw_helper(self.draw_helper.as_ref().unwrap().clone());
         self.dialog = Some(Box::new(d));
     }
 
@@ -803,14 +846,14 @@ impl App {
     }
 
     async fn load_state(&mut self) {
-        let d = states_dialog::Dialog::new(&self.settings).await;
+        let d = StatesDialog::new(&self.settings).await;
         self.dialog = Some(Box::new(d));
     }
 
     async fn close_dialog(&mut self) {
         let d = self.dialog.take().unwrap();
 
-        if let Some(d) = &d.as_any().downcast_ref::<states_dialog::Dialog>() {
+        if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<StatesDialog>() {
             let mut state_to_restore = String::new();
             if let Some(s) = d.selected_state() {
                 state_to_restore = s.clone();
@@ -820,7 +863,7 @@ impl App {
             }
         }
 
-        if let Some(d) = &d.as_any().downcast_ref::<text_input_dialog::Dialog>() {
+        if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<TextInputDialog>() {
             let t = d.text();
             if !t.is_empty() {
                 self.save_state(Some(t.as_str())).await;
@@ -830,7 +873,7 @@ impl App {
 
     async fn show_keybindings_help(&mut self) {
         let current_block = self.app_blocks.get_mut(&self.current_block).unwrap();
-        let d = key_bindings_help_dialog::Dialog::new(
+        let d = KeyBindingsHelpDialog::new(
             &current_block
                 .write()
                 .await

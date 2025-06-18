@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: MIT
 
-use super::AppBlockWidget;
-use super::hyperlink_widget::HyperlinkWidget;
-use super::keyboard_handler::KeyboardHandler;
-use crate::task;
-use crate::task::Task as TaskTrait;
-use crate::ui::style;
+use super::{
+    AppBlockWidget, header::Header, hyperlink_widget::HyperlinkWidget, keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler, shortcut::Shortcut, widgets::WidgetTrait,
+};
+use crate::{
+    task::{self, Task as TaskTrait},
+    ui::style,
+};
 use async_trait::async_trait;
 use chrono::Local;
 use crossterm::event::{KeyEvent, MouseEvent};
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Position, Rect};
-use ratatui::style::{Modifier, Style, Stylize};
-use ratatui::text::{Line, Span, Text};
-use ratatui::widgets::{Paragraph, Widget, Wrap};
-
-use super::header::Header;
-use super::mouse_handler::MouseHandler;
-use super::shortcut::Shortcut;
+use ratatui::{
+    buffer::Buffer,
+    layout::{Position, Rect, Size},
+    style::{Modifier, Style, Stylize},
+    text::{Line, Span, Text},
+    widgets::{Paragraph, Widget, Wrap},
+};
 
 pub struct TaskInfoWidget {
     is_active: bool,
@@ -83,8 +83,9 @@ impl TaskInfoWidget {
     }
 }
 
-impl Widget for &mut TaskInfoWidget {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+#[async_trait]
+impl WidgetTrait for TaskInfoWidget {
+    async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let h = Header::new("Task info", self.is_active, Some(&self.shortcut));
         let tz = Local::now().timezone();
 
@@ -158,6 +159,10 @@ impl Widget for &mut TaskInfoWidget {
                 .wrap(Wrap { trim: false })
                 .render(area, buf);
         };
+    }
+
+    fn size(&self) -> Size {
+        Size::default()
     }
 }
 
