@@ -1,34 +1,31 @@
 // SPDX-License-Identifier: MIT
 
+mod line_edit;
 mod widget;
-use super::state::{StateSettings, StatefulObject};
-use crate::filter;
-use crate::state::{State, state_from_str, state_to_str};
-use crate::ui::dialog::DialogTrait;
-use crate::{project, provider};
+use super::{
+    filter, project, provider,
+    state::{State, StateSettings, StatefulObject, state_from_str, state_to_str},
+    ui::dialog::DialogTrait,
+};
 use async_trait::async_trait;
 use color_eyre::Result;
 use crossterm::event::{
     DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
     MouseEvent,
 };
-use ratatui::DefaultTerminal;
-use ratatui::buffer::Buffer;
-use ratatui::layout::{Constraint, Flex, Layout, Position, Rect, Size};
-use ratatui::style::{Color, Style, Stylize};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wrap};
+use ratatui::{
+    DefaultTerminal,
+    buffer::Buffer,
+    layout::{Constraint, Flex, Layout, Position, Rect, Size},
+    style::{Color, Style, Stylize},
+    text::{Line, Span},
+    widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wrap},
+};
 use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
-use std::collections::HashMap;
-use std::hash::Hash;
-use std::io::Write;
-use std::slice::IterMut;
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{collections::HashMap, hash::Hash, io::Write, slice::IterMut, str::FromStr, sync::Arc};
 use tasks_widget::ErrorLoggerTrait;
-use tokio::sync::mpsc;
-use tokio::sync::{OnceCell, RwLock};
+use tokio::sync::{OnceCell, RwLock, mpsc};
 use widget::WidgetTrait;
 mod dialog;
 mod filter_widget;
@@ -804,11 +801,9 @@ impl App {
     }
 
     fn save_state_as(&mut self) {
-        let d = text_input_dialog::Dialog::new(
-            "State name",
-            Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap(),
-            self.draw_helper.as_ref().unwrap().clone(),
-        );
+        let mut d =
+            text_input_dialog::Dialog::new("State name", Regex::new(r"^[[:alpha:]]+[\[[:alpha:]\]\-_]*$").unwrap());
+        d.set_draw_helper(self.draw_helper.as_ref().unwrap().clone());
         self.dialog = Some(Box::new(d));
     }
 

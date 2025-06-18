@@ -1,41 +1,40 @@
 // SPDX-License-Identifier: MIT
 
 use super::{
-    dialog::DialogTrait, draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler,
-    style, widget::WidgetTrait,
+    dialog::DialogTrait, draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, line_edit::LineEdit,
+    mouse_handler::MouseHandler, style, widget::WidgetTrait,
 };
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
-    layout::{Position, Rect, Size},
-    widgets::{Block, Borders, Paragraph, Widget},
+    layout::{Alignment, Rect, Size},
+    text::Text,
+    widgets::{Block, Borders, Widget},
 };
 use regex::Regex;
 
+const FOOTER: &str = "Input text and press Enter for applying or Esc for cancelling";
+
 pub struct Dialog {
     title: String,
-    text: String,
-    input_re: Regex,
+    edit: LineEdit,
     should_be_closed: bool,
-    draw_helper: DrawHelper,
-    last_cursor_pos: Position,
+    draw_helper: Option<DrawHelper>,
 }
 
 impl Dialog {
-    pub fn new(title: &str, input_re: Regex, draw_helper: DrawHelper) -> Self {
+    pub fn new(title: &str, input_re: Regex) -> Self {
         Self {
             title: title.to_string(),
-            text: String::new(),
-            input_re,
+            edit: LineEdit::new(input_re),
             should_be_closed: false,
-            draw_helper,
-            last_cursor_pos: Position::default(),
+            draw_helper: None,
         }
     }
 
     pub fn text(&self) -> String {
-        self.text.clone()
+        self.edit.text()
     }
 }
 
@@ -43,22 +42,24 @@ impl Dialog {
 impl WidgetTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default()
-            .title(self.title.clone())
+            .title_top(self.title.clone())
+            .title_bottom(FOOTER)
+            .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
             .border_style(style::BORDER_COLOR);
-        Paragraph::new(self.text.clone()).block(b).render(area, buf);
+        let inner_area = b.inner(area);
+        b.render(area, buf);
+        self.edit.render(inner_area, buf).await;
+    }
 
-        if !self.should_be_closed {
-            let pos = Position::new(area.x + self.text.len() as u16 + 1, area.y + 1);
-            if pos != self.last_cursor_pos {
-                self.draw_helper.write().await.set_cursor_pos(pos);
-                self.last_cursor_pos = pos;
-            }
-        }
+    fn set_draw_helper(&mut self, dh: DrawHelper) {
+        self.edit.set_draw_helper(dh.clone());
+        self.draw_helper = Some(dh);
     }
 
     fn size(&self) -> Size {
-        Size::new(30, 3)
+        let edit_size = self.edit.size();
+        Size::new(Text::from(FOOTER).width() as u16 + 2, edit_size.height + 2)
     }
 }
 
@@ -76,18 +77,14 @@ impl DialogTrait for Dialog {
 #[async_trait]
 impl KeyboardHandler for Dialog {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        if self.edit.handle_key(key).await {
+            return true;
+        }
+
         match key.code {
             KeyCode::Esc => {
                 self.should_be_closed = true;
-                self.text.clear();
-            }
-            KeyCode::Char(ch) => {
-                if self.input_re.is_match(format!("{}{ch}", self.text).as_str()) {
-                    self.text.push(ch);
-                }
-            }
-            KeyCode::Backspace => {
-                self.text.pop();
+                self.edit.clear();
             }
             KeyCode::Enter => {
                 self.should_be_closed = true;
@@ -97,8 +94,8 @@ impl KeyboardHandler for Dialog {
             }
         }
 
-        if self.should_be_closed {
-            self.draw_helper.write().await.hide_cursor();
+        if self.should_be_closed && self.draw_helper.is_some() {
+            self.draw_helper.as_ref().unwrap().write().await.hide_cursor();
         }
         true
     }
