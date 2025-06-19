@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use crate::types::ArcRwLockBlocked;
 use std::sync::{Arc, RwLock};
 use tokio::sync::broadcast;
 
@@ -18,7 +19,7 @@ pub struct SharedData {
 }
 
 pub struct Shortcut {
-    data: Arc<RwLock<SharedData>>,
+    data: ArcRwLockBlocked<SharedData>,
     tx: broadcast::Sender<()>,
 }
 
@@ -46,7 +47,7 @@ impl Shortcut {
         self.data.read().unwrap().is_global
     }
 
-    pub fn internal_data(&self) -> Arc<RwLock<SharedData>> {
+    pub fn internal_data(&self) -> ArcRwLockBlocked<SharedData> {
         self.data.clone()
     }
 

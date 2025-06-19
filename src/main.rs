@@ -14,6 +14,7 @@ mod state;
 mod task;
 mod task_patch;
 mod todoist;
+mod types;
 mod ui;
 mod wizard;
 use std::sync::Arc;
@@ -23,6 +24,7 @@ use color_eyre::owo_colors::OwoColorize;
 use ratatui::style::Color;
 use settings::Settings;
 use tokio::sync::RwLock;
+use types::ArcRwLock;
 use ui::style;
 
 #[derive(Parser, Debug)]
@@ -96,7 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Settings::new(config_path.to_str().unwrap())
     };
 
-    let mut providers: Vec<Arc<RwLock<Box<dyn provider::Provider>>>> = Vec::new();
+    let mut providers: Vec<ArcRwLock<Box<dyn provider::Provider>>> = Vec::new();
 
     let mut it = style::PROVIDER_COLORS.iter();
     let mut color = || -> &Color {

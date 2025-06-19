@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT
 
 use super::DialogTrait;
-use crate::ui::{
-    keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::SharedData, style, widgets::WidgetTrait,
+use crate::{
+    types::ArcRwLockBlocked,
+    ui::{
+        keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::SharedData, style,
+        widgets::WidgetTrait,
+    },
 };
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
@@ -14,7 +18,6 @@ use ratatui::{
 };
 
 use async_trait::async_trait;
-use std::sync::{Arc, RwLock};
 
 struct Shortcut {
     name: String,
@@ -39,7 +42,7 @@ fn keys_to_str(keys: &[char]) -> String {
     s
 }
 
-fn shared_data_to_shortcut(s: &Arc<RwLock<SharedData>>) -> Shortcut {
+fn shared_data_to_shortcut(s: &ArcRwLockBlocked<SharedData>) -> Shortcut {
     let d = s.read().unwrap();
     Shortcut {
         name: d.name.clone(),
@@ -49,8 +52,8 @@ fn shared_data_to_shortcut(s: &Arc<RwLock<SharedData>>) -> Shortcut {
 
 impl Dialog {
     pub fn new(
-        active_block_shortcuts: &[Arc<RwLock<SharedData>>],
-        global_shortcuts: &[Arc<RwLock<SharedData>>],
+        active_block_shortcuts: &[ArcRwLockBlocked<SharedData>],
+        global_shortcuts: &[ArcRwLockBlocked<SharedData>],
     ) -> Self {
         let mut active: Vec<Shortcut> = active_block_shortcuts.iter().map(shared_data_to_shortcut).collect();
         let mut global: Vec<Shortcut> = global_shortcuts.iter().map(shared_data_to_shortcut).collect();

@@ -4,6 +4,7 @@ mod widgets;
 use super::{
     filter, project, provider,
     state::{State, StateSettings, StatefulObject, state_from_str, state_to_str},
+    types::ArcRwLock,
     ui::{
         dialogs::{DialogTrait, KeyBindingsHelpDialog, StatesDialog, TextInputDialog},
         widgets::WidgetTrait,
@@ -133,19 +134,19 @@ impl ErrorLoggerTrait for ErrorLogger {
 
 pub struct App {
     should_exit: bool,
-    providers: Arc<RwLock<SelectableList<Arc<RwLock<Box<dyn provider::Provider>>>>>>,
-    projects: Arc<RwLock<SelectableList<Box<dyn project::Project>>>>,
+    providers: ArcRwLock<SelectableList<ArcRwLock<Box<dyn provider::Provider>>>>,
+    projects: ArcRwLock<SelectableList<Box<dyn project::Project>>>,
     current_block: AppBlock,
     draw_helper: Option<draw_helper::DrawHelper>,
 
-    filter_widget: Arc<RwLock<filter_widget::FilterWidget>>,
-    tasks_widget: Arc<RwLock<tasks_widget::TasksWidget>>,
-    task_info_widget: Arc<RwLock<task_info_widget::TaskInfoWidget>>,
+    filter_widget: ArcRwLock<filter_widget::FilterWidget>,
+    tasks_widget: ArcRwLock<tasks_widget::TasksWidget>,
+    task_info_widget: ArcRwLock<task_info_widget::TaskInfoWidget>,
     home_link: HyperlinkWidget,
 
-    error_logger: Arc<RwLock<ErrorLogger>>,
-    app_blocks: HashMap<AppBlock, Arc<RwLock<dyn AppBlockWidget>>>,
-    stateful_widgets: HashMap<AppBlock, Arc<RwLock<dyn StatefulObject>>>,
+    error_logger: ArcRwLock<ErrorLogger>,
+    app_blocks: HashMap<AppBlock, ArcRwLock<dyn AppBlockWidget>>,
+    stateful_widgets: HashMap<AppBlock, ArcRwLock<dyn StatefulObject>>,
     key_buffer: key_buffer::KeyBuffer,
 
     select_first_shortcut: Shortcut,
@@ -158,7 +159,7 @@ pub struct App {
 
     dialog: Option<Box<dyn DialogTrait>>,
 
-    settings: Arc<RwLock<Box<dyn StateSettings>>>,
+    settings: ArcRwLock<Box<dyn StateSettings>>,
     cursor_pos: Option<Position>,
 }
 
@@ -179,10 +180,7 @@ impl tasks_widget::TaskInfoViewerTrait for task_info_widget::TaskInfoWidget {
 
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
 impl App {
-    pub async fn new(
-        providers: Vec<Arc<RwLock<Box<dyn provider::Provider>>>>,
-        settings: Box<dyn StateSettings>,
-    ) -> Self {
+    pub async fn new(providers: Vec<ArcRwLock<Box<dyn provider::Provider>>>, settings: Box<dyn StateSettings>) -> Self {
         let providers_widget = Arc::new(RwLock::new(
             SelectableList::new(providers, Some(0))
                 .add_all_item()

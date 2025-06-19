@@ -1,7 +1,5 @@
-use std::sync::Arc;
-
+use crate::types::ArcRwLock;
 use ratatui::layout::Position;
-use tokio::sync::RwLock;
 
 pub trait DrawHelperTrait: Send + Sync {
     fn redraw(&mut self);
@@ -9,4 +7,4 @@ pub trait DrawHelperTrait: Send + Sync {
     fn hide_cursor(&mut self);
 }
 
-pub type DrawHelper = Arc<RwLock<Box<dyn DrawHelperTrait>>>;
+pub type DrawHelper = ArcRwLock<Box<dyn DrawHelperTrait>>;

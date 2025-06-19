@@ -13,6 +13,7 @@ use crate::{
     state::StatefulObject,
     task::{self, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
     task_patch::{DuePatchItem, TaskPatch},
+    types::ArcRwLock,
 };
 use async_trait::async_trait;
 use chrono::Local;
@@ -46,15 +47,15 @@ pub trait ProvidersStorage<T>: Send + Sync {
 pub trait ErrorLoggerTrait: Send + Sync {
     fn add_error(&mut self, message: &str);
 }
-type ErrorLogger = Arc<RwLock<dyn ErrorLoggerTrait>>;
+type ErrorLogger = ArcRwLock<dyn ErrorLoggerTrait>;
 
 pub trait TaskInfoViewerTrait: Send + Sync {
     fn set_task(&mut self, task: Option<Box<dyn TaskTrait>>);
 }
-type TaskInfoViewer = Arc<RwLock<dyn TaskInfoViewerTrait>>;
+type TaskInfoViewer = ArcRwLock<dyn TaskInfoViewerTrait>;
 
 pub struct TasksWidget {
-    providers_storage: Arc<RwLock<dyn ProvidersStorage<Arc<RwLock<Box<dyn ProviderTrait>>>>>>,
+    providers_storage: ArcRwLock<dyn ProvidersStorage<ArcRwLock<Box<dyn ProviderTrait>>>>,
     error_logger: ErrorLogger,
     task_info_viewer: TaskInfoViewer,
     all_tasks: Vec<Box<dyn TaskTrait>>,
@@ -75,7 +76,7 @@ pub struct TasksWidget {
 
     change_dalog: Option<Box<dyn DialogTrait>>,
 
-    arc_self: Option<Arc<RwLock<Self>>>,
+    arc_self: Option<ArcRwLock<Self>>,
 }
 
 #[async_trait]
@@ -121,10 +122,10 @@ impl AppBlockWidget for TasksWidget {
 
 impl TasksWidget {
     pub async fn new(
-        providers_storage: Arc<RwLock<dyn ProvidersStorage<Arc<RwLock<Box<dyn ProviderTrait>>>>>>,
+        providers_storage: ArcRwLock<dyn ProvidersStorage<ArcRwLock<Box<dyn ProviderTrait>>>>,
         error_logger: ErrorLogger,
         task_info_viewer: TaskInfoViewer,
-    ) -> Arc<RwLock<Self>> {
+    ) -> ArcRwLock<Self> {
         let s = Arc::new(RwLock::new(Self {
             providers_storage,
             error_logger,
