@@ -16,10 +16,13 @@ mod task_patch;
 mod todoist;
 mod ui;
 mod wizard;
+use std::sync::Arc;
+
 use clap::{Parser, Subcommand};
 use color_eyre::owo_colors::OwoColorize;
 use ratatui::style::Color;
 use settings::Settings;
+use tokio::sync::RwLock;
 use ui::style;
 
 #[derive(Parser, Debug)]
@@ -93,7 +96,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Settings::new(config_path.to_str().unwrap())
     };
 
-    let mut providers: Vec<Box<dyn provider::Provider>> = Vec::new();
+    let mut providers: Vec<Arc<RwLock<Box<dyn provider::Provider>>>> = Vec::new();
 
     let mut it = style::PROVIDER_COLORS.iter();
     let mut color = || -> &Color {
@@ -121,31 +124,37 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     path.push('/');
                 }
 
-                providers.push(Box::new(obsidian::Provider::new(name, path.as_str(), color())));
+                providers.push(Arc::new(RwLock::new(Box::new(obsidian::Provider::new(
+                    name,
+                    path.as_str(),
+                    color(),
+                )))));
             }
-            todoist::PROVIDER_NAME => providers.push(Box::new(todoist::Provider::new(
+            todoist::PROVIDER_NAME => providers.push(Arc::new(RwLock::new(Box::new(todoist::Provider::new(
                 name,
                 config.get("api_key").unwrap().as_str(),
                 color(),
-            ))),
-            gitlab_todo::PROVIDER_NAME => providers.push(Box::new(gitlab_todo::Provider::new(
+            ))))),
+            gitlab_todo::PROVIDER_NAME => providers.push(Arc::new(RwLock::new(Box::new(gitlab_todo::Provider::new(
                 name,
                 config.get("base_url").unwrap().as_str(),
                 config.get("api_key").unwrap().as_str(),
                 color(),
-            ))),
-            github_issues::PROVIDER_NAME => providers.push(Box::new(github_issues::Provider::new(
-                name,
-                config.get("api_key").unwrap().as_str(),
-                config.get("repository").unwrap().as_str(),
-                color(),
-            ))),
+            ))))),
+            github_issues::PROVIDER_NAME => {
+                providers.push(Arc::new(RwLock::new(Box::new(github_issues::Provider::new(
+                    name,
+                    config.get("api_key").unwrap().as_str(),
+                    config.get("repository").unwrap().as_str(),
+                    color(),
+                )))))
+            }
             _ => println!("Unknown provider configuration for section: {name}"),
         }
     }
 
     if !providers.is_empty() {
-        providers.sort_by_key(|p| p.name());
+        // providers.sort_by_key(|p| p.name()); // TODO: return it back
     }
 
     match &cli.command {
@@ -159,28 +168,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             let mut tasks = Vec::new();
-            for mut p in providers {
+            for p in providers {
                 if let Some(provider_name) = provider {
-                    if p.name() != *provider_name {
+                    if p.read().await.name() != *provider_name {
                         continue;
                     }
                 }
 
-                tasks.append(&mut p.tasks(None, &f).await?);
+                tasks.append(&mut p.write().await.tasks(None, &f).await?);
             }
             print_boxed_tasks(&tasks);
         }
         Some(Commands::Projects { provider }) => {
             let mut projects = Vec::new();
 
-            for mut p in providers {
+            for p in providers {
                 if let Some(provider_name) = provider {
-                    if p.name() != *provider_name {
+                    if p.read().await.name() != *provider_name {
                         continue;
                     }
                 }
 
-                projects.append(&mut p.projects().await?);
+                projects.append(&mut p.write().await.projects().await?);
             }
 
             print_projects(&projects);
@@ -192,7 +201,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => {
             color_eyre::install()?;
             let terminal = ratatui::init();
-            let _app_result = ui::App::new(providers, Box::new(cfg)).run(terminal).await;
+            let _app_result = ui::App::new(providers, Box::new(cfg)).await.run(terminal).await;
             ratatui::restore();
         }
     };

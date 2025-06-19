@@ -129,16 +129,11 @@ impl ErrorLoggerTrait for ErrorLogger {
     fn add_error(&mut self, message: &str) {
         self.errors.push(message.to_string())
     }
-
-    fn add_errors(&mut self, messages: &[&str]) {
-        self.errors
-            .extend(messages.iter().map(|m| m.to_string()).collect::<Vec<String>>());
-    }
 }
 
 pub struct App {
     should_exit: bool,
-    providers: Arc<RwLock<SelectableList<Box<dyn provider::Provider>>>>,
+    providers: Arc<RwLock<SelectableList<Arc<RwLock<Box<dyn provider::Provider>>>>>>,
     projects: Arc<RwLock<SelectableList<Box<dyn project::Project>>>>,
     current_block: AppBlock,
     draw_helper: Option<draw_helper::DrawHelper>,
@@ -184,7 +179,10 @@ impl tasks_widget::TaskInfoViewerTrait for task_info_widget::TaskInfoWidget {
 
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
 impl App {
-    pub fn new(providers: Vec<Box<dyn provider::Provider>>, settings: Box<dyn StateSettings>) -> Self {
+    pub async fn new(
+        providers: Vec<Arc<RwLock<Box<dyn provider::Provider>>>>,
+        settings: Box<dyn StateSettings>,
+    ) -> Self {
         let providers_widget = Arc::new(RwLock::new(
             SelectableList::new(providers, Some(0))
                 .add_all_item()
@@ -210,7 +208,8 @@ impl App {
                 providers_widget.clone(),
                 error_logger.clone(),
                 task_info_widget.clone(),
-            ),
+            )
+            .await,
             task_info_widget,
             home_link: HyperlinkWidget::new("[Homepage]", "https://github.com/panter-dsd/tatuin"),
             error_logger: error_logger.clone(),
@@ -527,7 +526,7 @@ impl App {
 
     async fn reload(&mut self) {
         for p in self.providers.write().await.iter_mut() {
-            p.reload().await;
+            p.write().await.reload().await;
         }
 
         self.tasks_widget.write().await.reload().await;
@@ -596,7 +595,7 @@ impl App {
     async fn update_task_filter(&mut self) {
         let mut selected_providers = Vec::new();
         if let Some(p) = self.providers.read().await.selected() {
-            selected_providers.push(p.name());
+            selected_providers.push(p.read().await.name());
         }
         self.tasks_widget
             .write()
@@ -749,9 +748,37 @@ impl App {
     }
 
     async fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
+        struct Data {
+            name: String,
+            type_name: String,
+            color: Color,
+        }
+        static INFO: OnceCell<HashMap<usize, Data>> = OnceCell::const_new();
+        let info = INFO
+            .get_or_init(async || {
+                let mut result = HashMap::new();
+                for p in self.providers.read().await.iter() {
+                    let ptr = Arc::as_ptr(p) as usize;
+                    let p = p.read().await;
+                    result.insert(
+                        ptr,
+                        Data {
+                            name: p.name(),
+                            type_name: p.type_name(),
+                            color: p.color(),
+                        },
+                    );
+                }
+                result
+            })
+            .await;
         self.providers.write().await.render(
             "Providers",
-            |p| -> ListItem { ListItem::from(Span::styled(format!("{} ({})", p.name(), p.type_name()), p.color())) },
+            |p| -> ListItem {
+                let ptr = Arc::as_ptr(p) as usize;
+                let data = info.get(&ptr).unwrap();
+                ListItem::from(Span::styled(format!("{} ({})", data.name, data.type_name), data.color))
+            },
             area,
             buf,
         );
@@ -761,12 +788,12 @@ impl App {
         static PROVIDER_COLORS: OnceCell<Vec<(String, Color)>> = OnceCell::const_new();
         let provider_colors = PROVIDER_COLORS
             .get_or_init(async || {
-                self.providers
-                    .read()
-                    .await
-                    .iter()
-                    .map(|p| (p.name(), p.color()))
-                    .collect()
+                let mut result = Vec::new();
+                for p in self.providers.read().await.iter() {
+                    let p = p.read().await;
+                    result.push((p.name(), p.color()));
+                }
+                result
             })
             .await;
 

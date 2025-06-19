@@ -45,7 +45,6 @@ pub trait ProvidersStorage<T>: Send + Sync {
 
 pub trait ErrorLoggerTrait: Send + Sync {
     fn add_error(&mut self, message: &str);
-    fn add_errors(&mut self, messages: &[&str]);
 }
 type ErrorLogger = Arc<RwLock<dyn ErrorLoggerTrait>>;
 
@@ -55,7 +54,7 @@ pub trait TaskInfoViewerTrait: Send + Sync {
 type TaskInfoViewer = Arc<RwLock<dyn TaskInfoViewerTrait>>;
 
 pub struct TasksWidget {
-    providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
+    providers_storage: Arc<RwLock<dyn ProvidersStorage<Arc<RwLock<Box<dyn ProviderTrait>>>>>>,
     error_logger: ErrorLogger,
     task_info_viewer: TaskInfoViewer,
     all_tasks: Vec<Box<dyn TaskTrait>>,
@@ -75,6 +74,8 @@ pub struct TasksWidget {
     last_filter: Filter,
 
     change_dalog: Option<Box<dyn DialogTrait>>,
+
+    arc_self: Option<Arc<RwLock<Self>>>,
 }
 
 #[async_trait]
@@ -119,8 +120,8 @@ impl AppBlockWidget for TasksWidget {
 }
 
 impl TasksWidget {
-    pub fn new(
-        providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
+    pub async fn new(
+        providers_storage: Arc<RwLock<dyn ProvidersStorage<Arc<RwLock<Box<dyn ProviderTrait>>>>>>,
         error_logger: ErrorLogger,
         task_info_viewer: TaskInfoViewer,
     ) -> Arc<RwLock<Self>> {
@@ -144,7 +145,9 @@ impl TasksWidget {
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
             last_filter: Filter::default(),
             change_dalog: None,
+            arc_self: None,
         }));
+        s.write().await.arc_self = Some(s.clone());
         tokio::spawn({
             let s = s.clone();
             async move {
@@ -260,7 +263,7 @@ impl TasksWidget {
 
     pub async fn commit_changes(&mut self) {
         for p in self.providers_storage.write().await.iter_mut() {
-            let name = p.name();
+            let name = p.read().await.name();
             let patches = self
                 .changed_tasks
                 .iter()
@@ -274,7 +277,7 @@ impl TasksWidget {
                 .collect::<Vec<TaskPatch>>();
 
             if !patches.is_empty() {
-                let errors = p.patch_tasks(&patches).await;
+                let errors = p.write().await.patch_tasks(&patches).await;
 
                 let mut error_logger = self.error_logger.write().await;
                 for e in &errors {
@@ -289,7 +292,7 @@ impl TasksWidget {
                     }
                 }
 
-                p.reload().await;
+                p.write().await.reload().await;
             }
         }
 
@@ -367,37 +370,49 @@ impl TasksWidget {
 
     pub async fn load_tasks(&mut self, f: &Filter) {
         self.last_filter = f.clone();
+        self.all_tasks.clear();
+        let s = self.arc_self.as_ref().unwrap().clone();
 
-        let mut all_tasks: Vec<Box<dyn task::Task>> = Vec::new();
-
-        let mut errors = Vec::new();
         for p in self.providers_storage.write().await.iter_mut() {
-            let tasks = p.tasks(None, f).await;
+            tokio::spawn({
+                let name = p.read().await.name();
+                let s = s.clone();
+                let p = p.clone();
+                let f = f.clone();
+                async move {
+                    let tasks = p.write().await.tasks(None, &f).await;
 
-            match tasks {
-                Ok(t) => all_tasks.append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>()),
-                Err(err) => {
-                    errors.push(format!("Load provider {} projects failure: {err}", p.name()));
+                    let mut s = s.write().await;
+                    s.all_tasks.retain(|t| t.provider() != name);
+
+                    match tasks {
+                        Ok(t) => {
+                            s.all_tasks
+                                .append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>());
+                            s.all_tasks.sort_by(|l, r| {
+                                due_group(l.as_ref())
+                                    .cmp(&due_group(r.as_ref()))
+                                    .then_with(|| r.priority().cmp(&l.priority()))
+                                    .then_with(|| l.due().cmp(&r.due()))
+                            });
+
+                            s.remove_changed_tasks_that_are_not_exists_anymore();
+                            s.filter_tasks();
+                            s.update_task_info_view().await;
+                            if let Some(dh) = &s.draw_helper {
+                                dh.write().await.redraw();
+                            }
+                        }
+                        Err(err) => {
+                            s.error_logger
+                                .write()
+                                .await
+                                .add_error(format!("Load provider {name} projects failure: {err}").as_str());
+                        }
+                    }
                 }
-            }
+            });
         }
-
-        self.error_logger
-            .write()
-            .await
-            .add_errors(&errors.iter().map(|m| m.as_str()).collect::<Vec<&str>>());
-
-        all_tasks.sort_by(|l, r| {
-            due_group(l.as_ref())
-                .cmp(&due_group(r.as_ref()))
-                .then_with(|| r.priority().cmp(&l.priority()))
-                .then_with(|| l.due().cmp(&r.due()))
-        });
-
-        self.all_tasks = all_tasks;
-        self.remove_changed_tasks_that_are_not_exists_anymore();
-        self.filter_tasks();
-        self.update_task_info_view().await;
     }
 
     pub async fn reload(&mut self) {
@@ -624,6 +639,10 @@ impl WidgetTrait for TasksWidget {
         if self.change_dalog.is_some() {
             self.render_change_due_dialog(area, buf).await;
         }
+    }
+
+    fn set_draw_helper(&mut self, dh: DrawHelper) {
+        self.draw_helper = Some(dh)
     }
 
     fn size(&self) -> Size {

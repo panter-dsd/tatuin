@@ -4,7 +4,7 @@ use crate::filter;
 use crate::gitlab::client::Client;
 use crate::gitlab::structs;
 use crate::project::Project as ProjectTrait;
-use crate::provider::Provider as ProviderTrait;
+use crate::provider::{GetTasksError, Provider as ProviderTrait};
 use crate::task::{DateTimeUtc, State, Task as TaskTrait};
 use crate::task_patch::{PatchError, TaskPatch};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
@@ -163,7 +163,7 @@ impl ProviderTrait for Provider {
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn Error>> {
+    ) -> Result<Vec<Box<dyn TaskTrait>>, GetTasksError> {
         let mut should_clear = false;
         if let Some(last_filter) = self.last_filter.as_mut() {
             should_clear = last_filter != f;
