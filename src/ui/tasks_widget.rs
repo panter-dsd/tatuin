@@ -26,7 +26,7 @@ use ratatui::{
     widgets::{Clear, ListItem, ListState, Widget},
 };
 use std::{cmp::Ordering, slice::IterMut, sync::Arc};
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, broadcast};
 
 impl std::fmt::Display for DuePatchItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -64,6 +64,7 @@ pub struct TasksWidget {
     providers_filter: Vec<String>,
     projects_filter: Vec<String>,
     draw_helper: Option<DrawHelper>,
+    on_changes_broadcast: broadcast::Sender<()>,
 
     commit_changes_shortcut: Shortcut,
     swap_completed_state_shortcut: Shortcut,
@@ -126,6 +127,8 @@ impl TasksWidget {
         error_logger: ErrorLogger,
         task_info_viewer: TaskInfoViewer,
     ) -> ArcRwLock<Self> {
+        let (tx, _) = broadcast::channel(1);
+
         let s = Arc::new(RwLock::new(Self {
             providers_storage,
             error_logger,
@@ -138,6 +141,7 @@ impl TasksWidget {
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),
             draw_helper: None,
+            on_changes_broadcast: tx,
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
             swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
@@ -192,6 +196,10 @@ impl TasksWidget {
         self.filter_tasks();
     }
 
+    pub fn subscribe_on_changes(&self) -> broadcast::Receiver<()> {
+        self.on_changes_broadcast.subscribe()
+    }
+
     fn filter_tasks(&mut self) {
         self.tasks.set_items(
             self.all_tasks
@@ -244,7 +252,6 @@ impl TasksWidget {
                 }
             }
         }
-        println!("{}", projects.len());
 
         projects
     }
@@ -401,9 +408,7 @@ impl TasksWidget {
                             s.remove_changed_tasks_that_are_not_exists_anymore();
                             s.filter_tasks();
                             s.update_task_info_view().await;
-                            if let Some(dh) = &s.draw_helper {
-                                dh.write().await.redraw();
-                            }
+                            let _ = s.on_changes_broadcast.send(());
                         }
                         Err(err) => {
                             s.error_logger

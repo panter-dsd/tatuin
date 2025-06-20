@@ -289,6 +289,7 @@ impl App {
         let mut load_state_accepted = self.load_state_shortcut.subscribe_to_accepted();
         let mut save_state_accepted = self.save_state_shortcut.subscribe_to_accepted();
         let mut show_keybindings_help_shortcut_accepted = self.show_keybindings_help_shortcut.subscribe_to_accepted();
+        let mut on_tasks_changed = self.tasks_widget.read().await.subscribe_on_changes();
 
         while !self.should_exit {
             if let Some(d) = &self.dialog {
@@ -314,6 +315,11 @@ impl App {
                         },
                         _ => {},
                     };
+                },
+                _ = on_tasks_changed.recv() => {
+                    if self.selected_project_id().await.is_none() {
+                        self.load_projects().await;
+                    }
                 },
                 _ = select_first_accepted.recv() => self.select_first().await,
                 _ = select_last_accepted.recv() => self.select_last().await,
@@ -376,17 +382,11 @@ impl App {
     }
 
     async fn load_tasks(&mut self) {
-        let project_id = self.selected_project_id().await;
-
         self.tasks_widget
             .write()
             .await
             .load_tasks(&self.filter_widget.read().await.filter())
             .await;
-
-        if project_id.is_none() {
-            self.load_projects().await;
-        }
     }
 
     async fn handle_shortcuts(&mut self, key: &KeyEvent) -> bool {
