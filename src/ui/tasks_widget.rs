@@ -9,7 +9,7 @@ use crate::{
     filter::Filter,
     patched_task::PatchedTask,
     project::Project as ProjectTrait,
-    provider::ProviderTrait,
+    provider::Provider,
     state::StatefulObject,
     task::{self, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
     task_patch::{DuePatchItem, TaskPatch},
@@ -55,7 +55,7 @@ pub trait TaskInfoViewerTrait: Send + Sync {
 type TaskInfoViewer = ArcRwLock<dyn TaskInfoViewerTrait>;
 
 pub struct TasksWidget {
-    providers_storage: ArcRwLock<dyn ProvidersStorage<ArcRwLock<Box<dyn ProviderTrait>>>>,
+    providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
     error_logger: ErrorLogger,
     task_info_viewer: TaskInfoViewer,
     all_tasks: Vec<Box<dyn TaskTrait>>,
@@ -122,7 +122,7 @@ impl AppBlockWidget for TasksWidget {
 
 impl TasksWidget {
     pub async fn new(
-        providers_storage: ArcRwLock<dyn ProvidersStorage<ArcRwLock<Box<dyn ProviderTrait>>>>,
+        providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
         error_logger: ErrorLogger,
         task_info_viewer: TaskInfoViewer,
     ) -> ArcRwLock<Self> {
@@ -244,6 +244,7 @@ impl TasksWidget {
                 }
             }
         }
+        println!("{}", projects.len());
 
         projects
     }
@@ -264,11 +265,11 @@ impl TasksWidget {
 
     pub async fn commit_changes(&mut self) {
         for p in self.providers_storage.write().await.iter_mut() {
-            let name = p.read().await.name();
+            let name = &p.name;
             let patches = self
                 .changed_tasks
                 .iter()
-                .filter(|c| c.task.provider() == name)
+                .filter(|c| &c.task.provider() == name)
                 .map(|c| TaskPatch {
                     task: c.task.clone_boxed(),
                     state: c.state.clone(),
@@ -278,7 +279,7 @@ impl TasksWidget {
                 .collect::<Vec<TaskPatch>>();
 
             if !patches.is_empty() {
-                let errors = p.write().await.patch_tasks(&patches).await;
+                let errors = p.provider.write().await.patch_tasks(&patches).await;
 
                 let mut error_logger = self.error_logger.write().await;
                 for e in &errors {
@@ -293,7 +294,7 @@ impl TasksWidget {
                     }
                 }
 
-                p.write().await.reload().await;
+                p.provider.write().await.reload().await;
             }
         }
 
@@ -376,9 +377,9 @@ impl TasksWidget {
 
         for p in self.providers_storage.write().await.iter_mut() {
             tokio::spawn({
-                let name = p.read().await.name();
+                let name = p.name.clone();
                 let s = s.clone();
-                let p = p.clone();
+                let p = p.provider.clone();
                 let f = f.clone();
                 async move {
                     let tasks = p.write().await.tasks(None, &f).await;

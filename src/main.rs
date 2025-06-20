@@ -24,8 +24,9 @@ use color_eyre::owo_colors::OwoColorize;
 use ratatui::style::Color;
 use settings::Settings;
 use tokio::sync::RwLock;
-use types::ArcRwLock;
 use ui::style;
+
+use crate::provider::ProviderTrait;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -100,7 +101,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Settings::new(config_path.to_str().unwrap())
     };
 
-    let mut providers: Vec<ArcRwLock<Box<dyn provider::ProviderTrait>>> = Vec::new();
+    let mut providers: Vec<provider::Provider> = Vec::new();
 
     let mut it = style::PROVIDER_COLORS.iter();
     let mut color = || -> &Color {
@@ -121,44 +122,49 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        match config.get("type").unwrap().as_str() {
+        let p: Option<Box<dyn ProviderTrait>> = match config.get("type").unwrap().as_str() {
             obsidian::PROVIDER_NAME => {
                 let mut path = config.get("path").unwrap().to_string();
                 if !path.ends_with('/') {
                     path.push('/');
                 }
 
-                providers.push(Arc::new(RwLock::new(Box::new(obsidian::Provider::new(
-                    name,
-                    path.as_str(),
-                    color(),
-                )))));
+                Some(Box::new(obsidian::Provider::new(name, path.as_str(), color())))
             }
-            todoist::PROVIDER_NAME => providers.push(Arc::new(RwLock::new(Box::new(todoist::Provider::new(
+            todoist::PROVIDER_NAME => Some(Box::new(todoist::Provider::new(
                 name,
                 config.get("api_key").unwrap().as_str(),
                 color(),
-            ))))),
-            gitlab_todo::PROVIDER_NAME => providers.push(Arc::new(RwLock::new(Box::new(gitlab_todo::Provider::new(
+            ))),
+            gitlab_todo::PROVIDER_NAME => Some(Box::new(gitlab_todo::Provider::new(
                 name,
                 config.get("base_url").unwrap().as_str(),
                 config.get("api_key").unwrap().as_str(),
                 color(),
-            ))))),
-            github_issues::PROVIDER_NAME => {
-                providers.push(Arc::new(RwLock::new(Box::new(github_issues::Provider::new(
-                    name,
-                    config.get("api_key").unwrap().as_str(),
-                    config.get("repository").unwrap().as_str(),
-                    color(),
-                )))))
+            ))),
+            github_issues::PROVIDER_NAME => Some(Box::new(github_issues::Provider::new(
+                name,
+                config.get("api_key").unwrap().as_str(),
+                config.get("repository").unwrap().as_str(),
+                color(),
+            ))),
+            _ => {
+                println!("Unknown provider configuration for section: {name}");
+                None
             }
-            _ => println!("Unknown provider configuration for section: {name}"),
+        };
+        if let Some(p) = p {
+            providers.push(provider::Provider {
+                name: name.to_string(),
+                type_name: p.type_name(),
+                color: ProviderTrait::color(p.as_ref()),
+                provider: Arc::new(RwLock::new(p)),
+            });
         }
     }
 
     if !providers.is_empty() {
-        // providers.sort_by_key(|p| p.name()); // TODO: return it back
+        providers.sort_by_key(|p| p.name.clone());
     }
 
     match &cli.command {
@@ -174,12 +180,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut tasks = Vec::new();
             for p in providers {
                 if let Some(provider_name) = provider {
-                    if p.read().await.name() != *provider_name {
+                    if p.name != *provider_name {
                         continue;
                     }
                 }
 
-                tasks.append(&mut p.write().await.tasks(None, &f).await?);
+                tasks.append(&mut p.provider.write().await.tasks(None, &f).await?);
             }
             print_boxed_tasks(&tasks);
         }
@@ -188,12 +194,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             for p in providers {
                 if let Some(provider_name) = provider {
-                    if p.read().await.name() != *provider_name {
+                    if p.name != *provider_name {
                         continue;
                     }
                 }
 
-                projects.append(&mut p.write().await.projects().await?);
+                projects.append(&mut p.provider.write().await.projects().await?);
             }
 
             print_projects(&projects);

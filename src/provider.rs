@@ -4,6 +4,7 @@ use crate::filter;
 use crate::project::Project as ProjectTrait;
 use crate::task::Task as TaskTrait;
 use crate::task_patch::{PatchError, TaskPatch};
+use crate::types::ArcRwLock;
 use async_trait::async_trait;
 use ratatui::style::Color;
 use std::error::Error;
@@ -43,4 +44,11 @@ pub trait ProviderTrait: Send + Sync {
     async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError>;
     async fn reload(&mut self);
     fn color(&self) -> Color;
+}
+
+pub struct Provider {
+    pub name: String,
+    pub type_name: String,
+    pub color: Color,
+    pub provider: ArcRwLock<Box<dyn ProviderTrait>>,
 }
