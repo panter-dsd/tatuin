@@ -86,6 +86,8 @@ fn due_to_filter(due: &Option<Vec<filter::Due>>) -> Vec<filter::Due> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    console_subscriber::init();
+
     let cli = Cli::parse();
 
     let mut cfg = if let Some(p) = cli.settings_file {
