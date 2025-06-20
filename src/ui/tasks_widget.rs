@@ -9,7 +9,7 @@ use crate::{
     filter::Filter,
     patched_task::PatchedTask,
     project::Project as ProjectTrait,
-    provider::Provider as ProviderTrait,
+    provider::ProviderTrait,
     state::StatefulObject,
     task::{self, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
     task_patch::{DuePatchItem, TaskPatch},

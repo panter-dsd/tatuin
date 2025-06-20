@@ -31,7 +31,7 @@ impl std::fmt::Display for GetTasksError {
 }
 
 #[async_trait]
-pub trait Provider: Send + Sync {
+pub trait ProviderTrait: Send + Sync {
     fn name(&self) -> String;
     fn type_name(&self) -> String;
     async fn tasks(

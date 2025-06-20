@@ -8,7 +8,7 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{GetTasksError, Provider as ProviderTrait};
+use crate::provider::{GetTasksError, ProviderTrait};
 use crate::task::Task as TaskTrait;
 use crate::task_patch::{PatchError, TaskPatch};
 use async_trait::async_trait;

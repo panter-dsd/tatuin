@@ -6,7 +6,7 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{GetTasksError, Provider as ProviderTrait};
+use crate::provider::{GetTasksError, ProviderTrait};
 use crate::task::{State, Task as TaskTrait};
 use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
 use ratatui::style::Color;

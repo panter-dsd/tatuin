@@ -134,7 +134,7 @@ impl ErrorLoggerTrait for ErrorLogger {
 
 pub struct App {
     should_exit: bool,
-    providers: ArcRwLock<SelectableList<ArcRwLock<Box<dyn provider::Provider>>>>,
+    providers: ArcRwLock<SelectableList<ArcRwLock<Box<dyn provider::ProviderTrait>>>>,
     projects: ArcRwLock<SelectableList<Box<dyn project::Project>>>,
     current_block: AppBlock,
     draw_helper: Option<draw_helper::DrawHelper>,
@@ -180,7 +180,10 @@ impl tasks_widget::TaskInfoViewerTrait for task_info_widget::TaskInfoWidget {
 
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
 impl App {
-    pub async fn new(providers: Vec<ArcRwLock<Box<dyn provider::Provider>>>, settings: Box<dyn StateSettings>) -> Self {
+    pub async fn new(
+        providers: Vec<ArcRwLock<Box<dyn provider::ProviderTrait>>>,
+        settings: Box<dyn StateSettings>,
+    ) -> Self {
         let providers_widget = Arc::new(RwLock::new(
             SelectableList::new(providers, Some(0))
                 .add_all_item()

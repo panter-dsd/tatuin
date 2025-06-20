@@ -86,7 +86,7 @@ fn due_to_filter(due: &Option<Vec<filter::Due>>) -> Vec<filter::Due> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    console_subscriber::init();
+    // console_subscriber::init();
 
     let cli = Cli::parse();
 
@@ -100,7 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Settings::new(config_path.to_str().unwrap())
     };
 
-    let mut providers: Vec<ArcRwLock<Box<dyn provider::Provider>>> = Vec::new();
+    let mut providers: Vec<ArcRwLock<Box<dyn provider::ProviderTrait>>> = Vec::new();
 
     let mut it = style::PROVIDER_COLORS.iter();
     let mut color = || -> &Color {
