@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pub mod dialog;
 pub mod key_bindings_help_dialog;
 pub mod list_dialog;
