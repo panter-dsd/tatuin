@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+mod async_jobs;
 mod filter;
 mod github;
 mod github_issues;

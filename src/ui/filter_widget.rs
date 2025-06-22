@@ -236,7 +236,7 @@ impl WidgetTrait for FilterWidget {
     }
 
     fn size(&self) -> Size {
-        Size::default()
+        Size { width: 0, height: 6 }
     }
 }
 

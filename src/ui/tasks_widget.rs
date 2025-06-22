@@ -6,6 +6,7 @@ use super::{
     shortcut::Shortcut, style, widgets::WidgetTrait,
 };
 use crate::{
+    async_jobs::{AsyncJob, AsyncJobStorage},
     filter::Filter,
     patched_task::PatchedTask,
     project::Project as ProjectTrait,
@@ -65,6 +66,7 @@ pub struct TasksWidget {
     projects_filter: Vec<String>,
     draw_helper: Option<DrawHelper>,
     on_changes_broadcast: broadcast::Sender<()>,
+    async_jobs_storage: ArcRwLock<AsyncJobStorage>,
 
     commit_changes_shortcut: Shortcut,
     swap_completed_state_shortcut: Shortcut,
@@ -126,6 +128,7 @@ impl TasksWidget {
         providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
         error_logger: ErrorLogger,
         task_info_viewer: TaskInfoViewer,
+        async_jobs_storage: ArcRwLock<AsyncJobStorage>,
     ) -> ArcRwLock<Self> {
         let (tx, _) = broadcast::channel(1);
 
@@ -142,6 +145,7 @@ impl TasksWidget {
             providers_filter: Vec::new(),
             draw_helper: None,
             on_changes_broadcast: tx,
+            async_jobs_storage,
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
             swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
@@ -396,7 +400,9 @@ impl TasksWidget {
                 let s = s.clone();
                 let p = p.provider.clone();
                 let f = f.clone();
+                let async_jobs = self.async_jobs_storage.clone();
                 async move {
+                    let _job = AsyncJob::new(format!("Load tasks from provider {name}").as_str(), async_jobs).await;
                     let tasks = p.write().await.tasks(None, &f).await;
 
                     let mut s = s.write().await;

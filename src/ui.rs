@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 mod widgets;
+use crate::async_jobs::AsyncJobStorage;
+
 use super::{
     filter, project,
     provider::Provider,
@@ -137,8 +139,10 @@ pub struct App {
     should_exit: bool,
     providers: ArcRwLock<SelectableList<Provider>>,
     projects: ArcRwLock<SelectableList<Box<dyn project::Project>>>,
+    async_jobs: ArcRwLock<SelectableList<String>>,
     current_block: AppBlock,
     draw_helper: Option<draw_helper::DrawHelper>,
+    async_jobs_storage: ArcRwLock<AsyncJobStorage>,
 
     filter_widget: ArcRwLock<filter_widget::FilterWidget>,
     tasks_widget: ArcRwLock<tasks_widget::TasksWidget>,
@@ -189,16 +193,19 @@ impl App {
         ));
         let error_logger = Arc::new(RwLock::new(ErrorLogger::new()));
         let task_info_widget = Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default()));
+        let async_jobs_storage = Arc::new(RwLock::new(AsyncJobStorage::default()));
         let mut s = Self {
             should_exit: false,
             current_block: AppBlock::TaskList,
             draw_helper: None,
+            async_jobs_storage: async_jobs_storage.clone(),
             providers: providers_widget.clone(),
             projects: Arc::new(RwLock::new(
                 SelectableList::default()
                     .add_all_item()
                     .shortcut(Shortcut::new("Activate Projects block", &['g', 'p'])),
             )),
+            async_jobs: Arc::new(RwLock::new(SelectableList::new(Vec::new(), None))),
             filter_widget: filter_widget::FilterWidget::new(filter::Filter {
                 states: vec![filter::FilterState::Uncompleted],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
@@ -207,6 +214,7 @@ impl App {
                 providers_widget.clone(),
                 error_logger.clone(),
                 task_info_widget.clone(),
+                async_jobs_storage.clone(),
             )
             .await,
             task_info_widget,
@@ -290,6 +298,7 @@ impl App {
         let mut save_state_accepted = self.save_state_shortcut.subscribe_to_accepted();
         let mut show_keybindings_help_shortcut_accepted = self.show_keybindings_help_shortcut.subscribe_to_accepted();
         let mut on_tasks_changed = self.tasks_widget.read().await.subscribe_on_changes();
+        let mut on_jobs_changed = self.async_jobs_storage.read().await.subscribe_on_changes();
 
         while !self.should_exit {
             if let Some(d) = &self.dialog {
@@ -320,6 +329,9 @@ impl App {
                     if self.selected_project_id().await.is_none() {
                         self.load_projects().await;
                     }
+                },
+                _ = on_jobs_changed.recv() => {
+                    self.async_jobs.write().await.set_items(self.async_jobs_storage.read().await.jobs());
                 },
                 _ = select_first_accepted.recv() => self.select_first().await,
                 _ = select_last_accepted.recv() => self.select_last().await,
@@ -677,8 +689,16 @@ impl App {
         let [left_area, right_area] =
             Layout::horizontal([Constraint::Length(50), Constraint::Fill(3)]).areas(main_area);
 
-        let [providers_area, projects_area, filter_area] =
-            Layout::vertical([Constraint::Fill(1), Constraint::Fill(3), Constraint::Fill(1)]).areas(left_area);
+        let have_async_jobs = !self.async_jobs_storage.read().await.is_empty();
+
+        let [providers_area, projects_area, async_jobs_area, filter_area] = Layout::vertical([
+            Constraint::Length(self.providers.read().await.len() as u16 + 1 + 1),
+            Constraint::Fill(3),
+            Constraint::Fill(if have_async_jobs { 1 } else { 0 }),
+            Constraint::Length(self.filter_widget.read().await.size().height),
+        ])
+        .areas(left_area);
+
         let [list_area, task_description_area] =
             Layout::vertical([Constraint::Fill(1), Constraint::Percentage(20)]).areas(right_area);
 
@@ -686,6 +706,12 @@ impl App {
         self.render_footer(footer_area, buf);
         self.render_providers(providers_area, buf).await;
         self.render_projects(projects_area, buf).await;
+        self.async_jobs.write().await.render(
+            "Async jobs",
+            |name| -> ListItem { ListItem::from(name.clone()) },
+            async_jobs_area,
+            buf,
+        );
         self.render_filters(filter_area, buf).await;
         self.render_tasks(list_area, buf).await;
         self.render_task_description(task_description_area, buf).await;

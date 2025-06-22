@@ -32,4 +32,5 @@ toml = "0.8.23"
 url = "2.5.4"
 url-builder = "0.1.1"
 urlencoding = "2.1.3"
+uuid = { version = "1.17.0", features = ["v4"] }
 xdg = "3.0.0"
