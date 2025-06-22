@@ -411,6 +411,7 @@ impl TasksWidget {
                                     .cmp(&due_group(r.as_ref()))
                                     .then_with(|| r.priority().cmp(&l.priority()))
                                     .then_with(|| l.due().cmp(&r.due()))
+                                    .then_with(|| l.text().cmp(&r.text()))
                             });
 
                             s.remove_changed_tasks_that_are_not_exists_anymore();
