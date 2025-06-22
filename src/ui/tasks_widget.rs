@@ -12,7 +12,7 @@ use crate::{
     provider::Provider,
     state::StatefulObject,
     task::{self, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
-    task_patch::{DuePatchItem, TaskPatch},
+    task_patch::{DuePatchItem, PatchError, TaskPatch},
     types::ArcRwLock,
 };
 use async_trait::async_trait;
@@ -285,27 +285,36 @@ impl TasksWidget {
                 })
                 .collect::<Vec<TaskPatch>>();
 
-            if !patches.is_empty() {
-                let errors = p.provider.write().await.patch_tasks(&patches).await;
-
-                let mut error_logger = self.error_logger.write().await;
-                for e in &errors {
-                    error_logger.add_error(
-                        format!("Provider {name} returns error when changing the task: {}", e.error).as_str(),
-                    );
-                }
-
-                for p in patches {
-                    if !errors.iter().any(|pe| pe.is_task(p.task.as_ref())) {
-                        self.changed_tasks.retain(|c| !c.is_task(p.task.as_ref()));
-                    }
-                }
-
-                p.provider.write().await.reload().await;
+            if patches.is_empty() {
+                continue;
             }
+
+            let errors = p.provider.write().await.patch_tasks(&patches).await;
+            self.process_patch_errors(name, &errors).await;
+
+            self.changed_tasks.retain(|c| {
+                let patched = patches.iter().any(|tp| c.is_task(tp.task.as_ref()))
+                    && !errors.iter().any(|pe| pe.is_task(c.task.as_ref()));
+                !patched
+            });
+
+            p.provider.write().await.reload().await;
         }
 
         self.load_tasks(&self.last_filter.clone()).await;
+    }
+
+    async fn process_patch_errors(&self, provider_name: &str, errors: &[PatchError]) {
+        let mut error_logger = self.error_logger.write().await;
+        for e in errors {
+            error_logger.add_error(
+                format!(
+                    "Provider {provider_name} returns error when changing the task: {}",
+                    e.error
+                )
+                .as_str(),
+            );
+        }
     }
 
     async fn change_check_state(&mut self, state: Option<State>) {
