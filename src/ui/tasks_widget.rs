@@ -388,7 +388,6 @@ impl TasksWidget {
 
     pub async fn load_tasks(&mut self, f: &Filter) {
         self.last_filter = f.clone();
-        self.all_tasks.clear();
         let s = self.arc_self.as_ref().unwrap().clone();
 
         for p in self.providers_storage.write().await.iter_mut() {
