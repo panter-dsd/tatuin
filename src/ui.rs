@@ -272,7 +272,6 @@ impl App {
             self.save_state(None).await;
         }
 
-        self.load_tasks().await;
         self.restore_state(None).await;
 
         self.tasks_widget.write().await.set_active(true);

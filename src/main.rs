@@ -25,6 +25,8 @@ use color_eyre::owo_colors::OwoColorize;
 use ratatui::style::Color;
 use settings::Settings;
 use tokio::sync::RwLock;
+use tracing::Level;
+use tracing_subscriber::fmt::format::FmtSpan;
 use ui::style;
 
 use crate::provider::ProviderTrait;
@@ -89,6 +91,15 @@ fn due_to_filter(due: &Option<Vec<filter::Due>>) -> Vec<filter::Due> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // console_subscriber::init();
+
+    let file_appender = tracing_appender::rolling::hourly(".", "tatuin.log");
+    tracing_subscriber::fmt()
+        .with_writer(file_appender)
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+        .with_max_level(Level::TRACE)
+        .init();
+
+    tracing::info!("Start application");
 
     let cli = Cli::parse();
 
@@ -210,11 +221,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             w.run(&mut cfg)?
         }
         _ => {
+            tracing::info!("Start tui");
             color_eyre::install()?;
             let terminal = ratatui::init();
             let _app_result = ui::App::new(providers, Box::new(cfg)).await.run(terminal).await;
             ratatui::restore();
+            tracing::info!("End tui");
         }
     };
+
+    tracing::info!("End application");
     Ok(())
 }

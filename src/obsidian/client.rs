@@ -12,6 +12,7 @@ use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Semaphore;
+use tracing::Level;
 
 const SIMULTANEOUS_JOB_COUNT: usize = 10;
 
@@ -31,6 +32,9 @@ impl Client {
     }
 
     pub async fn tasks(&self, f: &filter::Filter) -> Result<Vec<Task>, Box<dyn Error>> {
+        let span = tracing::span!(Level::TRACE, "tasks", path=self.path,  filter = ?&f, "Load tasks");
+        let _enter = span.enter();
+
         let files = self.all_supported_files()?;
 
         let mut tasks: Vec<Task> = Vec::new();
@@ -74,6 +78,7 @@ impl Client {
             tasks.append(&mut response);
         }
 
+        drop(_enter);
         Ok(tasks)
     }
 

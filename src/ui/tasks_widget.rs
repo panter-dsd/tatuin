@@ -28,6 +28,7 @@ use ratatui::{
 };
 use std::{cmp::Ordering, slice::IterMut, sync::Arc};
 use tokio::sync::{RwLock, broadcast};
+use tracing::{Instrument, Level};
 
 impl std::fmt::Display for DuePatchItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -394,6 +395,8 @@ impl TasksWidget {
         self.last_filter = f.clone();
         let s = self.arc_self.as_ref().unwrap().clone();
 
+        tracing::event!(name: "load_tasks", Level::INFO, filter = ?&f, "Load tasks");
+
         for p in self.providers_storage.write().await.iter_mut() {
             tokio::spawn({
                 let name = p.name.clone();
@@ -401,6 +404,8 @@ impl TasksWidget {
                 let p = p.provider.clone();
                 let f = f.clone();
                 let async_jobs = self.async_jobs_storage.clone();
+
+                let span = tracing::span!(Level::INFO, "load_provider_tasks", name = name, "Load provider's tasks");
                 async move {
                     let _job = AsyncJob::new(format!("Load tasks from provider {name}").as_str(), async_jobs).await;
                     let tasks = p.write().await.tasks(None, &f).await;
@@ -433,6 +438,7 @@ impl TasksWidget {
                         }
                     }
                 }
+                .instrument(span)
             });
         }
     }
