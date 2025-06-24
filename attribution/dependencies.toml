@@ -94,6 +94,14 @@ notices = ["Copyright (c) Individual contributors"]
 repository = "https://github.com/rust-cli/anstyle.git"
 
 [[dependencies]]
+name = "anyhow"
+version = "1.0.98"
+description = "Flexible concrete Error type built on std::error::Error"
+license = "MIT OR Apache-2.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+repository = "https://github.com/dtolnay/anyhow"
+
+[[dependencies]]
 name = "arraydeque"
 version = "0.5.1"
 description = "A ring buffer with a fixed capacity, which can be stored on the stack."
@@ -101,6 +109,24 @@ license = "MIT/Apache-2.0"
 notices = ["Copyright (c) 2018 Andy Lok <andylokandy@hotmail.com>"]
 authors = ["andylokandy"]
 repository = "https://github.com/andylokandy/arraydeque"
+
+[[dependencies]]
+name = "async-stream"
+version = "0.3.6"
+description = "Asynchronous streams using async & await notation"
+license = "MIT"
+notices = ["Copyright (c) 2018 David Tolnay", "Copyright (c) 2019 Carl Lerche"]
+authors = ["Carl Lerche <me@carllerche.com>"]
+repository = "https://github.com/tokio-rs/async-stream"
+
+[[dependencies]]
+name = "async-stream-impl"
+version = "0.3.6"
+description = "proc macros for async-stream crate"
+license = "MIT"
+notices = ["Copyright (c) 2018 David Tolnay", "Copyright (c) 2019 Carl Lerche"]
+authors = ["Carl Lerche <me@carllerche.com>"]
+repository = "https://github.com/tokio-rs/async-stream"
 
 [[dependencies]]
 name = "async-trait"
@@ -130,6 +156,22 @@ license = "Apache-2.0 OR MIT"
 notices = ["Copyright (c) 2018 Josh Stone"]
 authors = ["Josh Stone <cuviper@gmail.com>"]
 repository = "https://github.com/cuviper/autocfg"
+
+[[dependencies]]
+name = "axum"
+version = "0.7.9"
+description = "Web framework that focuses on ergonomics and modularity"
+license = "MIT"
+notices = ["Copyright (c) 2019 Axum Contributors"]
+repository = "https://github.com/tokio-rs/axum"
+
+[[dependencies]]
+name = "axum-core"
+version = "0.4.5"
+description = "Core types and traits for axum"
+license = "MIT"
+notices = ["Copyright 2021 Axum Contributors"]
+repository = "https://github.com/tokio-rs/axum"
 
 [[dependencies]]
 name = "backtrace"
@@ -191,6 +233,15 @@ license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2019 Nick Fitzgerald"]
 authors = ["Nick Fitzgerald <fitzgen@gmail.com>"]
 repository = "https://github.com/fitzgen/bumpalo"
+
+[[dependencies]]
+name = "byteorder"
+version = "1.5.0"
+description = "Library for reading/writing numbers in big-endian and little-endian."
+license = "Unlicense OR MIT"
+notices = ["Copyright (c) 2015 Andrew Gallant"]
+authors = ["Andrew Gallant <jamslam@gmail.com>"]
+repository = "https://github.com/BurntSushi/byteorder"
 
 [[dependencies]]
 name = "bytes"
@@ -346,6 +397,36 @@ notices = ["Copyright (c) Individual contributors"]
 repository = "https://github.com/rust-cli/config-rs"
 
 [[dependencies]]
+name = "console-api"
+version = "0.8.1"
+description = """
+Protobuf wire format bindings for the Tokio console.
+"""
+license = "MIT"
+notices = ["Copyright (c) 2021 Tokio Contributors"]
+authors = [
+  "Eliza Weisman <eliza@buoyant.io>",
+  "Tokio Contributors <team@tokio.rs>",
+]
+repository = "https://github.com/tokio-rs/console/"
+homepage = "https://github.com/tokio-rs/console/blob/main/console-api"
+
+[[dependencies]]
+name = "console-subscriber"
+version = "0.4.1"
+description = """
+A `tracing-subscriber::Layer` for collecting Tokio console telemetry.
+"""
+license = "MIT"
+notices = ["Copyright (c) 2021 Tokio Contributors"]
+authors = [
+  "Eliza Weisman <eliza@buoyant.io>",
+  "Tokio Contributors <team@tokio.rs>",
+]
+repository = "https://github.com/tokio-rs/console/"
+homepage = "https://github.com/tokio-rs/console/blob/main/console-subscriber"
+
+[[dependencies]]
 name = "const-random"
 version = "0.1.18"
 description = "Provides compile time random number generation."
@@ -410,6 +491,41 @@ license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2020-2025 The RustCrypto Project Developers"]
 authors = ["RustCrypto Developers"]
 repository = "https://github.com/RustCrypto/utils"
+
+[[dependencies]]
+name = "crc32fast"
+version = "1.4.2"
+description = "Fast, SIMD-accelerated CRC32 (IEEE) checksum computation"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2018 Sam Rijs, Alex Crichton and contributors"]
+authors = [
+  "Sam Rijs <srijs@airpost.net>",
+  "Alex Crichton <alex@alexcrichton.com>",
+]
+repository = "https://github.com/srijs/rust-crc32fast"
+
+[[dependencies]]
+name = "crossbeam-channel"
+version = "0.5.15"
+description = "Multi-producer multi-consumer channels for message passing"
+license = "MIT OR Apache-2.0"
+notices = [
+  "Copyright (c) 2009 The Go Authors. All rights reserved.",
+  "Copyright (c) 2019 The Crossbeam Project Developers",
+  "September 28, 1979), the Rome Convention of 1961, the WIPO Copyright",
+  "and the Universal Copyright Convention (as revised on July 24, 1971).",
+]
+repository = "https://github.com/crossbeam-rs/crossbeam"
+homepage = "https://github.com/crossbeam-rs/crossbeam/tree/master/crossbeam-channel"
+
+[[dependencies]]
+name = "crossbeam-utils"
+version = "0.8.21"
+description = "Utilities for concurrent programming"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2019 The Crossbeam Project Developers"]
+repository = "https://github.com/crossbeam-rs/crossbeam"
+homepage = "https://github.com/crossbeam-rs/crossbeam/tree/master/crossbeam-utils"
 
 [[dependencies]]
 name = "crossterm"
@@ -624,6 +740,22 @@ authors = ["Stjepan Glavina <stjepang@gmail.com>"]
 repository = "https://github.com/smol-rs/fastrand"
 
 [[dependencies]]
+name = "flate2"
+version = "1.1.2"
+description = """
+DEFLATE compression and decompression exposed as Read/BufRead/Write streams.
+Supports miniz_oxide and multiple zlib implementations. Supports zlib, gzip,
+and raw deflate streams.
+"""
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2014-2025 Alex Crichton"]
+authors = [
+  "Alex Crichton <alex@alexcrichton.com>",
+  "Josh Triplett <josh@joshtriplett.org>",
+]
+repository = "https://github.com/rust-lang/flate2-rs"
+
+[[dependencies]]
 name = "fnv"
 version = "1.0.7"
 description = "Fowler–Noll–Vo hash function"
@@ -796,6 +928,15 @@ repository = "https://github.com/hyperium/h2"
 
 [[dependencies]]
 name = "hashbrown"
+version = "0.12.3"
+description = "A Rust port of Google's SwissTable hash map"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2016 Amanieu d'Antras"]
+authors = ["Amanieu d'Antras <amanieu@gmail.com>"]
+repository = "https://github.com/rust-lang/hashbrown"
+
+[[dependencies]]
+name = "hashbrown"
 version = "0.14.5"
 description = "A Rust port of Google's SwissTable hash map"
 license = "MIT OR Apache-2.0"
@@ -822,6 +963,19 @@ notices = [
 ]
 authors = ["kyren <kerriganw@gmail.com>"]
 repository = "https://github.com/kyren/hashlink"
+
+[[dependencies]]
+name = "hdrhistogram"
+version = "7.5.4"
+description = "A port of HdrHistogram to Rust"
+license = "MIT/Apache-2.0"
+notices = ["Copyright (c) 2016 Jon Gjengset"]
+authors = [
+  "Jon Gjengset <jon@thesquareplanet.com>",
+  "Marshall Pierce <marshall@mpierce.org>",
+]
+repository = "https://github.com/HdrHistogram/HdrHistogram_rust.git"
+homepage = "https://github.com/HdrHistogram/HdrHistogram_rust"
 
 [[dependencies]]
 name = "heck"
@@ -901,6 +1055,27 @@ authors = ["Sean McArthur <sean@seanmonstar.com>"]
 repository = "https://github.com/seanmonstar/httparse"
 
 [[dependencies]]
+name = "httpdate"
+version = "1.0.3"
+description = "HTTP date parsing and formatting"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2016 Pyfisch"]
+authors = ["Pyfisch <pyfisch@posteo.org>"]
+repository = "https://github.com/pyfisch/httpdate"
+
+[[dependencies]]
+name = "humantime"
+version = "2.2.0"
+description = "A parser and formatter for std::time::{Duration, SystemTime}"
+license = "MIT OR Apache-2.0"
+notices = [
+  "Copyright (c) 2016 Pyfisch",
+  "Copyright (c) 2016 The humantime Developers",
+  "Copyright © 2005-2013 Rich Felker",
+]
+repository = "https://github.com/chronotope/humantime"
+
+[[dependencies]]
 name = "hyper"
 version = "1.6.0"
 description = "A protective and efficient HTTP library for all."
@@ -920,6 +1095,15 @@ notices = [
   "Copyright (c) 2016, Joseph Birr-Pixton <jpixton@gmail.com>",
 ]
 repository = "https://github.com/rustls/hyper-rustls"
+
+[[dependencies]]
+name = "hyper-timeout"
+version = "0.5.2"
+description = "A connect, read and write timeout aware connector to be used with hyper Client."
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2016 The weldr Project Developers"]
+authors = ["Herman J. Radtke III <herman@hermanradtke.com>"]
+repository = "https://github.com/hjr3/hyper-timeout"
 
 [[dependencies]]
 name = "hyper-tls"
@@ -1069,6 +1253,14 @@ A formatter wrapper that indents the text, designed for error display impls
 license = "MIT OR Apache-2.0"
 authors = ["Jane Lusby <jlusby@yaah.dev>"]
 repository = "https://github.com/yaahc/indenter"
+
+[[dependencies]]
+name = "indexmap"
+version = "1.9.3"
+description = "A hash table with consistent order and fast iteration."
+license = "Apache-2.0 OR MIT"
+notices = ["Copyright (c) 2016--2017"]
+repository = "https://github.com/bluss/indexmap"
 
 [[dependencies]]
 name = "indexmap"
@@ -1261,6 +1453,29 @@ repository = "https://github.com/jeromefroe/lru-rs.git"
 homepage = "https://github.com/jeromefroe/lru-rs"
 
 [[dependencies]]
+name = "matchers"
+version = "0.1.0"
+description = """
+Regex matching on character and byte streams.
+"""
+license = "MIT"
+notices = ["Copyright (c) 2019 Eliza Weisman"]
+authors = ["Eliza Weisman <eliza@buoyant.io>"]
+repository = "https://github.com/hawkw/matchers"
+
+[[dependencies]]
+name = "matchit"
+version = "0.7.3"
+description = "A high performance, zero-copy URL router."
+license = "MIT AND BSD-3-Clause"
+notices = [
+  "Copyright (c) 2013, Julien Schmidt",
+  "Copyright (c) 2022 Ibraheem Ahmed",
+]
+authors = ["Ibraheem Ahmed <ibraheem@ibraheem.ca>"]
+repository = "https://github.com/ibraheemdev/matchit"
+
+[[dependencies]]
 name = "memchr"
 version = "2.7.5"
 description = """
@@ -1280,6 +1495,15 @@ license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Sean McArthur"]
 authors = ["Sean McArthur <sean@seanmonstar.com>"]
 repository = "https://github.com/hyperium/mime"
+
+[[dependencies]]
+name = "minimal-lexical"
+version = "0.2.1"
+description = "Fast float parsing conversion routines."
+license = "MIT/Apache-2.0"
+notices = ["Copyright (c) 2009 The Go Authors. All rights reserved."]
+authors = ["Alex Huszagh <ahuszagh@gmail.com>"]
+repository = "https://github.com/Alexhuszagh/minimal-lexical"
 
 [[dependencies]]
 name = "miniz_oxide"
@@ -1321,6 +1545,28 @@ license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2016 The rust-native-tls Developers"]
 authors = ["Steven Fackler <sfackler@gmail.com>"]
 repository = "https://github.com/sfackler/rust-native-tls"
+
+[[dependencies]]
+name = "nom"
+version = "7.1.3"
+description = "A byte-oriented, zero-copy, parser combinators library"
+license = "MIT"
+notices = ["Copyright (c) 2014-2019 Geoffroy Couprie"]
+authors = ["contact@geoffroycouprie.com"]
+repository = "https://github.com/Geal/nom"
+
+[[dependencies]]
+name = "nu-ansi-term"
+version = "0.46.0"
+description = "Library for ANSI terminal colors and styles (bold, underline)"
+license = "MIT"
+authors = [
+  "ogham@bsago.me",
+  "Ryan Scheel (Havvy) <ryan.havvy@gmail.com>",
+  "Josh Triplett <josh@joshtriplett.org>",
+  "The Nushell Project Developers",
+]
+repository = "https://github.com/nushell/nu-ansi-term"
 
 [[dependencies]]
 name = "num-conv"
@@ -1417,6 +1663,15 @@ authors = ["Scott Godwin <sgodwincs@gmail.com>"]
 repository = "https://github.com/sgodwincs/ordered-multimap-rs"
 
 [[dependencies]]
+name = "overload"
+version = "0.1.1"
+description = "Provides a macro to simplify operator overloading."
+license = "MIT"
+notices = ["Copyright (c) 2019 Daniel Augusto Rizzi Salvadori"]
+authors = ["Daniel Salvadori <danaugrs@gmail.com>"]
+repository = "https://github.com/danaugrs/overload"
+
+[[dependencies]]
 name = "owo-colors"
 version = "4.2.1"
 description = "Zero-allocation terminal colors that'll make people go owo"
@@ -1506,6 +1761,24 @@ repository = "https://github.com/pest-parser/pest"
 homepage = "https://pest.rs/"
 
 [[dependencies]]
+name = "pin-project"
+version = "1.1.10"
+description = """
+A crate for safe and ergonomic pin-projection.
+"""
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/taiki-e/pin-project"
+
+[[dependencies]]
+name = "pin-project-internal"
+version = "1.1.10"
+description = """
+Implementation detail of the `pin-project` crate.
+"""
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/taiki-e/pin-project"
+
+[[dependencies]]
 name = "pin-project-lite"
 version = "0.2.16"
 description = """
@@ -1567,6 +1840,18 @@ authors = ["Jacob Pratt <jacob@jhpratt.dev>"]
 repository = "https://github.com/jhpratt/powerfmt"
 
 [[dependencies]]
+name = "ppv-lite86"
+version = "0.2.21"
+description = "Cross-platform cryptography-oriented low-level SIMD library."
+license = "MIT OR Apache-2.0"
+notices = [
+  "Copyright (c) 2019 The CryptoCorrosion Contributors",
+  "Copyright 2019 The CryptoCorrosion Contributors",
+]
+authors = ["The CryptoCorrosion Contributors"]
+repository = "https://github.com/cryptocorrosion/cryptocorrosion"
+
+[[dependencies]]
 name = "proc-macro2"
 version = "1.0.95"
 description = "A substitute implementation of the compiler's `proc_macro` API to decouple token-based libraries from the procedural macro use case."
@@ -1576,6 +1861,45 @@ authors = [
   "Alex Crichton <alex@alexcrichton.com>",
 ]
 repository = "https://github.com/dtolnay/proc-macro2"
+
+[[dependencies]]
+name = "prost"
+version = "0.13.5"
+description = "A Protocol Buffers implementation for the Rust Language."
+license = "Apache-2.0"
+authors = [
+  "Dan Burkert <dan@danburkert.com>",
+  "Lucio Franco <luciofranco14@gmail.com>",
+  "Casper Meijn <casper@meijn.net>",
+  "Tokio Contributors <team@tokio.rs>",
+]
+repository = "https://github.com/tokio-rs/prost"
+
+[[dependencies]]
+name = "prost-derive"
+version = "0.13.5"
+description = "Generate encoding and decoding implementations for Prost annotated types."
+license = "Apache-2.0"
+authors = [
+  "Dan Burkert <dan@danburkert.com>",
+  "Lucio Franco <luciofranco14@gmail.com>",
+  "Casper Meijn <casper@meijn.net>",
+  "Tokio Contributors <team@tokio.rs>",
+]
+repository = "https://github.com/tokio-rs/prost"
+
+[[dependencies]]
+name = "prost-types"
+version = "0.13.5"
+description = "Prost definitions of Protocol Buffers well known types."
+license = "Apache-2.0"
+authors = [
+  "Dan Burkert <dan@danburkert.com>",
+  "Lucio Franco <luciofranco14@gmail.com>",
+  "Casper Meijn <casper@meijn.net>",
+  "Tokio Contributors <team@tokio.rs>",
+]
+repository = "https://github.com/tokio-rs/prost"
 
 [[dependencies]]
 name = "quote"
@@ -1592,6 +1916,55 @@ description = "UEFI Reference Specification Protocol Constants and Definitions"
 license = "MIT OR Apache-2.0 OR LGPL-2.1-or-later"
 repository = "https://github.com/r-efi/r-efi"
 homepage = "https://github.com/r-efi/r-efi/wiki"
+
+[[dependencies]]
+name = "rand"
+version = "0.8.5"
+description = """
+Random number generators and other randomness functionality.
+"""
+license = "MIT OR Apache-2.0"
+notices = [
+  "Copyright (c) 2014 The Rust Project Developers",
+  "Copyright 2018 Developers of the Rand project",
+]
+authors = ["The Rand Project Developers", "The Rust Project Developers"]
+repository = "https://github.com/rust-random/rand"
+homepage = "https://rust-random.github.io/book"
+
+[[dependencies]]
+name = "rand_chacha"
+version = "0.3.1"
+description = """
+ChaCha random number generator
+"""
+license = "MIT OR Apache-2.0"
+notices = [
+  "Copyright (c) 2014 The Rust Project Developers",
+  "Copyright 2018 Developers of the Rand project",
+]
+authors = [
+  "The Rand Project Developers",
+  "The Rust Project Developers",
+  "The CryptoCorrosion Contributors",
+]
+repository = "https://github.com/rust-random/rand"
+homepage = "https://rust-random.github.io/book"
+
+[[dependencies]]
+name = "rand_core"
+version = "0.6.4"
+description = """
+Core random number generator traits and tools for implementation.
+"""
+license = "MIT OR Apache-2.0"
+notices = [
+  "Copyright (c) 2014 The Rust Project Developers",
+  "Copyright 2018 Developers of the Rand project",
+]
+authors = ["The Rand Project Developers", "The Rust Project Developers"]
+repository = "https://github.com/rust-random/rand"
+homepage = "https://rust-random.github.io/book"
 
 [[dependencies]]
 name = "ratatui"
@@ -1629,12 +2002,30 @@ repository = "https://github.com/rust-lang/regex"
 
 [[dependencies]]
 name = "regex-automata"
+version = "0.1.10"
+description = "Automata construction and matching using regular expressions."
+license = "Unlicense/MIT"
+notices = ["Copyright (c) 2015 Andrew Gallant"]
+authors = ["Andrew Gallant <jamslam@gmail.com>"]
+repository = "https://github.com/BurntSushi/regex-automata"
+
+[[dependencies]]
+name = "regex-automata"
 version = "0.4.9"
 description = "Automata construction and matching using regular expressions."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 The Rust Project Developers"]
 authors = ["The Rust Project Developers", "Andrew Gallant <jamslam@gmail.com>"]
 repository = "https://github.com/rust-lang/regex/tree/master/regex-automata"
+
+[[dependencies]]
+name = "regex-syntax"
+version = "0.6.29"
+description = "A regular expression parser."
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2014 The Rust Project Developers"]
+authors = ["The Rust Project Developers"]
+repository = "https://github.com/rust-lang/regex"
 
 [[dependencies]]
 name = "regex-syntax"
@@ -2154,8 +2545,24 @@ homepage = "https://stebalien.com/projects/tempfile-rs/"
 
 [[dependencies]]
 name = "thiserror"
+version = "1.0.69"
+description = "derive(Error)"
+license = "MIT OR Apache-2.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+repository = "https://github.com/dtolnay/thiserror"
+
+[[dependencies]]
+name = "thiserror"
 version = "2.0.12"
 description = "derive(Error)"
+license = "MIT OR Apache-2.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+repository = "https://github.com/dtolnay/thiserror"
+
+[[dependencies]]
+name = "thiserror-impl"
+version = "1.0.69"
+description = "Implementation detail of the `thiserror` crate"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
 repository = "https://github.com/dtolnay/thiserror"
@@ -2337,6 +2744,29 @@ notices = ["Copyright (c) Individual contributors"]
 repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
+name = "tonic"
+version = "0.12.3"
+description = """
+A gRPC over HTTP/2 implementation focused on high performance, interoperability, and flexibility.
+"""
+license = "MIT"
+notices = ["Copyright (c) 2020 Lucio Franco"]
+authors = ["Lucio Franco <luciofranco14@gmail.com>"]
+repository = "https://github.com/hyperium/tonic"
+
+[[dependencies]]
+name = "tower"
+version = "0.4.13"
+description = """
+Tower is a library of modular and reusable components for building robust
+clients and servers.
+"""
+license = "MIT"
+notices = ["Copyright (c) 2019 Tower Contributors"]
+authors = ["Tower Maintainers <team@tower-rs.com>"]
+repository = "https://github.com/tower-rs/tower"
+
+[[dependencies]]
 name = "tower"
 version = "0.5.2"
 description = """
@@ -2395,6 +2825,37 @@ repository = "https://github.com/tokio-rs/tracing"
 homepage = "https://tokio.rs"
 
 [[dependencies]]
+name = "tracing-appender"
+version = "0.2.3"
+description = """
+Provides utilities for file appenders and making non-blocking writers.
+"""
+license = "MIT"
+notices = ["Copyright (c) 2019 Tokio Contributors"]
+authors = [
+  "Zeki Sherif <zekshi@amazon.com>",
+  "Tokio Contributors <team@tokio.rs>",
+]
+repository = "https://github.com/tokio-rs/tracing"
+homepage = "https://tokio.rs"
+
+[[dependencies]]
+name = "tracing-attributes"
+version = "0.1.30"
+description = """
+Procedural macro attributes for automatically instrumenting functions.
+"""
+license = "MIT"
+notices = ["Copyright (c) 2019 Tokio Contributors"]
+authors = [
+  "Tokio Contributors <team@tokio.rs>",
+  "Eliza Weisman <eliza@buoyant.io>",
+  "David Barsky <dbarsky@amazon.com>",
+]
+repository = "https://github.com/tokio-rs/tracing"
+homepage = "https://tokio.rs"
+
+[[dependencies]]
 name = "tracing-core"
 version = "0.1.34"
 description = """
@@ -2419,6 +2880,18 @@ authors = [
   "Jane Lusby <jlusby@yaah.dev>",
   "Tokio Contributors <team@tokio.rs>",
 ]
+repository = "https://github.com/tokio-rs/tracing"
+homepage = "https://tokio.rs"
+
+[[dependencies]]
+name = "tracing-log"
+version = "0.2.0"
+description = """
+Provides compatibility between `tracing` and the `log` crate.
+"""
+license = "MIT"
+notices = ["Copyright (c) 2019 Tokio Contributors"]
+authors = ["Tokio Contributors <team@tokio.rs>"]
 repository = "https://github.com/tokio-rs/tracing"
 homepage = "https://tokio.rs"
 
@@ -2612,6 +3085,22 @@ authors = [
   "Christian Duerr <contact@christianduerr.com>",
 ]
 repository = "https://github.com/alacritty/vte"
+
+[[dependencies]]
+name = "uuid"
+version = "1.17.0"
+description = "A library to generate and parse UUIDs."
+license = "Apache-2.0 OR MIT"
+notices = [
+  "Copyright (c) 2014 The Rust Project Developers",
+  "Copyright (c) 2018 Ashley Mannix, Christopher Armstrong, Dylan DPC, Hunar Roop Kahlon",
+]
+authors = [
+  "Ashley Mannix<ashleymannix@live.com.au>",
+  "Dylan DPC<dylan.dpc@gmail.com>",
+  "Hunar Roop Kahlon<hunar.roop@gmail.com>",
+]
+repository = "https://github.com/uuid-rs/uuid"
 
 [[dependencies]]
 name = "valuable"
@@ -3094,6 +3583,36 @@ license = "Unicode-3.0"
 notices = ["Copyright © 2020-2024 Unicode, Inc."]
 authors = ["Manish Goregaokar <manishsmail@gmail.com>"]
 repository = "https://github.com/unicode-org/icu4x"
+
+[[dependencies]]
+name = "zerocopy"
+version = "0.8.26"
+description = """Zerocopy makes zero-cost memory manipulation effortless. We write "unsafe" so you don't have to."""
+license = "BSD-2-Clause OR Apache-2.0 OR MIT"
+notices = [
+  "Copyright 2019 The Fuchsia Authors.",
+  "Copyright 2023 The Fuchsia Authors",
+]
+authors = [
+  "Joshua Liebow-Feeser <joshlf@google.com>",
+  "Jack Wrenn <jswrenn@amazon.com>",
+]
+repository = "https://github.com/google/zerocopy"
+
+[[dependencies]]
+name = "zerocopy-derive"
+version = "0.8.26"
+description = "Custom derive for traits from the zerocopy crate"
+license = "BSD-2-Clause OR Apache-2.0 OR MIT"
+notices = [
+  "Copyright 2019 The Fuchsia Authors.",
+  "Copyright 2023 The Fuchsia Authors",
+]
+authors = [
+  "Joshua Liebow-Feeser <joshlf@google.com>",
+  "Jack Wrenn <jswrenn@amazon.com>",
+]
+repository = "https://github.com/google/zerocopy"
 
 [[dependencies]]
 name = "zerofrom"
