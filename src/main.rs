@@ -31,6 +31,8 @@ use ui::style;
 
 use crate::provider::ProviderTrait;
 
+const APP_NAME: &str = "tatuin";
+
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
@@ -88,16 +90,24 @@ fn due_to_filter(due: &Option<Vec<filter::Due>>) -> Vec<filter::Due> {
     }
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // console_subscriber::init();
-
-    let file_appender = tracing_appender::rolling::hourly(".", "tatuin.log");
+fn init_logging() {
+    let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME);
+    let log_path = xdg_dirs
+        .create_state_directory("")
+        .expect("cannot create state directory");
+    let file_appender = tracing_appender::rolling::daily(log_path, format!("{APP_NAME}.log"));
     tracing_subscriber::fmt()
         .with_writer(file_appender)
         .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
         .with_max_level(Level::TRACE)
         .init();
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // console_subscriber::init();
+
+    init_logging();
 
     tracing::info!("Start application");
 
@@ -106,7 +116,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = if let Some(p) = cli.settings_file {
         Settings::new(p.as_str())
     } else {
-        let xdg_dirs = xdg::BaseDirectories::with_prefix("tatuin");
+        let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME);
         let config_path = xdg_dirs
             .place_config_file("settings.toml")
             .expect("cannot create configuration directory");
