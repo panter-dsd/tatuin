@@ -99,7 +99,7 @@ fn init_logging() {
     tracing_subscriber::fmt()
         .with_writer(file_appender)
         .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
-        .with_max_level(Level::TRACE)
+        .with_max_level(Level::DEBUG)
         .init();
 }
 
