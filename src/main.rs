@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+mod async_jobs;
 mod filter;
 mod github;
 mod github_issues;
@@ -14,13 +15,23 @@ mod state;
 mod task;
 mod task_patch;
 mod todoist;
+mod types;
 mod ui;
 mod wizard;
+use std::sync::Arc;
+
 use clap::{Parser, Subcommand};
 use color_eyre::owo_colors::OwoColorize;
 use ratatui::style::Color;
 use settings::Settings;
+use tokio::sync::RwLock;
+use tracing::Level;
+use tracing_subscriber::fmt::format::FmtSpan;
 use ui::style;
+
+use crate::provider::ProviderTrait;
+
+const APP_NAME: &str = "tatuin";
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -79,21 +90,40 @@ fn due_to_filter(due: &Option<Vec<filter::Due>>) -> Vec<filter::Due> {
     }
 }
 
+fn init_logging() {
+    let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME);
+    let log_path = xdg_dirs
+        .create_state_directory("")
+        .expect("cannot create state directory");
+    let file_appender = tracing_appender::rolling::daily(log_path, format!("{APP_NAME}.log"));
+    tracing_subscriber::fmt()
+        .with_writer(file_appender)
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+        .with_max_level(Level::DEBUG)
+        .init();
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // console_subscriber::init();
+
+    init_logging();
+
+    tracing::info!("Start application");
+
     let cli = Cli::parse();
 
     let mut cfg = if let Some(p) = cli.settings_file {
         Settings::new(p.as_str())
     } else {
-        let xdg_dirs = xdg::BaseDirectories::with_prefix("tatuin");
+        let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME);
         let config_path = xdg_dirs
             .place_config_file("settings.toml")
             .expect("cannot create configuration directory");
         Settings::new(config_path.to_str().unwrap())
     };
 
-    let mut providers: Vec<Box<dyn provider::Provider>> = Vec::new();
+    let mut providers: Vec<provider::Provider> = Vec::new();
 
     let mut it = style::PROVIDER_COLORS.iter();
     let mut color = || -> &Color {
@@ -114,38 +144,49 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        match config.get("type").unwrap().as_str() {
+        let p: Option<Box<dyn ProviderTrait>> = match config.get("type").unwrap().as_str() {
             obsidian::PROVIDER_NAME => {
                 let mut path = config.get("path").unwrap().to_string();
                 if !path.ends_with('/') {
                     path.push('/');
                 }
 
-                providers.push(Box::new(obsidian::Provider::new(name, path.as_str(), color())));
+                Some(Box::new(obsidian::Provider::new(name, path.as_str(), color())))
             }
-            todoist::PROVIDER_NAME => providers.push(Box::new(todoist::Provider::new(
+            todoist::PROVIDER_NAME => Some(Box::new(todoist::Provider::new(
                 name,
                 config.get("api_key").unwrap().as_str(),
                 color(),
             ))),
-            gitlab_todo::PROVIDER_NAME => providers.push(Box::new(gitlab_todo::Provider::new(
+            gitlab_todo::PROVIDER_NAME => Some(Box::new(gitlab_todo::Provider::new(
                 name,
                 config.get("base_url").unwrap().as_str(),
                 config.get("api_key").unwrap().as_str(),
                 color(),
             ))),
-            github_issues::PROVIDER_NAME => providers.push(Box::new(github_issues::Provider::new(
+            github_issues::PROVIDER_NAME => Some(Box::new(github_issues::Provider::new(
                 name,
                 config.get("api_key").unwrap().as_str(),
                 config.get("repository").unwrap().as_str(),
                 color(),
             ))),
-            _ => println!("Unknown provider configuration for section: {name}"),
+            _ => {
+                println!("Unknown provider configuration for section: {name}");
+                None
+            }
+        };
+        if let Some(p) = p {
+            providers.push(provider::Provider {
+                name: name.to_string(),
+                type_name: p.type_name(),
+                color: ProviderTrait::color(p.as_ref()),
+                provider: Arc::new(RwLock::new(p)),
+            });
         }
     }
 
     if !providers.is_empty() {
-        providers.sort_by_key(|p| p.name());
+        providers.sort_by_key(|p| p.name.clone());
     }
 
     match &cli.command {
@@ -159,28 +200,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             let mut tasks = Vec::new();
-            for mut p in providers {
+            for p in providers {
                 if let Some(provider_name) = provider {
-                    if p.name() != *provider_name {
+                    if p.name != *provider_name {
                         continue;
                     }
                 }
 
-                tasks.append(&mut p.tasks(None, &f).await?);
+                tasks.append(&mut p.provider.write().await.tasks(None, &f).await?);
             }
             print_boxed_tasks(&tasks);
         }
         Some(Commands::Projects { provider }) => {
             let mut projects = Vec::new();
 
-            for mut p in providers {
+            for p in providers {
                 if let Some(provider_name) = provider {
-                    if p.name() != *provider_name {
+                    if p.name != *provider_name {
                         continue;
                     }
                 }
 
-                projects.append(&mut p.projects().await?);
+                projects.append(&mut p.provider.write().await.projects().await?);
             }
 
             print_projects(&projects);
@@ -190,11 +231,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             w.run(&mut cfg)?
         }
         _ => {
+            tracing::info!("Start tui");
             color_eyre::install()?;
             let terminal = ratatui::init();
-            let _app_result = ui::App::new(providers, Box::new(cfg)).run(terminal).await;
+            let _app_result = ui::App::new(providers, Box::new(cfg)).await.run(terminal).await;
             ratatui::restore();
+            tracing::info!("End tui");
         }
     };
+
+    tracing::info!("End application");
     Ok(())
 }

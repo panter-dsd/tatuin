@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::state::StateSettings;
+use crate::{state::StateSettings, types::ArcRwLock};
 
 use super::DialogTrait;
 use crate::ui::{
@@ -14,18 +14,16 @@ use ratatui::{
     layout::{Rect, Size},
     widgets::{Block, Borders, ListItem, Widget},
 };
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 pub struct Dialog {
     states: SelectableList<String>,
-    settings: Arc<RwLock<Box<dyn StateSettings>>>,
+    settings: ArcRwLock<Box<dyn StateSettings>>,
     should_be_closed: bool,
     selected_state: Option<String>,
 }
 
 impl Dialog {
-    pub async fn new(settings: &Arc<RwLock<Box<dyn StateSettings>>>) -> Self {
+    pub async fn new(settings: &ArcRwLock<Box<dyn StateSettings>>) -> Self {
         Self {
             states: SelectableList::new(settings.read().await.states().to_vec(), Some(0)),
             settings: settings.clone(),

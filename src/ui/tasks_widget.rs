@@ -6,13 +6,15 @@ use super::{
     shortcut::Shortcut, style, widgets::WidgetTrait,
 };
 use crate::{
+    async_jobs::{AsyncJob, AsyncJobStorage},
     filter::Filter,
     patched_task::PatchedTask,
     project::Project as ProjectTrait,
-    provider::Provider as ProviderTrait,
+    provider::Provider,
     state::StatefulObject,
     task::{self, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
-    task_patch::{DuePatchItem, TaskPatch},
+    task_patch::{DuePatchItem, PatchError, TaskPatch},
+    types::ArcRwLock,
 };
 use async_trait::async_trait;
 use chrono::Local;
@@ -25,7 +27,8 @@ use ratatui::{
     widgets::{Clear, ListItem, ListState, Widget},
 };
 use std::{cmp::Ordering, slice::IterMut, sync::Arc};
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, broadcast};
+use tracing::{Instrument, Level};
 
 impl std::fmt::Display for DuePatchItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -45,17 +48,16 @@ pub trait ProvidersStorage<T>: Send + Sync {
 
 pub trait ErrorLoggerTrait: Send + Sync {
     fn add_error(&mut self, message: &str);
-    fn add_errors(&mut self, messages: &[&str]);
 }
-type ErrorLogger = Arc<RwLock<dyn ErrorLoggerTrait>>;
+type ErrorLogger = ArcRwLock<dyn ErrorLoggerTrait>;
 
 pub trait TaskInfoViewerTrait: Send + Sync {
     fn set_task(&mut self, task: Option<Box<dyn TaskTrait>>);
 }
-type TaskInfoViewer = Arc<RwLock<dyn TaskInfoViewerTrait>>;
+type TaskInfoViewer = ArcRwLock<dyn TaskInfoViewerTrait>;
 
 pub struct TasksWidget {
-    providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
+    providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
     error_logger: ErrorLogger,
     task_info_viewer: TaskInfoViewer,
     all_tasks: Vec<Box<dyn TaskTrait>>,
@@ -64,6 +66,8 @@ pub struct TasksWidget {
     providers_filter: Vec<String>,
     projects_filter: Vec<String>,
     draw_helper: Option<DrawHelper>,
+    on_changes_broadcast: broadcast::Sender<()>,
+    async_jobs_storage: ArcRwLock<AsyncJobStorage>,
 
     commit_changes_shortcut: Shortcut,
     swap_completed_state_shortcut: Shortcut,
@@ -75,6 +79,8 @@ pub struct TasksWidget {
     last_filter: Filter,
 
     change_dalog: Option<Box<dyn DialogTrait>>,
+
+    arc_self: Option<ArcRwLock<Self>>,
 }
 
 #[async_trait]
@@ -119,11 +125,14 @@ impl AppBlockWidget for TasksWidget {
 }
 
 impl TasksWidget {
-    pub fn new(
-        providers_storage: Arc<RwLock<dyn ProvidersStorage<Box<dyn ProviderTrait>>>>,
+    pub async fn new(
+        providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
         error_logger: ErrorLogger,
         task_info_viewer: TaskInfoViewer,
-    ) -> Arc<RwLock<Self>> {
+        async_jobs_storage: ArcRwLock<AsyncJobStorage>,
+    ) -> ArcRwLock<Self> {
+        let (tx, _) = broadcast::channel(1);
+
         let s = Arc::new(RwLock::new(Self {
             providers_storage,
             error_logger,
@@ -136,6 +145,8 @@ impl TasksWidget {
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),
             draw_helper: None,
+            on_changes_broadcast: tx,
+            async_jobs_storage,
             commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
             swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
@@ -144,7 +155,9 @@ impl TasksWidget {
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
             last_filter: Filter::default(),
             change_dalog: None,
+            arc_self: None,
         }));
+        s.write().await.arc_self = Some(s.clone());
         tokio::spawn({
             let s = s.clone();
             async move {
@@ -186,6 +199,10 @@ impl TasksWidget {
     pub fn set_projects_filter(&mut self, projects: &[String]) {
         self.projects_filter = projects.to_vec();
         self.filter_tasks();
+    }
+
+    pub fn subscribe_on_changes(&self) -> broadcast::Receiver<()> {
+        self.on_changes_broadcast.subscribe()
     }
 
     fn filter_tasks(&mut self) {
@@ -260,11 +277,11 @@ impl TasksWidget {
 
     pub async fn commit_changes(&mut self) {
         for p in self.providers_storage.write().await.iter_mut() {
-            let name = p.name();
+            let name = &p.name;
             let patches = self
                 .changed_tasks
                 .iter()
-                .filter(|c| c.task.provider() == name)
+                .filter(|c| &c.task.provider() == name)
                 .map(|c| TaskPatch {
                     task: c.task.clone_boxed(),
                     state: c.state.clone(),
@@ -273,27 +290,36 @@ impl TasksWidget {
                 })
                 .collect::<Vec<TaskPatch>>();
 
-            if !patches.is_empty() {
-                let errors = p.patch_tasks(&patches).await;
-
-                let mut error_logger = self.error_logger.write().await;
-                for e in &errors {
-                    error_logger.add_error(
-                        format!("Provider {name} returns error when changing the task: {}", e.error).as_str(),
-                    );
-                }
-
-                for p in patches {
-                    if !errors.iter().any(|pe| pe.is_task(p.task.as_ref())) {
-                        self.changed_tasks.retain(|c| !c.is_task(p.task.as_ref()));
-                    }
-                }
-
-                p.reload().await;
+            if patches.is_empty() {
+                continue;
             }
+
+            let errors = p.provider.write().await.patch_tasks(&patches).await;
+            self.process_patch_errors(name, &errors).await;
+
+            self.changed_tasks.retain(|c| {
+                let patched = patches.iter().any(|tp| c.is_task(tp.task.as_ref()))
+                    && !errors.iter().any(|pe| pe.is_task(c.task.as_ref()));
+                !patched
+            });
+
+            p.provider.write().await.reload().await;
         }
 
         self.load_tasks(&self.last_filter.clone()).await;
+    }
+
+    async fn process_patch_errors(&self, provider_name: &str, errors: &[PatchError]) {
+        let mut error_logger = self.error_logger.write().await;
+        for e in errors {
+            error_logger.add_error(
+                format!(
+                    "Provider {provider_name} returns error when changing the task: {}",
+                    e.error
+                )
+                .as_str(),
+            );
+        }
     }
 
     async fn change_check_state(&mut self, state: Option<State>) {
@@ -367,37 +393,54 @@ impl TasksWidget {
 
     pub async fn load_tasks(&mut self, f: &Filter) {
         self.last_filter = f.clone();
+        let s = self.arc_self.as_ref().unwrap().clone();
 
-        let mut all_tasks: Vec<Box<dyn task::Task>> = Vec::new();
+        tracing::event!(name: "load_tasks", Level::INFO, filter = ?&f, "Load tasks");
 
-        let mut errors = Vec::new();
         for p in self.providers_storage.write().await.iter_mut() {
-            let tasks = p.tasks(None, f).await;
+            tokio::spawn({
+                let name = p.name.clone();
+                let s = s.clone();
+                let p = p.provider.clone();
+                let f = f.clone();
+                let async_jobs = self.async_jobs_storage.clone();
 
-            match tasks {
-                Ok(t) => all_tasks.append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>()),
-                Err(err) => {
-                    errors.push(format!("Load provider {} projects failure: {err}", p.name()));
+                let span = tracing::span!(Level::INFO, "load_provider_tasks", name = name, "Load provider's tasks");
+                async move {
+                    let _job = AsyncJob::new(format!("Load tasks from provider {name}").as_str(), async_jobs).await;
+                    let tasks = p.write().await.tasks(None, &f).await;
+
+                    let mut s = s.write().await;
+                    s.all_tasks.retain(|t| t.provider() != name);
+
+                    match tasks {
+                        Ok(t) => {
+                            s.all_tasks
+                                .append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>());
+                            s.all_tasks.sort_by(|l, r| {
+                                due_group(l.as_ref())
+                                    .cmp(&due_group(r.as_ref()))
+                                    .then_with(|| r.priority().cmp(&l.priority()))
+                                    .then_with(|| l.due().cmp(&r.due()))
+                                    .then_with(|| l.text().cmp(&r.text()))
+                            });
+
+                            s.remove_changed_tasks_that_are_not_exists_anymore();
+                            s.filter_tasks();
+                            s.update_task_info_view().await;
+                            let _ = s.on_changes_broadcast.send(());
+                        }
+                        Err(err) => {
+                            s.error_logger
+                                .write()
+                                .await
+                                .add_error(format!("Load provider {name} projects failure: {err}").as_str());
+                        }
+                    }
                 }
-            }
+                .instrument(span)
+            });
         }
-
-        self.error_logger
-            .write()
-            .await
-            .add_errors(&errors.iter().map(|m| m.as_str()).collect::<Vec<&str>>());
-
-        all_tasks.sort_by(|l, r| {
-            due_group(l.as_ref())
-                .cmp(&due_group(r.as_ref()))
-                .then_with(|| r.priority().cmp(&l.priority()))
-                .then_with(|| l.due().cmp(&r.due()))
-        });
-
-        self.all_tasks = all_tasks;
-        self.remove_changed_tasks_that_are_not_exists_anymore();
-        self.filter_tasks();
-        self.update_task_info_view().await;
     }
 
     pub async fn reload(&mut self) {
@@ -624,6 +667,10 @@ impl WidgetTrait for TasksWidget {
         if self.change_dalog.is_some() {
             self.render_change_due_dialog(area, buf).await;
         }
+    }
+
+    fn set_draw_helper(&mut self, dh: DrawHelper) {
+        self.draw_helper = Some(dh)
     }
 
     fn size(&self) -> Size {

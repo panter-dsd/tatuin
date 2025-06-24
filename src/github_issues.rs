@@ -4,7 +4,7 @@ use crate::filter;
 use crate::github::client::Client;
 use crate::github::structs;
 use crate::project::Project as ProjectTrait;
-use crate::provider::Provider as ProviderTrait;
+use crate::provider::{GetTasksError, ProviderTrait};
 use crate::task::due_group;
 use crate::task::{DateTimeUtc, State, Task as TaskTrait};
 use crate::task_patch::{PatchError, TaskPatch};
@@ -126,7 +126,7 @@ impl ProviderTrait for Provider {
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn TaskTrait>>, Box<dyn Error>> {
+    ) -> Result<Vec<Box<dyn TaskTrait>>, GetTasksError> {
         let mut should_clear = false;
         if let Some(last_filter) = self.last_filter.as_mut() {
             should_clear = last_filter != f;

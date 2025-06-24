@@ -4,6 +4,7 @@ use super::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, widg
 use crate::{
     filter::{Due, Filter, FilterState},
     state::StatefulObject,
+    types::ArcRwLock,
 };
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -95,7 +96,7 @@ impl KeyboardHandler for FilterWidget {
 }
 
 impl FilterWidget {
-    pub fn new(f: Filter) -> Arc<RwLock<Self>> {
+    pub fn new(f: Filter) -> ArcRwLock<Self> {
         let s = Arc::new(RwLock::new(Self {
             is_active: false,
             current_block: FilterBlock::State,
@@ -235,7 +236,7 @@ impl WidgetTrait for FilterWidget {
     }
 
     fn size(&self) -> Size {
-        Size::default()
+        Size { width: 0, height: 6 }
     }
 }
 
