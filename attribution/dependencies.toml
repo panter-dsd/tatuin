@@ -124,7 +124,7 @@ repository = "https://github.com/smol-rs/atomic-waker"
 
 [[dependencies]]
 name = "autocfg"
-version = "1.4.0"
+version = "1.5.0"
 description = "Automatic cfg for Rust compiler features"
 license = "Apache-2.0 OR MIT"
 notices = ["Copyright (c) 2018 Josh Stone"]
@@ -594,7 +594,7 @@ repository = "https://github.com/indexmap-rs/equivalent"
 
 [[dependencies]]
 name = "errno"
-version = "0.3.12"
+version = "0.3.13"
 description = "Cross-platform interface to the `errno` variable."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Chris Wong"]
@@ -1185,7 +1185,7 @@ repository = "https://github.com/rust-lang-nursery/lazy-static.rs"
 
 [[dependencies]]
 name = "libc"
-version = "0.2.173"
+version = "0.2.174"
 description = "Raw FFI bindings to platform libraries like libc."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014-2020 The Rust Project Developers"]
@@ -1471,7 +1471,7 @@ repository = "https://github.com/servo/rust-url/"
 
 [[dependencies]]
 name = "pest"
-version = "2.8.0"
+version = "2.8.1"
 description = "The Elegant Parser"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -1480,7 +1480,7 @@ homepage = "https://pest.rs/"
 
 [[dependencies]]
 name = "pest_derive"
-version = "2.8.0"
+version = "2.8.1"
 description = "pest's derive macro"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -1489,7 +1489,7 @@ homepage = "https://pest.rs/"
 
 [[dependencies]]
 name = "pest_generator"
-version = "2.8.0"
+version = "2.8.1"
 description = "pest code generator"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -1498,7 +1498,7 @@ homepage = "https://pest.rs/"
 
 [[dependencies]]
 name = "pest_meta"
-version = "2.8.0"
+version = "2.8.1"
 description = "pest meta language parser and validator"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -1587,7 +1587,7 @@ repository = "https://github.com/dtolnay/quote"
 
 [[dependencies]]
 name = "r-efi"
-version = "5.2.0"
+version = "5.3.0"
 description = "UEFI Reference Specification Protocol Constants and Definitions"
 license = "MIT OR Apache-2.0 OR LGPL-2.1-or-later"
 repository = "https://github.com/r-efi/r-efi"
@@ -1727,7 +1727,7 @@ repository = "https://github.com/bytecodealliance/rustix"
 
 [[dependencies]]
 name = "rustls"
-version = "0.23.27"
+version = "0.23.28"
 description = "Rustls is a modern TLS library written in Rust."
 license = "Apache-2.0 OR ISC OR MIT"
 notices = [
@@ -1974,7 +1974,7 @@ repository = "https://github.com/vorner/signal-hook"
 
 [[dependencies]]
 name = "slab"
-version = "0.4.9"
+version = "0.4.10"
 description = "Pre-allocated storage for a uniform data type"
 license = "MIT"
 notices = ["Copyright (c) 2019 Carl Lerche"]
@@ -2095,7 +2095,7 @@ homepage = "https://dalek.rs/"
 
 [[dependencies]]
 name = "syn"
-version = "2.0.103"
+version = "2.0.104"
 description = "Parser for Rust source code"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2858,8 +2858,26 @@ authors = ["Microsoft"]
 repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
+name = "windows-sys"
+version = "0.60.2"
+description = "Rust for Windows"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Microsoft Corporation."]
+authors = ["Microsoft"]
+repository = "https://github.com/microsoft/windows-rs"
+
+[[dependencies]]
 name = "windows-targets"
 version = "0.52.6"
+description = "Import libs for Windows"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Microsoft Corporation."]
+authors = ["Microsoft"]
+repository = "https://github.com/microsoft/windows-rs"
+
+[[dependencies]]
+name = "windows-targets"
+version = "0.53.2"
 description = "Import libs for Windows"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]
@@ -2876,8 +2894,26 @@ authors = ["Microsoft"]
 repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
+name = "windows_aarch64_gnullvm"
+version = "0.53.0"
+description = "Import lib for Windows"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Microsoft Corporation."]
+authors = ["Microsoft"]
+repository = "https://github.com/microsoft/windows-rs"
+
+[[dependencies]]
 name = "windows_aarch64_msvc"
 version = "0.52.6"
+description = "Import lib for Windows"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Microsoft Corporation."]
+authors = ["Microsoft"]
+repository = "https://github.com/microsoft/windows-rs"
+
+[[dependencies]]
+name = "windows_aarch64_msvc"
+version = "0.53.0"
 description = "Import lib for Windows"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]
@@ -2894,8 +2930,26 @@ authors = ["Microsoft"]
 repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
+name = "windows_i686_gnu"
+version = "0.53.0"
+description = "Import lib for Windows"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Microsoft Corporation."]
+authors = ["Microsoft"]
+repository = "https://github.com/microsoft/windows-rs"
+
+[[dependencies]]
 name = "windows_i686_gnullvm"
 version = "0.52.6"
+description = "Import lib for Windows"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Microsoft Corporation."]
+authors = ["Microsoft"]
+repository = "https://github.com/microsoft/windows-rs"
+
+[[dependencies]]
+name = "windows_i686_gnullvm"
+version = "0.53.0"
 description = "Import lib for Windows"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]
@@ -2912,8 +2966,26 @@ authors = ["Microsoft"]
 repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
+name = "windows_i686_msvc"
+version = "0.53.0"
+description = "Import lib for Windows"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Microsoft Corporation."]
+authors = ["Microsoft"]
+repository = "https://github.com/microsoft/windows-rs"
+
+[[dependencies]]
 name = "windows_x86_64_gnu"
 version = "0.52.6"
+description = "Import lib for Windows"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Microsoft Corporation."]
+authors = ["Microsoft"]
+repository = "https://github.com/microsoft/windows-rs"
+
+[[dependencies]]
+name = "windows_x86_64_gnu"
+version = "0.53.0"
 description = "Import lib for Windows"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]
@@ -2930,8 +3002,26 @@ authors = ["Microsoft"]
 repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
+name = "windows_x86_64_gnullvm"
+version = "0.53.0"
+description = "Import lib for Windows"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Microsoft Corporation."]
+authors = ["Microsoft"]
+repository = "https://github.com/microsoft/windows-rs"
+
+[[dependencies]]
 name = "windows_x86_64_msvc"
 version = "0.52.6"
+description = "Import lib for Windows"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Microsoft Corporation."]
+authors = ["Microsoft"]
+repository = "https://github.com/microsoft/windows-rs"
+
+[[dependencies]]
+name = "windows_x86_64_msvc"
+version = "0.53.0"
 description = "Import lib for Windows"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]

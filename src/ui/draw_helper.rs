@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::types::ArcRwLock;
 use ratatui::layout::Position;
 

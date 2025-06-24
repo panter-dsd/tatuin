@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::WidgetTrait;
 use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 use async_trait::async_trait;
