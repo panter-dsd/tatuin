@@ -85,6 +85,10 @@ impl TaskTrait for Task {
         self
     }
 
+    fn url(&self) -> String {
+        self.issue.html_url.to_string()
+    }
+
     fn clone_boxed(&self) -> Box<dyn TaskTrait> {
         Box::new(self.clone())
     }
