@@ -29,7 +29,7 @@ use ratatui::{
 };
 use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
-use std::{collections::HashMap, hash::Hash, io::Write, slice::IterMut, str::FromStr, sync::Arc};
+use std::{collections::HashMap, hash::Hash, io::Write, slice::IterMut, str::FromStr, sync::Arc, time::Duration};
 use tasks_widget::ErrorLoggerTrait;
 use tokio::sync::{OnceCell, RwLock, mpsc};
 mod dialogs;
@@ -289,6 +289,8 @@ impl App {
             b.write().await.set_draw_helper(dh.clone());
         }
 
+        let redraw_period = Duration::from_secs(60); // every minute
+        let mut redraw_interval = tokio::time::interval(redraw_period);
         let mut events = EventStream::new();
 
         let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
@@ -310,6 +312,7 @@ impl App {
 
             tokio::select! {
                 _ = redraw_rx.recv() => {},
+                _ = redraw_interval.tick() => {},
                 Some(pos) = set_cursor_pos_rx.recv() => {
                     self.cursor_pos = pos;
                 },
@@ -750,7 +753,7 @@ impl App {
             ),
             Span::styled("Current date/time: ", style::FOOTER_DATETIME_LABEL_FG),
             Span::styled(
-                chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+                chrono::Local::now().format("%Y-%m-%d %H:%M").to_string(),
                 style::FOOTER_DATETIME_FG,
             ),
         ];
