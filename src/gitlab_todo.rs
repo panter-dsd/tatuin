@@ -114,10 +114,13 @@ impl TaskTrait for Task {
     }
 
     fn project(&self) -> Option<Box<dyn ProjectTrait>> {
-        Some(Box::new(Project {
-            p: self.todo.project.clone(),
-            provider: self.provider.to_string(),
-        }))
+        self.todo.project.as_ref().map(|p| {
+            let result: Box<dyn ProjectTrait> = Box::new(Project {
+                p: p.clone(),
+                provider: self.provider.to_string(),
+            });
+            result
+        })
     }
 
     fn as_any(&self) -> &dyn Any {
