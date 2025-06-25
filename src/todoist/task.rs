@@ -148,6 +148,10 @@ impl TaskTrait for Task {
         None
     }
 
+    fn url(&self) -> String {
+        format!("https://app.todoist.com/app/task/{}", self.id)
+    }
+
     fn priority(&self) -> Priority {
         int_to_priority(self.priority.unwrap_or_default())
     }
