@@ -73,11 +73,10 @@ impl TaskInfoWidget {
     pub fn set_task(&mut self, t: Option<Box<dyn TaskTrait>>) {
         self.t = t;
 
-        if let Some(t) = &self.t {
-            let url = t.url();
+        self.url_widget = None;
+        if let Some(url) = self.t.as_ref().map(|t| t.url()) {
             if !url.is_empty() {
-                self.url_widget
-                    .replace(HyperlinkWidget::new("Open in Obsidian", url.as_str()));
+                self.url_widget = Some(HyperlinkWidget::new("Link", url.as_str()));
             }
         }
     }
