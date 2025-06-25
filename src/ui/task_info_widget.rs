@@ -148,10 +148,7 @@ impl WidgetTrait for TaskInfoWidget {
                 text.push(styled_line("Updated", &updated_at, None));
             }
 
-            Paragraph::new(text)
-                .block(h.block())
-                .wrap(Wrap { trim: false })
-                .render(area, buf);
+            Paragraph::new(text).block(h.block()).render(area, buf);
         } else {
             Paragraph::new("Nothing selected...")
                 .block(h.block())
