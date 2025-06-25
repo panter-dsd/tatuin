@@ -62,7 +62,7 @@ impl TaskTrait for Task {
     }
 
     fn place(&self) -> String {
-        self.issue.url.to_string()
+        self.issue.html_url.to_string()
     }
 
     fn state(&self) -> State {
