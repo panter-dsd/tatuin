@@ -62,7 +62,7 @@ impl TaskTrait for Task {
     }
 
     fn place(&self) -> String {
-        self.issue.url.to_string()
+        self.issue.html_url.to_string()
     }
 
     fn state(&self) -> State {
@@ -83,6 +83,10 @@ impl TaskTrait for Task {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+
+    fn url(&self) -> String {
+        self.issue.html_url.to_string()
     }
 
     fn clone_boxed(&self) -> Box<dyn TaskTrait> {
