@@ -16,7 +16,7 @@ use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler};
 
 use super::WidgetTrait;
 
-fn widgets(node: &Node) -> Vec<ArcRwLock<Box<dyn WidgetTrait>>> {
+fn widgets(node: &Node) -> Vec<Box<dyn WidgetTrait>> {
     let mut result = Vec::new();
     if node.children().is_none() {
         return result;
@@ -25,16 +25,13 @@ fn widgets(node: &Node) -> Vec<ArcRwLock<Box<dyn WidgetTrait>>> {
     for n in node.children().unwrap() {
         match n {
             Node::Text(t) => {
-                result.push(Arc::new(RwLock::new(Box::new(Text::new(t.value.as_str())))));
+                result.push(Box::new(Text::new(t.value.as_str())));
             }
             Node::Root(_) | Node::Paragraph(_) => {
                 result.extend(widgets(n));
             }
             Node::Link(l) => {
-                result.push(Arc::new(RwLock::new(Box::new(HyperlinkWidget::new(
-                    generate_node_text(n).as_str(),
-                    &l.url,
-                )))));
+                result.push(Box::new(HyperlinkWidget::new(generate_node_text(n).as_str(), &l.url)));
             }
             _ => {}
         }
@@ -44,16 +41,18 @@ fn widgets(node: &Node) -> Vec<ArcRwLock<Box<dyn WidgetTrait>>> {
 }
 
 pub struct MarkdownLine {
-    widgets: Vec<ArcRwLock<Box<dyn WidgetTrait>>>,
+    widgets: ArcRwLock<Vec<Box<dyn WidgetTrait>>>,
 }
 
 impl MarkdownLine {
     pub fn new(text: &str) -> Self {
         Self {
-            widgets: match markdown::to_mdast(text, &markdown::ParseOptions::default()) {
-                Ok(root) => widgets(&root),
-                Err(_) => Vec::new(),
-            },
+            widgets: Arc::new(RwLock::new(
+                match markdown::to_mdast(text, &markdown::ParseOptions::default()) {
+                    Ok(root) => widgets(&root),
+                    Err(_) => Vec::new(),
+                },
+            )),
         }
     }
 }
@@ -62,8 +61,7 @@ impl MarkdownLine {
 impl WidgetTrait for MarkdownLine {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let mut area = area;
-        for w in &self.widgets {
-            let mut w = w.write().await;
+        for w in self.widgets.write().await.iter_mut() {
             w.set_pos(Position::new(area.x, area.y));
             w.render(area, buf).await;
             area.x += w.size().width;
@@ -85,8 +83,8 @@ impl KeyboardHandler for MarkdownLine {
 #[async_trait]
 impl MouseHandler for MarkdownLine {
     async fn handle_mouse(&mut self, ev: &MouseEvent) {
-        for h in &self.widgets {
-            h.write().await.handle_mouse(ev).await;
+        for h in self.widgets.write().await.iter_mut() {
+            h.handle_mouse(ev).await;
         }
     }
 }
