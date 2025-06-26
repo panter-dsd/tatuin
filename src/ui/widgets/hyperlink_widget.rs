@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-use super::mouse_handler::MouseHandler;
-use super::style;
+use super::WidgetTrait;
+use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 use async_trait::async_trait;
-use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
@@ -14,6 +14,7 @@ use ratatui::{
 use std::process::Command;
 
 pub struct HyperlinkWidget {
+    pos: Position,
     area: Rect,
     text: String,
     url: String,
@@ -23,6 +24,7 @@ pub struct HyperlinkWidget {
 impl HyperlinkWidget {
     pub fn new(text: &str, url: &str) -> Self {
         Self {
+            pos: Position::default(),
             area: Rect::default(),
             text: text.to_string(),
             url: url.to_string(),
@@ -30,30 +32,46 @@ impl HyperlinkWidget {
         }
     }
 
-    pub fn set_pos(&mut self, area: Rect, pos: Position) {
-        self.area = Rect::new(
-            pos.x,
-            pos.y,
-            std::cmp::min(area.width, Text::from(self.text.as_str()).width() as u16),
-            1,
-        )
-    }
-
     pub fn size(&self) -> Size {
         Size::new(Text::from(self.text.as_str()).width() as u16, 1)
     }
+}
 
-    pub fn render(&self, buf: &mut Buffer) {
+#[async_trait]
+impl WidgetTrait for HyperlinkWidget {
+    async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let fg = if self.is_under_mouse {
             style::URL_UNDER_MOUSE_COLOR
         } else {
             style::URL_COLOR
         };
 
+        self.area = Rect {
+            x: self.pos.x,
+            y: self.pos.y,
+            width: std::cmp::min(area.width, Text::from(self.text.as_str()).width() as u16),
+            height: 1,
+        };
+
         Paragraph::new(self.text.as_str())
             .wrap(Wrap { trim: false })
             .style(Style::new().underlined().fg(fg))
             .render(self.area, buf);
+    }
+
+    fn size(&self) -> Size {
+        Size::new(Text::from(self.text.as_str()).width() as u16, 1)
+    }
+
+    fn set_pos(&mut self, pos: Position) {
+        self.pos = pos
+    }
+}
+
+#[async_trait]
+impl KeyboardHandler for HyperlinkWidget {
+    async fn handle_key(&mut self, _key: KeyEvent) -> bool {
+        false
     }
 }
 

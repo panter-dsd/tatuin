@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MIT
 
+use std::sync::Arc;
+
 use super::{
-    AppBlockWidget, header::Header, hyperlink_widget::HyperlinkWidget, keyboard_handler::KeyboardHandler,
-    mouse_handler::MouseHandler, shortcut::Shortcut, widgets::WidgetTrait,
+    AppBlockWidget, header::Header, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::Shortcut,
+    widgets::HyperlinkWidget, widgets::WidgetTrait,
 };
 use crate::{
     task::{self, Task as TaskTrait},
-    ui::style,
+    types::ArcRwLock,
+    ui::{style, widgets::MarkdownLine},
 };
 use async_trait::async_trait;
 use chrono::Local;
@@ -18,12 +21,14 @@ use ratatui::{
     text::{Line, Span, Text},
     widgets::{Paragraph, Widget, Wrap},
 };
+use tokio::sync::RwLock;
 
 pub struct TaskInfoWidget {
     is_active: bool,
     t: Option<Box<dyn TaskTrait>>,
     shortcut: Shortcut,
     url_widget: Option<HyperlinkWidget>,
+    mouse_handlers: Vec<ArcRwLock<Box<dyn MouseHandler>>>,
 }
 
 impl Default for TaskInfoWidget {
@@ -33,6 +38,7 @@ impl Default for TaskInfoWidget {
             t: None,
             shortcut: Shortcut::new("Activate Task Info block", &['g', 'i']),
             url_widget: None,
+            mouse_handlers: Vec::new(),
         }
     }
 }
@@ -58,6 +64,10 @@ impl MouseHandler for TaskInfoWidget {
     async fn handle_mouse(&mut self, ev: &MouseEvent) {
         if let Some(w) = &mut self.url_widget {
             w.handle_mouse(ev).await;
+        }
+
+        for h in &self.mouse_handlers {
+            h.write().await.handle_mouse(ev).await;
         }
     }
 }
@@ -85,6 +95,8 @@ impl TaskInfoWidget {
 #[async_trait]
 impl WidgetTrait for TaskInfoWidget {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        self.mouse_handlers.clear();
+
         let h = Header::new("Task info", self.is_active, Some(&self.shortcut));
         let tz = Local::now().timezone();
 
@@ -97,6 +109,24 @@ impl WidgetTrait for TaskInfoWidget {
                 styled_line("Provider", &provider, None),
                 styled_line("Text", &task_text, None),
             ];
+
+            text.push(styled_line("TEXT", "", None));
+            let mut text_widget = MarkdownLine::new(&task_text);
+            text_widget
+                .render(
+                    Rect::new(
+                        area.x + Text::from("TEXT").width() as u16 + 1,
+                        area.y + text.len() as u16,
+                        area.width,
+                        area.height,
+                    ),
+                    buf,
+                )
+                .await;
+            self.mouse_handlers.push({
+                let w: Box<dyn MouseHandler> = Box::new(text_widget);
+                Arc::new(RwLock::new(w))
+            });
 
             let due;
             if t.due().is_some() {
@@ -124,15 +154,12 @@ impl WidgetTrait for TaskInfoWidget {
             if let Some(w) = &mut self.url_widget {
                 const LABEL: &str = "Url";
 
-                w.set_pos(
-                    area,
-                    Position::new(
-                        area.x + Text::from(LABEL).width() as u16 + 1,
-                        area.y + text.len() as u16 + 1,
-                    ),
-                );
+                w.set_pos(Position::new(
+                    area.x + Text::from(LABEL).width() as u16 + 1,
+                    area.y + text.len() as u16 + 1,
+                ));
                 text.push(styled_line(LABEL, "", None));
-                w.render(buf);
+                w.render(area, buf).await;
             }
 
             let created_at;
