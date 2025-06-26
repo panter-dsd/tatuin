@@ -89,7 +89,7 @@ fn widgets(node: &Node) -> Vec<Box<dyn WidgetTrait>> {
     result
 }
 
-fn generate_node_text(root: &markdown::mdast::Node) -> String {
+fn generate_node_text(root: &Node) -> String {
     let mut lines = Vec::new();
     for node in root.children().unwrap() {
         match node {
