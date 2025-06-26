@@ -16,30 +16,6 @@ use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler};
 
 use super::WidgetTrait;
 
-fn widgets(node: &Node) -> Vec<Box<dyn WidgetTrait>> {
-    let mut result = Vec::new();
-    if node.children().is_none() {
-        return result;
-    }
-
-    for n in node.children().unwrap() {
-        match n {
-            Node::Text(t) => {
-                result.push(Box::new(Text::new(t.value.as_str())));
-            }
-            Node::Root(_) | Node::Paragraph(_) => {
-                result.extend(widgets(n));
-            }
-            Node::Link(l) => {
-                result.push(Box::new(HyperlinkWidget::new(generate_node_text(n).as_str(), &l.url)));
-            }
-            _ => {}
-        }
-    }
-
-    result
-}
-
 pub struct MarkdownLine {
     widgets: ArcRwLock<Vec<Box<dyn WidgetTrait>>>,
 }
@@ -89,13 +65,37 @@ impl MouseHandler for MarkdownLine {
     }
 }
 
+fn widgets(node: &Node) -> Vec<Box<dyn WidgetTrait>> {
+    let mut result = Vec::new();
+    if node.children().is_none() {
+        return result;
+    }
+
+    for n in node.children().unwrap() {
+        match n {
+            Node::Text(t) => {
+                result.push(Box::new(Text::new(t.value.as_str())));
+            }
+            Node::Root(_) | Node::Paragraph(_) => {
+                result.extend(widgets(n));
+            }
+            Node::Link(l) => {
+                result.push(Box::new(HyperlinkWidget::new(generate_node_text(n).as_str(), &l.url)));
+            }
+            _ => {}
+        }
+    }
+
+    result
+}
+
 fn generate_node_text(root: &markdown::mdast::Node) -> String {
     let mut lines = Vec::new();
     for node in root.children().unwrap() {
         match node {
-            markdown::mdast::Node::Text(t) => {
-                lines.push(t.value.clone());
-            }
+            Node::Text(t) => lines.push(t.value.clone()),
+            Node::Emphasis(_) | Node::Strong(_) => lines.push(generate_node_text(node)),
+            Node::InlineCode(t) => lines.push(t.value.clone()),
             _ => {}
         }
     }
