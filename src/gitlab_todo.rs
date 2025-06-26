@@ -123,6 +123,10 @@ impl TaskTrait for Task {
         })
     }
 
+    fn url(&self) -> String {
+        self.todo.target_url.to_string()
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
