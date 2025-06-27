@@ -6,6 +6,7 @@ use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
+    style::Style,
 };
 
 use markdown::mdast::Node;
@@ -17,12 +18,16 @@ use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler};
 use super::WidgetTrait;
 
 pub struct MarkdownLine {
+    pos: Position,
+    style: Option<Style>,
     widgets: ArcRwLock<Vec<Box<dyn WidgetTrait>>>,
 }
 
 impl MarkdownLine {
     pub fn new(text: &str) -> Self {
         Self {
+            pos: Position::default(),
+            style: None,
             widgets: Arc::new(RwLock::new(
                 match markdown::to_mdast(text, &markdown::ParseOptions::default()) {
                     Ok(root) => widgets(&root),
@@ -36,7 +41,20 @@ impl MarkdownLine {
 #[async_trait]
 impl WidgetTrait for MarkdownLine {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let mut area = area;
+        if let Some(s) = &self.style {
+            for w in self.widgets.write().await.iter_mut() {
+                w.set_style(*s);
+            }
+        }
+        self.style = None;
+
+        let mut area = Rect {
+            x: self.pos.x,
+            y: self.pos.y,
+            width: area.width,
+            height: area.height,
+        };
+
         for w in self.widgets.write().await.iter_mut() {
             w.set_pos(Position::new(area.x, area.y));
             w.render(area, buf).await;
@@ -46,6 +64,14 @@ impl WidgetTrait for MarkdownLine {
 
     fn size(&self) -> Size {
         Size::new(30, 1)
+    }
+
+    fn set_pos(&mut self, pos: Position) {
+        self.pos = pos
+    }
+
+    fn set_style(&mut self, style: Style) {
+        self.style = Some(style)
     }
 }
 

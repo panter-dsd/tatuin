@@ -176,9 +176,10 @@ where
     }
 }
 
+#[async_trait]
 impl tasks_widget::TaskInfoViewerTrait for task_info_widget::TaskInfoWidget {
-    fn set_task(&mut self, task: Option<Box<dyn crate::task::Task>>) {
-        self.set_task(task);
+    async fn set_task(&mut self, task: Option<Box<dyn crate::task::Task>>) {
+        self.set_task(task).await;
     }
 }
 
