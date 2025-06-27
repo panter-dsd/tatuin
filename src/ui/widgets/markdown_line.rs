@@ -6,7 +6,7 @@ use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
-    style::Style,
+    style::{Modifier, Style},
 };
 
 use markdown::mdast::Node;
@@ -107,6 +107,21 @@ fn widgets(node: &Node) -> Vec<Box<dyn WidgetTrait>> {
             }
             Node::Link(l) => {
                 result.push(Box::new(HyperlinkWidget::new(generate_node_text(n).as_str(), &l.url)));
+            }
+            Node::Strong(_) => {
+                result.push(Box::new(
+                    Text::new(generate_node_text(n).as_str()).modifier(Modifier::BOLD),
+                ));
+            }
+            Node::Emphasis(_) => {
+                result.push(Box::new(
+                    Text::new(generate_node_text(n).as_str()).modifier(Modifier::ITALIC),
+                ));
+            }
+            Node::Delete(_) => {
+                result.push(Box::new(
+                    Text::new(generate_node_text(n).as_str()).modifier(Modifier::CROSSED_OUT),
+                ));
             }
             _ => {}
         }
