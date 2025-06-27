@@ -22,6 +22,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
     style::{Color, Style},
+    text::Text as RatatuiText,
     widgets::{Clear, ListState, Widget},
 };
 use std::{cmp::Ordering, slice::IterMut, sync::Arc};
@@ -743,11 +744,20 @@ impl WidgetTrait for TasksWidget {
 
         for (i, w) in self.tasks.iter_mut().enumerate() {
             if selected.is_some_and(|idx| idx == i) {
+                RatatuiText::from(">").render(
+                    Rect {
+                        x: area.x,
+                        y,
+                        width: 1,
+                        height: 1,
+                    },
+                    buf,
+                );
                 w.set_style(style::SELECTED_ROW_STYLE)
             } else {
                 w.set_style(style::REGULAR_ROW_STYLE)
             }
-            w.set_pos(Position::new(area.x, y));
+            w.set_pos(Position::new(area.x + 1, y));
             w.render(area, buf).await;
             y += 1;
         }
