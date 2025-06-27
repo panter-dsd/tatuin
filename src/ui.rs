@@ -52,7 +52,7 @@ use selectable_list::SelectableList;
 use strum::{Display, EnumString};
 use tokio_stream::StreamExt;
 
-#[derive(Eq, PartialEq, Clone, Hash, Display, EnumString)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash, Display, EnumString)]
 enum AppBlock {
     Providers,
     Projects,

@@ -401,6 +401,10 @@ impl TasksWidget {
     }
 
     pub fn selected_task(&self) -> Option<Box<dyn TaskTrait>> {
+        if self.tasks.is_empty() {
+            return None;
+        }
+
         let t = self.state.selected().map(|i| self.tasks[i].task().clone_boxed());
         if t.is_none() {
             return t;
