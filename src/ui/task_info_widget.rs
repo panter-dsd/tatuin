@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use super::{
     AppBlockWidget, header::Header, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::Shortcut,
-    widgets::HyperlinkWidget, widgets::WidgetTrait,
+    widgets::HyperlinkWidget, widgets::Text, widgets::WidgetTrait,
 };
 use crate::{
     task::{self, Task as TaskTrait},
@@ -18,10 +18,15 @@ use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
     style::{Modifier, Style, Stylize},
-    text::{Line, Span, Text},
+    text::{Line, Span},
     widgets::{Paragraph, Widget, Wrap},
 };
 use tokio::sync::RwLock;
+
+struct Entry {
+    title: String,
+    widget: Box<dyn WidgetTrait>,
+}
 
 pub struct TaskInfoWidget {
     is_active: bool,
@@ -29,6 +34,7 @@ pub struct TaskInfoWidget {
     shortcut: Shortcut,
     url_widget: Option<HyperlinkWidget>,
     mouse_handlers: Vec<ArcRwLock<Box<dyn MouseHandler>>>,
+    entries: ArcRwLock<Vec<Entry>>,
 }
 
 impl Default for TaskInfoWidget {
@@ -39,6 +45,7 @@ impl Default for TaskInfoWidget {
             shortcut: Shortcut::new("Activate Task Info block", &['g', 'i']),
             url_widget: None,
             mouse_handlers: Vec::new(),
+            entries: Arc::new(RwLock::new(Vec::new())),
         }
     }
 }
@@ -80,8 +87,73 @@ impl KeyboardHandler for TaskInfoWidget {
 }
 
 impl TaskInfoWidget {
-    pub fn set_task(&mut self, t: Option<Box<dyn TaskTrait>>) {
+    pub async fn set_task(&mut self, t: Option<Box<dyn TaskTrait>>) {
         self.t = t;
+
+        let entries = Vec::new();
+        if let Some(t) = self.t {
+            let tz = Local::now().timezone();
+            entries.push(Entry {
+                title: "ID".to_string(),
+                widget: Box::new(Text::new(t.id().as_str())),
+            });
+            entries.push(Entry {
+                title: "Provider".to_string(),
+                widget: Box::new(Text::new(t.provider().as_str())),
+            });
+            entries.push(Entry {
+                title: "Text".to_string(),
+                widget: Box::new(MarkdownLine::new(t.text().as_str())),
+            });
+
+            if let Some(d) = t.due() {
+                entries.push(Entry {
+                    title: "Due".to_string(),
+                    widget: Box::new(Text::new(task::datetime_to_str(Some(d), &tz).as_str())),
+                });
+            }
+
+            if let Some(d) = t.completed_at() {
+                entries.push(Entry {
+                    title: "Completed at".to_string(),
+                    widget: Box::new(Text::new(task::datetime_to_str(Some(d), &tz).as_str())),
+                });
+            }
+
+            let priority = t.priority().to_string();
+            text.push(styled_line("Priority", priority.as_str(), None));
+
+            let description;
+            if let Some(d) = t.description() {
+                if !d.is_empty() {
+                    description = d;
+                    text.push(styled_line("Description", description.as_str(), None));
+                }
+            }
+
+            if let Some(w) = &mut self.url_widget {
+                const LABEL: &str = "Url";
+
+                w.set_pos(Position::new(
+                    area.x + Text::from(LABEL).width() as u16 + 1,
+                    area.y + text.len() as u16 + 1,
+                ));
+                text.push(styled_line(LABEL, "", None));
+                w.render(area, buf).await;
+            }
+
+            let created_at;
+            if t.created_at().is_some() {
+                created_at = task::datetime_to_str(t.created_at(), &tz);
+                text.push(styled_line("Created", &created_at, None));
+            }
+
+            let updated_at;
+            if t.updated_at().is_some() {
+                updated_at = task::datetime_to_str(t.updated_at(), &tz);
+                text.push(styled_line("Updated", &updated_at, None));
+            }
+        }
 
         self.url_widget = None;
         if let Some(url) = self.t.as_ref().map(|t| t.url()) {
