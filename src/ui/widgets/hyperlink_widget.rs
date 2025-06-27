@@ -31,10 +31,6 @@ impl HyperlinkWidget {
             is_under_mouse: false,
         }
     }
-
-    pub fn size(&self) -> Size {
-        Size::new(Text::from(self.text.as_str()).width() as u16, 1)
-    }
 }
 
 #[async_trait]

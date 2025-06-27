@@ -16,5 +16,8 @@ pub trait WidgetTrait: KeyboardHandler + MouseHandler + Send + Sync {
     fn size(&self) -> Size;
     fn set_draw_helper(&mut self, _dh: DrawHelper) {}
     fn set_pos(&mut self, _pos: Position) {}
+    fn style(&self) -> Style {
+        Style::default()
+    }
     fn set_style(&mut self, _style: Style) {}
 }

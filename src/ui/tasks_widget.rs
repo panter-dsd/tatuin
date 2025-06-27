@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: MIT
 
 use super::{
-    AppBlockWidget, dialogs::DialogTrait, dialogs::ListDialog, draw_helper::DrawHelper,
-    keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, selectable_list::SelectableList,
-    shortcut::Shortcut, style, widgets::WidgetTrait,
+    AppBlockWidget, dialogs::DialogTrait, dialogs::ListDialog, draw_helper::DrawHelper, header::Header,
+    keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::Shortcut, style, widgets::WidgetTrait,
 };
 use crate::{
     async_jobs::{AsyncJob, AsyncJobStorage},
@@ -11,20 +10,19 @@ use crate::{
     patched_task::PatchedTask,
     project::Project as ProjectTrait,
     provider::Provider,
-    state::StatefulObject,
     task::{self, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
     types::ArcRwLock,
+    ui::widgets::{MarkdownLine, Text},
 };
 use async_trait::async_trait;
 use chrono::Local;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
-    layout::{Rect, Size},
+    layout::{Position, Rect, Size},
     style::{Color, Style},
-    text::{Line, Span},
-    widgets::{Clear, ListItem, ListState, Widget},
+    widgets::{Clear, ListState, Widget},
 };
 use std::{cmp::Ordering, slice::IterMut, sync::Arc};
 use tokio::sync::{RwLock, broadcast};
@@ -58,19 +56,150 @@ pub trait TaskInfoViewerTrait: Send + Sync {
 
 type TaskInfoViewer = ArcRwLock<dyn TaskInfoViewerTrait>;
 
+struct TaskLineWidget {
+    task: Box<dyn TaskTrait>,
+    children: Vec<Box<dyn WidgetTrait>>,
+}
+
+impl TaskLineWidget {
+    pub fn new(t: &dyn TaskTrait, changed_tasks: &[TaskPatch]) -> Self {
+        let tz = Local::now().timezone();
+
+        let fg_color = {
+            match t.due() {
+                Some(d) => {
+                    let now = chrono::Utc::now().date_naive();
+                    match d.date_naive().cmp(&now) {
+                        Ordering::Less => style::OVERDUE_TASK_FG,
+                        Ordering::Equal => style::TODAY_TASK_FG,
+                        Ordering::Greater => style::FUTURE_TASK_FG,
+                    }
+                }
+                None => style::NO_DATE_TASK_FG,
+            }
+        };
+        let mut state = t.state();
+        let mut due = task::datetime_to_str(t.due(), &tz);
+        let mut priority = t.priority();
+        let mut uncommitted = false;
+        if let Some(patch) = changed_tasks.iter().find(|c| c.is_task(t)) {
+            uncommitted = !patch.is_empty();
+            if let Some(s) = &patch.state {
+                state = s.clone();
+            }
+            if let Some(d) = &patch.due {
+                due = d.to_string();
+            }
+            if let Some(p) = &patch.priority {
+                priority = p.clone();
+            }
+        }
+
+        let mut children: Vec<Box<dyn WidgetTrait>> = vec![
+            Box::new(Text::new(format!("[{state}] ").as_str())),
+            Box::new(MarkdownLine::new(t.text().as_str()).style(Style::default().fg(fg_color))),
+            Box::new(Text::new(format!(" (due: {due})").as_str()).style(Style::default().fg(Color::Blue))),
+            Box::new(
+                Text::new(format!(" (Priority: {priority})").as_str())
+                    .style(Style::default().fg(style::priority_color(&priority))),
+            ),
+            Box::new(Text::new(format!(" ({})", t.place()).as_str()).style(Style::default().fg(Color::Yellow))),
+        ];
+
+        if !t.description().unwrap_or_default().is_empty() {
+            children.push(Box::new(Text::new(" 💬")));
+        }
+
+        if uncommitted {
+            children.push(Box::new(Text::new(" 📤")));
+        }
+
+        Self {
+            task: t.clone_boxed(),
+            children,
+        }
+    }
+
+    fn task(&self) -> &Box<dyn TaskTrait> {
+        &self.task
+    }
+}
+
+#[async_trait]
+impl WidgetTrait for TaskLineWidget {
+    async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        for child in self.children.iter_mut() {
+            child.render(area, buf).await;
+        }
+    }
+
+    fn size(&self) -> Size {
+        let mut result = Size::default();
+
+        for child in self.children.iter() {
+            result.width += child.size().width;
+            result.height = result.height.max(child.size().height);
+        }
+
+        result
+    }
+
+    fn set_style(&mut self, style: Style) {
+        for child in self.children.iter_mut() {
+            let mut s = child.style();
+            s.bg = None;
+            child.set_style(s.patch(style));
+        }
+    }
+
+    fn set_pos(&mut self, pos: Position) {
+        let mut x = pos.x;
+
+        for child in self.children.iter_mut() {
+            child.set_pos(Position::new(x, pos.y));
+            x += child.size().width;
+        }
+    }
+}
+
+#[async_trait]
+impl KeyboardHandler for TaskLineWidget {
+    async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        for child in self.children.iter_mut() {
+            if child.handle_key(key).await {
+                return true;
+            }
+        }
+
+        false
+    }
+}
+
+#[async_trait]
+impl MouseHandler for TaskLineWidget {
+    async fn handle_mouse(&mut self, ev: &MouseEvent) {
+        for child in self.children.iter_mut() {
+            child.handle_mouse(ev).await;
+        }
+    }
+}
+
 pub struct TasksWidget {
     providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
     error_logger: ErrorLogger,
     task_info_viewer: TaskInfoViewer,
     all_tasks: Vec<Box<dyn TaskTrait>>,
     changed_tasks: Vec<TaskPatch>,
-    tasks: SelectableList<Box<dyn TaskTrait>>,
+    tasks: Vec<TaskLineWidget>,
     providers_filter: Vec<String>,
     projects_filter: Vec<String>,
     draw_helper: Option<DrawHelper>,
     on_changes_broadcast: broadcast::Sender<()>,
     async_jobs_storage: ArcRwLock<AsyncJobStorage>,
+    is_active: bool,
+    state: ListState,
 
+    activate_shortcut: Shortcut,
     commit_changes_shortcut: Shortcut,
     swap_completed_state_shortcut: Shortcut,
     in_progress_shortcut: Shortcut,
@@ -88,7 +217,7 @@ pub struct TasksWidget {
 #[async_trait]
 impl AppBlockWidget for TasksWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
-        self.tasks.activate_shortcuts()
+        vec![&mut self.activate_shortcut]
     }
     fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
         vec![
@@ -102,27 +231,35 @@ impl AppBlockWidget for TasksWidget {
     }
 
     fn set_active(&mut self, is_active: bool) {
-        self.tasks.set_active(is_active);
+        self.is_active = is_active
     }
 
     async fn select_next(&mut self) {
-        self.tasks.select_next().await;
-        self.update_task_info_view().await;
+        if self.state.selected().is_none_or(|i| i < self.tasks.len() - 1) {
+            self.state.select_next();
+            self.update_task_info_view().await;
+        }
     }
 
     async fn select_previous(&mut self) {
-        self.tasks.select_previous().await;
-        self.update_task_info_view().await;
+        if self.state.selected().is_some_and(|i| i > 0) {
+            self.state.select_previous();
+            self.update_task_info_view().await;
+        }
     }
 
     async fn select_first(&mut self) {
-        self.tasks.select_first().await;
-        self.update_task_info_view().await;
+        if !self.tasks.is_empty() {
+            self.state.select_first();
+            self.update_task_info_view().await;
+        }
     }
 
     async fn select_last(&mut self) {
-        self.tasks.select_last().await;
-        self.update_task_info_view().await;
+        if !self.tasks.is_empty() {
+            self.state.select(Some(self.tasks.len() - 1));
+            self.update_task_info_view().await;
+        }
     }
 }
 
@@ -141,9 +278,10 @@ impl TasksWidget {
             task_info_viewer,
             all_tasks: Vec::new(),
             changed_tasks: Vec::new(),
-            tasks: SelectableList::default()
-                .shortcut(Shortcut::new("Activate Tasks block", &['g', 't']))
-                .show_count_in_title(false),
+            is_active: false,
+            state: ListState::default(),
+            activate_shortcut: Shortcut::new("Activate Tasks block", &['g', 't']),
+            tasks: Vec::new(),
             projects_filter: Vec::new(),
             providers_filter: Vec::new(),
             draw_helper: None,
@@ -208,30 +346,29 @@ impl TasksWidget {
     }
 
     fn filter_tasks(&mut self) {
-        self.tasks.set_items(
-            self.all_tasks
-                .iter()
-                .filter(|t| {
-                    let mut result = true;
-                    if !self.providers_filter.is_empty() && !self.providers_filter.contains(&t.provider()) {
+        self.tasks = self
+            .all_tasks
+            .iter()
+            .filter(|t| {
+                let mut result = true;
+                if !self.providers_filter.is_empty() && !self.providers_filter.contains(&t.provider()) {
+                    result = false;
+                }
+                if let Some(tp) = t.project() {
+                    if !self.projects_filter.is_empty() && !self.projects_filter.contains(&tp.name()) {
                         result = false;
                     }
-                    if let Some(tp) = t.project() {
-                        if !self.projects_filter.is_empty() && !self.projects_filter.contains(&tp.name()) {
-                            result = false;
-                        }
-                    }
-                    result
-                })
-                .map(|t| t.clone_boxed())
-                .collect(),
-        );
-        let state = if self.all_tasks.is_empty() {
+                }
+                result
+            })
+            .map(|t| TaskLineWidget::new(t.as_ref(), &self.changed_tasks))
+            .collect();
+
+        self.state = if self.all_tasks.is_empty() {
             ListState::default()
         } else {
             let selected_idx = self
-                .tasks
-                .state()
+                .state
                 .selected()
                 .map(|i| {
                     if i >= self.all_tasks.len() {
@@ -243,14 +380,13 @@ impl TasksWidget {
                 .unwrap_or_else(|| 0);
             ListState::default().with_selected(Some(selected_idx))
         };
-        self.tasks.set_state(state);
     }
 
     pub fn tasks_projects(&self) -> Vec<Box<dyn ProjectTrait>> {
         let mut projects: Vec<Box<dyn ProjectTrait>> = Vec::new();
 
         for t in self.tasks.iter() {
-            if let Some(tp) = t.project() {
+            if let Some(tp) = t.task().project() {
                 let it = projects
                     .iter()
                     .find(|p| p.id() == tp.id() && p.provider() == tp.provider());
@@ -264,7 +400,7 @@ impl TasksWidget {
     }
 
     pub fn selected_task(&self) -> Option<Box<dyn TaskTrait>> {
-        let t = self.tasks.selected().map(|t| t.clone_boxed());
+        let t = self.state.selected().map(|i| self.tasks[i].task().clone_boxed());
         if t.is_none() {
             return t;
         }
@@ -325,12 +461,12 @@ impl TasksWidget {
     }
 
     async fn change_check_state(&mut self, state: Option<State>) {
-        let selected = self.tasks.selected();
+        let selected = self.state.selected();
         if selected.is_none() {
             return;
         }
 
-        let t = selected.unwrap();
+        let t = self.tasks[selected.unwrap()].task();
         let mut current_state = t.state();
 
         if let Some(p) = self.changed_tasks.iter_mut().find(|c| c.is_task(t.as_ref())) {
@@ -366,7 +502,7 @@ impl TasksWidget {
     async fn render_change_due_dialog(&mut self, area: Rect, buf: &mut Buffer) {
         if let Some(d) = &mut self.change_dalog {
             let size = d.size();
-            let idx = self.tasks.selected_index().unwrap_or(0) as u16;
+            let idx = self.state.selected().unwrap_or(0) as u16;
 
             let mut y = area.y + 1 /*title*/ + idx+1/*right below the item*/;
             if area.height - y < size.height {
@@ -450,12 +586,12 @@ impl TasksWidget {
     }
 
     async fn show_change_due_date_dialog(&mut self) {
-        let selected = self.tasks.selected();
+        let selected = self.state.selected();
         if selected.is_none() {
             return;
         }
 
-        let t = selected.unwrap();
+        let t = self.tasks[selected.unwrap()].task();
         let d = ListDialog::new(
             &[
                 DuePatchItem::Today,
@@ -470,12 +606,12 @@ impl TasksWidget {
     }
 
     async fn show_change_priority_dialog(&mut self) {
-        let selected = self.tasks.selected();
+        let selected = self.state.selected();
         if selected.is_none() {
             return;
         }
 
-        let t = selected.unwrap();
+        let t = self.tasks[selected.unwrap()].task();
         let d = ListDialog::new(
             &[
                 Priority::Normal,
@@ -491,12 +627,12 @@ impl TasksWidget {
     }
 
     async fn change_due_date(&mut self, due: &DuePatchItem) {
-        let selected = self.tasks.selected();
+        let selected = self.state.selected();
         if selected.is_none() {
             return;
         }
 
-        let t = selected.unwrap();
+        let t = self.tasks[selected.unwrap()].task();
         match self.changed_tasks.iter_mut().find(|p| p.is_task(t.as_ref())) {
             Some(p) => p.due = Some(due.clone()),
             None => self.changed_tasks.push(TaskPatch {
@@ -509,12 +645,12 @@ impl TasksWidget {
     }
 
     async fn change_priority(&mut self, priority: &Priority) {
-        let selected = self.tasks.selected();
+        let selected = self.state.selected();
         if selected.is_none() {
             return;
         }
 
-        let t = selected.unwrap();
+        let t = self.tasks[selected.unwrap()].task();
         match self.changed_tasks.iter_mut().find(|p| p.is_task(t.as_ref())) {
             Some(p) => p.priority = Some(priority.clone()),
             None => self.changed_tasks.push(TaskPatch {
@@ -527,12 +663,12 @@ impl TasksWidget {
     }
 
     async fn undo_changes(&mut self) {
-        let selected = self.tasks.selected();
+        let selected = self.state.selected();
         if selected.is_none() {
             return;
         }
 
-        let t = selected.unwrap();
+        let t = self.tasks[selected.unwrap()].task();
         self.changed_tasks.retain(|p| !p.is_task(t.as_ref()));
     }
 
@@ -541,19 +677,13 @@ impl TasksWidget {
     }
 }
 
-impl StatefulObject for TasksWidget {
-    fn save(&self) -> crate::state::State {
-        self.tasks.save()
-    }
-
-    fn restore(&mut self, state: crate::state::State) {
-        self.tasks.restore(state);
-    }
-}
-
 #[async_trait]
 impl MouseHandler for TasksWidget {
-    async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
+    async fn handle_mouse(&mut self, ev: &MouseEvent) {
+        for w in self.tasks.iter_mut() {
+            w.handle_mouse(ev).await;
+        }
+    }
 }
 
 #[async_trait]
@@ -596,75 +726,31 @@ impl KeyboardHandler for TasksWidget {
 #[async_trait]
 impl WidgetTrait for TasksWidget {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        buf.set_style(area, Style::default().bg(Color::Black));
         let changed = &self.changed_tasks;
         let mut title = format!("Tasks ({})", self.tasks.len());
-        let tz = Local::now().timezone();
 
         if !changed.is_empty() {
-            title = format!(
-                "{title} (uncommitted count {}, use 'c'+'c' to commit them)",
-                changed.len()
-            )
+            title.push_str(format!(" (uncommitted count {}, use 'c'+'c' to commit them)", changed.len()).as_str());
         }
 
-        self.tasks.render(
-            title.as_str(),
-            |t| {
-                let fg_color = {
-                    match t.due() {
-                        Some(d) => {
-                            let now = chrono::Utc::now().date_naive();
-                            match d.date_naive().cmp(&now) {
-                                Ordering::Less => style::OVERDUE_TASK_FG,
-                                Ordering::Equal => style::TODAY_TASK_FG,
-                                Ordering::Greater => style::FUTURE_TASK_FG,
-                            }
-                        }
-                        None => style::NO_DATE_TASK_FG,
-                    }
-                };
-                let mut state = t.state();
-                let mut due = task::datetime_to_str(t.due(), &tz);
-                let mut priority = t.priority();
-                let mut uncommitted = false;
-                if let Some(patch) = changed.iter().find(|c| c.is_task(t.as_ref())) {
-                    uncommitted = !patch.is_empty();
-                    if let Some(s) = &patch.state {
-                        state = s.clone();
-                    }
-                    if let Some(d) = &patch.due {
-                        due = d.to_string();
-                    }
-                    if let Some(p) = &patch.priority {
-                        priority = p.clone();
-                    }
-                }
+        let h = Header::new(title.as_str(), self.is_active, Some(&self.activate_shortcut));
+        h.block().render(area, buf);
 
-                let mut lines = vec![
-                    Span::from(format!("[{state}] ")),
-                    Span::styled(t.text(), Style::default().fg(fg_color)),
-                    Span::from(" ("),
-                    Span::styled(format!("due: {due}"), Style::default().fg(Color::Blue)),
-                    Span::from(") ("),
-                    Span::styled(format!("Priority: {priority}"), style::priority_color(&priority)),
-                    Span::from(") ("),
-                    Span::styled(t.place(), Style::default().fg(Color::Yellow)),
-                    Span::from(")"),
-                ];
+        let mut y = area.y + 1;
 
-                if !t.description().unwrap_or_default().is_empty() {
-                    lines.push(Span::from(" 💬"));
-                }
+        let selected = self.state.selected();
 
-                if uncommitted {
-                    lines.push(Span::from(" 📤"));
-                }
-
-                ListItem::from(Line::from(lines))
-            },
-            area,
-            buf,
-        );
+        for (i, w) in self.tasks.iter_mut().enumerate() {
+            if selected.is_some_and(|idx| idx == i) {
+                w.set_style(style::SELECTED_ROW_STYLE)
+            } else {
+                w.set_style(style::REGULAR_ROW_STYLE)
+            }
+            w.set_pos(Position::new(area.x, y));
+            w.render(area, buf).await;
+            y += 1;
+        }
 
         if self.change_dalog.is_some() {
             self.render_change_due_dialog(area, buf).await;

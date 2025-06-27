@@ -19,6 +19,7 @@ use crate::{
 
 pub struct MarkdownLine {
     pos: Position,
+    width: u16,
     style: Option<Style>,
     widgets: ArcRwLock<Vec<Box<dyn WidgetTrait>>>,
 }
@@ -27,6 +28,7 @@ impl MarkdownLine {
     pub fn new(text: &str) -> Self {
         Self {
             pos: Position::default(),
+            width: 1,
             style: None,
             widgets: Arc::new(RwLock::new(
                 match markdown::to_mdast(text, &markdown::ParseOptions::default()) {
@@ -35,6 +37,11 @@ impl MarkdownLine {
                 },
             )),
         }
+    }
+
+    pub fn style(mut self, s: Style) -> Self {
+        self.style = Some(s);
+        self
     }
 }
 
@@ -55,15 +62,18 @@ impl WidgetTrait for MarkdownLine {
             height: area.height,
         };
 
+        self.width = 0;
         for w in self.widgets.write().await.iter_mut() {
             w.set_pos(Position::new(area.x, area.y));
             w.render(area, buf).await;
-            area.x += w.size().width;
+            let width = w.size().width;
+            area.x += width;
+            self.width += width;
         }
     }
 
     fn size(&self) -> Size {
-        Size::new(30, 1)
+        Size::new(self.width, 1)
     }
 
     fn set_pos(&mut self, pos: Position) {
