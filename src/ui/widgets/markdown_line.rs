@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use super::{HyperlinkWidget, Text};
+use super::{HyperlinkWidget, Text, WidgetTrait};
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
@@ -12,10 +12,10 @@ use ratatui::{
 use markdown::mdast::Node;
 use tokio::sync::RwLock;
 
-use crate::types::ArcRwLock;
-use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler};
-
-use super::WidgetTrait;
+use crate::{
+    types::ArcRwLock,
+    ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler},
+};
 
 pub struct MarkdownLine {
     pos: Position,
