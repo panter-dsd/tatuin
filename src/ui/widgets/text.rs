@@ -60,6 +60,10 @@ impl WidgetTrait for Text {
         Size::new(self.width, 1)
     }
 
+    fn pos(&self) -> Position {
+        self.pos
+    }
+
     fn set_pos(&mut self, pos: Position) {
         self.pos = pos
     }

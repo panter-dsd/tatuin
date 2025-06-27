@@ -55,6 +55,10 @@ impl WidgetTrait for HyperlinkWidget {
             .render(self.area, buf);
     }
 
+    fn pos(&self) -> Position {
+        self.pos
+    }
+
     fn size(&self) -> Size {
         Size::new(Text::from(self.text.as_str()).width() as u16, 1)
     }
