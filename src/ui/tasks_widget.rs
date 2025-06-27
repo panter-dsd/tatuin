@@ -51,9 +51,11 @@ pub trait ErrorLoggerTrait: Send + Sync {
 }
 type ErrorLogger = ArcRwLock<dyn ErrorLoggerTrait>;
 
+#[async_trait]
 pub trait TaskInfoViewerTrait: Send + Sync {
-    fn set_task(&mut self, task: Option<Box<dyn TaskTrait>>);
+    async fn set_task(&mut self, task: Option<Box<dyn TaskTrait>>);
 }
+
 type TaskInfoViewer = ArcRwLock<dyn TaskInfoViewerTrait>;
 
 pub struct TasksWidget {
@@ -535,7 +537,7 @@ impl TasksWidget {
     }
 
     async fn update_task_info_view(&mut self) {
-        self.task_info_viewer.write().await.set_task(self.selected_task());
+        self.task_info_viewer.write().await.set_task(self.selected_task()).await;
     }
 }
 

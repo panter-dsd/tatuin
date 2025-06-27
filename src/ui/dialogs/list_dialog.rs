@@ -94,7 +94,7 @@ where
 #[async_trait]
 impl<T> MouseHandler for Dialog<T>
 where
-    T: Send,
+    T: Send + Sync,
 {
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }

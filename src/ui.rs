@@ -44,9 +44,8 @@ pub mod style;
 mod task_info_widget;
 mod tasks_widget;
 use crossterm::execute;
-mod hyperlink_widget;
 mod keyboard_handler;
-use hyperlink_widget::HyperlinkWidget;
+use widgets::HyperlinkWidget;
 mod draw_helper;
 use mouse_handler::MouseHandler;
 use selectable_list::SelectableList;
@@ -177,9 +176,10 @@ where
     }
 }
 
+#[async_trait]
 impl tasks_widget::TaskInfoViewerTrait for task_info_widget::TaskInfoWidget {
-    fn set_task(&mut self, task: Option<Box<dyn crate::task::Task>>) {
-        self.set_task(task);
+    async fn set_task(&mut self, task: Option<Box<dyn crate::task::Task>>) {
+        self.set_task(task).await;
     }
 }
 
@@ -705,7 +705,7 @@ impl App {
             Layout::vertical([Constraint::Fill(1), Constraint::Percentage(20)]).areas(right_area);
 
         App::render_header(header_area, buf);
-        self.render_footer(footer_area, buf);
+        self.render_footer(footer_area, buf).await;
         self.render_providers(providers_area, buf).await;
         self.render_projects(projects_area, buf).await;
         self.async_jobs.write().await.render(
@@ -745,7 +745,7 @@ impl App {
             .render(area, buf);
     }
 
-    fn render_footer(&mut self, area: Rect, buf: &mut Buffer) {
+    async fn render_footer(&mut self, area: Rect, buf: &mut Buffer) {
         let mut lines = vec![
             Span::styled(
                 "Use ↓↑ to move up/down, Tab/BackTab to move between blocks, ? for help. ",
@@ -764,14 +764,14 @@ impl App {
         }
 
         Paragraph::new(Line::from(lines)).centered().render(area, buf);
-        self.render_home_link(area, buf);
+        self.render_home_link(area, buf).await;
     }
 
-    fn render_home_link(&mut self, area: Rect, buf: &mut Buffer) {
+    async fn render_home_link(&mut self, area: Rect, buf: &mut Buffer) {
         let s = self.home_link.size();
         let pos = Position::new(area.x + area.width - s.width, area.y + area.height - s.height);
-        self.home_link.set_pos(area, pos);
-        self.home_link.render(buf);
+        self.home_link.set_pos(pos);
+        self.home_link.render(area, buf).await;
     }
 
     async fn render_providers(&mut self, area: Rect, buf: &mut Buffer) {
