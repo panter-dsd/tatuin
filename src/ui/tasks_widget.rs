@@ -121,8 +121,8 @@ impl TaskLineWidget {
         }
     }
 
-    fn task(&self) -> &Box<dyn TaskTrait> {
-        &self.task
+    fn task(&self) -> &dyn TaskTrait {
+        self.task.as_ref()
     }
 }
 
@@ -474,13 +474,13 @@ impl TasksWidget {
         let t = self.tasks[selected.unwrap()].task();
         let mut current_state = t.state();
 
-        if let Some(p) = self.changed_tasks.iter_mut().find(|c| c.is_task(t.as_ref())) {
+        if let Some(p) = self.changed_tasks.iter_mut().find(|c| c.is_task(t)) {
             if let Some(s) = &p.state {
                 current_state = s.clone();
                 p.state = None;
                 if state.as_ref().is_some_and(|s| *s == current_state) {
                     if p.is_empty() {
-                        self.changed_tasks.retain(|c| !c.is_task(t.as_ref()));
+                        self.changed_tasks.retain(|c| !c.is_task(t));
                     }
                     return; // We undo the change
                 }
@@ -492,7 +492,7 @@ impl TasksWidget {
         });
 
         if new_state != t.state() {
-            match self.changed_tasks.iter_mut().find(|p| p.is_task(t.as_ref())) {
+            match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
                 Some(p) => p.state = Some(new_state),
                 None => self.changed_tasks.push(TaskPatch {
                     task: t.clone_boxed(),
@@ -638,7 +638,7 @@ impl TasksWidget {
         }
 
         let t = self.tasks[selected.unwrap()].task();
-        match self.changed_tasks.iter_mut().find(|p| p.is_task(t.as_ref())) {
+        match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
             Some(p) => p.due = Some(due.clone()),
             None => self.changed_tasks.push(TaskPatch {
                 task: t.clone_boxed(),
@@ -656,7 +656,7 @@ impl TasksWidget {
         }
 
         let t = self.tasks[selected.unwrap()].task();
-        match self.changed_tasks.iter_mut().find(|p| p.is_task(t.as_ref())) {
+        match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
             Some(p) => p.priority = Some(priority.clone()),
             None => self.changed_tasks.push(TaskPatch {
                 task: t.clone_boxed(),
@@ -674,7 +674,7 @@ impl TasksWidget {
         }
 
         let t = self.tasks[selected.unwrap()].task();
-        self.changed_tasks.retain(|p| !p.is_task(t.as_ref()));
+        self.changed_tasks.retain(|p| !p.is_task(t));
     }
 
     async fn update_task_info_view(&mut self) {
