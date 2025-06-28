@@ -18,6 +18,7 @@ pub struct HyperlinkWidget {
     area: Rect,
     text: String,
     url: String,
+    style: Option<Style>,
     is_under_mouse: bool,
 }
 
@@ -28,6 +29,7 @@ impl HyperlinkWidget {
             area: Rect::default(),
             text: text.to_string(),
             url: url.to_string(),
+            style: None,
             is_under_mouse: false,
         }
     }
@@ -49,9 +51,13 @@ impl WidgetTrait for HyperlinkWidget {
             height: 1,
         };
 
+        let mut style = self.style.unwrap_or_default().underlined();
+        if style.fg.is_none() || self.is_under_mouse {
+            style = style.fg(fg);
+        }
         Paragraph::new(self.text.as_str())
             .wrap(Wrap { trim: false })
-            .style(Style::new().underlined().fg(fg))
+            .style(style)
             .render(self.area, buf);
     }
 
@@ -65,6 +71,11 @@ impl WidgetTrait for HyperlinkWidget {
 
     fn set_pos(&mut self, pos: Position) {
         self.pos = pos
+    }
+
+    fn set_style(&mut self, style: Style) {
+        tracing::debug!(target="hyperlink", style=?&style, current_style=?&self.style, "set style");
+        self.style = Some(style)
     }
 }
 

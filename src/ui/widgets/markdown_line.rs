@@ -85,7 +85,7 @@ impl WidgetTrait for MarkdownLine {
     }
 
     fn set_style(&mut self, style: Style) {
-        self.style = Some(style)
+        self.style = self.style.map(|s| s.patch(style))
     }
 }
 
