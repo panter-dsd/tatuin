@@ -26,16 +26,19 @@ pub struct MarkdownLine {
 
 impl MarkdownLine {
     pub fn new(text: &str) -> Self {
+        let widgets = match markdown::to_mdast(text, &markdown::ParseOptions::default()) {
+            Ok(root) => widgets(&root),
+            Err(_) => Vec::new(),
+        };
         Self {
             pos: Position::default(),
-            width: 1,
+            width: widgets
+                .iter()
+                .map(|w| w.size().width)
+                .reduce(|acc, w| acc + w)
+                .unwrap_or_default(),
             style: None,
-            widgets: Arc::new(RwLock::new(
-                match markdown::to_mdast(text, &markdown::ParseOptions::default()) {
-                    Ok(root) => widgets(&root),
-                    Err(_) => Vec::new(),
-                },
-            )),
+            widgets: Arc::new(RwLock::new(widgets)),
         }
     }
 
@@ -62,13 +65,11 @@ impl WidgetTrait for MarkdownLine {
             height: area.height,
         };
 
-        self.width = 0;
         for w in self.widgets.write().await.iter_mut() {
             let size = w.size();
             w.set_pos(Position::new(area.x, area.y));
             w.render(w.area(), buf).await;
             area.x += size.width;
-            self.width += size.width;
         }
     }
 
