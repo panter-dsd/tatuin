@@ -405,7 +405,10 @@ impl TasksWidget {
             return None;
         }
 
-        let t = self.state.selected().map(|i| self.tasks[i].task().clone_boxed());
+        let t = self
+            .state
+            .selected()
+            .map(|i| self.tasks[std::cmp::min(i, self.tasks.len() - 1)].task().clone_boxed());
         if t.is_none() {
             return t;
         }
@@ -731,7 +734,6 @@ impl KeyboardHandler for TasksWidget {
 #[async_trait]
 impl WidgetTrait for TasksWidget {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        buf.set_style(area, Style::default().bg(Color::Black));
         let changed = &self.changed_tasks;
         let mut title = format!("Tasks ({})", self.tasks.len());
 
