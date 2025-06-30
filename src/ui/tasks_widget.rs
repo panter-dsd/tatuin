@@ -2,7 +2,7 @@
 
 use super::{
     AppBlockWidget, dialogs::DialogTrait, dialogs::ListDialog, draw_helper::DrawHelper, header::Header,
-    keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::Shortcut, style, widgets::TaskRow,
+    keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::Shortcut, widgets::TaskRow,
     widgets::WidgetTrait,
 };
 use crate::{
@@ -620,7 +620,9 @@ impl WidgetTrait for TasksWidget {
         let selected = self.state.selected();
 
         for (i, w) in self.tasks.iter_mut().enumerate() {
-            if selected.is_some_and(|idx| idx == i) {
+            let is_row_selected = selected.is_some_and(|idx| idx == i);
+            w.set_selected(is_row_selected);
+            if is_row_selected {
                 Text::from(">").render(
                     Rect {
                         x: area.x,
@@ -630,9 +632,6 @@ impl WidgetTrait for TasksWidget {
                     },
                     buf,
                 );
-                w.set_style(style::SELECTED_ROW_STYLE)
-            } else {
-                w.set_style(style::REGULAR_ROW_STYLE)
             }
             w.set_pos(Position::new(area.x + 1, y));
             w.render(area, buf).await;

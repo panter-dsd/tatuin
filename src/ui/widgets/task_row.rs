@@ -16,7 +16,9 @@ use std::cmp::Ordering;
 
 pub struct TaskRow {
     task: Box<dyn TaskTrait>,
+    pos: Position,
     children: Vec<Box<dyn WidgetTrait>>,
+    is_selected: bool,
 }
 
 impl TaskRow {
@@ -75,17 +77,34 @@ impl TaskRow {
         Self {
             task: t.clone_boxed(),
             children,
+            pos: Position::default(),
+            is_selected: false,
         }
     }
 
     pub fn task(&self) -> &dyn TaskTrait {
         self.task.as_ref()
     }
+
+    pub fn set_selected(&mut self, selected: bool) {
+        self.is_selected = selected
+    }
 }
 
 #[async_trait]
 impl WidgetTrait for TaskRow {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        let area = Rect {
+            x: self.pos.x,
+            y: self.pos.y,
+            width: area.width,
+            height: self.size().height,
+        };
+        if self.is_selected {
+            buf.set_style(area, style::SELECTED_ROW_STYLE);
+        } else {
+            buf.set_style(area, style::REGULAR_ROW_STYLE);
+        }
         for child in self.children.iter_mut() {
             child.render(area, buf).await;
         }
@@ -110,7 +129,12 @@ impl WidgetTrait for TaskRow {
         }
     }
 
+    fn pos(&self) -> Position {
+        self.pos
+    }
+
     fn set_pos(&mut self, pos: Position) {
+        self.pos = pos;
         let mut x = pos.x;
 
         for child in self.children.iter_mut() {
