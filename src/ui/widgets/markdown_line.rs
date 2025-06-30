@@ -53,7 +53,9 @@ impl WidgetTrait for MarkdownLine {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         if let Some(s) = &self.style {
             for w in self.widgets.write().await.iter_mut() {
-                w.set_style(*s);
+                let mut style = w.style();
+                style.bg = None;
+                w.set_style(style.patch(*s));
             }
         }
         self.style = None;
@@ -86,7 +88,7 @@ impl WidgetTrait for MarkdownLine {
     }
 
     fn set_style(&mut self, style: Style) {
-        self.style = self.style.map(|s| s.patch(style))
+        self.style = self.style.map(|s| s.patch(style)).or(Some(style))
     }
 }
 
