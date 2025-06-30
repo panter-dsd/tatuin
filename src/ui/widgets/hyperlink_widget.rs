@@ -78,7 +78,6 @@ impl WidgetTrait for HyperlinkWidget {
     }
 
     fn set_style(&mut self, style: Style) {
-        tracing::debug!(target="hyperlink", style=?&style, current_style=?&self.style, "set style");
         self.style = Some(style)
     }
 }
