@@ -339,45 +339,6 @@ impl TasksWidget {
         }
     }
 
-    async fn change_check_state(&mut self, state: Option<State>) {
-        let selected = self.state.selected();
-        if selected.is_none() {
-            return;
-        }
-
-        let t = self.tasks[selected.unwrap()].task();
-        let mut current_state = t.state();
-
-        if let Some(p) = self.changed_tasks.iter_mut().find(|c| c.is_task(t)) {
-            if let Some(s) = &p.state {
-                current_state = s.clone();
-                p.state = None;
-                if state.as_ref().is_some_and(|s| *s == current_state) {
-                    if p.is_empty() {
-                        self.changed_tasks.retain(|c| !c.is_task(t));
-                    }
-                    return; // We undo the change
-                }
-            }
-        }
-        let new_state = state.unwrap_or(match current_state {
-            task::State::Completed => task::State::Uncompleted,
-            task::State::Uncompleted | task::State::InProgress | task::State::Unknown(_) => task::State::Completed,
-        });
-
-        if new_state != t.state() {
-            match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
-                Some(p) => p.state = Some(new_state),
-                None => self.changed_tasks.push(TaskPatch {
-                    task: t.clone_boxed(),
-                    state: Some(new_state),
-                    due: None,
-                    priority: None,
-                }),
-            }
-        }
-    }
-
     async fn render_change_due_dialog(&mut self, area: Rect, buf: &mut Buffer) {
         if let Some(d) = &mut self.change_dalog {
             let size = d.size();
@@ -505,6 +466,61 @@ impl TasksWidget {
         self.change_dalog = Some(Box::new(d));
     }
 
+    async fn change_check_state(&mut self, state: Option<State>) {
+        let span = tracing::span!(Level::TRACE, 
+            "tasks_widget", 
+            state=?&state,   
+            selected=tracing::field::Empty,
+            current_state=tracing::field::Empty,
+            existed_patch=tracing::field::Empty,
+            new_state=tracing::field::Empty,
+            "Change check state");
+        let _enter = span.enter();
+
+        let selected = self.state.selected();
+        if selected.is_none() {
+            return;
+        }
+
+        span.record("selected", selected);
+
+        let t = self.tasks[selected.unwrap()].task();
+
+        let mut current_state = t.state();
+        span.record("current_state", current_state.to_string());
+
+        let new_state = state.unwrap_or(match current_state {
+            task::State::Completed => task::State::Uncompleted,
+            task::State::Uncompleted | task::State::InProgress | task::State::Unknown(_) => task::State::Completed,
+        });
+        span.record("new_state", new_state.to_string());
+
+        if let Some(p) = self.changed_tasks.iter_mut().find(|c| c.is_task(t)) {
+            span.record("existed_patch", p.to_string());
+            if let Some(s) = &p.state {
+                current_state = s.clone();
+                p.state = None;
+                if new_state == current_state && p.is_empty() {
+                    self.changed_tasks.retain(|c| !c.is_task(t));
+                }
+            }
+        }
+
+        if new_state != current_state {
+            match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
+                Some(p) => p.state = Some(new_state),
+                None => self.changed_tasks.push(TaskPatch {
+                    task: t.clone_boxed(),
+                    state: Some(new_state),
+                    due: None,
+                    priority: None,
+                }),
+            }
+        }
+
+        self.recreate_current_task_row().await;
+    }
+
     async fn change_due_date(&mut self, due: &DuePatchItem) {
         let selected = self.state.selected();
         if selected.is_none() {
@@ -521,6 +537,7 @@ impl TasksWidget {
                 priority: None,
             }),
         }
+        self.recreate_current_task_row().await;
     }
 
     async fn change_priority(&mut self, priority: &Priority) {
@@ -539,6 +556,7 @@ impl TasksWidget {
                 priority: Some(priority.clone()),
             }),
         }
+        self.recreate_current_task_row().await;
     }
 
     async fn undo_changes(&mut self) {
@@ -549,6 +567,12 @@ impl TasksWidget {
 
         let t = self.tasks[selected.unwrap()].task();
         self.changed_tasks.retain(|p| !p.is_task(t));
+        self.recreate_current_task_row().await;
+    }
+
+    async fn recreate_current_task_row(&mut self) {
+        let idx = self.state.selected().unwrap();
+        self.tasks[idx] = TaskRow::new(self.tasks[idx].task(), &self.changed_tasks);
     }
 
     async fn update_task_info_view(&mut self) {
