@@ -111,6 +111,14 @@ authors = ["andylokandy"]
 repository = "https://github.com/andylokandy/arraydeque"
 
 [[dependencies]]
+name = "async-recursion"
+version = "1.1.1"
+description = "Recursion for async functions"
+license = "MIT OR Apache-2.0"
+authors = ["Robert Usher <266585+dcchut@users.noreply.github.com>"]
+repository = "https://github.com/dcchut/async-recursion"
+
+[[dependencies]]
 name = "async-stream"
 version = "0.3.6"
 description = "Asynchronous streams using async & await notation"
@@ -227,7 +235,7 @@ repository = "https://github.com/RustCrypto/utils"
 
 [[dependencies]]
 name = "bumpalo"
-version = "3.18.1"
+version = "3.19.0"
 description = "A fast bump allocation arena for Rust."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2019 Nick Fitzgerald"]
@@ -556,7 +564,7 @@ repository = "https://github.com/crossterm-rs/crossterm-winapi"
 
 [[dependencies]]
 name = "crunchy"
-version = "0.2.3"
+version = "0.2.4"
 description = "Crunchy unroller: deterministically unroll constant loops"
 license = "MIT"
 notices = ["Copyright 2017-2023 Eira Fransham."]
@@ -1264,7 +1272,7 @@ repository = "https://github.com/bluss/indexmap"
 
 [[dependencies]]
 name = "indexmap"
-version = "2.9.0"
+version = "2.10.0"
 description = "A hash table with consistent order and fast iteration."
 license = "Apache-2.0 OR MIT"
 notices = ["Copyright (c) 2016--2017"]
@@ -1451,6 +1459,15 @@ notices = ["Copyright (c) 2016 Jerome Froelich"]
 authors = ["Jerome Froelich <jeromefroelic@hotmail.com>"]
 repository = "https://github.com/jeromefroe/lru-rs.git"
 homepage = "https://github.com/jeromefroe/lru-rs"
+
+[[dependencies]]
+name = "markdown"
+version = "1.0.0"
+description = "CommonMark compliant markdown parser in Rust with ASTs and extensions"
+license = "MIT"
+notices = ["Copyright (c) 2022 Titus Wormer <tituswormer@gmail.com>"]
+authors = ["Titus Wormer <tituswormer@gmail.com>"]
+repository = "https://github.com/wooorm/markdown-rs"
 
 [[dependencies]]
 name = "matchers"
@@ -1673,7 +1690,7 @@ repository = "https://github.com/danaugrs/overload"
 
 [[dependencies]]
 name = "owo-colors"
-version = "4.2.1"
+version = "4.2.2"
 description = "Zero-allocation terminal colors that'll make people go owo"
 license = "MIT"
 notices = ["Copyright (c) 2020 - present The owo-colors Developers"]
@@ -2964,6 +2981,24 @@ authors = ["Andrew Gallant <jamslam@gmail.com>"]
 repository = "https://github.com/BurntSushi/ucd-generate"
 
 [[dependencies]]
+name = "unicode-id"
+version = "0.3.5"
+description = """
+Determine whether characters have the ID_Start
+or ID_Continue properties according to
+Unicode Standard Annex #31.
+"""
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2015 The Rust Project Developers"]
+authors = [
+  "Boshen <boshenc@gmail.com>",
+  "erick.tryzelaar <erick.tryzelaar@gmail.com>",
+  "kwantam <kwantam@gmail.com>",
+  "Manish Goregaokar <manishsmail@gmail.com>",
+]
+repository = "https://github.com/Boshen/unicode-id"
+
+[[dependencies]]
 name = "unicode-ident"
 version = "1.0.18"
 description = "Determine whether characters have the XID_Start or XID_Continue properties according to Unicode Standard Annex #31"
@@ -3303,7 +3338,7 @@ repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "windows-registry"
-version = "0.5.2"
+version = "0.5.3"
 description = "Windows registry"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]

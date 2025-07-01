@@ -1,6 +1,6 @@
 [package]
 name = "tatuin"
-version = "0.17.3"
+version = "0.17.4"
 edition = "2024"
 description = "Task Aggregator TUI for N providers"
 repository = "https://github.com/panter-dsd/tatuin"

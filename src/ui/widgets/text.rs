@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
