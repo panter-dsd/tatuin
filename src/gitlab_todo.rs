@@ -8,7 +8,6 @@ use crate::provider::{GetTasksError, ProviderTrait};
 use crate::task::{DateTimeUtc, State, Task as TaskTrait};
 use crate::task_patch::{PatchError, TaskPatch};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
-use itertools::Itertools;
 use ratatui::style::Color;
 use std::any::Any;
 use std::collections::HashMap;
