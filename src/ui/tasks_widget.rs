@@ -489,24 +489,25 @@ impl TasksWidget {
         let mut current_state = t.state();
         span.record("current_state", current_state.to_string());
 
+        if let Some(p) = self.changed_tasks.iter_mut().find(|c| c.is_task(t)) {
+            span.record("existed_patch", p.to_string());
+            if let Some(s) = &p.state {
+                current_state = s.clone();
+                span.record("current_state", current_state.to_string());
+                p.state = None;
+                if p.is_empty() {
+                    self.changed_tasks.retain(|c| !c.is_task(t));
+                }
+            }
+        }
+
         let new_state = state.unwrap_or(match current_state {
             task::State::Completed => task::State::Uncompleted,
             task::State::Uncompleted | task::State::InProgress | task::State::Unknown(_) => task::State::Completed,
         });
         span.record("new_state", new_state.to_string());
 
-        if let Some(p) = self.changed_tasks.iter_mut().find(|c| c.is_task(t)) {
-            span.record("existed_patch", p.to_string());
-            if let Some(s) = &p.state {
-                current_state = s.clone();
-                p.state = None;
-                if new_state == current_state && p.is_empty() {
-                    self.changed_tasks.retain(|c| !c.is_task(t));
-                }
-            }
-        }
-
-        if new_state != current_state {
+        if (new_state != current_state) && (new_state != t.state()) {
             match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
                 Some(p) => p.state = Some(new_state),
                 None => self.changed_tasks.push(TaskPatch {
