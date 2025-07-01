@@ -467,9 +467,9 @@ impl TasksWidget {
     }
 
     async fn change_check_state(&mut self, state: Option<State>) {
-        let span = tracing::span!(Level::TRACE, 
-            "tasks_widget", 
-            state=?&state,   
+        let span = tracing::span!(Level::TRACE,
+            "tasks_widget",
+            state=?&state,
             selected=tracing::field::Empty,
             current_state=tracing::field::Empty,
             existed_patch=tracing::field::Empty,
