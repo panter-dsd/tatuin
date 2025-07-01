@@ -86,7 +86,7 @@ impl Client {
         let mut page = 1;
 
         loop {
-            let mut resp = self
+            let r = self
                 .client
                 .get(format!(
                     "{}/issues?page={page}&per_page={PER_PAGE}&scope=all&{query}",
@@ -96,13 +96,22 @@ impl Client {
                 .send()
                 .await?
                 .json::<Vec<Issue>>()
-                .await?;
-            if resp.is_empty() {
-                break;
-            }
+                .await;
 
-            result.append(&mut resp);
-            page += 1;
+            match r {
+                Ok(mut v) => {
+                    if v.is_empty() {
+                        break;
+                    }
+
+                    result.append(&mut v);
+                    page += 1;
+                }
+                Err(e) => {
+                    tracing::error!(target:"gitlab_todo_client", query=?query, page=page, error=?e);
+                    return Err(e.into());
+                }
+            }
         }
 
         Ok(result)
