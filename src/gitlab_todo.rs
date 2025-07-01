@@ -59,6 +59,7 @@ impl ProjectTrait for Project {
 #[derive(Clone)]
 pub struct Task {
     todo: structs::Todo,
+    issue: Option<structs::Issue>,
     provider: String,
 }
 
@@ -93,6 +94,17 @@ impl TaskTrait for Task {
     }
 
     fn due(&self) -> Option<DateTimeUtc> {
+        let _entered = tracing::span!(tracing::Level::DEBUG, "gitlab_todo_task").entered();
+
+        if let Some(issue) = &self.issue {
+            tracing::debug!(issue=?issue);
+            if let Some(due) = &issue.due_date {
+                tracing::debug!(due=?due);
+                return str_to_date(due.as_str());
+            }
+        }
+
+        tracing::debug!("get due from created_at");
         self.created_at()
             .map(|dt| dt.with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap()).unwrap())
     }
@@ -182,9 +194,23 @@ impl ProviderTrait for Provider {
 
         if self.tasks.is_empty() {
             for st in &f.states {
-                for t in self.client.todos(st).await? {
+                let todos = self.client.todos(st).await?;
+                let issues_iids = todos
+                    .iter()
+                    .filter(|t| (t.target_type == "Issue" || t.target_type == "MergeRequest") && t.target.is_some())
+                    .map(|t| t.target.as_ref().unwrap().iid)
+                    .collect::<Vec<_>>();
+                let issues = self.client.issues_by_iids(&issues_iids).await?;
+                tracing::debug!(target:"gitlab_todo", issues_iids=?issues_iids, issues=?issues, "Get Issues");
+                for t in todos {
+                    let iid = t.target.as_ref().map(|t| t.iid);
                     self.tasks.push(Task {
                         todo: t,
+                        issue: if let Some(iid) = iid {
+                            issues.iter().find(|issue| issue.iid == iid).cloned()
+                        } else {
+                            None
+                        },
                         provider: self.name(),
                     })
                 }

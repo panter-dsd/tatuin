@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use super::structs::Todo;
+use super::structs::{Issue, Todo};
 use crate::filter::FilterState;
 use reqwest::header::HeaderMap;
 use std::error::Error;
@@ -67,5 +67,44 @@ impl Client {
             .json::<Todo>()
             .await?;
         Ok(())
+    }
+
+    pub async fn issues_by_iids(&self, iids: &[i64]) -> Result<Vec<Issue>, Box<dyn Error>> {
+        let mut result = Vec::new();
+        if iids.is_empty() {
+            return Ok(result);
+        }
+
+        let query = iids
+            .iter()
+            .map(|iid| format!("iids[]={iid}"))
+            .collect::<Vec<_>>()
+            .join("&");
+        tracing::debug!(target:"gitlab_todo_client", query=?query);
+
+        const PER_PAGE: i8 = 100;
+        let mut page = 1;
+
+        loop {
+            let mut resp = self
+                .client
+                .get(format!(
+                    "{}/issues?page={page}&per_page={PER_PAGE}&scope=all&{query}",
+                    self.base_url
+                ))
+                .headers(self.default_header.clone())
+                .send()
+                .await?
+                .json::<Vec<Issue>>()
+                .await?;
+            if resp.is_empty() {
+                break;
+            }
+
+            result.append(&mut resp);
+            page += 1;
+        }
+
+        Ok(result)
     }
 }
