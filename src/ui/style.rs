@@ -36,7 +36,9 @@ pub const HEADER_KEY_FG: Color = PINK_COLOR;
 
 pub const ACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(GREEN.c800);
 pub const INACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800);
-pub const SELECTED_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
+pub const SELECTED_ROW_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
+pub const REGULAR_ROW_STYLE: Style = Style::new();
+pub const REGULAR_TEXT_STYLE: Style = Style::new().fg(Color::White);
 
 pub const WARNING_TEXT_STYLE: Style = Style::new().fg(Color::Yellow);
 

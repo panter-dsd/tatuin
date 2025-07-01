@@ -112,11 +112,6 @@ impl<T> SelectableList<T> {
         self
     }
 
-    pub fn show_count_in_title(mut self, is_show: bool) -> Self {
-        self.show_count_in_title = is_show;
-        self
-    }
-
     pub fn shortcut(mut self, s: Shortcut) -> Self {
         self.shortcut = Some(s);
         self
@@ -160,14 +155,6 @@ impl<T> SelectableList<T> {
         } else {
             None
         }
-    }
-
-    pub fn selected_index(&self) -> Option<usize> {
-        self.state.selected()
-    }
-
-    pub fn state(&mut self) -> &mut ListState {
-        &mut self.state
     }
 
     pub fn render(&mut self, title: &str, f: impl Fn(&T) -> ListItem, area: Rect, buf: &mut Buffer) {

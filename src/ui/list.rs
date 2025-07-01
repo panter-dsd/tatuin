@@ -45,7 +45,7 @@ where
 
         ListWidget::new(self.items.to_vec())
             .block(block)
-            .highlight_style(style::SELECTED_STYLE)
+            .highlight_style(style::SELECTED_ROW_STYLE)
             .highlight_symbol(">")
             .highlight_spacing(HighlightSpacing::Always)
     }

@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use super::{HyperlinkWidget, Text};
+use super::{HyperlinkWidget, Text, WidgetTrait};
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
@@ -14,29 +14,39 @@ use ratatui::{
 use markdown::mdast::Node;
 use tokio::sync::RwLock;
 
-use crate::types::ArcRwLock;
-use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler};
-
-use super::WidgetTrait;
+use crate::{
+    types::ArcRwLock,
+    ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler},
+};
 
 pub struct MarkdownLine {
     pos: Position,
+    width: u16,
     style: Option<Style>,
     widgets: ArcRwLock<Vec<Box<dyn WidgetTrait>>>,
 }
 
 impl MarkdownLine {
     pub fn new(text: &str) -> Self {
+        let widgets = match markdown::to_mdast(text, &markdown::ParseOptions::default()) {
+            Ok(root) => widgets(&root),
+            Err(_) => Vec::new(),
+        };
         Self {
             pos: Position::default(),
+            width: widgets
+                .iter()
+                .map(|w| w.size().width)
+                .reduce(|acc, w| acc + w)
+                .unwrap_or_default(),
             style: None,
-            widgets: Arc::new(RwLock::new(
-                match markdown::to_mdast(text, &markdown::ParseOptions::default()) {
-                    Ok(root) => widgets(&root),
-                    Err(_) => Vec::new(),
-                },
-            )),
+            widgets: Arc::new(RwLock::new(widgets)),
         }
+    }
+
+    pub fn style(mut self, s: Style) -> Self {
+        self.style = Some(s);
+        self
     }
 }
 
@@ -45,7 +55,9 @@ impl WidgetTrait for MarkdownLine {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         if let Some(s) = &self.style {
             for w in self.widgets.write().await.iter_mut() {
-                w.set_style(*s);
+                let mut style = w.style();
+                style.bg = None;
+                w.set_style(style.patch(*s));
             }
         }
         self.style = None;
@@ -58,14 +70,19 @@ impl WidgetTrait for MarkdownLine {
         };
 
         for w in self.widgets.write().await.iter_mut() {
+            let size = w.size();
             w.set_pos(Position::new(area.x, area.y));
-            w.render(area, buf).await;
-            area.x += w.size().width;
+            w.render(w.area(), buf).await;
+            area.x += size.width;
         }
     }
 
     fn size(&self) -> Size {
-        Size::new(30, 1)
+        Size::new(self.width, 1)
+    }
+
+    fn pos(&self) -> Position {
+        self.pos
     }
 
     fn set_pos(&mut self, pos: Position) {
@@ -73,7 +90,7 @@ impl WidgetTrait for MarkdownLine {
     }
 
     fn set_style(&mut self, style: Style) {
-        self.style = Some(style)
+        self.style = self.style.map(|s| s.patch(style)).or(Some(style))
     }
 }
 

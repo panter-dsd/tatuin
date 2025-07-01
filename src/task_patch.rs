@@ -4,7 +4,7 @@ use chrono::{Datelike, NaiveTime};
 
 use crate::task::{DateTimeUtc, Priority, State, Task as TaskTrait};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum DuePatchItem {
     Today,
     Tomorrow,
@@ -44,6 +44,19 @@ pub struct TaskPatch {
     pub state: Option<State>,
     pub due: Option<DuePatchItem>,
     pub priority: Option<Priority>,
+}
+
+impl std::fmt::Display for TaskPatch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "TaskPatch {{ task_id: {}, task_title: {} state: {:?}, due: {:?}, priority: {:?} }}",
+            self.task.id(),
+            self.task.text(),
+            self.state,
+            self.due,
+            self.priority
+        ))
+    }
 }
 
 impl TaskPatch {

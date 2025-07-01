@@ -52,7 +52,7 @@ use selectable_list::SelectableList;
 use strum::{Display, EnumString};
 use tokio_stream::StreamExt;
 
-#[derive(Eq, PartialEq, Clone, Hash, Display, EnumString)]
+#[derive(Debug, Eq, PartialEq, Clone, Hash, Display, EnumString)]
 enum AppBlock {
     Providers,
     Projects,
@@ -248,7 +248,6 @@ impl App {
 
         s.stateful_widgets.insert(AppBlock::Providers, s.providers.clone());
         s.stateful_widgets.insert(AppBlock::Projects, s.projects.clone());
-        s.stateful_widgets.insert(AppBlock::TaskList, s.tasks_widget.clone());
         s.stateful_widgets.insert(AppBlock::Filter, s.filter_widget.clone());
 
         s
