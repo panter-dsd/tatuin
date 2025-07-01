@@ -41,7 +41,7 @@ pub struct Author {
 pub struct Target {
     pub id: i64,
     pub iid: i64,
-    pub project_id: Option<i64>,
+    pub project_id: i64,
     pub title: String,
     pub description: Option<String>,
     pub state: Option<String>,

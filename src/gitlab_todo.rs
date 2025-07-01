@@ -8,8 +8,10 @@ use crate::provider::{GetTasksError, ProviderTrait};
 use crate::task::{DateTimeUtc, State, Task as TaskTrait};
 use crate::task_patch::{PatchError, TaskPatch};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use itertools::Itertools;
 use ratatui::style::Color;
 use std::any::Any;
+use std::collections::HashMap;
 use std::error::Error;
 
 use async_trait::async_trait;
@@ -195,19 +197,33 @@ impl ProviderTrait for Provider {
         if self.tasks.is_empty() {
             for st in &f.states {
                 let todos = self.client.todos(st).await?;
-                let issues_iids = todos
-                    .iter()
-                    .filter(|t| (t.target_type == "Issue" || t.target_type == "MergeRequest") && t.target.is_some())
-                    .map(|t| t.target.as_ref().unwrap().iid)
-                    .collect::<Vec<_>>();
-                let issues = self.client.issues_by_iids(&issues_iids).await?;
-                tracing::debug!(target:"gitlab_todo", issues_iids=?issues_iids, issues=?issues, "Get Issues");
+
+                let mut project_iids: HashMap<i64, Vec<i64>> = HashMap::new();
+                for t in &todos {
+                    if t.target_type == "Issue" || t.target_type == "MergeRequest" {
+                        if let Some(target) = &t.target {
+                            if let Some(iids) = project_iids.get_mut(&target.project_id) {
+                                iids.push(target.iid);
+                            } else {
+                                project_iids.insert(target.project_id, vec![target.iid]);
+                            }
+                        }
+                    }
+                }
+
+                let mut issues = Vec::new();
+                for (project_id, iids) in project_iids {
+                    let mut iss = self.client.project_issues_by_iids(project_id, &iids).await?;
+                    issues.append(&mut iss);
+                }
+
+                tracing::debug!(target:"gitlab_todo", issues=?issues, "Get Issues");
                 for t in todos {
-                    let iid = t.target.as_ref().map(|t| t.iid);
+                    let id = t.target.as_ref().map(|t| t.id);
                     self.tasks.push(Task {
                         todo: t,
-                        issue: if let Some(iid) = iid {
-                            issues.iter().find(|issue| issue.iid == iid).cloned()
+                        issue: if let Some(id) = id {
+                            issues.iter().find(|issue| issue.id == id).cloned()
                         } else {
                             None
                         },

@@ -69,7 +69,7 @@ impl Client {
         Ok(())
     }
 
-    pub async fn issues_by_iids(&self, iids: &[i64]) -> Result<Vec<Issue>, Box<dyn Error>> {
+    pub async fn project_issues_by_iids(&self, project_id: i64, iids: &[i64]) -> Result<Vec<Issue>, Box<dyn Error>> {
         let mut result = Vec::new();
         if iids.is_empty() {
             return Ok(result);
@@ -80,7 +80,7 @@ impl Client {
             .map(|iid| format!("iids[]={iid}"))
             .collect::<Vec<_>>()
             .join("&");
-        tracing::debug!(target:"gitlab_todo_client", query=?query);
+        tracing::debug!(target:"gitlab_todo_client", query=?query, project_id=project_id);
 
         const PER_PAGE: i8 = 100;
         let mut page = 1;
@@ -89,7 +89,7 @@ impl Client {
             let r = self
                 .client
                 .get(format!(
-                    "{}/issues?page={page}&per_page={PER_PAGE}&scope=all&{query}",
+                    "{}/projects/{project_id}/issues?page={page}&per_page={PER_PAGE}&scope=all&{query}",
                     self.base_url
                 ))
                 .headers(self.default_header.clone())
