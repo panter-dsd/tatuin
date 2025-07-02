@@ -167,6 +167,33 @@ impl Provider {
             last_filter: None,
         }
     }
+
+    async fn load_todos_issues(&mut self, todos: &[structs::Todo]) -> Result<Vec<structs::Issue>, Box<dyn Error>> {
+        let mut project_iids: HashMap<i64, Vec<i64>> = HashMap::new();
+        for t in todos {
+            if t.target_type == "Issue" || t.target_type == "MergeRequest" {
+                if let Some(target) = &t.target {
+                    match project_iids.get_mut(&target.project_id) {
+                        Some(iids) => {
+                            iids.push(target.iid);
+                        }
+                        None => {
+                            project_iids.insert(target.project_id, vec![target.iid]);
+                        }
+                    }
+                }
+            }
+        }
+
+        let mut issues = Vec::new();
+
+        for (project_id, iids) in project_iids {
+            let mut iss = self.client.project_issues_by_iids(project_id, &iids).await?;
+            issues.append(&mut iss);
+        }
+
+        Ok(issues)
+    }
 }
 
 #[async_trait]
@@ -196,25 +223,7 @@ impl ProviderTrait for Provider {
         if self.tasks.is_empty() {
             for st in &f.states {
                 let todos = self.client.todos(st).await?;
-
-                let mut project_iids: HashMap<i64, Vec<i64>> = HashMap::new();
-                for t in &todos {
-                    if t.target_type == "Issue" || t.target_type == "MergeRequest" {
-                        if let Some(target) = &t.target {
-                            if let Some(iids) = project_iids.get_mut(&target.project_id) {
-                                iids.push(target.iid);
-                            } else {
-                                project_iids.insert(target.project_id, vec![target.iid]);
-                            }
-                        }
-                    }
-                }
-
-                let mut issues = Vec::new();
-                for (project_id, iids) in project_iids {
-                    let mut iss = self.client.project_issues_by_iids(project_id, &iids).await?;
-                    issues.append(&mut iss);
-                }
+                let issues = self.load_todos_issues(&todos).await?;
 
                 tracing::debug!(target:"gitlab_todo", issues=?issues, "Get Issues");
                 for t in todos {
