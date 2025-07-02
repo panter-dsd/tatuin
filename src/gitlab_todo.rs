@@ -95,17 +95,17 @@ impl TaskTrait for Task {
     }
 
     fn due(&self) -> Option<DateTimeUtc> {
-        let _entered = tracing::span!(tracing::Level::DEBUG, "gitlab_todo_task").entered();
+        let _entered = tracing::span!(tracing::Level::TRACE, "gitlab_todo_task").entered();
 
         if let Some(issue) = &self.issue {
-            tracing::debug!(issue=?issue);
+            tracing::trace!(issue=?issue);
             if let Some(due) = &issue.due_date {
-                tracing::debug!(due=?due);
+                tracing::trace!(due=?due);
                 return str_to_date(due.as_str());
             }
         }
 
-        tracing::debug!("get due from created_at");
+        tracing::trace!("get due from created_at");
         self.created_at()
             .map(|dt| dt.with_time(NaiveTime::from_hms_opt(0, 0, 0).unwrap()).unwrap())
     }
