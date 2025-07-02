@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
 use crate::filter;
-use crate::gitlab::client::Client;
+use crate::gitlab::client::{Client, UpdateIssueRequest};
 use crate::gitlab::structs;
 use crate::project::Project as ProjectTrait;
 use crate::provider::{GetTasksError, ProviderTrait};
 use crate::task::{DateTimeUtc, State, Task as TaskTrait};
-use crate::task_patch::{PatchError, TaskPatch};
+use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use ratatui::style::Color;
 use std::any::Any;
@@ -194,6 +194,47 @@ impl Provider {
 
         Ok(issues)
     }
+
+    async fn patch_task_state(&mut self, t: &Task, state: &State) -> Result<(), PatchError> {
+        match state {
+            State::Completed => self
+                .client
+                .mark_todo_as_done(t.id().as_str())
+                .await
+                .map_err(|e| PatchError {
+                    task: t.clone_boxed(),
+                    error: e.to_string(),
+                }),
+            State::InProgress | State::Uncompleted | State::Unknown(_) => Err(PatchError {
+                task: t.clone_boxed(),
+                error: format!("The state {state} is unsupported"),
+            }),
+        }
+    }
+    async fn patch_task_due(&mut self, t: &Task, due: &DuePatchItem) -> Result<(), PatchError> {
+        let issue = t.issue.as_ref().ok_or(PatchError {
+            task: t.clone_boxed(),
+            error: "The task doesn't support due changing".to_string(),
+        })?;
+        let d = due
+            .to_date(&Utc::now())
+            .map(|d| d.format("%Y-%m-%d").to_string())
+            .unwrap_or_default();
+
+        self.client
+            .patch_issue(
+                issue.project_id,
+                issue.iid,
+                &UpdateIssueRequest {
+                    due_date: Some(d.as_str()),
+                },
+            )
+            .await
+            .map_err(|e| PatchError {
+                task: t.clone_boxed(),
+                error: e.to_string(),
+            })
+    }
 }
 
 #[async_trait]
@@ -260,24 +301,25 @@ impl ProviderTrait for Provider {
         let mut errors = Vec::new();
 
         for p in patches {
+            tracing::debug!(target:"gitlab_todo_patch_task", patch=p.to_string(), "Apply a patch");
+
+            let task = match p.task.as_any().downcast_ref::<Task>() {
+                Some(t) => t,
+                None => panic!("Wrong casting!"),
+            };
             if let Some(state) = &p.state {
-                match state {
-                    State::Completed => match self.client.mark_todo_as_done(p.task.id().as_str()).await {
-                        Ok(_) => self.tasks.clear(),
-                        Err(e) => errors.push(PatchError {
-                            task: p.task.clone_boxed(),
-                            error: e.to_string(),
-                        }),
-                    },
-                    State::InProgress | State::Uncompleted | State::Unknown(_) => {
-                        errors.push(PatchError {
-                            task: p.task.clone_boxed(),
-                            error: format!("The state {state} is unsupported"),
-                        });
-                    }
+                if let Err(e) = self.patch_task_state(task, state).await {
+                    errors.push(e);
+                }
+            }
+            if let Some(due) = &p.due {
+                if let Err(e) = self.patch_task_due(task, due).await {
+                    errors.push(e);
                 }
             }
         }
+
+        self.tasks.clear();
 
         errors
     }

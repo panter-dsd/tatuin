@@ -3,7 +3,13 @@
 use super::structs::{Issue, Todo};
 use crate::filter::FilterState;
 use reqwest::header::HeaderMap;
+use serde::Serialize;
 use std::error::Error;
+
+#[derive(Serialize, Debug)]
+pub struct UpdateIssueRequest<'a> {
+    pub due_date: Option<&'a str>,
+}
 
 pub struct Client {
     base_url: String,
@@ -115,5 +121,27 @@ impl Client {
         }
 
         Ok(result)
+    }
+
+    pub async fn patch_issue(
+        &self,
+        project_id: i64,
+        issue_iid: i64,
+        r: &UpdateIssueRequest<'_>,
+    ) -> Result<(), Box<dyn Error>> {
+        tracing::debug!(target:"gitlab_client", project_id=project_id, issue_iid=issue_iid, request=?r, "Patch issue");
+
+        self
+            .client
+            .put(format!("{}/projects/{project_id}/issues/{issue_iid}", self.base_url))
+            .json(r)
+            .headers(self.default_header.clone())
+            .send()
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                tracing::error!(target:"gitlab_client", project_id=project_id, issue_iid=issue_iid, request=?r, error=?e);
+                Box::<dyn Error>::from(e.to_string())
+            })
     }
 }

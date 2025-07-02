@@ -92,6 +92,7 @@ pub struct Issue {
     pub state: Option<String>,
     pub description: Option<String>,
     pub id: i64,
+    pub project_id: i64,
     pub title: Option<String>,
     pub created_at: String,
     pub iid: i64,
