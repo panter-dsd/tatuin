@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::{MarkdownLine, Text, WidgetTrait};
 use crate::{
     task::{self, Task as TaskTrait},
