@@ -131,6 +131,11 @@ fn init_logging() {
     }
 }
 
+fn add_provider(cfg: &mut settings::Settings) -> Result<(), Box<dyn std::error::Error>> {
+    let w = wizard::AddProvider {};
+    w.run(cfg)
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // console_subscriber::init();
@@ -213,6 +218,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    if providers.is_empty() {
+        println!("There is no provider that has been added yet. Please add one.");
+        return add_provider(&mut cfg);
+    }
+
     if !providers.is_empty() {
         providers.sort_by_key(|p| p.name.clone());
     }
@@ -254,10 +264,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             print_projects(&projects);
         }
-        Some(Commands::AddProvider {}) => {
-            let w = wizard::AddProvider {};
-            w.run(&mut cfg)?
-        }
+        Some(Commands::AddProvider {}) => add_provider(&mut cfg)?,
         _ => {
             tracing::info!("Start tui");
             color_eyre::install()?;
