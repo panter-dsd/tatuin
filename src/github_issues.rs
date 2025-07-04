@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-use crate::filter;
-use crate::github::client::Client;
-use crate::github::structs;
-use crate::project::Project as ProjectTrait;
-use crate::provider::{GetTasksError, ProviderTrait};
-use crate::task::due_group;
-use crate::task::{DateTimeUtc, State, Task as TaskTrait};
-use crate::task_patch::{PatchError, TaskPatch};
+use crate::{
+    filter,
+    github::{client::Client, structs},
+    project::Project as ProjectTrait,
+    provider::{GetTasksError, ProviderTrait},
+    task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
+    task_patch::{PatchError, TaskPatch},
+};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use ratatui::style::Color;
-use std::any::Any;
-use std::error::Error;
+use std::{any::Any, error::Error};
 
 use async_trait::async_trait;
 
@@ -91,6 +90,13 @@ impl TaskTrait for Task {
 
     fn clone_boxed(&self) -> Box<dyn TaskTrait> {
         Box::new(self.clone())
+    }
+    fn const_patch_policy(&self) -> PatchPolicy {
+        PatchPolicy {
+            available_states: Vec::new(),
+            available_priorities: Vec::new(),
+            available_due_items: Vec::new(),
+        }
     }
 }
 

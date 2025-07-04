@@ -5,7 +5,7 @@ use crate::gitlab::client::{Client, UpdateIssueRequest};
 use crate::gitlab::structs;
 use crate::project::Project as ProjectTrait;
 use crate::provider::{GetTasksError, ProviderTrait};
-use crate::task::{DateTimeUtc, State, Task as TaskTrait, due_group};
+use crate::task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group};
 use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use ratatui::style::Color;
@@ -146,6 +146,18 @@ impl TaskTrait for Task {
 
     fn clone_boxed(&self) -> Box<dyn TaskTrait> {
         Box::new(self.clone())
+    }
+
+    fn const_patch_policy(&self) -> PatchPolicy {
+        PatchPolicy {
+            available_states: vec![State::Uncompleted, State::Completed],
+            available_priorities: Vec::new(),
+            available_due_items: if self.issue.is_some() {
+                DuePatchItem::values()
+            } else {
+                Vec::new()
+            },
+        }
     }
 }
 
