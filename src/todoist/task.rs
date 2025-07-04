@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-use crate::project::Project as ProjectTrait;
-use crate::task::{DateTimeUtc, Priority, State as TaskState, Task as TaskTrait};
+use crate::{
+    project::Project as ProjectTrait,
+    task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait},
+    task_patch::DuePatchItem,
+};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::Deserialize;
 use std::any::Any;
@@ -162,6 +165,14 @@ impl TaskTrait for Task {
 
     fn clone_boxed(&self) -> Box<dyn TaskTrait> {
         Box::new(self.clone())
+    }
+
+    fn const_patch_policy(&self) -> PatchPolicy {
+        PatchPolicy {
+            available_states: vec![TaskState::Uncompleted, TaskState::Completed],
+            available_priorities: vec![Priority::Normal, Priority::Medium, Priority::High, Priority::Highest],
+            available_due_items: DuePatchItem::values(),
+        }
     }
 }
 

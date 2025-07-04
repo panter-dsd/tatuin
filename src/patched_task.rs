@@ -6,7 +6,7 @@ use chrono::Utc;
 
 use super::project::Project as ProjectTrait;
 use super::{
-    task::{DateTimeUtc, Priority, State, Task as TaskTrait},
+    task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
     task_patch::TaskPatch,
 };
 
@@ -92,6 +92,10 @@ impl TaskTrait for PatchedTask {
 
     fn clone_boxed(&self) -> Box<dyn TaskTrait> {
         Box::new(self.clone())
+    }
+
+    fn const_patch_policy(&self) -> PatchPolicy {
+        self.task.const_patch_policy()
     }
 }
 

@@ -188,7 +188,12 @@ impl TasksWidget {
                             }
                         },
                         _ = swap_completed_state_rx.recv() => s.write().await.change_check_state(None).await,
-                        _ = in_progress_rx.recv() => s.write().await.change_check_state(Some(task::State::InProgress)).await,
+                        _ = in_progress_rx.recv() => {
+                                let t = s.read().await.selected_task();
+                                if t.is_some_and(|t| t.const_patch_policy().available_states.contains(&task::State::InProgress)) {
+                                    s.write().await.change_check_state(Some(task::State::InProgress)).await
+                                }
+                            },
                         _ = change_due_rx.recv() => s.write().await.show_change_due_date_dialog().await,
                         _ = change_priority_rx.recv() => s.write().await.show_change_priority_dialog().await,
                         _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
@@ -279,13 +284,9 @@ impl TasksWidget {
         let t = self
             .state
             .selected()
-            .map(|i| self.tasks[std::cmp::min(i, self.tasks.len() - 1)].task().clone_boxed());
-        if t.is_none() {
-            return t;
-        }
-        let t = t.unwrap();
-        let p = self.changed_tasks.iter().find(|p| p.is_task(t.as_ref())).cloned();
-        Some(Box::new(PatchedTask::new(t, p)))
+            .map(|i| self.tasks[std::cmp::min(i, self.tasks.len() - 1)].task())?;
+        let p = self.changed_tasks.iter().find(|p| p.is_task(t));
+        Some(Box::new(PatchedTask::new(t.clone_boxed(), p.cloned())))
     }
 
     pub fn has_changes(&self) -> bool {
@@ -426,44 +427,34 @@ impl TasksWidget {
     }
 
     async fn show_change_due_date_dialog(&mut self) {
-        let selected = self.state.selected();
-        if selected.is_none() {
+        let t = self.selected_task();
+        if t.is_none() {
             return;
         }
 
-        let t = self.tasks[selected.unwrap()].task();
-        let d = ListDialog::new(
-            &[
-                DuePatchItem::Today,
-                DuePatchItem::Tomorrow,
-                DuePatchItem::ThisWeekend,
-                DuePatchItem::NextWeek,
-                DuePatchItem::NoDate,
-            ],
-            datetime_to_str(t.due(), &Local::now().timezone()).as_str(),
-        );
-        self.change_dalog = Some(Box::new(d));
+        let t = t.unwrap();
+        let available_due_items = t.patch_policy().available_due_items;
+        if !available_due_items.is_empty() {
+            let d = ListDialog::new(
+                &available_due_items,
+                datetime_to_str(t.due(), &Local::now().timezone()).as_str(),
+            );
+            self.change_dalog = Some(Box::new(d));
+        }
     }
 
     async fn show_change_priority_dialog(&mut self) {
-        let selected = self.state.selected();
-        if selected.is_none() {
+        let t = self.selected_task();
+        if t.is_none() {
             return;
         }
 
-        let t = self.tasks[selected.unwrap()].task();
-        let d = ListDialog::new(
-            &[
-                Priority::Normal,
-                Priority::Lowest,
-                Priority::Low,
-                Priority::Medium,
-                Priority::High,
-                Priority::Highest,
-            ],
-            t.priority().to_string().as_str(),
-        );
-        self.change_dalog = Some(Box::new(d));
+        let t = t.unwrap();
+        let available_priorities = t.patch_policy().available_priorities;
+        if !available_priorities.is_empty() {
+            let d = ListDialog::new(&available_priorities, t.priority().to_string().as_str());
+            self.change_dalog = Some(Box::new(d));
+        }
     }
 
     async fn change_check_state(&mut self, state: Option<State>) {
@@ -484,6 +475,7 @@ impl TasksWidget {
 
         span.record("selected", selected);
 
+        let patched_task = self.selected_task().unwrap();
         let t = self.tasks[selected.unwrap()].task();
 
         let mut current_state = t.state();
@@ -507,7 +499,7 @@ impl TasksWidget {
         });
         span.record("new_state", new_state.to_string());
 
-        if (new_state != current_state) && (new_state != t.state()) {
+        if patched_task.patch_policy().available_states.contains(&new_state) && (new_state != t.state()) {
             match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
                 Some(p) => p.state = Some(new_state),
                 None => self.changed_tasks.push(TaskPatch {
@@ -549,7 +541,16 @@ impl TasksWidget {
 
         let t = self.tasks[selected.unwrap()].task();
         match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
-            Some(p) => p.priority = Some(priority.clone()),
+            Some(p) => {
+                p.priority = if *priority == t.priority() {
+                    None
+                } else {
+                    Some(priority.clone())
+                };
+                if p.is_empty() {
+                    self.changed_tasks.retain(|c| !c.is_task(t));
+                }
+            }
             None => self.changed_tasks.push(TaskPatch {
                 task: t.clone_boxed(),
                 state: None,

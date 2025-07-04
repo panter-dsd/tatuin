@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use super::task_patch::DuePatchItem;
 use crate::filter;
 use crate::project::Project as ProjectTrait;
 use chrono::DateTime;
@@ -42,10 +43,30 @@ pub enum Priority {
     Highest,
 }
 
+impl Priority {
+    pub fn values() -> Vec<Priority> {
+        vec![
+            Priority::Lowest,
+            Priority::Low,
+            Priority::Normal,
+            Priority::Medium,
+            Priority::High,
+            Priority::Highest,
+        ]
+    }
+}
+
 impl fmt::Display for Priority {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{self:?}")
     }
+}
+
+#[derive(Debug)]
+pub struct PatchPolicy {
+    pub available_states: Vec<State>,
+    pub available_priorities: Vec<Priority>,
+    pub available_due_items: Vec<DuePatchItem>,
 }
 
 #[allow(dead_code)]
@@ -89,6 +110,24 @@ pub trait Task: Send + Sync {
     fn as_any(&self) -> &dyn Any;
 
     fn clone_boxed(&self) -> Box<dyn Task>;
+
+    fn const_patch_policy(&self) -> PatchPolicy {
+        PatchPolicy {
+            available_states: vec![State::Uncompleted, State::Completed, State::InProgress],
+            available_priorities: Priority::values(),
+            available_due_items: DuePatchItem::values(),
+        }
+    }
+
+    fn patch_policy(&self) -> PatchPolicy {
+        let mut pp = self.const_patch_policy();
+
+        let s = self.state();
+        pp.available_states.retain(|e| e != &s);
+        let p = self.priority();
+        pp.available_priorities.retain(|e| e != &p);
+        pp
+    }
 }
 
 pub fn datetime_to_str<Tz: TimeZone>(t: Option<DateTimeUtc>, tz: &Tz) -> String

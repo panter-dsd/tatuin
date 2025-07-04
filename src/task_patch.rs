@@ -37,6 +37,16 @@ impl DuePatchItem {
 
         result.map(|d| clear_time(&d))
     }
+
+    pub fn values() -> Vec<DuePatchItem> {
+        vec![
+            DuePatchItem::Today,
+            DuePatchItem::Tomorrow,
+            DuePatchItem::ThisWeekend,
+            DuePatchItem::NextWeek,
+            DuePatchItem::NoDate,
+        ]
+    }
 }
 
 pub struct TaskPatch {
