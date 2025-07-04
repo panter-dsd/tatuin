@@ -50,13 +50,8 @@ impl fmt::Display for Priority {
 
 #[allow(dead_code)]
 pub trait Task: Send + Sync {
-    fn id(&self) -> String {
-        String::new()
-    }
-
-    fn text(&self) -> String {
-        String::new()
-    }
+    fn id(&self) -> String;
+    fn text(&self) -> String;
 
     fn description(&self) -> Option<String> {
         None
@@ -65,6 +60,7 @@ pub trait Task: Send + Sync {
     fn priority(&self) -> Priority {
         Priority::Normal
     }
+
     fn state(&self) -> State;
     fn created_at(&self) -> Option<DateTimeUtc> {
         None
