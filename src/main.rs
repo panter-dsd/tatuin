@@ -18,10 +18,11 @@ mod todoist;
 mod types;
 mod ui;
 mod wizard;
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use clap::{Parser, Subcommand};
 use color_eyre::owo_colors::OwoColorize;
+use itertools::Itertools;
 use ratatui::style::Color;
 use settings::Settings;
 use tokio::sync::RwLock;
@@ -32,6 +33,7 @@ use ui::style;
 use crate::provider::ProviderTrait;
 
 const APP_NAME: &str = "tatuin";
+const KEEP_LOG_FILES_COUNT: usize = 5;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -90,17 +92,43 @@ fn due_to_filter(due: &Option<Vec<filter::Due>>) -> Vec<filter::Due> {
     }
 }
 
+fn clear_old_logs(path: &PathBuf, file_name_pattern: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let mut files = std::fs::read_dir(path)?
+        .filter(|e| {
+            e.as_ref()
+                .is_ok_and(|e| e.file_name().to_str().is_some_and(|s| s.starts_with(file_name_pattern)))
+        })
+        .map(|e| e.as_ref().unwrap().path())
+        .sorted()
+        .collect::<Vec<PathBuf>>();
+    if files.len() <= KEEP_LOG_FILES_COUNT {
+        return Ok(());
+    }
+
+    files.truncate(files.len() - KEEP_LOG_FILES_COUNT);
+    for f in files {
+        std::fs::remove_file(f)?;
+    }
+
+    Ok(())
+}
+
 fn init_logging() {
     let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME);
     let log_path = xdg_dirs
         .create_state_directory("")
         .expect("cannot create state directory");
-    let file_appender = tracing_appender::rolling::daily(log_path, format!("{APP_NAME}.log"));
+    let log_file_pattern = format!("{APP_NAME}.log");
+
+    let file_appender = tracing_appender::rolling::daily(&log_path, &log_file_pattern);
     tracing_subscriber::fmt()
         .with_writer(file_appender)
         .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
         .with_max_level(Level::DEBUG)
         .init();
+    if let Err(e) = clear_old_logs(&log_path, log_file_pattern.as_str()) {
+        tracing::error!(target: "main", error=?e, "Clear old files");
+    }
 }
 
 #[tokio::main]
