@@ -22,7 +22,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
     text::Text,
-    widgets::{Clear, ListState, Widget},
+    widgets::{Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
 use std::{slice::IterMut, sync::Arc};
 use tokio::sync::{RwLock, broadcast};
@@ -666,6 +666,12 @@ impl WidgetTrait for TasksWidget {
             w.render(area, buf).await;
             y += 1;
         }
+
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓"));
+        let mut scrollbar_state = ScrollbarState::new(self.tasks.len()).position(selected.unwrap_or_default());
+        scrollbar.render(area, buf, &mut scrollbar_state);
 
         if self.change_dalog.is_some() {
             self.render_change_due_dialog(area, buf).await;
