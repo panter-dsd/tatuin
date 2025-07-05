@@ -646,6 +646,9 @@ impl WidgetTrait for TasksWidget {
         let selected = self.state.selected();
 
         for (i, w) in self.tasks.iter_mut().enumerate() {
+            if y + w.size().height > area.height {
+                break;
+            }
             let is_row_selected = selected.is_some_and(|idx| idx == i);
             w.set_selected(is_row_selected);
             if is_row_selected {
