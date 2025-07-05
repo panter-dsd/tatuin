@@ -21,6 +21,7 @@ pub struct TaskRow {
     pos: Position,
     children: Vec<Box<dyn WidgetTrait>>,
     is_selected: bool,
+    is_visible: bool,
 }
 
 impl TaskRow {
@@ -81,6 +82,7 @@ impl TaskRow {
             children,
             pos: Position::default(),
             is_selected: false,
+            is_visible: true,
         }
     }
 
@@ -88,8 +90,12 @@ impl TaskRow {
         self.task.as_ref()
     }
 
-    pub fn set_selected(&mut self, selected: bool) {
-        self.is_selected = selected
+    pub fn set_selected(&mut self, is_selected: bool) {
+        self.is_selected = is_selected
+    }
+
+    pub fn set_visible(&mut self, is_visible: bool) {
+        self.is_visible = is_visible
     }
 }
 
@@ -149,6 +155,10 @@ impl WidgetTrait for TaskRow {
 #[async_trait]
 impl KeyboardHandler for TaskRow {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        if !self.is_visible {
+            return false;
+        }
+
         for child in self.children.iter_mut() {
             if child.handle_key(key).await {
                 return true;
@@ -162,6 +172,10 @@ impl KeyboardHandler for TaskRow {
 #[async_trait]
 impl MouseHandler for TaskRow {
     async fn handle_mouse(&mut self, ev: &MouseEvent) {
+        if !self.is_visible {
+            return;
+        }
+
         for child in self.children.iter_mut() {
             child.handle_mouse(ev).await;
         }
