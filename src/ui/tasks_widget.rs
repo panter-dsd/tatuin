@@ -690,7 +690,16 @@ impl WidgetTrait for TasksWidget {
             .begin_symbol(Some("↑"))
             .end_symbol(Some("↓"));
         let mut scrollbar_state = ScrollbarState::new(self.tasks.len()).position(selected.unwrap_or_default());
-        scrollbar.render(area, buf, &mut scrollbar_state);
+        scrollbar.render(
+            Rect {
+                x: area.x,
+                y: area.y + 1, // header
+                width: area.width,
+                height: area.height - 1,
+            },
+            buf,
+            &mut scrollbar_state,
+        );
 
         if self.change_dalog.is_some() {
             self.render_change_due_dialog(area, buf).await;
