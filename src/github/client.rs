@@ -3,6 +3,7 @@
 use crate::filter::FilterState;
 
 use super::structs::Issue;
+use itertools::Itertools;
 use reqwest::{Method, RequestBuilder, header::HeaderMap};
 use std::error::Error;
 
@@ -36,14 +37,18 @@ impl Client {
         const PER_PAGE: i8 = 100;
         let mut page = 1;
 
-        let state_query = if states.len() == 1 {
-            match states[0] {
-                FilterState::Completed => "state=closed".to_string(),
-                FilterState::Uncompleted => "state=open".to_string(),
-                _ => return Err(Box::<dyn Error>::from(format!("wrong state {}", states[0]))),
-            }
-        } else {
+        let state_query = if states.is_empty() {
             "state=all".to_string()
+        } else {
+            states
+                .iter()
+                .map(|s| match s {
+                    FilterState::Completed => "state=closed".to_string(),
+                    FilterState::Uncompleted => "state=open".to_string(),
+                    _ => String::new(),
+                })
+                .filter(|s| !s.is_empty())
+                .join("&")
         };
 
         loop {
