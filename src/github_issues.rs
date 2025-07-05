@@ -54,10 +54,12 @@ impl TaskTrait for Task {
 
     fn due(&self) -> Option<DateTimeUtc> {
         if let Some(m) = &self.issue.milestone {
-            str_to_date(m.due_on.as_str())
-        } else {
-            None
+            if let Some(due) = &m.due_on {
+                return str_to_date(due.as_str());
+            }
         }
+
+        None
     }
 
     fn place(&self) -> String {

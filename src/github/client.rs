@@ -3,7 +3,7 @@
 use crate::filter::FilterState;
 
 use super::structs::Issue;
-use reqwest::header::HeaderMap;
+use reqwest::{Method, RequestBuilder, header::HeaderMap};
 use std::error::Error;
 
 pub struct Client {
@@ -26,6 +26,10 @@ impl Client {
         }
     }
 
+    fn request(&self, method: Method, url: &str) -> RequestBuilder {
+        self.client.request(method, url).headers(self.default_header.clone())
+    }
+
     pub async fn issues(&self, repo: &str, states: &[FilterState]) -> Result<Vec<Issue>, Box<dyn Error>> {
         let mut result = Vec::new();
 
@@ -43,23 +47,24 @@ impl Client {
         };
 
         loop {
-            let mut resp = self
-                .client
-                .get(format!(
-                    "{}/repos/{repo}/issues?page={page}&per_page={PER_PAGE}&{state_query}",
-                    self.base_url
-                ))
-                .headers(self.default_header.clone())
-                .send()
-                .await?
-                .json::<Vec<Issue>>()
-                .await?;
-            if resp.is_empty() {
-                break;
-            }
+            let url = format!(
+                "{}/repos/{repo}/issues?page={page}&per_page={PER_PAGE}&{state_query}",
+                self.base_url
+            );
+            match self.request(Method::GET, &url).send().await?.json::<Vec<Issue>>().await {
+                Ok(mut r) => {
+                    if r.is_empty() {
+                        break;
+                    }
 
-            result.append(&mut resp);
-            page += 1;
+                    result.append(&mut r);
+                    page += 1;
+                }
+                Err(e) => {
+                    tracing::error!(target:"github_client", url=url, error=?e);
+                    return Err(e.into());
+                }
+            }
         }
 
         Ok(result)

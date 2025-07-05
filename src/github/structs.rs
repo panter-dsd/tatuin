@@ -71,19 +71,19 @@ pub struct Label {
 pub struct Milestone {
     pub url: String,
     pub html_url: String,
-    pub labels_url: String,
+    pub labels_url: Option<String>,
     pub id: i64,
     pub node_id: String,
     pub number: i64,
     pub state: String,
     pub title: String,
-    pub description: String,
-    pub open_issues: i64,
-    pub closed_issues: i64,
+    pub description: Option<String>,
+    pub open_issues: Option<i64>,
+    pub closed_issues: Option<i64>,
     pub created_at: String,
-    pub updated_at: String,
-    pub closed_at: String,
-    pub due_on: String,
+    pub updated_at: Option<String>,
+    pub closed_at: Option<String>,
+    pub due_on: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
