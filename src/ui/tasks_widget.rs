@@ -401,6 +401,7 @@ impl TasksWidget {
                                     .cmp(&due_group(r.as_ref()))
                                     .then_with(|| r.priority().cmp(&l.priority()))
                                     .then_with(|| l.due().cmp(&r.due()))
+                                    .then_with(|| project_name(l.as_ref()).cmp(&project_name(r.as_ref())))
                                     .then_with(|| l.text().cmp(&r.text()))
                             });
 
@@ -703,4 +704,8 @@ impl WidgetTrait for TasksWidget {
     fn size(&self) -> Size {
         Size::default()
     }
+}
+
+fn project_name(t: &dyn TaskTrait) -> String {
+    t.project().map(|p| p.name()).unwrap_or_default()
 }
