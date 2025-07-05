@@ -22,7 +22,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
     text::Text,
-    widgets::{Clear, ListState, Widget},
+    widgets::{Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
 use std::{slice::IterMut, sync::Arc};
 use tokio::sync::{RwLock, broadcast};
@@ -401,6 +401,7 @@ impl TasksWidget {
                                     .cmp(&due_group(r.as_ref()))
                                     .then_with(|| r.priority().cmp(&l.priority()))
                                     .then_with(|| l.due().cmp(&r.due()))
+                                    .then_with(|| project_name(l.as_ref()).cmp(&project_name(r.as_ref())))
                                     .then_with(|| l.text().cmp(&r.text()))
                             });
 
@@ -645,7 +646,26 @@ impl WidgetTrait for TasksWidget {
 
         let selected = self.state.selected();
 
+        let skip_count = selected
+            .map(|mut idx| {
+                let mut height = y;
+                while idx != 0 && height < area.height {
+                    height += self.tasks[idx].size().height;
+                    idx -= 1;
+                }
+
+                idx
+            })
+            .unwrap_or_default();
+
         for (i, w) in self.tasks.iter_mut().enumerate() {
+            if i < skip_count || y > area.height {
+                w.set_visible(false);
+                continue;
+            }
+
+            w.set_visible(true);
+
             let is_row_selected = selected.is_some_and(|idx| idx == i);
             w.set_selected(is_row_selected);
             if is_row_selected {
@@ -661,8 +681,16 @@ impl WidgetTrait for TasksWidget {
             }
             w.set_pos(Position::new(area.x + 1, y));
             w.render(area, buf).await;
-            y += 1;
+
+            let size = w.size();
+            y += size.height;
         }
+
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓"));
+        let mut scrollbar_state = ScrollbarState::new(self.tasks.len()).position(selected.unwrap_or_default());
+        scrollbar.render(area, buf, &mut scrollbar_state);
 
         if self.change_dalog.is_some() {
             self.render_change_due_dialog(area, buf).await;
@@ -676,4 +704,8 @@ impl WidgetTrait for TasksWidget {
     fn size(&self) -> Size {
         Size::default()
     }
+}
+
+fn project_name(t: &dyn TaskTrait) -> String {
+    t.project().map(|p| p.name()).unwrap_or_default()
 }
