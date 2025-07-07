@@ -644,7 +644,10 @@ impl WidgetTrait for TasksWidget {
 
         let mut y = area.y + 1;
 
-        let selected = self.state.selected();
+        let mut selected = self.state.selected();
+        if selected.is_some_and(|idx| idx >= self.tasks.len()) {
+            selected = Some(0);
+        }
 
         let skip_count = selected
             .map(|mut idx| {
