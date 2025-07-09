@@ -610,7 +610,7 @@ impl KeyboardHandler for TasksWidget {
                     new_due = d.selected().as_ref().map(|p| match p {
                         DuePatchItem::Custom(_) => {
                             let w = d.selected_custom_widget().unwrap();
-                            if let Some(w) = w.as_ref().as_any().downcast_ref::<DateTimeEditor>() {
+                            if let Some(w) = w.as_any().downcast_ref::<DateTimeEditor>() {
                                 DuePatchItem::Custom(w.value())
                             } else {
                                 panic!("Unexpected custom widget type")
