@@ -40,6 +40,9 @@ pub const SELECTED_ROW_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(M
 pub const REGULAR_ROW_STYLE: Style = Style::new();
 pub const REGULAR_TEXT_STYLE: Style = Style::new().fg(Color::White);
 
+pub const DATE_TIME_EDITOR_ACTIVE_ELEMENT: Style = Style::new().fg(Color::Black).bg(Color::LightBlue);
+pub const DATE_TIME_EDITOR_INACTIVE_ELEMENT: Style = Style::new().fg(Color::Black).bg(Color::Gray);
+
 pub const WARNING_TEXT_STYLE: Style = Style::new().fg(Color::Yellow);
 
 pub const BORDER_COLOR: Color = Color::White;

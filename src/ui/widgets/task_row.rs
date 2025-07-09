@@ -2,8 +2,8 @@
 
 use super::{MarkdownLine, Text, WidgetTrait};
 use crate::{
-    task::{self, Task as TaskTrait},
-    task_patch::TaskPatch,
+    task::{self, Task as TaskTrait, datetime_to_str},
+    task_patch::{DuePatchItem, TaskPatch},
     ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style},
 };
 use async_trait::async_trait;
@@ -14,7 +14,7 @@ use ratatui::{
     layout::{Position, Rect, Size},
     style::{Color, Style},
 };
-use std::cmp::Ordering;
+use std::{any::Any, cmp::Ordering};
 
 pub struct TaskRow {
     task: Box<dyn TaskTrait>,
@@ -51,7 +51,10 @@ impl TaskRow {
                 state = s.clone();
             }
             if let Some(d) = &patch.due {
-                due = d.to_string();
+                due = match d {
+                    DuePatchItem::Custom(d) => datetime_to_str(Some(*d), &tz),
+                    _ => d.to_string(),
+                }
             }
             if let Some(p) = &patch.priority {
                 priority = p.clone();
@@ -149,6 +152,10 @@ impl WidgetTrait for TaskRow {
             child.set_pos(Position::new(x, pos.y));
             x += child.size().width;
         }
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

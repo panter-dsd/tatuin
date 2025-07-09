@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use std::sync::Arc;
+use std::{any::Any, sync::Arc};
 
 use super::{HyperlinkWidget, Text, WidgetTrait};
 use async_trait::async_trait;
@@ -91,6 +91,10 @@ impl WidgetTrait for MarkdownLine {
 
     fn set_style(&mut self, style: Style) {
         self.style = self.style.map(|s| s.patch(style)).or(Some(style))
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

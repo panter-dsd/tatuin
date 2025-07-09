@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+use std::any::Any;
+
 use super::DialogTrait;
 use crate::ui::{
     draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style, widgets::LineEdit,
@@ -62,6 +64,10 @@ impl WidgetTrait for Dialog {
         let edit_size = self.edit.size();
         Size::new(Text::from(FOOTER).width() as u16 + 2, edit_size.height + 2)
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 #[async_trait]
@@ -70,7 +76,7 @@ impl DialogTrait for Dialog {
         self.should_be_closed
     }
 
-    fn as_any(&self) -> &dyn std::any::Any {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 }

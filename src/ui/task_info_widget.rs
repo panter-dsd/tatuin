@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use std::sync::Arc;
+use std::{any::Any, sync::Arc};
 
 use super::{
     AppBlockWidget, header::Header, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::Shortcut,
@@ -50,10 +50,6 @@ impl Default for TaskInfoWidget {
 impl AppBlockWidget for TaskInfoWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         vec![&mut self.shortcut]
-    }
-
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
     }
 
     async fn select_next(&mut self) {}
@@ -188,5 +184,13 @@ impl WidgetTrait for TaskInfoWidget {
 
     fn size(&self) -> Size {
         Size::default()
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }

@@ -11,6 +11,7 @@ pub enum DuePatchItem {
     ThisWeekend,
     NextWeek,
     NoDate,
+    Custom(DateTimeUtc),
 }
 
 fn clear_time(dt: &DateTimeUtc) -> DateTimeUtc {
@@ -33,6 +34,7 @@ impl DuePatchItem {
             },
             DuePatchItem::NextWeek => Some(add_days(dt, 7 - dt.weekday() as u64)),
             DuePatchItem::NoDate => None,
+            DuePatchItem::Custom(dt) => Some(*dt),
         };
 
         result.map(|d| clear_time(&d))

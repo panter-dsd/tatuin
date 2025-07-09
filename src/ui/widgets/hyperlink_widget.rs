@@ -11,7 +11,7 @@ use ratatui::{
     text::Text,
     widgets::{Paragraph, Widget, Wrap},
 };
-use std::process::Command;
+use std::{any::Any, process::Command};
 
 pub struct HyperlinkWidget {
     pos: Position,
@@ -79,6 +79,10 @@ impl WidgetTrait for HyperlinkWidget {
 
     fn set_style(&mut self, style: Style) {
         self.style = Some(style)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

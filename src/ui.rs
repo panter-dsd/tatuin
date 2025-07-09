@@ -75,7 +75,6 @@ trait AppBlockWidget: WidgetTrait {
     fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
         Vec::new()
     }
-    fn set_active(&mut self, is_active: bool);
 
     async fn select_next(&mut self);
     async fn select_previous(&mut self);
