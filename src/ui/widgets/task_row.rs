@@ -52,7 +52,7 @@ impl TaskRow {
             }
             if let Some(d) = &patch.due {
                 due = match d {
-                    DuePatchItem::Custom(d) => datetime_to_str(Some(*d), &tz),
+                    DuePatchItem::Custom(d) => format!("Custom ({})", datetime_to_str(Some(*d), &tz)),
                     _ => d.to_string(),
                 }
             }

@@ -13,6 +13,7 @@ use ratatui::{
 use super::WidgetTrait;
 use crate::{
     task::DateTimeUtc,
+    time::clear_time,
     ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style},
 };
 
@@ -32,7 +33,7 @@ pub struct DateTimeEditor {
 impl DateTimeEditor {
     pub fn new(dt: Option<DateTimeUtc>) -> Self {
         Self {
-            dt: dt.unwrap_or(chrono::Local::now().to_utc()),
+            dt: clear_time(&dt.unwrap_or(chrono::Local::now().to_utc())),
             current_element: Element::Day,
             is_active: false,
         }

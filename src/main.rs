@@ -14,6 +14,7 @@ mod settings;
 mod state;
 mod task;
 mod task_patch;
+mod time;
 mod todoist;
 mod types;
 mod ui;
