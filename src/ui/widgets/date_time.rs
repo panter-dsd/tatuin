@@ -129,14 +129,14 @@ impl KeyboardHandler for DateTimeEditor {
                     return false;
                 }
             },
-            KeyCode::Up => {
+            KeyCode::Char('k') | KeyCode::Up => {
                 self.dt = match self.current_element {
                     Element::Year => self.dt.checked_add_months(chrono::Months::new(12)).unwrap_or(self.dt),
                     Element::Month => self.dt.checked_add_months(chrono::Months::new(1)).unwrap_or(self.dt),
                     Element::Day => self.dt.checked_add_days(chrono::Days::new(1)).unwrap_or(self.dt),
                 }
             }
-            KeyCode::Down => {
+            KeyCode::Char('j') | KeyCode::Down => {
                 self.dt = match self.current_element {
                     Element::Year => self.dt.checked_sub_months(chrono::Months::new(12)).unwrap_or(self.dt),
                     Element::Month => self.dt.checked_sub_months(chrono::Months::new(1)).unwrap_or(self.dt),
