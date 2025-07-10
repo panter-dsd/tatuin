@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use chrono::NaiveTime;
 
 use crate::task::DateTimeUtc;
