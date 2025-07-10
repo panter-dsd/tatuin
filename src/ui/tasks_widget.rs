@@ -643,6 +643,10 @@ impl KeyboardHandler for TasksWidget {
 #[async_trait]
 impl WidgetTrait for TasksWidget {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        if self.state.selected().is_some_and(|idx| idx >= self.tasks.len()) {
+            self.state.select(Some(0));
+        }
+
         let changed = &self.changed_tasks;
         let mut title = format!("Tasks ({})", self.tasks.len());
 
