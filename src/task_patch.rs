@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-use chrono::{Datelike, NaiveTime};
+use chrono::Datelike;
 
 use crate::task::{DateTimeUtc, Priority, State, Task as TaskTrait};
+use crate::time::{add_days, clear_time};
 
 #[derive(Debug, Clone)]
 pub enum DuePatchItem {
@@ -11,15 +12,7 @@ pub enum DuePatchItem {
     ThisWeekend,
     NextWeek,
     NoDate,
-}
-
-fn clear_time(dt: &DateTimeUtc) -> DateTimeUtc {
-    const NULL_TIME: NaiveTime = NaiveTime::from_hms_opt(0, 0, 0).unwrap();
-    dt.with_time(NULL_TIME).unwrap()
-}
-
-fn add_days(dt: &DateTimeUtc, days: u64) -> DateTimeUtc {
-    dt.checked_add_days(chrono::Days::new(days)).unwrap()
+    Custom(DateTimeUtc),
 }
 
 impl DuePatchItem {
@@ -33,6 +26,7 @@ impl DuePatchItem {
             },
             DuePatchItem::NextWeek => Some(add_days(dt, 7 - dt.weekday() as u64)),
             DuePatchItem::NoDate => None,
+            DuePatchItem::Custom(dt) => Some(*dt),
         };
 
         result.map(|d| clear_time(&d))

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+use std::any::Any;
+
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
@@ -76,6 +78,10 @@ impl WidgetTrait for Text {
 
     fn style(&self) -> Style {
         self.style
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

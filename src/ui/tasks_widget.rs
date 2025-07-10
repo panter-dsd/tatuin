@@ -2,8 +2,8 @@
 
 use super::{
     AppBlockWidget, dialogs::DialogTrait, dialogs::ListDialog, draw_helper::DrawHelper, header::Header,
-    keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::Shortcut, widgets::TaskRow,
-    widgets::WidgetTrait,
+    keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::Shortcut, widgets::DateTimeEditor,
+    widgets::TaskRow, widgets::WidgetTrait,
 };
 use crate::{
     async_jobs::{AsyncJob, AsyncJobStorage},
@@ -24,7 +24,7 @@ use ratatui::{
     text::Text,
     widgets::{Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
-use std::{slice::IterMut, sync::Arc};
+use std::{any::Any, slice::IterMut, sync::Arc};
 use tokio::sync::{RwLock, broadcast};
 use tracing::{Instrument, Level};
 
@@ -36,6 +36,7 @@ impl std::fmt::Display for DuePatchItem {
             DuePatchItem::ThisWeekend => write!(f, "This weekend"),
             DuePatchItem::NextWeek => write!(f, "Next week (Monday)"),
             DuePatchItem::NoDate => write!(f, "No date"),
+            DuePatchItem::Custom(_) => write!(f, "Custom"),
         }
     }
 }
@@ -100,10 +101,6 @@ impl AppBlockWidget for TasksWidget {
             &mut self.change_priority_shortcut,
             &mut self.undo_changes_shortcut,
         ]
-    }
-
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
     }
 
     async fn select_next(&mut self) {
@@ -436,9 +433,13 @@ impl TasksWidget {
         let t = t.unwrap();
         let available_due_items = t.patch_policy().available_due_items;
         if !available_due_items.is_empty() {
-            let d = ListDialog::new(
+            let mut d = ListDialog::new(
                 &available_due_items,
                 datetime_to_str(t.due(), &Local::now().timezone()).as_str(),
+            );
+            d.add_custom_widget(
+                DuePatchItem::Custom(t.due().unwrap_or_default()),
+                Box::new(DateTimeEditor::new(t.due())),
             );
             self.change_dalog = Some(Box::new(d));
         }
@@ -606,7 +607,17 @@ impl KeyboardHandler for TasksWidget {
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DuePatchItem>>() {
-                    new_due = d.selected().clone();
+                    new_due = d.selected().as_ref().map(|p| match p {
+                        DuePatchItem::Custom(_) => {
+                            let w = d.selected_custom_widget().unwrap();
+                            if let Some(w) = w.as_any().downcast_ref::<DateTimeEditor>() {
+                                DuePatchItem::Custom(w.value())
+                            } else {
+                                panic!("Unexpected custom widget type")
+                            }
+                        }
+                        _ => p.clone(),
+                    });
                 }
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<Priority>>() {
                     new_priority = d.selected().clone();
@@ -715,6 +726,14 @@ impl WidgetTrait for TasksWidget {
 
     fn size(&self) -> Size {
         Size::default()
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

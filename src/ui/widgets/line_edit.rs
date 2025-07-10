@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+use std::any::Any;
+
 use super::WidgetTrait;
 use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 use async_trait::async_trait;
@@ -69,6 +71,10 @@ impl WidgetTrait for LineEdit {
 
     fn set_draw_helper(&mut self, dh: DrawHelper) {
         self.draw_helper = Some(dh)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

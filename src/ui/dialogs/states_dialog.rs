@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+use std::any::Any;
+
 use crate::{state::StateSettings, types::ArcRwLock};
 
 use super::DialogTrait;
@@ -55,6 +57,10 @@ impl WidgetTrait for Dialog {
     fn size(&self) -> Size {
         Size::new(70, 10)
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 #[async_trait]
@@ -63,7 +69,7 @@ impl DialogTrait for Dialog {
         self.should_be_closed
     }
 
-    fn as_any(&self) -> &dyn std::any::Any {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 }

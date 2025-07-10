@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+use std::any::Any;
+
 use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler};
 
 use ratatui::{
@@ -33,4 +35,9 @@ pub trait WidgetTrait: KeyboardHandler + MouseHandler + Send + Sync {
             height: s.height,
         }
     }
+    fn is_active(&self) -> bool {
+        false
+    }
+    fn set_active(&mut self, _is_active: bool) {}
+    fn as_any(&self) -> &dyn Any;
 }

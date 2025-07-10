@@ -8,7 +8,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
-use std::sync::Arc;
+use std::{any::Any, sync::Arc};
 use tokio::sync::RwLock;
 
 use ratatui::{
@@ -48,10 +48,6 @@ pub struct FilterWidget {
 impl AppBlockWidget for FilterWidget {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         vec![&mut self.state_shortcut, &mut self.due_shortcut]
-    }
-
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
     }
 
     async fn select_next(&mut self) {
@@ -237,6 +233,14 @@ impl WidgetTrait for FilterWidget {
 
     fn size(&self) -> Size {
         Size { width: 0, height: 6 }
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 

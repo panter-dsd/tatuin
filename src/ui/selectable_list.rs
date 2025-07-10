@@ -12,7 +12,10 @@ use ratatui::{
     layout::{Rect, Size},
     widgets::{ListItem, ListState, StatefulWidget},
 };
-use std::slice::{Iter, IterMut};
+use std::{
+    any::Any,
+    slice::{Iter, IterMut},
+};
 
 const DEFAULT_WIDTH: u16 = 10;
 
@@ -30,7 +33,7 @@ pub struct SelectableList<T> {
 #[async_trait]
 impl<T> AppBlockWidget for SelectableList<T>
 where
-    T: Send + Sync,
+    T: Send + Sync + 'static,
 {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut> {
         if let Some(s) = &mut self.shortcut {
@@ -38,10 +41,6 @@ where
         } else {
             Vec::new()
         }
-    }
-
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
     }
 
     async fn select_next(&mut self) {
@@ -64,7 +63,7 @@ where
 #[async_trait]
 impl<T> WidgetTrait for SelectableList<T>
 where
-    T: Send + Sync,
+    T: Send + Sync + 'static,
 {
     async fn render(&mut self, _area: Rect, _buf: &mut Buffer) {
         panic!("Don't use this method!")
@@ -72,6 +71,14 @@ where
 
     fn size(&self) -> Size {
         Size::new(self.width, self.items.len() as u16)
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -117,6 +124,10 @@ impl<T> SelectableList<T> {
         self
     }
 
+    pub fn add_item(&mut self, item: T) {
+        self.items.push(item);
+    }
+
     pub fn set_items(&mut self, items: Vec<T>) {
         self.items = items
     }
@@ -135,6 +146,10 @@ impl<T> SelectableList<T> {
 
     pub fn len(&self) -> usize {
         self.items.len()
+    }
+
+    pub fn selected_index(&self) -> Option<usize> {
+        self.state.selected()
     }
 
     pub fn selected(&self) -> Option<&T> {

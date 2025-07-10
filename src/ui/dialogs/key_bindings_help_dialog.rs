@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+use std::any::Any;
+
 use super::DialogTrait;
 use crate::{
     types::ArcRwLockBlocked,
@@ -135,6 +137,10 @@ impl WidgetTrait for Dialog {
         let count = (self.active_block_shortcuts.len() + self.global_shortcuts.len()) as u16;
         Size::new(70, count + 2/*head_tail*/ * 2 /*subheads*/)
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 #[async_trait]
@@ -143,7 +149,7 @@ impl DialogTrait for Dialog {
         self.should_be_closed
     }
 
-    fn as_any(&self) -> &dyn std::any::Any {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 }

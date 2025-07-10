@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use std::fmt::Display;
+use std::{any::Any, fmt::Display};
 
 use super::DialogTrait;
 use crate::ui::{
@@ -25,6 +25,7 @@ pub struct Dialog<T> {
     title: String,
     width: u16,
     items: SelectableList<T>,
+    custom_widgets: Vec<Box<dyn WidgetTrait>>,
     should_be_closed: bool,
     selected_item: Option<T>,
 }
@@ -41,6 +42,7 @@ where
             title,
             width: std::cmp::max(title_width, footer_width),
             items: SelectableList::new(items.to_vec(), Some(0)),
+            custom_widgets: Vec::new(),
             should_be_closed: false,
             selected_item: None,
         }
@@ -48,6 +50,27 @@ where
 
     pub fn selected(&self) -> &Option<T> {
         &self.selected_item
+    }
+
+    pub fn selected_custom_widget(&self) -> Option<&dyn WidgetTrait> {
+        self.current_custom_widget_index()
+            .map(|i| self.custom_widgets[i].as_ref() as &dyn WidgetTrait)
+    }
+
+    pub fn add_custom_widget(&mut self, item: T, w: Box<dyn WidgetTrait>) {
+        self.items.add_item(item);
+        self.custom_widgets.push(w);
+    }
+
+    fn current_custom_widget_index(&self) -> Option<usize> {
+        if let Some(idx) = self.items.selected_index() {
+            if idx < self.items.len() && idx >= self.items.len() - self.custom_widgets.len() {
+                let widgets_count = self.custom_widgets.len();
+                return Some(idx - (self.items.len() - widgets_count));
+            }
+        }
+
+        None
     }
 }
 
@@ -65,8 +88,30 @@ where
             .border_style(style::BORDER_COLOR);
         Widget::render(&b, area, buf);
 
+        self.items.set_active(
+            !self
+                .current_custom_widget_index()
+                .is_some_and(|idx| self.custom_widgets[idx].is_active()),
+        );
+
+        let inner_area = b.inner(area);
         self.items
-            .render("", |s| ListItem::from(s.to_string()), b.inner(area), buf);
+            .render("", |s| ListItem::from(s.to_string()), inner_area, buf);
+
+        let custom_widgets_len = self.custom_widgets.len() as u16;
+        let custom_widgets_y = inner_area.y + inner_area.height - custom_widgets_len;
+        for (i, w) in self.custom_widgets.iter_mut().enumerate() {
+            let item_index = self.items.len() - custom_widgets_len as usize + i;
+            let text_width = Text::from(self.items.iter().nth(item_index).unwrap().to_string()).width() as u16;
+            let rect = Rect::new(
+                inner_area.x + text_width + 2,
+                custom_widgets_y + i as u16,
+                inner_area.width,
+                1,
+            );
+
+            w.render(rect, buf).await;
+        }
     }
 
     fn size(&self) -> Size {
@@ -74,6 +119,10 @@ where
         s.height += 2;
         s.width = std::cmp::max(s.width, self.width) + 2;
         s
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
     }
 }
 
@@ -86,7 +135,7 @@ where
         self.should_be_closed
     }
 
-    fn as_any(&self) -> &dyn std::any::Any {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 }
@@ -102,9 +151,15 @@ where
 #[async_trait]
 impl<T> KeyboardHandler for Dialog<T>
 where
-    T: Send + Sync + Clone + 'static,
+    T: Display + Send + Sync + Clone + 'static,
 {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        for w in self.custom_widgets.iter_mut() {
+            if w.handle_key(key).await {
+                return true;
+            }
+        }
+
         match key.code {
             KeyCode::Char('q') | KeyCode::Esc => {
                 self.should_be_closed = true;
@@ -117,6 +172,16 @@ where
                 self.should_be_closed = true;
                 if let Some(s) = self.items.selected() {
                     self.selected_item = Some(s.clone());
+                }
+            }
+            KeyCode::Char('l') | KeyCode::Right => {
+                if let Some(idx) = self.current_custom_widget_index() {
+                    self.custom_widgets[idx].set_active(true);
+                }
+            }
+            KeyCode::Char('h') | KeyCode::Left => {
+                if let Some(idx) = self.current_custom_widget_index() {
+                    self.custom_widgets[idx].set_active(false);
                 }
             }
             _ => {}
