@@ -53,10 +53,8 @@ where
     }
 
     pub fn selected_custom_widget(&self) -> Option<&dyn WidgetTrait> {
-        self.current_custom_widget_index().map(|i| {
-            let result: &dyn WidgetTrait = self.custom_widgets[i].as_ref();
-            result
-        })
+        self.current_custom_widget_index()
+            .map(|i| self.custom_widgets[i].as_ref() as &dyn WidgetTrait)
     }
 
     pub fn add_custom_widget(&mut self, item: T, w: Box<dyn WidgetTrait>) {
