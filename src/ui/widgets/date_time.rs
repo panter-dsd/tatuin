@@ -51,12 +51,12 @@ impl DateTimeEditor {
         }
     }
 
-    fn prefix(&self, element: Element) -> &str {
+    fn suffix(&self, element: Element) -> &str {
         if self.is_active && self.current_element == element {
-            ">"
-        } else {
-            " "
+            return "↕";
         }
+
+        if element == Element::Day { " " } else { "-" }
     }
 }
 
@@ -64,30 +64,33 @@ impl DateTimeEditor {
 impl WidgetTrait for DateTimeEditor {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let [
-            before_year_area,
             year_area,
-            before_month_area,
+            year_suffix_area,
             month_area,
-            before_day_area,
+            month_suffix_area,
             day_area,
+            day_suffix_area,
         ] = Layout::horizontal([
-            Constraint::Length(1),
             Constraint::Length(4),
             Constraint::Length(1),
             Constraint::Length(2),
             Constraint::Length(1),
             Constraint::Length(2),
+            Constraint::Length(1),
         ])
         .areas(area);
 
-        Text::styled(self.prefix(Element::Year), style::REGULAR_TEXT_STYLE).render(before_year_area, buf);
+        let suffix_style = style::DATE_TIME_EDITOR_INACTIVE_ELEMENT;
         Text::styled(format!("{}", self.dt.format("%Y")), self.style(Element::Year)).render(year_area, buf);
+        Text::styled(self.suffix(Element::Year), suffix_style).render(year_suffix_area, buf);
 
-        Text::styled(self.prefix(Element::Month), style::REGULAR_TEXT_STYLE).render(before_month_area, buf);
         Text::styled(format!("{}", self.dt.format("%m")), self.style(Element::Month)).render(month_area, buf);
+        Text::styled(self.suffix(Element::Month), suffix_style).render(month_suffix_area, buf);
 
-        Text::styled(self.prefix(Element::Day), style::REGULAR_TEXT_STYLE).render(before_day_area, buf);
         Text::styled(format!("{}", self.dt.format("%d")), self.style(Element::Day)).render(day_area, buf);
+        if self.is_active && self.current_element == Element::Day {
+            Text::styled(self.suffix(Element::Day), suffix_style).render(day_suffix_area, buf);
+        }
     }
 
     fn size(&self) -> Size {
