@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
-    layout::{Position, Rect, Size},
+    layout::{Rect, Size},
     style::{Modifier, Style},
     text::Text as RatatuiText,
     widgets::Widget,
@@ -19,7 +19,6 @@ use super::WidgetTrait;
 pub struct Text {
     text: String,
     width: u16,
-    pos: Position,
     style: Style,
     modifier: Modifier,
 }
@@ -29,7 +28,6 @@ impl Text {
         Self {
             text: text.to_string(),
             width: RatatuiText::from(text).width() as u16,
-            pos: Position::default(),
             style: style::REGULAR_TEXT_STYLE,
             modifier: Modifier::empty(),
         }
@@ -51,9 +49,9 @@ impl WidgetTrait for Text {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         RatatuiText::styled(self.text.as_str(), self.style.add_modifier(self.modifier)).render(
             Rect {
-                x: self.pos.x,
-                y: self.pos.y,
-                width: area.width,
+                x: area.x,
+                y: area.y,
+                width: self.width,
                 height: 1,
             },
             buf,
@@ -62,14 +60,6 @@ impl WidgetTrait for Text {
 
     fn size(&self) -> Size {
         Size::new(self.width, 1)
-    }
-
-    fn pos(&self) -> Position {
-        self.pos
-    }
-
-    fn set_pos(&mut self, pos: Position) {
-        self.pos = pos
     }
 
     fn set_style(&mut self, style: Style) {

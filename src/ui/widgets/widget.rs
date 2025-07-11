@@ -17,24 +17,11 @@ pub trait WidgetTrait: KeyboardHandler + MouseHandler + Send + Sync {
     async fn render(&mut self, area: Rect, buf: &mut Buffer);
     fn size(&self) -> Size;
     fn set_draw_helper(&mut self, _dh: DrawHelper) {}
-    fn pos(&self) -> Position {
-        Position::default()
-    }
     fn set_pos(&mut self, _pos: Position) {}
     fn style(&self) -> Style {
         Style::default()
     }
     fn set_style(&mut self, _style: Style) {}
-    fn area(&self) -> Rect {
-        let pos = self.pos();
-        let s = self.size();
-        Rect {
-            x: pos.x,
-            y: pos.y,
-            width: s.width,
-            height: s.height,
-        }
-    }
     fn is_active(&self) -> bool {
         false
     }

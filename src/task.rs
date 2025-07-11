@@ -103,6 +103,10 @@ pub trait Task: Send + Sync {
         String::new()
     }
 
+    fn labels(&self) -> Vec<String> {
+        Vec::new()
+    }
+
     fn provider(&self) -> String;
 
     fn project(&self) -> Option<Box<dyn ProjectTrait>>;

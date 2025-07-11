@@ -72,6 +72,11 @@ impl TaskRow {
             Box::new(Text::new(format!(" ({})", t.place()).as_str()).style(Style::default().fg(Color::Yellow))),
         ];
 
+        for l in t.labels() {
+            children.push(Box::new(Text::new(" ")));
+            children.push(Box::new(Text::new(format!("🏷️{l}").as_str()).style(style::LABEL_STYLE)));
+        }
+
         if !t.description().unwrap_or_default().is_empty() {
             children.push(Box::new(Text::new(" 💬")));
         }
@@ -105,7 +110,7 @@ impl TaskRow {
 #[async_trait]
 impl WidgetTrait for TaskRow {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let area = Rect {
+        let mut area = Rect {
             x: self.pos.x,
             y: self.pos.y,
             width: area.width,
@@ -118,6 +123,7 @@ impl WidgetTrait for TaskRow {
         }
         for child in self.children.iter_mut() {
             child.render(area, buf).await;
+            area.x += child.size().width;
         }
     }
 
@@ -138,10 +144,6 @@ impl WidgetTrait for TaskRow {
             s.bg = None;
             child.set_style(s.patch(style));
         }
-    }
-
-    fn pos(&self) -> Position {
-        self.pos
     }
 
     fn set_pos(&mut self, pos: Position) {
