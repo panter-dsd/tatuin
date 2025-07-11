@@ -61,17 +61,18 @@ impl File {
         let (text, priority) = extract_priority(text.as_str());
 
         let mut text = text;
-        let mut i = 0;
+        let mut removed_chars_count = 0;
+
         let tags = TAG_RE
             .captures_iter(text.clone().as_str())
             .map(|tag_cap| {
                 let m = tag_cap.get(1).unwrap();
                 text = [
-                    text.get(..m.start() - i).unwrap(),
-                    text.get(m.end() - i + 1..).unwrap_or_default(), // if the tag at the end
+                    text.get(..m.start() - removed_chars_count).unwrap(),
+                    text.get(m.end() - removed_chars_count + 1..).unwrap_or_default(), // if the tag at the end
                 ]
                 .join(" ");
-                i += m.end() - m.start();
+                removed_chars_count += m.len();
                 tag_cap[2].to_string()
             })
             .collect::<Vec<String>>();
