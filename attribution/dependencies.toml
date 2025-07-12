@@ -288,7 +288,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.28"
+version = "1.2.29"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -325,7 +325,7 @@ repository = "https://github.com/chronotope/chrono"
 
 [[dependencies]]
 name = "clap"
-version = "4.5.40"
+version = "4.5.41"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -333,7 +333,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_builder"
-version = "4.5.40"
+version = "4.5.41"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -341,7 +341,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_derive"
-version = "4.5.40"
+version = "4.5.41"
 description = "Parse command line argument by defining a struct, derive crate."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -398,7 +398,7 @@ repository = "https://github.com/ParkMyCar/compact_str"
 
 [[dependencies]]
 name = "config"
-version = "0.15.11"
+version = "0.15.13"
 description = "Layered configuration system for Rust applications."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -1125,7 +1125,7 @@ homepage = "https://hyper.rs"
 
 [[dependencies]]
 name = "hyper-util"
-version = "0.1.14"
+version = "0.1.15"
 description = "hyper utilities"
 license = "MIT"
 notices = ["Copyright (c) 2023-2025 Sean McArthur"]
@@ -2147,7 +2147,7 @@ repository = "https://github.com/bytecodealliance/rustix"
 
 [[dependencies]]
 name = "rustls"
-version = "0.23.28"
+version = "0.23.29"
 description = "Rustls is a modern TLS library written in Rust."
 license = "Apache-2.0 OR ISC OR MIT"
 notices = [
@@ -2169,7 +2169,7 @@ repository = "https://github.com/rustls/pki-types"
 
 [[dependencies]]
 name = "rustls-webpki"
-version = "0.103.3"
+version = "0.103.4"
 description = "Web PKI X.509 Certificate Verification."
 license = "ISC"
 notices = ["Copyright 2015 Brian Smith."]
@@ -2284,6 +2284,14 @@ repository = "https://github.com/serde-rs/json"
 [[dependencies]]
 name = "serde_spanned"
 version = "0.6.9"
+description = "Serde-compatible spanned Value"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Individual contributors"]
+repository = "https://github.com/toml-rs/toml"
+
+[[dependencies]]
+name = "serde_spanned"
+version = "1.0.0"
 description = "Serde-compatible spanned Value"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -2747,6 +2755,18 @@ notices = ["Copyright (c) Individual contributors"]
 repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
+name = "toml"
+version = "0.9.2"
+description = """
+A native Rust encoder and decoder of TOML-formatted files and streams. Provides
+implementations of the standard Serialize/Deserialize traits for TOML data to
+facilitate deserializing and serializing Rust structures.
+"""
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Individual contributors"]
+repository = "https://github.com/toml-rs/toml"
+
+[[dependencies]]
 name = "toml_datetime"
 version = "0.6.11"
 description = "A TOML-compatible datetime type"
@@ -2755,8 +2775,24 @@ notices = ["Copyright (c) Individual contributors"]
 repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
+name = "toml_datetime"
+version = "0.7.0"
+description = "A TOML-compatible datetime type"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Individual contributors"]
+repository = "https://github.com/toml-rs/toml"
+
+[[dependencies]]
 name = "toml_edit"
 version = "0.22.27"
+description = "Yet another format-preserving TOML parser."
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Individual contributors"]
+repository = "https://github.com/toml-rs/toml"
+
+[[dependencies]]
+name = "toml_parser"
+version = "1.0.1"
 description = "Yet another format-preserving TOML parser."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -3556,7 +3592,7 @@ repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "winnow"
-version = "0.7.11"
+version = "0.7.12"
 description = "A byte-oriented, zero-copy, parser combinators library"
 license = "MIT"
 repository = "https://github.com/winnow-rs/winnow"
