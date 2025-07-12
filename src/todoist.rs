@@ -78,6 +78,9 @@ impl ProviderTrait for Provider {
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, GetTasksError> {
+        let span = tracing::span!(tracing::Level::DEBUG, "tasks", provider=self.name(), project=project.as_ref().map(|p| p.name()), filter = ?&f, "Load tasks");
+        let _enter = span.enter();
+
         let mut should_clear = false;
         if let Some(last_filter) = self.last_filter.as_mut() {
             should_clear = last_filter != f;
@@ -104,7 +107,13 @@ impl ProviderTrait for Provider {
 
         if self.tasks.is_empty() {
             if f.states.contains(&filter::FilterState::Uncompleted) {
-                self.tasks.append(&mut self.c.tasks_by_filter(&project, f).await?);
+                match self.c.tasks_by_filter(&project, f).await {
+                    Ok(mut t) => self.tasks.append(&mut t),
+                    Err(e) => {
+                        tracing::error!(target:"todoist", error=?e,  "Get tasks by filter");
+                        return Err(e.into());
+                    }
+                }
             }
 
             if f.states.contains(&filter::FilterState::Completed) {
