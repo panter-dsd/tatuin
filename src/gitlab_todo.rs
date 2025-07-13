@@ -23,6 +23,17 @@ pub struct Project {
     provider: String,
 }
 
+impl std::fmt::Debug for Project {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Project id={} name={}",
+            ProjectTrait::id(self),
+            ProjectTrait::name(self)
+        )
+    }
+}
+
 impl ProjectTrait for Project {
     fn id(&self) -> String {
         self.p.id.to_string()
@@ -246,6 +257,12 @@ impl Provider {
                 task: t.clone_boxed(),
                 error: e.to_string(),
             })
+    }
+}
+
+impl std::fmt::Debug for Provider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Provider name={}", ProviderTrait::name(self))
     }
 }
 

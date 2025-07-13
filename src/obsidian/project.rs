@@ -19,6 +19,17 @@ impl Project {
     }
 }
 
+impl std::fmt::Debug for Project {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Project id={} name={}",
+            ProjectTrait::id(self),
+            ProjectTrait::name(self)
+        )
+    }
+}
+
 impl ProjectTrait for Project {
     fn id(&self) -> String {
         self.file_path

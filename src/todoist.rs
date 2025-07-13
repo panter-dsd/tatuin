@@ -12,6 +12,7 @@ use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
 use ratatui::style::Color;
 use std::cmp::Ordering;
 use std::error::Error;
+use std::fmt::Debug;
 
 use async_trait::async_trait;
 
@@ -63,6 +64,12 @@ impl Provider {
     }
 }
 
+impl Debug for Provider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Provider name={}", ProviderTrait::name(self))
+    }
+}
+
 #[async_trait]
 impl ProviderTrait for Provider {
     fn name(&self) -> String {
@@ -73,14 +80,12 @@ impl ProviderTrait for Provider {
         PROVIDER_NAME.to_string()
     }
 
+    #[tracing::instrument(level = "info", target = "todoist_tasks")]
     async fn tasks(
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, GetTasksError> {
-        let span = tracing::span!(tracing::Level::DEBUG, "tasks", provider=self.name(), project=project.as_ref().map(|p| p.name()), filter = ?&f, "Load tasks");
-        let _enter = span.enter();
-
         let mut should_clear = false;
         if let Some(last_filter) = self.last_filter.as_mut() {
             should_clear = last_filter != f;
@@ -110,15 +115,20 @@ impl ProviderTrait for Provider {
                 match self.c.tasks_by_filter(&project, f).await {
                     Ok(mut t) => self.tasks.append(&mut t),
                     Err(e) => {
-                        tracing::error!(target:"todoist", error=?e,  "Get tasks by filter");
+                        tracing::error!(error=?e,  "Get tasks by filter");
                         return Err(e.into());
                     }
                 }
             }
 
             if f.states.contains(&filter::FilterState::Completed) {
-                self.tasks
-                    .append(&mut self.c.completed_tasks(&project.as_ref().map(|p| p.id()), f).await?);
+                match self.c.completed_tasks(&project.as_ref().map(|p| p.id()), f).await {
+                    Ok(mut tasks) => self.tasks.append(&mut tasks),
+                    Err(e) => {
+                        tracing::error!(error=?e,  "Get completed tasks");
+                        return Err(e.into());
+                    }
+                }
             }
             self.last_project = project;
         }

@@ -8,6 +8,7 @@ use crate::types::ArcRwLock;
 use async_trait::async_trait;
 use ratatui::style::Color;
 use std::error::Error;
+use std::fmt::Debug;
 
 pub struct GetTasksError {
     pub message: String,
@@ -32,7 +33,7 @@ impl std::fmt::Display for GetTasksError {
 }
 
 #[async_trait]
-pub trait ProviderTrait: Send + Sync {
+pub trait ProviderTrait: Send + Sync + Debug {
     fn name(&self) -> String;
     fn type_name(&self) -> String;
     async fn tasks(
