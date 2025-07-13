@@ -159,6 +159,10 @@ impl TaskTrait for Task {
         int_to_priority(self.priority.unwrap_or_default())
     }
 
+    fn labels(&self) -> Vec<String> {
+        self.labels.clone().unwrap_or_default()
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }

@@ -72,17 +72,13 @@ impl WidgetTrait for MarkdownLine {
         for w in self.widgets.write().await.iter_mut() {
             let size = w.size();
             w.set_pos(Position::new(area.x, area.y));
-            w.render(w.area(), buf).await;
+            w.render(area, buf).await;
             area.x += size.width;
         }
     }
 
     fn size(&self) -> Size {
         Size::new(self.width, 1)
-    }
-
-    fn pos(&self) -> Position {
-        self.pos
     }
 
     fn set_pos(&mut self, pos: Position) {

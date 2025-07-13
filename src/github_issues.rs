@@ -124,6 +124,12 @@ impl Provider {
     }
 }
 
+impl std::fmt::Debug for Provider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Provider name={}", ProviderTrait::name(self))
+    }
+}
+
 #[async_trait]
 impl ProviderTrait for Provider {
     fn name(&self) -> String {

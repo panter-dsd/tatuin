@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 
+use std::fmt::Debug;
+
 #[allow(dead_code)]
-pub trait Project: Send + Sync {
+pub trait Project: Send + Sync + Debug {
     fn id(&self) -> String;
     fn name(&self) -> String;
     fn provider(&self) -> String;

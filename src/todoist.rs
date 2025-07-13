@@ -12,6 +12,7 @@ use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
 use ratatui::style::Color;
 use std::cmp::Ordering;
 use std::error::Error;
+use std::fmt::Debug;
 
 use async_trait::async_trait;
 
@@ -63,6 +64,12 @@ impl Provider {
     }
 }
 
+impl Debug for Provider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Provider name={}", ProviderTrait::name(self))
+    }
+}
+
 #[async_trait]
 impl ProviderTrait for Provider {
     fn name(&self) -> String {
@@ -73,6 +80,7 @@ impl ProviderTrait for Provider {
         PROVIDER_NAME.to_string()
     }
 
+    #[tracing::instrument(level = "info", target = "todoist_tasks")]
     async fn tasks(
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,
@@ -104,12 +112,23 @@ impl ProviderTrait for Provider {
 
         if self.tasks.is_empty() {
             if f.states.contains(&filter::FilterState::Uncompleted) {
-                self.tasks.append(&mut self.c.tasks_by_filter(&project, f).await?);
+                match self.c.tasks_by_filter(&project, f).await {
+                    Ok(mut t) => self.tasks.append(&mut t),
+                    Err(e) => {
+                        tracing::error!(error=?e,  "Get tasks by filter");
+                        return Err(e.into());
+                    }
+                }
             }
 
             if f.states.contains(&filter::FilterState::Completed) {
-                self.tasks
-                    .append(&mut self.c.completed_tasks(&project.as_ref().map(|p| p.id()), f).await?);
+                match self.c.completed_tasks(&project.as_ref().map(|p| p.id()), f).await {
+                    Ok(mut tasks) => self.tasks.append(&mut tasks),
+                    Err(e) => {
+                        tracing::error!(error=?e,  "Get completed tasks");
+                        return Err(e.into());
+                    }
+                }
             }
             self.last_project = project;
         }

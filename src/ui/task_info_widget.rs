@@ -166,19 +166,24 @@ impl WidgetTrait for TaskInfoWidget {
         };
 
         h.block().render(area, buf);
-        let mut area = area;
-        area.y += 1;
+
+        let mut row_area = area;
+        row_area.y += 1;
         for e in self.entries.write().await.iter_mut() {
-            let t = RatatuiText::from(Line::styled(
+            let label = RatatuiText::from(Line::styled(
                 format!("{}: ", e.title),
                 Style::new()
                     .fg(style::DESCRIPTION_KEY_COLOR)
                     .add_modifier(Modifier::BOLD),
             ));
-            e.widget.set_pos(Position::new(area.x + t.width() as u16, area.y));
-            t.render(area, buf);
-            e.widget.render(area, buf).await;
-            area.y += e.widget.size().height;
+            let label_width = label.width() as u16;
+            label.render(row_area, buf);
+
+            row_area.x += label_width;
+            e.widget.set_pos(Position::new(row_area.x, row_area.y));
+            e.widget.render(row_area, buf).await;
+            row_area.x = area.x;
+            row_area.y += e.widget.size().height;
         }
     }
 

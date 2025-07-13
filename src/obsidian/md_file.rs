@@ -11,6 +11,9 @@ use std::sync::LazyLock;
 use super::patch::TaskPatch;
 
 static TASK_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\s*-\ \[(.)\]\ (.*)$").unwrap());
+static TAG_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"( #((?:[^\x00-\x7F]|\w)(?:[^\x00-\x7F]|\w|-|_|\/)+))").unwrap());
+
 const DUE_EMOJI: char = '📅';
 const COMPLETED_EMOJI: char = '✅';
 
@@ -50,33 +53,50 @@ impl File {
     }
 
     fn try_parse_task(&self, line: &str, pos: usize) -> Option<Task> {
-        if let Some(caps) = TASK_RE.captures(line) {
-            let text = String::from(&caps[2]);
-            let (text, due) = extract_date_after_emoji(text.as_str(), DUE_EMOJI);
-            let (text, completed_at) = extract_date_after_emoji(text.as_str(), COMPLETED_EMOJI);
-            let (text, priority) = extract_priority(text.as_str());
-            return Some(Task {
-                file_path: self.file_path.to_string(),
-                start_pos: pos,
-                end_pos: pos + line.chars().count(),
-                state: {
-                    let cap: &str = &caps[1];
-                    match cap.chars().next() {
-                        Some(x) => State::new(x),
-                        None => {
-                            panic!("Something wrong with regexp parsing of '{line}' because state shouldn't be empty")
-                        }
-                    }
-                },
-                text: text.trim().to_string(),
-                due,
-                priority,
-                completed_at,
-                ..Default::default()
-            });
-        }
+        let caps = TASK_RE.captures(line)?;
 
-        None
+        let text = String::from(&caps[2]);
+        let (text, due) = extract_date_after_emoji(text.as_str(), DUE_EMOJI);
+        let (text, completed_at) = extract_date_after_emoji(text.as_str(), COMPLETED_EMOJI);
+        let (text, priority) = extract_priority(text.as_str());
+
+        let mut text = text;
+        let mut removed_chars_count = 0;
+
+        let tags = TAG_RE
+            .captures_iter(text.clone().as_str())
+            .map(|tag_cap| {
+                let m = tag_cap.get(1).unwrap();
+                text = [
+                    text.get(..m.start() - removed_chars_count).unwrap(),
+                    text.get(m.end() - removed_chars_count + 1..).unwrap_or_default(), // if the tag at the end
+                ]
+                .join(" ");
+                removed_chars_count += m.len();
+                tag_cap[2].to_string()
+            })
+            .collect::<Vec<String>>();
+
+        Some(Task {
+            file_path: self.file_path.to_string(),
+            start_pos: pos,
+            end_pos: pos + line.chars().count(),
+            state: {
+                let cap: &str = &caps[1];
+                match cap.chars().next() {
+                    Some(x) => State::new(x),
+                    None => {
+                        panic!("Something wrong with regexp parsing of '{line}' because state shouldn't be empty")
+                    }
+                }
+            },
+            text: text.trim().to_string(),
+            due,
+            priority,
+            completed_at,
+            tags,
+            ..Default::default()
+        })
     }
 
     fn tasks_from_content(&self, content: &str) -> Result<Vec<Task>, Box<dyn Error>> {
@@ -346,18 +366,21 @@ some another text
 
     #[test]
     fn check_all_fields_parsed_test() {
-        let text = format!("- [x] Some text ⏫ {DUE_EMOJI} 2025-01-01 {COMPLETED_EMOJI} 2025-01-01");
+        let text = format!(
+            "- [x] Some #tag task #группа/имя_tag-name123 text ⏫ {DUE_EMOJI} 2025-01-01 {COMPLETED_EMOJI} 2025-01-01 #tag_at_end"
+        );
 
         let p = File::new("");
         let task = p.try_parse_task(text.as_str(), 0);
         assert!(task.is_some());
         let task = task.unwrap();
-        assert_eq!(task.text, "Some text");
+        assert_eq!(task.text, "Some task text");
         assert_eq!(task.state, State::Completed);
         assert!(task.due.is_some());
         assert_eq!(task.due.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
         assert!(task.completed_at.is_some());
         assert_eq!(task.completed_at.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
+        assert_eq!(task.tags, vec!["tag", "группа/имя_tag-name123", "tag_at_end"]);
     }
 
     #[test]

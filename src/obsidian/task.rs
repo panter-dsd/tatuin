@@ -80,6 +80,7 @@ pub struct Task {
     pub due: Option<DateTimeUtc>,
     pub completed_at: Option<DateTimeUtc>,
     pub priority: Priority,
+    pub tags: Vec<String>,
 }
 
 impl PartialEq for Task {
@@ -90,6 +91,7 @@ impl PartialEq for Task {
             && self.text == o.text
             && self.due == o.due
             && self.priority == o.priority
+            && self.tags == o.tags
     }
 }
 
@@ -172,6 +174,10 @@ impl TaskTrait for Task {
             vault_name,
             encode(self.file_path.strip_prefix(self.root_path.as_str()).unwrap_or_default())
         )
+    }
+
+    fn labels(&self) -> Vec<String> {
+        self.tags.clone()
     }
 
     fn as_any(&self) -> &dyn Any {

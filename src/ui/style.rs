@@ -39,6 +39,7 @@ pub const INACTIVE_BLOCK_STYLE: Style = Style::new().fg(SLATE.c100).bg(BLUE.c800
 pub const SELECTED_ROW_STYLE: Style = Style::new().bg(SLATE.c800).add_modifier(Modifier::BOLD);
 pub const REGULAR_ROW_STYLE: Style = Style::new();
 pub const REGULAR_TEXT_STYLE: Style = Style::new().fg(Color::White);
+pub const LABEL_STYLE: Style = Style::new().fg(Color::Cyan).add_modifier(Modifier::ITALIC);
 
 pub const DATE_TIME_EDITOR_ACTIVE_ELEMENT: Style = Style::new().fg(Color::Black).bg(Color::LightBlue);
 pub const DATE_TIME_EDITOR_INACTIVE_ELEMENT: Style = Style::new().fg(Color::Black).bg(Color::Gray);
