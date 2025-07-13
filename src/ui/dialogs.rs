@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-pub mod dialog;
-pub mod key_bindings_help;
-pub mod list;
-pub mod states;
-pub mod text_input;
+mod add_edit_task;
+mod dialog;
+mod key_bindings_help;
+mod list;
+mod states;
+mod text_input;
 
+pub use add_edit_task::Dialog as AddEditTaskDialog;
 pub use dialog::DialogTrait;
 pub use key_bindings_help::Dialog as KeyBindingsHelpDialog;
 pub use list::Dialog as ListDialog;

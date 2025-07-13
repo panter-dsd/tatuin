@@ -713,8 +713,8 @@ impl App {
             buf,
         );
         self.render_filters(filter_area, buf).await;
-        self.render_tasks(list_area, buf).await;
         self.render_task_description(task_description_area, buf).await;
+        self.render_tasks(list_area, buf).await;
 
         if !self.error_logger.read().await.is_empty() {
             let block = Block::bordered()
