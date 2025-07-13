@@ -16,13 +16,13 @@ use regex::Regex;
 
 pub struct LineEdit {
     text: String,
-    validator: Regex,
+    validator: Option<Regex>,
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
 }
 
 impl LineEdit {
-    pub fn new(validator: Regex) -> Self {
+    pub fn new(validator: Option<Regex>) -> Self {
         Self {
             text: String::new(),
             validator,
@@ -33,6 +33,10 @@ impl LineEdit {
 
     pub fn text(&self) -> String {
         self.text.clone()
+    }
+
+    pub fn set_text(&mut self, text: &str) {
+        self.text = text.to_string()
     }
 
     pub fn clear(&mut self) {
@@ -83,8 +87,10 @@ impl KeyboardHandler for LineEdit {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         match key.code {
             KeyCode::Char(ch) => {
-                if self.validator.is_match(format!("{}{ch}", self.text).as_str()) {
-                    self.text.push(ch);
+                if let Some(validator) = &self.validator {
+                    if validator.is_match(format!("{}{ch}", self.text).as_str()) {
+                        self.text.push(ch);
+                    }
                 }
             }
             KeyCode::Backspace => {

@@ -47,15 +47,17 @@ impl Text {
 #[async_trait]
 impl WidgetTrait for Text {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        RatatuiText::styled(self.text.as_str(), self.style.add_modifier(self.modifier)).render(
-            Rect {
-                x: area.x,
-                y: area.y,
-                width: self.width,
-                height: 1,
-            },
-            buf,
-        );
+        RatatuiText::styled(self.text.as_str(), self.style.add_modifier(self.modifier))
+            .centered()
+            .render(
+                Rect {
+                    x: area.x,
+                    y: area.y,
+                    width: self.width,
+                    height: 1,
+                },
+                buf,
+            );
     }
 
     fn size(&self) -> Size {

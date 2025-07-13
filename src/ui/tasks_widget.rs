@@ -29,7 +29,7 @@ use ratatui::{
     text::Text,
     widgets::{Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
-use std::{any::Any, slice::IterMut, sync::Arc};
+use std::{any::Any, slice::Iter, slice::IterMut, sync::Arc};
 use tokio::sync::{RwLock, broadcast};
 use tracing::{Instrument, Level};
 
@@ -48,6 +48,7 @@ impl std::fmt::Display for DuePatchItem {
 
 pub trait ProvidersStorage<T>: Send + Sync {
     fn iter_mut(&mut self) -> IterMut<'_, T>;
+    fn iter(&self) -> Iter<'_, T>;
 }
 
 pub trait ErrorLoggerTrait: Send + Sync {
@@ -609,7 +610,7 @@ impl TasksWidget {
     }
 
     async fn show_add_task_dialog(&mut self) {
-        let d = AddEditTaskDialog::new("Add a task");
+        let d = AddEditTaskDialog::new("Add a task", self.providers_storage.clone()).await;
         self.dialog = Some(Box::new(d));
         self.is_global_dialog = true;
     }

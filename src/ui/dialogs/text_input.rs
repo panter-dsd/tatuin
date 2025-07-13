@@ -30,7 +30,7 @@ impl Dialog {
     pub fn new(title: &str, input_re: Regex) -> Self {
         Self {
             title: title.to_string(),
-            edit: LineEdit::new(input_re),
+            edit: LineEdit::new(Some(input_re)),
             should_be_closed: false,
             draw_helper: None,
         }

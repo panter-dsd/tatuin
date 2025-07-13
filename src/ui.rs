@@ -29,7 +29,9 @@ use ratatui::{
 };
 use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
-use std::{collections::HashMap, hash::Hash, io::Write, slice::IterMut, str::FromStr, sync::Arc, time::Duration};
+use std::{
+    collections::HashMap, hash::Hash, io::Write, slice::Iter, slice::IterMut, str::FromStr, sync::Arc, time::Duration,
+};
 use tasks_widget::ErrorLoggerTrait;
 use tokio::sync::{OnceCell, RwLock, mpsc};
 mod dialogs;
@@ -172,6 +174,9 @@ where
 {
     fn iter_mut(&mut self) -> IterMut<'_, T> {
         self.iter_mut()
+    }
+    fn iter(&self) -> Iter<'_, T> {
+        self.iter()
     }
 }
 

@@ -44,6 +44,9 @@ pub const LABEL_STYLE: Style = Style::new().fg(Color::Cyan).add_modifier(Modifie
 pub const DATE_TIME_EDITOR_ACTIVE_ELEMENT: Style = Style::new().fg(Color::Black).bg(Color::LightBlue);
 pub const DATE_TIME_EDITOR_INACTIVE_ELEMENT: Style = Style::new().fg(Color::Black).bg(Color::Gray);
 
+pub const ACTIVE_BUTTON_STYLE: Style = Style::new().fg(SLATE.c100).bg(GREEN.c800);
+pub const INACTIVE_BUTTON_STYLE: Style = Style::new().fg(Color::White);
+
 pub const WARNING_TEXT_STYLE: Style = Style::new().fg(Color::Yellow);
 
 pub const BORDER_COLOR: Color = Color::White;

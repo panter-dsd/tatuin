@@ -4,14 +4,22 @@ use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
-    layout::{Alignment, Rect, Size},
+    layout::{Alignment, Constraint, Layout, Rect, Size},
     text::Text,
     widgets::{Block, Borders, Widget},
 };
 
-use crate::ui::{
-    draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style,
-    widgets::WidgetTrait,
+use crate::{
+    provider::Provider,
+    types::ArcRwLock,
+    ui::{
+        draw_helper::DrawHelper,
+        keyboard_handler::KeyboardHandler,
+        mouse_handler::MouseHandler,
+        style,
+        tasks_widget::ProvidersStorage,
+        widgets::{SpinBox, SpinBoxItem, WidgetTrait},
+    },
 };
 
 use super::DialogTrait;
@@ -22,14 +30,31 @@ pub struct Dialog {
     title: String,
     should_be_closed: bool,
     draw_helper: Option<DrawHelper>,
+    providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
+
+    provider_selector: SpinBox,
 }
 
 impl Dialog {
-    pub fn new(title: &str) -> Self {
+    pub async fn new(title: &str, providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>) -> Self {
+        let provider_items = providers_storage
+            .read()
+            .await
+            .iter()
+            .map(|p| SpinBoxItem {
+                id: p.name.clone(),
+                text: p.name.clone(),
+            })
+            .collect::<Vec<SpinBoxItem>>();
+        let mut provider_selector = SpinBox::new("Provider", &provider_items);
+        provider_selector.set_active(true);
+
         Self {
             title: title.to_string(),
             should_be_closed: false,
             draw_helper: None,
+            providers_storage,
+            provider_selector,
         }
     }
 }
@@ -56,6 +81,13 @@ impl WidgetTrait for Dialog {
             .border_style(style::BORDER_COLOR);
         let inner_area = b.inner(area);
         b.render(area, buf);
+
+        let [provider_area, _] = Layout::vertical([
+            Constraint::Length(self.provider_selector.size().height),
+            Constraint::Fill(1),
+        ])
+        .areas(inner_area);
+        self.provider_selector.render(provider_area, buf).await;
     }
 
     fn set_draw_helper(&mut self, dh: DrawHelper) {
@@ -74,20 +106,13 @@ impl WidgetTrait for Dialog {
 #[async_trait]
 impl KeyboardHandler for Dialog {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
-        match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => {
-                self.should_be_closed = true;
-            }
-            KeyCode::Enter => {
-                self.should_be_closed = true;
-            }
-            _ => {
-                return false;
-            }
+        if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
+            self.should_be_closed = true;
+            return true;
         }
 
-        if self.should_be_closed && self.draw_helper.is_some() {
-            self.draw_helper.as_ref().unwrap().write().await.hide_cursor();
+        if self.provider_selector.is_active() {
+            return self.provider_selector.handle_key(key).await;
         }
 
         true
