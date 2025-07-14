@@ -38,6 +38,12 @@ pub struct SpinBox {
     internal_data: ArcRwLock<InternalData>,
 }
 
+impl std::fmt::Debug for SpinBox {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SpinBox")
+    }
+}
+
 impl SpinBox {
     pub fn new(caption: &str, items: &[Item]) -> Self {
         let mut button = Button::new("▽");
@@ -54,13 +60,15 @@ impl SpinBox {
             let mut rx = button.on_pressed_subscribe();
 
             async move {
-                tokio::select! {
-                    _ = rx.recv() => {
-                        let mut data = internal_data.write().await;
-                        let items = data.items.iter().map(|item| item.text.clone()).collect::<Vec<String>>();
-                        let selected = data.selected.as_ref().map(|item| item.text.clone()).unwrap_or_default();
-                        let d = ListDialog::new(&items, selected.as_str());
-                        data.dialog = Some(d);
+                loop {
+                    tokio::select! {
+                        _ = rx.recv() => {
+                            let mut data = internal_data.write().await;
+                            let items = data.items.iter().map(|item| item.text.clone()).collect::<Vec<String>>();
+                            let selected = data.selected.as_ref().map(|item| item.text.clone()).unwrap_or_default();
+                            let d = ListDialog::new(&items, selected.as_str()).show_top_title(false);
+                            data.dialog = Some(d);
+                        }
                     }
                 }
             }
@@ -141,6 +149,7 @@ impl WidgetTrait for SpinBox {
 
 #[async_trait]
 impl KeyboardHandler for SpinBox {
+    #[tracing::instrument(level = "debug", target = "handle_keyboard")]
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         {
             let mut handled = None;
@@ -155,6 +164,9 @@ impl KeyboardHandler for SpinBox {
                     selected = d.selected().clone();
                 }
             }
+
+            tracing::debug!(dialog_exists = data.dialog.is_some(), handled = handled);
+
             if should_delete_dialog {
                 data.dialog = None;
             }
@@ -168,6 +180,7 @@ impl KeyboardHandler for SpinBox {
             }
         }
 
+        tracing::debug!(is_active = self.is_active);
         if !self.is_active {
             return false;
         }

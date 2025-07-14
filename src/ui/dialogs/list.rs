@@ -28,6 +28,7 @@ pub struct Dialog<T> {
     custom_widgets: Vec<Box<dyn WidgetTrait>>,
     should_be_closed: bool,
     selected_item: Option<T>,
+    show_top_title: bool,
 }
 
 impl<T> Dialog<T>
@@ -41,11 +42,20 @@ where
         Self {
             title,
             width: std::cmp::max(title_width, footer_width),
-            items: SelectableList::new(items.to_vec(), Some(0)),
+            items: SelectableList::new(
+                items.to_vec(),
+                items.iter().position(|s| s.to_string() == current).or(Some(0)),
+            ),
             custom_widgets: Vec::new(),
             should_be_closed: false,
             selected_item: None,
+            show_top_title: true,
         }
+    }
+
+    pub fn show_top_title(mut self, is_show: bool) -> Self {
+        self.show_top_title = is_show;
+        self
     }
 
     pub fn selected(&self) -> &Option<T> {
@@ -80,12 +90,14 @@ where
     T: Display + Clone + Send + Sync + 'static,
 {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let b = Block::default()
+        let mut b = Block::default()
             .title_alignment(ratatui::layout::Alignment::Center)
-            .title_top(self.title.as_str())
             .title_bottom(FOOTER)
             .borders(Borders::ALL)
             .border_style(style::BORDER_COLOR);
+        if self.show_top_title {
+            b = b.title_top(self.title.as_str());
+        }
         Widget::render(&b, area, buf);
 
         self.items.set_active(

@@ -38,6 +38,12 @@ impl Button {
     }
 }
 
+impl std::fmt::Debug for Button {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Button title={} is_active={}", self.title, self.is_active)
+    }
+}
+
 #[async_trait]
 impl WidgetTrait for Button {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
@@ -74,6 +80,7 @@ impl WidgetTrait for Button {
 
 #[async_trait]
 impl KeyboardHandler for Button {
+    #[tracing::instrument(level = "debug")]
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         if !self.is_active {
             return false;
