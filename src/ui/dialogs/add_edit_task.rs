@@ -18,7 +18,7 @@ use crate::{
         mouse_handler::MouseHandler,
         style,
         tasks_widget::ProvidersStorage,
-        widgets::{SpinBox, SpinBoxItem, WidgetTrait},
+        widgets::{ComboBox, ComboBoxItem, WidgetTrait},
     },
 };
 
@@ -32,8 +32,8 @@ pub struct Dialog {
     draw_helper: Option<DrawHelper>,
     providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
 
-    provider_selector: SpinBox,
-    project_selector: SpinBox,
+    provider_selector: ComboBox,
+    project_selector: ComboBox,
 }
 
 impl Dialog {
@@ -42,12 +42,12 @@ impl Dialog {
             .read()
             .await
             .iter()
-            .map(|p| SpinBoxItem {
+            .map(|p| ComboBoxItem {
                 text: p.name.clone(),
                 data: String::new(),
             })
-            .collect::<Vec<SpinBoxItem>>();
-        let mut provider_selector = SpinBox::new("Provider", &provider_items);
+            .collect::<Vec<ComboBoxItem>>();
+        let mut provider_selector = ComboBox::new("Provider", &provider_items);
         provider_selector.set_active(true);
 
         Self {
@@ -56,7 +56,7 @@ impl Dialog {
             draw_helper: None,
             providers_storage,
             provider_selector,
-            project_selector: SpinBox::new("Project", &[]),
+            project_selector: ComboBox::new("Project", &[]),
         }
     }
 }
@@ -126,11 +126,11 @@ impl KeyboardHandler for Dialog {
                             .set_items(
                                 &projects
                                     .iter()
-                                    .map(|p| SpinBoxItem {
+                                    .map(|p| ComboBoxItem {
                                         text: p.name(),
                                         data: p.id(),
                                     })
-                                    .collect::<Vec<SpinBoxItem>>(),
+                                    .collect::<Vec<ComboBoxItem>>(),
                             )
                             .await;
                     }

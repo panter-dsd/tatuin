@@ -31,7 +31,7 @@ struct InternalData {
     dialog: Option<ListDialog<String>>,
 }
 
-pub struct SpinBox {
+pub struct ComboBox {
     caption: Text,
     editor: LineEdit,
     button: Button,
@@ -39,13 +39,13 @@ pub struct SpinBox {
     internal_data: ArcRwLock<InternalData>,
 }
 
-impl std::fmt::Debug for SpinBox {
+impl std::fmt::Debug for ComboBox {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SpinBox")
+        write!(f, "ComboBox")
     }
 }
 
-impl SpinBox {
+impl ComboBox {
     pub fn new(caption: &str, items: &[Item]) -> Self {
         let button = Button::new("▽");
 
@@ -95,7 +95,7 @@ impl SpinBox {
 }
 
 #[async_trait]
-impl WidgetTrait for SpinBox {
+impl WidgetTrait for ComboBox {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let [mut caption_area, editor_area, button_area] = Layout::horizontal([
             Constraint::Length(self.caption.size().width),
@@ -154,7 +154,7 @@ impl WidgetTrait for SpinBox {
 }
 
 #[async_trait]
-impl KeyboardHandler for SpinBox {
+impl KeyboardHandler for ComboBox {
     #[tracing::instrument(level = "debug", target = "handle_keyboard")]
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         {
@@ -196,6 +196,6 @@ impl KeyboardHandler for SpinBox {
 }
 
 #[async_trait]
-impl MouseHandler for SpinBox {
+impl MouseHandler for ComboBox {
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }
