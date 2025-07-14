@@ -90,8 +90,25 @@ impl WidgetTrait for Dialog {
             Constraint::Fill(1),
         ])
         .areas(inner_area);
-        self.provider_selector.render(provider_area, buf).await;
-        self.project_selector.render(project_area, buf).await;
+
+        let mut to_render = vec![
+            (&mut self.provider_selector, provider_area),
+            (&mut self.project_selector, project_area),
+        ];
+
+        // the active should render last
+        to_render.sort_by(|l, r| {
+            if l.0.is_active() {
+                std::cmp::Ordering::Greater
+            } else if r.0.is_active() {
+                std::cmp::Ordering::Less
+            } else {
+                std::cmp::Ordering::Equal
+            }
+        });
+        for (w, a) in to_render {
+            w.render(a, buf).await;
+        }
     }
 
     fn set_draw_helper(&mut self, dh: DrawHelper) {
