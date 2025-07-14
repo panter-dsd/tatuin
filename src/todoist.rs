@@ -6,7 +6,7 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{GetTasksError, ProviderTrait};
+use crate::provider::{ProviderTrait, StringError};
 use crate::task::{State, Task as TaskTrait};
 use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
 use ratatui::style::Color;
@@ -85,7 +85,7 @@ impl ProviderTrait for Provider {
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn TaskTrait>>, GetTasksError> {
+    ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
         let mut should_clear = false;
         if let Some(last_filter) = self.last_filter.as_mut() {
             should_clear = last_filter != f;
@@ -146,7 +146,7 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>> {
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
         self.load_projects().await?;
         let mut result: Vec<Box<dyn ProjectTrait>> = Vec::new();
         for p in &self.projects {

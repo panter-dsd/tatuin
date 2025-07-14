@@ -47,8 +47,7 @@ impl std::fmt::Debug for SpinBox {
 
 impl SpinBox {
     pub fn new(caption: &str, items: &[Item]) -> Self {
-        let mut button = Button::new("▽");
-        button.set_active(true);
+        let button = Button::new("▽");
 
         let internal_data = Arc::new(RwLock::new(InternalData {
             items: items.to_vec(),
@@ -82,6 +81,12 @@ impl SpinBox {
             is_active: false,
             internal_data,
         }
+    }
+
+    pub async fn set_items(&self, items: &[Item]) {
+        let mut data = self.internal_data.write().await;
+        data.items = items.to_vec();
+        data.selected = None;
     }
 
     pub async fn value(&self) -> Option<Item> {

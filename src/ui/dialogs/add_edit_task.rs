@@ -33,6 +33,7 @@ pub struct Dialog {
     providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
 
     provider_selector: SpinBox,
+    project_selector: SpinBox,
 }
 
 impl Dialog {
@@ -42,8 +43,8 @@ impl Dialog {
             .await
             .iter()
             .map(|p| SpinBoxItem {
-                id: p.name.clone(),
                 text: p.name.clone(),
+                data: String::new(),
             })
             .collect::<Vec<SpinBoxItem>>();
         let mut provider_selector = SpinBox::new("Provider", &provider_items);
@@ -55,6 +56,7 @@ impl Dialog {
             draw_helper: None,
             providers_storage,
             provider_selector,
+            project_selector: SpinBox::new("Project", &[]),
         }
     }
 }
@@ -82,12 +84,14 @@ impl WidgetTrait for Dialog {
         let inner_area = b.inner(area);
         b.render(area, buf);
 
-        let [provider_area, _] = Layout::vertical([
+        let [provider_area, project_area, _] = Layout::vertical([
             Constraint::Length(self.provider_selector.size().height),
+            Constraint::Length(self.project_selector.size().height),
             Constraint::Fill(1),
         ])
         .areas(inner_area);
         self.provider_selector.render(provider_area, buf).await;
+        self.project_selector.render(project_area, buf).await;
     }
 
     fn set_draw_helper(&mut self, dh: DrawHelper) {
@@ -112,7 +116,28 @@ impl KeyboardHandler for Dialog {
         }
 
         if self.provider_selector.is_active() {
-            return self.provider_selector.handle_key(key).await;
+            let handled = self.provider_selector.handle_key(key).await;
+            if let Some(item) = self.provider_selector.value().await {
+                let mut providers = self.providers_storage.write().await;
+                let provider = providers.iter_mut().find(|p| p.name == item.text);
+                if let Some(p) = provider.as_ref() {
+                    if let Ok(projects) = p.provider.write().await.projects().await {
+                        self.project_selector
+                            .set_items(
+                                &projects
+                                    .iter()
+                                    .map(|p| SpinBoxItem {
+                                        text: p.name(),
+                                        data: p.id(),
+                                    })
+                                    .collect::<Vec<SpinBoxItem>>(),
+                            )
+                            .await;
+                    }
+                }
+            }
+
+            return handled;
         }
 
         true

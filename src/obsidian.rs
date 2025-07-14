@@ -8,12 +8,11 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{GetTasksError, ProviderTrait};
+use crate::provider::{ProviderTrait, StringError};
 use crate::task::Task as TaskTrait;
 use crate::task_patch::{PatchError, TaskPatch};
 use async_trait::async_trait;
 use ratatui::style::Color;
-use std::error::Error;
 
 pub const PROVIDER_NAME: &str = "Obsidian";
 
@@ -53,7 +52,7 @@ impl ProviderTrait for Provider {
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn TaskTrait>>, GetTasksError> {
+    ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
         let tasks = self.c.tasks(f).await?;
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
         for mut t in tasks {
@@ -63,7 +62,7 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>> {
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
         Ok(Vec::new())
     }
 

@@ -10,23 +10,23 @@ use ratatui::style::Color;
 use std::error::Error;
 use std::fmt::Debug;
 
-pub struct GetTasksError {
+pub struct StringError {
     pub message: String,
 }
 
-impl From<Box<dyn Error>> for GetTasksError {
+impl From<Box<dyn Error>> for StringError {
     fn from(e: Box<dyn Error>) -> Self {
         Self { message: e.to_string() }
     }
 }
 
-impl From<GetTasksError> for Box<dyn Error> {
-    fn from(e: GetTasksError) -> Self {
+impl From<StringError> for Box<dyn Error> {
+    fn from(e: StringError) -> Self {
         Box::<dyn Error>::from(e.message)
     }
 }
 
-impl std::fmt::Display for GetTasksError {
+impl std::fmt::Display for StringError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.message)
     }
@@ -40,8 +40,8 @@ pub trait ProviderTrait: Send + Sync + Debug {
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn TaskTrait>>, GetTasksError>;
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>>;
+    ) -> Result<Vec<Box<dyn TaskTrait>>, StringError>;
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError>;
     async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError>;
     async fn reload(&mut self);
     fn color(&self) -> Color;
