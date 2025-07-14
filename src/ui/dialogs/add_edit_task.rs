@@ -59,6 +59,26 @@ impl Dialog {
             project_selector: ComboBox::new("Project", &[]),
         }
     }
+
+    fn next_widget(&mut self) {
+        if self.provider_selector.is_active() {
+            self.provider_selector.set_active(false);
+            self.project_selector.set_active(true);
+        } else if self.project_selector.is_active() {
+            self.project_selector.set_active(false);
+            self.provider_selector.set_active(true);
+        }
+    }
+
+    fn prev_widget(&mut self) {
+        if self.provider_selector.is_active() {
+            self.provider_selector.set_active(false);
+            self.project_selector.set_active(true);
+        } else if self.project_selector.is_active() {
+            self.project_selector.set_active(false);
+            self.provider_selector.set_active(true);
+        }
+    }
 }
 
 #[async_trait]
@@ -84,12 +104,14 @@ impl WidgetTrait for Dialog {
         let inner_area = b.inner(area);
         b.render(area, buf);
 
-        let [provider_area, project_area, _] = Layout::vertical([
+        let [provider_and_project_area, _] = Layout::vertical([
             Constraint::Length(self.provider_selector.size().height),
-            Constraint::Length(self.project_selector.size().height),
             Constraint::Fill(1),
         ])
         .areas(inner_area);
+
+        let [provider_area, project_area] =
+            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(provider_and_project_area);
 
         let mut to_render = vec![
             (&mut self.provider_selector, provider_area),
@@ -127,11 +149,6 @@ impl WidgetTrait for Dialog {
 #[async_trait]
 impl KeyboardHandler for Dialog {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
-        if key.code == KeyCode::Esc || key.code == KeyCode::Char('q') {
-            self.should_be_closed = true;
-            return true;
-        }
-
         if self.provider_selector.is_active() {
             let handled = self.provider_selector.handle_key(key).await;
             if let Some(item) = self.provider_selector.value().await {
@@ -139,6 +156,7 @@ impl KeyboardHandler for Dialog {
                 let provider = providers.iter_mut().find(|p| p.name == item.text);
                 if let Some(p) = provider.as_ref() {
                     if let Ok(projects) = p.provider.write().await.projects().await {
+                        tracing::debug!(target:"add_edit_task", projects=?projects);
                         self.project_selector
                             .set_items(
                                 &projects
@@ -154,9 +172,27 @@ impl KeyboardHandler for Dialog {
                 }
             }
 
-            return handled;
+            if handled {
+                return true;
+            }
         }
 
+        if self.project_selector.is_active() && self.project_selector.handle_key(key).await {
+            return true;
+        }
+
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') => {
+                self.should_be_closed = true;
+            }
+            KeyCode::Tab => {
+                self.next_widget();
+            }
+            KeyCode::BackTab => {
+                self.prev_widget();
+            }
+            _ => return false,
+        }
         true
     }
 }
