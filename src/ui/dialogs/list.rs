@@ -29,6 +29,7 @@ pub struct Dialog<T> {
     should_be_closed: bool,
     selected_item: Option<T>,
     show_top_title: bool,
+    show_bottom_title: bool,
 }
 
 impl<T> Dialog<T>
@@ -36,12 +37,9 @@ where
     T: Display + Clone,
 {
     pub fn new(items: &[T], current: &str) -> Self {
-        let title = format!("Current value: {current}");
-        let title_width = Text::from(title.as_str()).width() as u16;
-        let footer_width = Text::from(FOOTER).width() as u16;
-        Self {
-            title,
-            width: std::cmp::max(title_width, footer_width),
+        let mut s = Self {
+            title: format!("Current value: {current}"),
+            width: 0,
             items: SelectableList::new(
                 items.to_vec(),
                 items.iter().position(|s| s.to_string() == current).or(Some(0)),
@@ -50,11 +48,37 @@ where
             should_be_closed: false,
             selected_item: None,
             show_top_title: true,
+            show_bottom_title: true,
+        };
+        s.calculate_width();
+        s
+    }
+
+    fn calculate_width(&mut self) {
+        let mut w = self
+            .items
+            .iter()
+            .map(|item| Text::from(item.to_string()).width())
+            .max()
+            .unwrap_or_default();
+        if self.show_top_title {
+            w = w.max(Text::from(self.title.as_str()).width());
         }
+        if self.show_bottom_title {
+            w = w.max(Text::from(FOOTER).width());
+        }
+        self.width = w as u16;
     }
 
     pub fn show_top_title(mut self, is_show: bool) -> Self {
         self.show_top_title = is_show;
+        self.calculate_width();
+        self
+    }
+
+    pub fn show_bottom_title(mut self, is_show: bool) -> Self {
+        self.show_bottom_title = is_show;
+        self.calculate_width();
         self
     }
 
@@ -92,11 +116,13 @@ where
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let mut b = Block::default()
             .title_alignment(ratatui::layout::Alignment::Center)
-            .title_bottom(FOOTER)
             .borders(Borders::ALL)
             .border_style(style::BORDER_COLOR);
         if self.show_top_title {
             b = b.title_top(self.title.as_str());
+        }
+        if self.show_bottom_title {
+            b = b.title_bottom(FOOTER);
         }
         Widget::render(&b, area, buf);
 
