@@ -66,9 +66,11 @@ impl ComboBox {
                         _ = rx.recv() => {
                             let mut data = internal_data.write().await;
                             let items = data.items.iter().map(|item| item.text.clone()).collect::<Vec<String>>();
-                            let selected = data.selected.as_ref().map(|item| item.text.clone()).unwrap_or_default();
-                            let d = ListDialog::new(&items, selected.as_str()).show_top_title(false).show_bottom_title(false);
-                            data.dialog = Some(d);
+                            if !items.is_empty() {
+                                let selected = data.selected.as_ref().map(|item| item.text.clone()).unwrap_or_default();
+                                let d = ListDialog::new(&items, selected.as_str()).show_top_title(false).show_bottom_title(false);
+                                data.dialog = Some(d);
+                            }
                         }
                     }
                 }
