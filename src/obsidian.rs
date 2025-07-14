@@ -63,7 +63,11 @@ impl ProviderTrait for Provider {
     }
 
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
-        Ok(Vec::new())
+        Ok(vec![Box::new(project::Project::new(
+            self.name.as_str(),
+            self.c.root_path().as_str(),
+            format!("{}/daily.md", self.c.root_path()).as_str(),
+        ))])
     }
 
     async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
