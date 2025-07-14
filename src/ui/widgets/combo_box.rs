@@ -5,6 +5,7 @@ use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Layout, Rect, Size},
+    widgets::{Clear, Widget},
 };
 use tokio::sync::RwLock;
 
@@ -122,16 +123,15 @@ impl WidgetTrait for ComboBox {
 
         if let Some(d) = &mut self.internal_data.write().await.dialog {
             let size = d.size();
-            d.render(
-                Rect {
-                    x: area.x + area.width - size.width,
-                    y: area.y + self.size().height,
-                    width: size.width,
-                    height: size.height,
-                },
-                buf,
-            )
-            .await;
+            let area = Rect {
+                x: area.x + area.width - size.width,
+                y: area.y + self.size().height,
+                width: size.width,
+                height: size.height,
+            };
+
+            Clear {}.render(area, buf);
+            d.render(area, buf).await;
         }
     }
 
