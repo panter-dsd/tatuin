@@ -19,9 +19,10 @@ use crate::{
 };
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct Item {
-    pub id: String,
     pub text: String,
+    pub data: String,
 }
 
 struct InternalData {
