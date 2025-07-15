@@ -610,7 +610,10 @@ impl TasksWidget {
     }
 
     async fn show_add_task_dialog(&mut self) {
-        let d = AddEditTaskDialog::new("Add a task", self.providers_storage.clone()).await;
+        let mut d = AddEditTaskDialog::new("Add a task", self.providers_storage.clone()).await;
+        if let Some(dh) = &self.draw_helper {
+            d.set_draw_helper(dh.clone());
+        }
         self.dialog = Some(Box::new(d));
         self.is_global_dialog = true;
     }

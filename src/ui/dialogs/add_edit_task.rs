@@ -5,7 +5,7 @@ use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Layout, Rect, Size},
-    text::Text,
+    text::Text as RatatuiText,
     widgets::{Block, Borders, Widget},
 };
 
@@ -19,7 +19,7 @@ use crate::{
         order_changer::OrderChanger,
         style,
         tasks_widget::ProvidersStorage,
-        widgets::{ComboBox, ComboBoxItem, WidgetTrait},
+        widgets::{ComboBox, ComboBoxItem, LineEdit, Text, WidgetTrait},
     },
 };
 
@@ -35,6 +35,9 @@ pub struct Dialog {
 
     provider_selector: ComboBox,
     project_selector: ComboBox,
+
+    task_name_caption: Text,
+    task_name_editor: LineEdit,
 }
 
 impl Dialog {
@@ -58,19 +61,33 @@ impl Dialog {
             providers_storage,
             provider_selector,
             project_selector: ComboBox::new("Project", &[]),
+            task_name_caption: Text::new("Task name"),
+            task_name_editor: LineEdit::new(None),
         }
     }
 
     fn order_calculator(&mut self) -> OrderChanger<'_> {
-        OrderChanger::new(vec![&mut self.provider_selector, &mut self.project_selector])
+        OrderChanger::new(vec![
+            &mut self.provider_selector,
+            &mut self.project_selector,
+            &mut self.task_name_editor,
+        ])
     }
 
-    fn next_widget(&mut self) {
+    async fn next_widget(&mut self) {
         self.order_calculator().select_next();
+        self.hide_cursor().await;
     }
 
-    fn prev_widget(&mut self) {
+    async fn prev_widget(&mut self) {
         self.order_calculator().select_prev();
+        self.hide_cursor().await;
+    }
+
+    async fn hide_cursor(&mut self) {
+        if let Some(dh) = &self.draw_helper {
+            dh.write().await.hide_cursor();
+        }
     }
 }
 
@@ -97,8 +114,9 @@ impl WidgetTrait for Dialog {
         let inner_area = b.inner(area);
         b.render(area, buf);
 
-        let [provider_and_project_area, _] = Layout::vertical([
+        let [provider_and_project_area, task_name_area, _] = Layout::vertical([
             Constraint::Length(self.provider_selector.size().height),
+            Constraint::Length(self.task_name_editor.size().height),
             Constraint::Fill(1),
         ])
         .areas(inner_area);
@@ -106,9 +124,18 @@ impl WidgetTrait for Dialog {
         let [provider_area, project_area] =
             Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(provider_and_project_area);
 
-        let mut to_render = vec![
+        let [mut task_name_caption_area, task_name_editor_area] = Layout::horizontal([
+            Constraint::Length(self.task_name_caption.size().width),
+            Constraint::Fill(1),
+        ])
+        .areas(task_name_area);
+        task_name_caption_area.y += 1;
+
+        let mut to_render: Vec<(&mut dyn WidgetTrait, Rect)> = vec![
             (&mut self.provider_selector, provider_area),
             (&mut self.project_selector, project_area),
+            (&mut self.task_name_caption, task_name_caption_area),
+            (&mut self.task_name_editor, task_name_editor_area),
         ];
 
         // the active should render last
@@ -127,11 +154,12 @@ impl WidgetTrait for Dialog {
     }
 
     fn set_draw_helper(&mut self, dh: DrawHelper) {
+        self.task_name_editor.set_draw_helper(dh.clone());
         self.draw_helper = Some(dh);
     }
 
     fn size(&self) -> Size {
-        Size::new(Text::from(FOOTER).width() as u16 + 2, 20)
+        Size::new(RatatuiText::from(FOOTER).width() as u16 + 2, 20)
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -174,18 +202,27 @@ impl KeyboardHandler for Dialog {
             return true;
         }
 
+        if self.task_name_editor.is_active() && self.task_name_editor.handle_key(key).await {
+            return true;
+        }
+
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => {
                 self.should_be_closed = true;
             }
             KeyCode::Tab => {
-                self.next_widget();
+                self.next_widget().await;
             }
             KeyCode::BackTab => {
-                self.prev_widget();
+                self.prev_widget().await;
             }
             _ => return false,
         }
+
+        if self.should_be_closed && self.draw_helper.is_some() {
+            self.draw_helper.as_ref().unwrap().write().await.hide_cursor();
+        }
+
         true
     }
 }

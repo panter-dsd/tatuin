@@ -19,6 +19,7 @@ pub struct LineEdit {
     validator: Option<Regex>,
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
+    is_active: bool,
 }
 
 impl LineEdit {
@@ -28,6 +29,7 @@ impl LineEdit {
             validator,
             draw_helper: None,
             last_cursor_pos: Position::default(),
+            is_active: false,
         }
     }
 
@@ -60,11 +62,13 @@ impl WidgetTrait for LineEdit {
         Paragraph::new(text.clone()).block(b).render(area, buf);
 
         if let Some(dh) = &self.draw_helper {
-            let pos = Position::new(area.x + text.len() as u16 + 1, area.y + 1);
+            if self.is_active {
+                let pos = Position::new(area.x + text.len() as u16 + 1, area.y + 1);
 
-            if pos != self.last_cursor_pos {
-                dh.write().await.set_cursor_pos(pos);
-                self.last_cursor_pos = pos;
+                if pos != self.last_cursor_pos {
+                    dh.write().await.set_cursor_pos(pos);
+                    self.last_cursor_pos = pos;
+                }
             }
         }
     }
@@ -77,6 +81,17 @@ impl WidgetTrait for LineEdit {
         self.draw_helper = Some(dh)
     }
 
+    fn is_active(&self) -> bool {
+        self.is_active
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active;
+        if !self.is_active {
+            self.last_cursor_pos = Position::default();
+        }
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -87,10 +102,12 @@ impl KeyboardHandler for LineEdit {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         match key.code {
             KeyCode::Char(ch) => {
-                if let Some(validator) = &self.validator {
-                    if validator.is_match(format!("{}{ch}", self.text).as_str()) {
-                        self.text.push(ch);
-                    }
+                let validated = self
+                    .validator
+                    .as_ref()
+                    .is_none_or(|v| v.is_match(format!("{}{ch}", self.text).as_str()));
+                if validated {
+                    self.text.push(ch);
                 }
             }
             KeyCode::Backspace => {
