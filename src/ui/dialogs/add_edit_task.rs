@@ -16,6 +16,7 @@ use crate::{
         draw_helper::DrawHelper,
         keyboard_handler::KeyboardHandler,
         mouse_handler::MouseHandler,
+        order_changer::OrderChanger,
         style,
         tasks_widget::ProvidersStorage,
         widgets::{ComboBox, ComboBoxItem, WidgetTrait},
@@ -60,24 +61,16 @@ impl Dialog {
         }
     }
 
+    fn order_calculator(&mut self) -> OrderChanger<'_> {
+        OrderChanger::new(vec![&mut self.provider_selector, &mut self.project_selector])
+    }
+
     fn next_widget(&mut self) {
-        if self.provider_selector.is_active() {
-            self.provider_selector.set_active(false);
-            self.project_selector.set_active(true);
-        } else if self.project_selector.is_active() {
-            self.project_selector.set_active(false);
-            self.provider_selector.set_active(true);
-        }
+        self.order_calculator().select_next();
     }
 
     fn prev_widget(&mut self) {
-        if self.provider_selector.is_active() {
-            self.provider_selector.set_active(false);
-            self.project_selector.set_active(true);
-        } else if self.project_selector.is_active() {
-            self.project_selector.set_active(false);
-            self.provider_selector.set_active(true);
-        }
+        self.order_calculator().select_prev();
     }
 }
 

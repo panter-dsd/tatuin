@@ -49,6 +49,7 @@ use crossterm::execute;
 mod keyboard_handler;
 use widgets::HyperlinkWidget;
 mod draw_helper;
+mod order_changer;
 use mouse_handler::MouseHandler;
 use selectable_list::SelectableList;
 use strum::{Display, EnumString};
