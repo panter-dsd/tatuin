@@ -204,15 +204,18 @@ impl KeyboardHandler for Dialog {
             }
 
             if handled {
+                self.update_enabled_state().await;
                 return true;
             }
         }
 
         if self.project_selector.is_active() && self.project_selector.handle_key(key).await {
+            self.update_enabled_state().await;
             return true;
         }
 
         if self.task_name_editor.is_active() && self.task_name_editor.handle_key(key).await {
+            self.update_enabled_state().await;
             return true;
         }
 
