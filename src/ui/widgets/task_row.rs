@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use super::{MarkdownLine, State, StateTrait, Text, WidgetTrait};
+use super::{MarkdownLine, Text, WidgetState, WidgetStateTrait, WidgetTrait};
 use crate::{
     task::{self, Task as TaskTrait, datetime_to_str},
     task_patch::{DuePatchItem, TaskPatch},
@@ -22,7 +22,7 @@ pub struct TaskRow {
     children: Vec<Box<dyn WidgetTrait>>,
     is_selected: bool,
     is_visible: bool,
-    state: State,
+    widget_state: WidgetState,
 }
 crate::impl_state_trait!(TaskRow);
 
@@ -93,7 +93,7 @@ impl TaskRow {
             pos: Position::default(),
             is_selected: false,
             is_visible: true,
-            state: State::default(),
+            widget_state: WidgetState::default(),
         }
     }
 

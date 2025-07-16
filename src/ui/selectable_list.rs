@@ -2,7 +2,7 @@
 
 use super::{
     AppBlockWidget, keyboard_handler::KeyboardHandler, list, mouse_handler::MouseHandler, shortcut::Shortcut,
-    widgets::State as WidgetState, widgets::StateTrait, widgets::WidgetTrait,
+    widgets::WidgetState, widgets::WidgetStateTrait, widgets::WidgetTrait,
 };
 use crate::state::{State, StatefulObject};
 use async_trait::async_trait;
@@ -30,7 +30,7 @@ pub struct SelectableList<T> {
     width: u16,
 }
 
-impl<T> StateTrait for SelectableList<T> {
+impl<T> WidgetStateTrait for SelectableList<T> {
     fn is_active(&self) -> bool {
         self.widget_state.is_active()
     }

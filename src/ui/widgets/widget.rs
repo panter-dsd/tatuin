@@ -12,19 +12,19 @@ use ratatui::{
 
 use async_trait::async_trait;
 
-pub trait StateTrait {
+pub trait WidgetStateTrait {
     fn is_active(&self) -> bool;
     fn set_active(&mut self, is_active: bool);
     fn is_enabled(&self) -> bool;
     fn set_enabled(&mut self, is_enabled: bool);
 }
 
-pub struct State {
+pub struct WidgetState {
     is_active: bool,
     is_enabled: bool,
 }
 
-impl Default for State {
+impl Default for WidgetState {
     fn default() -> Self {
         Self {
             is_active: false,
@@ -33,7 +33,7 @@ impl Default for State {
     }
 }
 
-impl StateTrait for State {
+impl WidgetStateTrait for WidgetState {
     fn is_active(&self) -> bool {
         self.is_active
     }
@@ -54,28 +54,28 @@ impl StateTrait for State {
 #[macro_export]
 macro_rules! impl_state_trait {
     ($struct_name:ident) => {
-        impl StateTrait for $struct_name {
+        impl WidgetStateTrait for $struct_name {
             fn is_active(&self) -> bool {
-                self.state.is_active()
+                self.widget_state.is_active()
             }
 
             fn set_active(&mut self, is_active: bool) {
-                self.state.set_active(is_active);
+                self.widget_state.set_active(is_active);
             }
 
             fn is_enabled(&self) -> bool {
-                self.state.is_enabled()
+                self.widget_state.is_enabled()
             }
 
             fn set_enabled(&mut self, is_enabled: bool) {
-                self.state.set_enabled(is_enabled);
+                self.widget_state.set_enabled(is_enabled);
             }
         }
     };
 }
 
 #[async_trait]
-pub trait WidgetTrait: StateTrait + KeyboardHandler + MouseHandler + Send + Sync {
+pub trait WidgetTrait: WidgetStateTrait + KeyboardHandler + MouseHandler + Send + Sync {
     async fn render(&mut self, area: Rect, buf: &mut Buffer);
     fn size(&self) -> Size;
     fn set_draw_helper(&mut self, _dh: DrawHelper) {}

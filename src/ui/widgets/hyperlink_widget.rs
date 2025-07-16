@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use super::{State, StateTrait, WidgetTrait};
+use super::{WidgetState, WidgetStateTrait, WidgetTrait};
 use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
@@ -20,7 +20,7 @@ pub struct HyperlinkWidget {
     url: String,
     style: Option<Style>,
     is_under_mouse: bool,
-    state: State,
+    widget_state: WidgetState,
 }
 crate::impl_state_trait!(HyperlinkWidget);
 
@@ -33,7 +33,7 @@ impl HyperlinkWidget {
             url: url.to_string(),
             style: None,
             is_under_mouse: false,
-            state: State::default(),
+            widget_state: WidgetState::default(),
         }
     }
 }

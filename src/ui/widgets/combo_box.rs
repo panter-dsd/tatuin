@@ -9,7 +9,7 @@ use ratatui::{
 };
 use tokio::sync::RwLock;
 
-use super::{Button, LineEdit, State, StateTrait, Text, WidgetTrait};
+use super::{Button, LineEdit, Text, WidgetState, WidgetStateTrait, WidgetTrait};
 use crate::{
     types::ArcRwLock,
     ui::{
@@ -36,11 +36,11 @@ pub struct ComboBox {
     caption: Text,
     editor: LineEdit,
     button: Button,
-    state: State,
+    state: WidgetState,
     internal_data: ArcRwLock<InternalData>,
 }
 
-impl StateTrait for ComboBox {
+impl WidgetStateTrait for ComboBox {
     fn is_active(&self) -> bool {
         self.state.is_active()
     }
@@ -101,7 +101,7 @@ impl ComboBox {
             caption: Text::new(caption),
             editor: LineEdit::new(None),
             button,
-            state: State::default(),
+            state: WidgetState::default(),
             internal_data,
         }
     }

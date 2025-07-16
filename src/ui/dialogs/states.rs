@@ -11,7 +11,7 @@ use crate::ui::{
     mouse_handler::MouseHandler,
     selectable_list::SelectableList,
     style,
-    widgets::{State, StateTrait, WidgetTrait},
+    widgets::{WidgetState, WidgetStateTrait, WidgetTrait},
 };
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
@@ -26,7 +26,7 @@ pub struct Dialog {
     settings: ArcRwLock<Box<dyn StateSettings>>,
     should_be_closed: bool,
     selected_state: Option<String>,
-    state: State,
+    widget_state: WidgetState,
 }
 crate::impl_state_trait!(Dialog);
 
@@ -37,7 +37,7 @@ impl Dialog {
             settings: settings.clone(),
             should_be_closed: false,
             selected_state: None,
-            state: State::default(),
+            widget_state: WidgetState::default(),
         }
     }
 

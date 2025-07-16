@@ -19,7 +19,7 @@ use crate::{
         order_changer::OrderChanger,
         style,
         tasks_widget::ProvidersStorage,
-        widgets::{ComboBox, ComboBoxItem, LineEdit, State, StateTrait, Text, WidgetTrait},
+        widgets::{ComboBox, ComboBoxItem, LineEdit, Text, WidgetState, WidgetStateTrait, WidgetTrait},
     },
 };
 
@@ -32,7 +32,7 @@ pub struct Dialog {
     should_be_closed: bool,
     draw_helper: Option<DrawHelper>,
     providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
-    state: State,
+    widget_state: WidgetState,
 
     provider_selector: ComboBox,
     project_selector: ComboBox,
@@ -62,7 +62,7 @@ impl Dialog {
             draw_helper: None,
             providers_storage,
             provider_selector,
-            state: State::default(),
+            widget_state: WidgetState::default(),
             project_selector: ComboBox::new("Project", &[]),
             task_name_caption: Text::new("Task name"),
             task_name_editor: LineEdit::new(None),

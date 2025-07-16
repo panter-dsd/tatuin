@@ -18,7 +18,7 @@ use ratatui::{
 
 use super::{
     AppBlockWidget, header, keyboard_handler::KeyboardHandler, list, mouse_handler::MouseHandler, shortcut::Shortcut,
-    widgets::State, widgets::StateTrait, widgets::WidgetTrait,
+    widgets::WidgetState, widgets::WidgetStateTrait, widgets::WidgetTrait,
 };
 
 const POSSIBLE_STATES: [FilterState; 4] = [
@@ -43,10 +43,10 @@ pub struct FilterWidget {
     filter_due_state: ListState,
     state_shortcut: Shortcut,
     due_shortcut: Shortcut,
-    state: State,
+    state: WidgetState,
 }
 
-impl StateTrait for FilterWidget {
+impl WidgetStateTrait for FilterWidget {
     fn is_active(&self) -> bool {
         self.state.is_active()
     }
@@ -114,7 +114,7 @@ impl KeyboardHandler for FilterWidget {
 impl FilterWidget {
     pub fn new(f: Filter) -> ArcRwLock<Self> {
         let s = Arc::new(RwLock::new(Self {
-            state: State::default(),
+            state: WidgetState::default(),
             current_block: FilterBlock::State,
             filter: f,
             filter_state_state: ListState::default(),
@@ -141,7 +141,7 @@ impl FilterWidget {
     }
 
     pub fn set_active(&mut self, is_active: bool, backward: bool) {
-        StateTrait::set_active(self, is_active);
+        WidgetStateTrait::set_active(self, is_active);
         if is_active {
             self.current_block = if backward { FilterBlock::Due } else { FilterBlock::State };
         }

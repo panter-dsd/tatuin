@@ -7,7 +7,7 @@ use crate::ui::{
     keyboard_handler::KeyboardHandler,
     mouse_handler::MouseHandler,
     selectable_list::SelectableList,
-    widgets::{State, StateTrait, WidgetTrait},
+    widgets::{WidgetState, WidgetStateTrait, WidgetTrait},
     {AppBlockWidget, style},
 };
 use async_trait::async_trait;
@@ -30,10 +30,10 @@ pub struct Dialog<T> {
     selected_item: Option<T>,
     show_top_title: bool,
     show_bottom_title: bool,
-    state: State,
+    state: WidgetState,
 }
 
-impl<T> StateTrait for Dialog<T> {
+impl<T> WidgetStateTrait for Dialog<T> {
     fn is_active(&self) -> bool {
         self.state.is_active()
     }
@@ -68,7 +68,7 @@ where
             selected_item: None,
             show_top_title: true,
             show_bottom_title: true,
-            state: State::default(),
+            state: WidgetState::default(),
         };
         s.calculate_width();
         s

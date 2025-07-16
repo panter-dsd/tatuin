@@ -9,7 +9,7 @@ use crate::ui::{
     mouse_handler::MouseHandler,
     style,
     widgets::LineEdit,
-    widgets::{State, StateTrait, WidgetTrait},
+    widgets::{WidgetState, WidgetStateTrait, WidgetTrait},
 };
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
@@ -28,7 +28,7 @@ pub struct Dialog {
     edit: LineEdit,
     should_be_closed: bool,
     draw_helper: Option<DrawHelper>,
-    state: State,
+    widget_state: WidgetState,
 }
 crate::impl_state_trait!(Dialog);
 
@@ -39,7 +39,7 @@ impl Dialog {
             edit: LineEdit::new(Some(input_re)),
             should_be_closed: false,
             draw_helper: None,
-            state: State::default(),
+            widget_state: WidgetState::default(),
         }
     }
 

@@ -2,7 +2,7 @@
 
 use std::any::Any;
 
-use super::{State, StateTrait, WidgetTrait};
+use super::{WidgetState, WidgetStateTrait, WidgetTrait};
 use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
@@ -19,10 +19,10 @@ pub struct LineEdit {
     validator: Option<Regex>,
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
-    state: State,
+    state: WidgetState,
 }
 
-impl StateTrait for LineEdit {
+impl WidgetStateTrait for LineEdit {
     fn is_active(&self) -> bool {
         self.state.is_active()
     }
@@ -50,7 +50,7 @@ impl LineEdit {
             validator,
             draw_helper: None,
             last_cursor_pos: Position::default(),
-            state: State::default(),
+            state: WidgetState::default(),
         }
     }
 

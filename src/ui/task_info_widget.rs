@@ -9,7 +9,7 @@ use super::{
     mouse_handler::MouseHandler,
     shortcut::Shortcut,
     widgets::HyperlinkWidget,
-    widgets::{State, StateTrait, Text, WidgetTrait},
+    widgets::{Text, WidgetState, WidgetStateTrait, WidgetTrait},
 };
 use crate::{
     task::{self, Task as TaskTrait},
@@ -37,7 +37,7 @@ pub struct TaskInfoWidget {
     t: Option<Box<dyn TaskTrait>>,
     shortcut: Shortcut,
     entries: ArcRwLock<Vec<Entry>>,
-    state: State,
+    widget_state: WidgetState,
 }
 crate::impl_state_trait!(TaskInfoWidget);
 
@@ -47,7 +47,7 @@ impl Default for TaskInfoWidget {
             t: None,
             shortcut: Shortcut::new("Activate Task Info block", &['g', 'i']),
             entries: Arc::new(RwLock::new(Vec::new())),
-            state: State::default(),
+            widget_state: WidgetState::default(),
         }
     }
 }

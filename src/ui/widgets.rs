@@ -18,4 +18,4 @@ pub use line_edit::LineEdit;
 pub use markdown_line::MarkdownLine;
 pub use task_row::TaskRow;
 pub use text::Text;
-pub use widget::{State, StateTrait, WidgetTrait};
+pub use widget::{WidgetState, WidgetStateTrait, WidgetTrait};

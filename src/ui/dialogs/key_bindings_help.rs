@@ -10,7 +10,7 @@ use crate::{
         mouse_handler::MouseHandler,
         shortcut::SharedData,
         style,
-        widgets::{State, StateTrait, WidgetTrait},
+        widgets::{WidgetState, WidgetStateTrait, WidgetTrait},
     },
 };
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
@@ -33,7 +33,7 @@ pub struct Dialog {
     active_block_shortcuts: Vec<Shortcut>,
     global_shortcuts: Vec<Shortcut>,
     should_be_closed: bool,
-    state: State,
+    widget_state: WidgetState,
 }
 crate::impl_state_trait!(Dialog);
 
@@ -72,7 +72,7 @@ impl Dialog {
             active_block_shortcuts: active,
             global_shortcuts: global,
             should_be_closed: false,
-            state: State::default(),
+            widget_state: WidgetState::default(),
         }
     }
 }

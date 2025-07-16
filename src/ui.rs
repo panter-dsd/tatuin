@@ -10,7 +10,7 @@ use super::{
     types::ArcRwLock,
     ui::{
         dialogs::{DialogTrait, KeyBindingsHelpDialog, StatesDialog, TextInputDialog},
-        widgets::{StateTrait, WidgetTrait},
+        widgets::{WidgetStateTrait, WidgetTrait},
     },
 };
 use async_trait::async_trait;

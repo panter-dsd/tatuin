@@ -8,7 +8,7 @@ use super::{
     keyboard_handler::KeyboardHandler,
     mouse_handler::MouseHandler,
     shortcut::Shortcut,
-    widgets::{DateTimeEditor, State as WidgetState, StateTrait, TaskRow, WidgetTrait},
+    widgets::{DateTimeEditor, TaskRow, WidgetState, WidgetStateTrait, WidgetTrait},
 };
 use crate::{
     async_jobs::{AsyncJob, AsyncJobStorage},
@@ -76,7 +76,7 @@ pub struct TasksWidget {
     on_changes_broadcast: broadcast::Sender<()>,
     async_jobs_storage: ArcRwLock<AsyncJobStorage>,
     list_state: ListState,
-    state: WidgetState,
+    widget_state: WidgetState,
 
     activate_shortcut: Shortcut,
     commit_changes_shortcut: Shortcut,
@@ -158,7 +158,7 @@ impl TasksWidget {
             all_tasks: Vec::new(),
             changed_tasks: Vec::new(),
             list_state: ListState::default(),
-            state: WidgetState::default(),
+            widget_state: WidgetState::default(),
             activate_shortcut: Shortcut::new("Activate Tasks block", &['g', 't']),
             tasks: Vec::new(),
             projects_filter: Vec::new(),

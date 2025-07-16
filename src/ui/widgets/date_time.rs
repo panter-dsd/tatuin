@@ -20,7 +20,7 @@ use crate::{
         keyboard_handler::KeyboardHandler,
         mouse_handler::MouseHandler,
         style,
-        widgets::{State, StateTrait},
+        widgets::{WidgetState, WidgetStateTrait},
     },
 };
 
@@ -34,7 +34,7 @@ enum Element {
 pub struct DateTimeEditor {
     dt: DateTimeUtc,
     current_element: Element,
-    state: State,
+    widget_state: WidgetState,
 }
 crate::impl_state_trait!(DateTimeEditor);
 
@@ -43,7 +43,7 @@ impl DateTimeEditor {
         Self {
             dt: clear_time(&dt.unwrap_or(chrono::Local::now().to_utc())),
             current_element: Element::Day,
-            state: State::default(),
+            widget_state: WidgetState::default(),
         }
     }
 
