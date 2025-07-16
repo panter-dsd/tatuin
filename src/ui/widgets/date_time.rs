@@ -36,7 +36,7 @@ pub struct DateTimeEditor {
     current_element: Element,
     widget_state: WidgetState,
 }
-crate::impl_state_trait!(DateTimeEditor);
+crate::impl_widget_state_trait!(DateTimeEditor);
 
 impl DateTimeEditor {
     pub fn new(dt: Option<DateTimeUtc>) -> Self {

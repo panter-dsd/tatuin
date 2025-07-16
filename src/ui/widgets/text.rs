@@ -23,7 +23,7 @@ pub struct Text {
     modifier: Modifier,
     widget_state: WidgetState,
 }
-crate::impl_state_trait!(Text);
+crate::impl_widget_state_trait!(Text);
 
 impl Text {
     pub fn new(text: &str) -> Self {

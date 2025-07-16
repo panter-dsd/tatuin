@@ -64,7 +64,7 @@ impl WidgetStateTrait for WidgetState {
 }
 
 #[macro_export]
-macro_rules! impl_state_trait {
+macro_rules! impl_widget_state_trait {
     ($struct_name:ident) => {
         impl WidgetStateTrait for $struct_name {
             fn is_active(&self) -> bool {

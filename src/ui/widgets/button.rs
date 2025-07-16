@@ -20,7 +20,7 @@ pub struct Button {
     tx: broadcast::Sender<()>,
     widget_state: WidgetState,
 }
-crate::impl_state_trait!(Button);
+crate::impl_widget_state_trait!(Button);
 
 impl Button {
     pub fn new(title: &str) -> Self {

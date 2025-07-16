@@ -22,7 +22,7 @@ pub struct HyperlinkWidget {
     is_under_mouse: bool,
     widget_state: WidgetState,
 }
-crate::impl_state_trait!(HyperlinkWidget);
+crate::impl_widget_state_trait!(HyperlinkWidget);
 
 impl HyperlinkWidget {
     pub fn new(text: &str, url: &str) -> Self {

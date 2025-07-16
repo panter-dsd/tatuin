@@ -94,7 +94,7 @@ pub struct TasksWidget {
 
     arc_self: Option<ArcRwLock<Self>>,
 }
-crate::impl_state_trait!(TasksWidget);
+crate::impl_widget_state_trait!(TasksWidget);
 
 #[async_trait]
 impl AppBlockWidget for TasksWidget {

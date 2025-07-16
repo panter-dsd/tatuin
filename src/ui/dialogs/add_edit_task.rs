@@ -40,7 +40,7 @@ pub struct Dialog {
     task_name_caption: Text,
     task_name_editor: LineEdit,
 }
-crate::impl_state_trait!(Dialog);
+crate::impl_widget_state_trait!(Dialog);
 
 impl Dialog {
     pub async fn new(title: &str, providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>) -> Self {

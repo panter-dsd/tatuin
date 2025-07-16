@@ -39,7 +39,7 @@ pub struct TaskInfoWidget {
     entries: ArcRwLock<Vec<Entry>>,
     widget_state: WidgetState,
 }
-crate::impl_state_trait!(TaskInfoWidget);
+crate::impl_widget_state_trait!(TaskInfoWidget);
 
 impl Default for TaskInfoWidget {
     fn default() -> Self {

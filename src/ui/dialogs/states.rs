@@ -28,7 +28,7 @@ pub struct Dialog {
     selected_state: Option<String>,
     widget_state: WidgetState,
 }
-crate::impl_state_trait!(Dialog);
+crate::impl_widget_state_trait!(Dialog);
 
 impl Dialog {
     pub async fn new(settings: &ArcRwLock<Box<dyn StateSettings>>) -> Self {

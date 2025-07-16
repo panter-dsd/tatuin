@@ -26,7 +26,7 @@ pub struct MarkdownLine {
     widgets: ArcRwLock<Vec<Box<dyn WidgetTrait>>>,
     widget_state: WidgetState,
 }
-crate::impl_state_trait!(MarkdownLine);
+crate::impl_widget_state_trait!(MarkdownLine);
 
 impl MarkdownLine {
     pub fn new(text: &str) -> Self {

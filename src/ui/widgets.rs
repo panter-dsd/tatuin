@@ -2,13 +2,13 @@
 
 mod button;
 mod combo_box;
-pub mod date_time;
-pub mod hyperlink_widget;
-pub mod line_edit;
-pub mod markdown_line;
-pub mod task_row;
-pub mod text;
-pub mod widget;
+mod date_time;
+mod hyperlink_widget;
+mod line_edit;
+mod markdown_line;
+mod task_row;
+mod text;
+mod widget;
 
 pub use button::Button;
 pub use combo_box::{ComboBox, Item as ComboBoxItem};

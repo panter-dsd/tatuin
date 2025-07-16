@@ -23,7 +23,7 @@ pub struct TaskRow {
     is_selected: bool,
     widget_state: WidgetState,
 }
-crate::impl_state_trait!(TaskRow);
+crate::impl_widget_state_trait!(TaskRow);
 
 impl TaskRow {
     pub fn new(t: &dyn TaskTrait, changed_tasks: &[TaskPatch]) -> Self {

@@ -35,7 +35,7 @@ pub struct Dialog {
     should_be_closed: bool,
     widget_state: WidgetState,
 }
-crate::impl_state_trait!(Dialog);
+crate::impl_widget_state_trait!(Dialog);
 
 fn keys_to_str(keys: &[char]) -> String {
     let mut s = String::new();

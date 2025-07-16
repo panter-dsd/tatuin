@@ -30,7 +30,7 @@ pub struct Dialog {
     draw_helper: Option<DrawHelper>,
     widget_state: WidgetState,
 }
-crate::impl_state_trait!(Dialog);
+crate::impl_widget_state_trait!(Dialog);
 
 impl Dialog {
     pub fn new(title: &str, input_re: Regex) -> Self {
