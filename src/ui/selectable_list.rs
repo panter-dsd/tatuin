@@ -46,6 +46,14 @@ impl<T> WidgetStateTrait for SelectableList<T> {
     fn set_enabled(&mut self, is_enabled: bool) {
         self.widget_state.set_enabled(is_enabled);
     }
+
+    fn is_visible(&self) -> bool {
+        self.widget_state.is_visible()
+    }
+
+    fn set_visible(&mut self, is_visible: bool) {
+        self.widget_state.set_visible(is_visible);
+    }
 }
 
 #[async_trait]

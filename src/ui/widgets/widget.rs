@@ -17,11 +17,14 @@ pub trait WidgetStateTrait {
     fn set_active(&mut self, is_active: bool);
     fn is_enabled(&self) -> bool;
     fn set_enabled(&mut self, is_enabled: bool);
+    fn is_visible(&self) -> bool;
+    fn set_visible(&mut self, is_visible: bool);
 }
 
 pub struct WidgetState {
     is_active: bool,
     is_enabled: bool,
+    is_visible: bool,
 }
 
 impl Default for WidgetState {
@@ -29,6 +32,7 @@ impl Default for WidgetState {
         Self {
             is_active: false,
             is_enabled: true,
+            is_visible: true,
         }
     }
 }
@@ -48,6 +52,14 @@ impl WidgetStateTrait for WidgetState {
 
     fn set_enabled(&mut self, is_enabled: bool) {
         self.is_enabled = is_enabled;
+    }
+
+    fn is_visible(&self) -> bool {
+        self.is_visible
+    }
+
+    fn set_visible(&mut self, is_visible: bool) {
+        self.is_visible = is_visible;
     }
 }
 
@@ -69,6 +81,14 @@ macro_rules! impl_state_trait {
 
             fn set_enabled(&mut self, is_enabled: bool) {
                 self.widget_state.set_enabled(is_enabled);
+            }
+
+            fn is_visible(&self) -> bool {
+                self.widget_state.is_visible()
+            }
+
+            fn set_visible(&mut self, is_visible: bool) {
+                self.widget_state.set_visible(is_visible);
             }
         }
     };

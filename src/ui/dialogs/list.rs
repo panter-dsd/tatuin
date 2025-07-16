@@ -30,24 +30,32 @@ pub struct Dialog<T> {
     selected_item: Option<T>,
     show_top_title: bool,
     show_bottom_title: bool,
-    state: WidgetState,
+    widget_state: WidgetState,
 }
 
 impl<T> WidgetStateTrait for Dialog<T> {
     fn is_active(&self) -> bool {
-        self.state.is_active()
+        self.widget_state.is_active()
     }
 
     fn set_active(&mut self, is_active: bool) {
-        self.state.set_active(is_active);
+        self.widget_state.set_active(is_active);
     }
 
     fn is_enabled(&self) -> bool {
-        self.state.is_enabled()
+        self.widget_state.is_enabled()
     }
 
     fn set_enabled(&mut self, is_enabled: bool) {
-        self.state.set_enabled(is_enabled);
+        self.widget_state.set_enabled(is_enabled);
+    }
+
+    fn is_visible(&self) -> bool {
+        self.widget_state.is_visible()
+    }
+
+    fn set_visible(&mut self, is_visible: bool) {
+        self.widget_state.set_visible(is_visible);
     }
 }
 
@@ -68,7 +76,7 @@ where
             selected_item: None,
             show_top_title: true,
             show_bottom_title: true,
-            state: WidgetState::default(),
+            widget_state: WidgetState::default(),
         };
         s.calculate_width();
         s

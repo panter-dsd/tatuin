@@ -19,27 +19,35 @@ pub struct LineEdit {
     validator: Option<Regex>,
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
-    state: WidgetState,
+    widget_state: WidgetState,
 }
 
 impl WidgetStateTrait for LineEdit {
     fn is_active(&self) -> bool {
-        self.state.is_active()
+        self.widget_state.is_active()
     }
 
     fn set_active(&mut self, is_active: bool) {
-        self.state.set_active(is_active);
+        self.widget_state.set_active(is_active);
         if is_active {
             self.last_cursor_pos = Position::default();
         }
     }
 
     fn is_enabled(&self) -> bool {
-        self.state.is_enabled()
+        self.widget_state.is_enabled()
     }
 
     fn set_enabled(&mut self, is_enabled: bool) {
-        self.state.set_enabled(is_enabled);
+        self.widget_state.set_enabled(is_enabled);
+    }
+
+    fn is_visible(&self) -> bool {
+        self.widget_state.is_visible()
+    }
+
+    fn set_visible(&mut self, is_visible: bool) {
+        self.widget_state.set_visible(is_visible);
     }
 }
 
@@ -50,7 +58,7 @@ impl LineEdit {
             validator,
             draw_helper: None,
             last_cursor_pos: Position::default(),
-            state: WidgetState::default(),
+            widget_state: WidgetState::default(),
         }
     }
 

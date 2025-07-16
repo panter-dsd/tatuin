@@ -43,24 +43,32 @@ pub struct FilterWidget {
     filter_due_state: ListState,
     state_shortcut: Shortcut,
     due_shortcut: Shortcut,
-    state: WidgetState,
+    widget_state: WidgetState,
 }
 
 impl WidgetStateTrait for FilterWidget {
     fn is_active(&self) -> bool {
-        self.state.is_active()
+        self.widget_state.is_active()
     }
 
     fn set_active(&mut self, is_active: bool) {
-        self.state.set_active(is_active);
+        self.widget_state.set_active(is_active);
     }
 
     fn is_enabled(&self) -> bool {
-        self.state.is_enabled()
+        self.widget_state.is_enabled()
     }
 
     fn set_enabled(&mut self, is_enabled: bool) {
-        self.state.set_enabled(is_enabled);
+        self.widget_state.set_enabled(is_enabled);
+    }
+
+    fn is_visible(&self) -> bool {
+        self.widget_state.is_visible()
+    }
+
+    fn set_visible(&mut self, is_visible: bool) {
+        self.widget_state.set_visible(is_visible);
     }
 }
 
@@ -114,7 +122,7 @@ impl KeyboardHandler for FilterWidget {
 impl FilterWidget {
     pub fn new(f: Filter) -> ArcRwLock<Self> {
         let s = Arc::new(RwLock::new(Self {
-            state: WidgetState::default(),
+            widget_state: WidgetState::default(),
             current_block: FilterBlock::State,
             filter: f,
             filter_state_state: ListState::default(),
