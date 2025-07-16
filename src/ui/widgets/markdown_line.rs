@@ -2,7 +2,7 @@
 
 use std::{any::Any, sync::Arc};
 
-use super::{HyperlinkWidget, Text, WidgetTrait};
+use super::{HyperlinkWidget, State, StateTrait, Text, WidgetTrait};
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
@@ -24,7 +24,9 @@ pub struct MarkdownLine {
     width: u16,
     style: Option<Style>,
     widgets: ArcRwLock<Vec<Box<dyn WidgetTrait>>>,
+    state: State,
 }
+crate::impl_state_trait!(MarkdownLine);
 
 impl MarkdownLine {
     pub fn new(text: &str) -> Self {
@@ -41,6 +43,7 @@ impl MarkdownLine {
                 .unwrap_or_default(),
             style: None,
             widgets: Arc::new(RwLock::new(widgets)),
+            state: State::default(),
         }
     }
 

@@ -9,7 +9,7 @@ use ratatui::{
 };
 use tokio::sync::RwLock;
 
-use super::{Button, LineEdit, Text, WidgetTrait};
+use super::{Button, LineEdit, State, StateTrait, Text, WidgetTrait};
 use crate::{
     types::ArcRwLock,
     ui::{
@@ -36,8 +36,28 @@ pub struct ComboBox {
     caption: Text,
     editor: LineEdit,
     button: Button,
-    is_active: bool,
+    state: State,
     internal_data: ArcRwLock<InternalData>,
+}
+
+impl StateTrait for ComboBox {
+    fn is_active(&self) -> bool {
+        self.state.is_active()
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.state.set_active(is_active);
+        self.button.set_active(is_active);
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.state.is_enabled()
+    }
+
+    fn set_enabled(&mut self, is_enabled: bool) {
+        self.state.set_enabled(is_enabled);
+        self.button.set_enabled(is_enabled);
+    }
 }
 
 impl std::fmt::Debug for ComboBox {
@@ -81,7 +101,7 @@ impl ComboBox {
             caption: Text::new(caption),
             editor: LineEdit::new(None),
             button,
-            is_active: false,
+            state: State::default(),
             internal_data,
         }
     }
@@ -141,15 +161,6 @@ impl WidgetTrait for ComboBox {
         Size::new(20, 3)
     }
 
-    fn is_active(&self) -> bool {
-        self.is_active
-    }
-
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active;
-        self.button.set_active(is_active);
-    }
-
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -188,8 +199,8 @@ impl KeyboardHandler for ComboBox {
             }
         }
 
-        tracing::debug!(is_active = self.is_active);
-        if !self.is_active {
+        tracing::debug!(is_active = self.is_active());
+        if !self.is_active() {
             return false;
         }
 

@@ -16,7 +16,12 @@ use super::WidgetTrait;
 use crate::{
     task::DateTimeUtc,
     time::clear_time,
-    ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style},
+    ui::{
+        keyboard_handler::KeyboardHandler,
+        mouse_handler::MouseHandler,
+        style,
+        widgets::{State, StateTrait},
+    },
 };
 
 #[derive(PartialEq, Eq)]
@@ -29,15 +34,16 @@ enum Element {
 pub struct DateTimeEditor {
     dt: DateTimeUtc,
     current_element: Element,
-    is_active: bool,
+    state: State,
 }
+crate::impl_state_trait!(DateTimeEditor);
 
 impl DateTimeEditor {
     pub fn new(dt: Option<DateTimeUtc>) -> Self {
         Self {
             dt: clear_time(&dt.unwrap_or(chrono::Local::now().to_utc())),
             current_element: Element::Day,
-            is_active: false,
+            state: State::default(),
         }
     }
 
@@ -46,7 +52,7 @@ impl DateTimeEditor {
     }
 
     fn style(&self, element: Element) -> Style {
-        if self.is_active && self.current_element == element {
+        if self.is_active() && self.current_element == element {
             style::DATE_TIME_EDITOR_ACTIVE_ELEMENT
         } else {
             style::DATE_TIME_EDITOR_INACTIVE_ELEMENT
@@ -54,7 +60,7 @@ impl DateTimeEditor {
     }
 
     fn suffix(&self, element: Element) -> &str {
-        if self.is_active && self.current_element == element {
+        if self.is_active() && self.current_element == element {
             return "↕";
         }
 
@@ -90,21 +96,13 @@ impl WidgetTrait for DateTimeEditor {
         Text::styled(self.suffix(Element::Month), suffix_style).render(month_suffix_area, buf);
 
         Text::styled(format!("{}", self.dt.format("%d")), self.style(Element::Day)).render(day_area, buf);
-        if self.is_active && self.current_element == Element::Day {
+        if self.is_active() && self.current_element == Element::Day {
             Text::styled(self.suffix(Element::Day), suffix_style).render(day_suffix_area, buf);
         }
     }
 
     fn size(&self) -> Size {
         Size::new(Text::from("yyyy-mm-dd").width() as u16, 1)
-    }
-
-    fn is_active(&self) -> bool {
-        self.is_active
-    }
-
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -115,7 +113,7 @@ impl WidgetTrait for DateTimeEditor {
 #[async_trait]
 impl KeyboardHandler for DateTimeEditor {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
-        if !self.is_active {
+        if !self.is_active() {
             return false;
         }
 

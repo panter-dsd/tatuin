@@ -12,14 +12,15 @@ use tokio::sync::broadcast;
 
 use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 
-use super::WidgetTrait;
+use super::{State, StateTrait, WidgetTrait};
 
 pub struct Button {
     title: String,
     width: u16,
-    is_active: bool,
     tx: broadcast::Sender<()>,
+    state: State,
 }
+crate::impl_state_trait!(Button);
 
 impl Button {
     pub fn new(title: &str) -> Self {
@@ -28,8 +29,8 @@ impl Button {
         Self {
             title: title.to_string(),
             width,
-            is_active: false,
             tx,
+            state: State::default(),
         }
     }
 
@@ -40,7 +41,7 @@ impl Button {
 
 impl std::fmt::Debug for Button {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Button title={} is_active={}", self.title, self.is_active)
+        write!(f, "Button title={} is_active={}", self.title, self.state.is_active())
     }
 }
 
@@ -50,7 +51,7 @@ impl WidgetTrait for Button {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_style(style::BORDER_COLOR)
-            .style(if self.is_active {
+            .style(if self.state.is_active() {
                 style::ACTIVE_BUTTON_STYLE
             } else {
                 style::INACTIVE_BUTTON_STYLE
@@ -65,14 +66,6 @@ impl WidgetTrait for Button {
         Size::new(self.width, 3)
     }
 
-    fn is_active(&self) -> bool {
-        self.is_active
-    }
-
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
-    }
-
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -82,7 +75,7 @@ impl WidgetTrait for Button {
 impl KeyboardHandler for Button {
     #[tracing::instrument(level = "debug")]
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
-        if !self.is_active {
+        if !self.state.is_active() {
             return false;
         }
 

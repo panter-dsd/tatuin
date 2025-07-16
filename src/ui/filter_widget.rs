@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-use super::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, widgets::WidgetTrait};
 use crate::{
     filter::{Due, Filter, FilterState},
     state::StatefulObject,
@@ -17,7 +16,10 @@ use ratatui::{
     widgets::{ListItem, ListState, StatefulWidget, Widget},
 };
 
-use super::{AppBlockWidget, header, list, shortcut::Shortcut};
+use super::{
+    AppBlockWidget, header, keyboard_handler::KeyboardHandler, list, mouse_handler::MouseHandler, shortcut::Shortcut,
+    widgets::State, widgets::StateTrait, widgets::WidgetTrait,
+};
 
 const POSSIBLE_STATES: [FilterState; 4] = [
     FilterState::Completed,
@@ -35,13 +37,31 @@ enum FilterBlock {
 }
 
 pub struct FilterWidget {
-    is_active: bool,
     current_block: FilterBlock,
     filter: Filter,
     filter_state_state: ListState,
     filter_due_state: ListState,
     state_shortcut: Shortcut,
     due_shortcut: Shortcut,
+    state: State,
+}
+
+impl StateTrait for FilterWidget {
+    fn is_active(&self) -> bool {
+        self.state.is_active()
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.state.set_active(is_active);
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.state.is_enabled()
+    }
+
+    fn set_enabled(&mut self, is_enabled: bool) {
+        self.state.set_enabled(is_enabled);
+    }
 }
 
 #[async_trait]
@@ -94,7 +114,7 @@ impl KeyboardHandler for FilterWidget {
 impl FilterWidget {
     pub fn new(f: Filter) -> ArcRwLock<Self> {
         let s = Arc::new(RwLock::new(Self {
-            is_active: false,
+            state: State::default(),
             current_block: FilterBlock::State,
             filter: f,
             filter_state_state: ListState::default(),
@@ -121,7 +141,7 @@ impl FilterWidget {
     }
 
     pub fn set_active(&mut self, is_active: bool, backward: bool) {
-        self.is_active = is_active;
+        StateTrait::set_active(self, is_active);
         if is_active {
             self.current_block = if backward { FilterBlock::Due } else { FilterBlock::State };
         }
@@ -186,7 +206,7 @@ impl FilterWidget {
             .collect::<Vec<ListItem>>();
 
         StatefulWidget::render(
-            list::List::new(&items, self.is_active && self.current_block == FilterBlock::State)
+            list::List::new(&items, self.is_active() && self.current_block == FilterBlock::State)
                 .title("Task state")
                 .shortcut(&self.state_shortcut)
                 .widget(),
@@ -206,7 +226,7 @@ impl FilterWidget {
             .collect::<Vec<ListItem>>();
 
         StatefulWidget::render(
-            list::List::new(&items, self.is_active && self.current_block == FilterBlock::Due)
+            list::List::new(&items, self.is_active() && self.current_block == FilterBlock::Due)
                 .title("Task due")
                 .shortcut(&self.due_shortcut)
                 .widget(),
@@ -224,7 +244,7 @@ impl WidgetTrait for FilterWidget {
         let [filter_state_area, filter_due_area] =
             Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(body_area);
 
-        header::Header::new("Filter", self.is_active, None)
+        header::Header::new("Filter", self.is_active(), None)
             .block()
             .render(header_area, buf);
         self.render_filter_state(filter_state_area, buf);
@@ -233,10 +253,6 @@ impl WidgetTrait for FilterWidget {
 
     fn size(&self) -> Size {
         Size { width: 0, height: 6 }
-    }
-
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
     }
 
     fn as_any(&self) -> &dyn Any {

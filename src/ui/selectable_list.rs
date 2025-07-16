@@ -2,7 +2,7 @@
 
 use super::{
     AppBlockWidget, keyboard_handler::KeyboardHandler, list, mouse_handler::MouseHandler, shortcut::Shortcut,
-    widgets::WidgetTrait,
+    widgets::State as WidgetState, widgets::StateTrait, widgets::WidgetTrait,
 };
 use crate::state::{State, StatefulObject};
 use async_trait::async_trait;
@@ -24,10 +24,28 @@ pub struct SelectableList<T> {
     state: ListState,
     add_all_item: bool,
     shortcut: Option<Shortcut>,
-    is_active: bool,
     show_count_in_title: bool,
+    widget_state: WidgetState,
 
     width: u16,
+}
+
+impl<T> StateTrait for SelectableList<T> {
+    fn is_active(&self) -> bool {
+        self.widget_state.is_active()
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.widget_state.set_active(is_active);
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.widget_state.is_enabled()
+    }
+
+    fn set_enabled(&mut self, is_enabled: bool) {
+        self.widget_state.set_enabled(is_enabled);
+    }
 }
 
 #[async_trait]
@@ -73,10 +91,6 @@ where
         Size::new(self.width, self.items.len() as u16)
     }
 
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
-    }
-
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -107,9 +121,9 @@ impl<T> SelectableList<T> {
             state: ListState::default().with_selected(selected),
             add_all_item: false,
             shortcut: None,
-            is_active: false,
             show_count_in_title: true,
             width: DEFAULT_WIDTH, // will be recalculated after the first render
+            widget_state: WidgetState::default(),
         }
     }
 
@@ -184,7 +198,7 @@ impl<T> SelectableList<T> {
             .max()
             .unwrap_or(DEFAULT_WIDTH as usize) as u16;
 
-        let mut l = list::List::new(&items, self.is_active);
+        let mut l = list::List::new(&items, self.is_active());
         if let Some(s) = &self.shortcut {
             l = l.shortcut(s);
         }

@@ -8,7 +8,7 @@ use super::{
     keyboard_handler::KeyboardHandler,
     mouse_handler::MouseHandler,
     shortcut::Shortcut,
-    widgets::{DateTimeEditor, TaskRow, WidgetTrait},
+    widgets::{DateTimeEditor, State as WidgetState, StateTrait, TaskRow, WidgetTrait},
 };
 use crate::{
     async_jobs::{AsyncJob, AsyncJobStorage},
@@ -75,8 +75,8 @@ pub struct TasksWidget {
     draw_helper: Option<DrawHelper>,
     on_changes_broadcast: broadcast::Sender<()>,
     async_jobs_storage: ArcRwLock<AsyncJobStorage>,
-    is_active: bool,
-    state: ListState,
+    list_state: ListState,
+    state: WidgetState,
 
     activate_shortcut: Shortcut,
     commit_changes_shortcut: Shortcut,
@@ -94,6 +94,7 @@ pub struct TasksWidget {
 
     arc_self: Option<ArcRwLock<Self>>,
 }
+crate::impl_state_trait!(TasksWidget);
 
 #[async_trait]
 impl AppBlockWidget for TasksWidget {
@@ -113,29 +114,29 @@ impl AppBlockWidget for TasksWidget {
     }
 
     async fn select_next(&mut self) {
-        if self.state.selected().is_none_or(|i| i < self.tasks.len() - 1) {
-            self.state.select_next();
+        if self.list_state.selected().is_none_or(|i| i < self.tasks.len() - 1) {
+            self.list_state.select_next();
             self.update_task_info_view().await;
         }
     }
 
     async fn select_previous(&mut self) {
-        if self.state.selected().is_some_and(|i| i > 0) {
-            self.state.select_previous();
+        if self.list_state.selected().is_some_and(|i| i > 0) {
+            self.list_state.select_previous();
             self.update_task_info_view().await;
         }
     }
 
     async fn select_first(&mut self) {
         if !self.tasks.is_empty() {
-            self.state.select_first();
+            self.list_state.select_first();
             self.update_task_info_view().await;
         }
     }
 
     async fn select_last(&mut self) {
         if !self.tasks.is_empty() {
-            self.state.select(Some(self.tasks.len() - 1));
+            self.list_state.select(Some(self.tasks.len() - 1));
             self.update_task_info_view().await;
         }
     }
@@ -156,8 +157,8 @@ impl TasksWidget {
             task_info_viewer,
             all_tasks: Vec::new(),
             changed_tasks: Vec::new(),
-            is_active: false,
-            state: ListState::default(),
+            list_state: ListState::default(),
+            state: WidgetState::default(),
             activate_shortcut: Shortcut::new("Activate Tasks block", &['g', 't']),
             tasks: Vec::new(),
             projects_filter: Vec::new(),
@@ -253,11 +254,11 @@ impl TasksWidget {
             .map(|t| TaskRow::new(t.as_ref(), &self.changed_tasks))
             .collect();
 
-        self.state = if self.all_tasks.is_empty() {
+        self.list_state = if self.all_tasks.is_empty() {
             ListState::default()
         } else {
             let selected_idx = self
-                .state
+                .list_state
                 .selected()
                 .map(|i| {
                     if i >= self.all_tasks.len() {
@@ -294,7 +295,7 @@ impl TasksWidget {
         }
 
         let t = self
-            .state
+            .list_state
             .selected()
             .map(|i| self.tasks[std::cmp::min(i, self.tasks.len() - 1)].task())?;
         let p = self.changed_tasks.iter().find(|p| p.is_task(t));
@@ -353,7 +354,7 @@ impl TasksWidget {
     }
 
     fn inline_dialog_area(&self, size: Size, area: Rect) -> Rect {
-        let idx = self.state.selected().unwrap_or(0) as u16;
+        let idx = self.list_state.selected().unwrap_or(0) as u16;
 
         let mut y = area.y + 1 /*title*/ + idx+1/*right below the item*/;
         if area.height - y < size.height {
@@ -496,7 +497,7 @@ impl TasksWidget {
             "Change check state");
         let _enter = span.enter();
 
-        let selected = self.state.selected();
+        let selected = self.list_state.selected();
         if selected.is_none() {
             return;
         }
@@ -543,7 +544,7 @@ impl TasksWidget {
     }
 
     async fn change_due_date(&mut self, due: &DuePatchItem) {
-        let selected = self.state.selected();
+        let selected = self.list_state.selected();
         if selected.is_none() {
             return;
         }
@@ -562,7 +563,7 @@ impl TasksWidget {
     }
 
     async fn change_priority(&mut self, priority: &Priority) {
-        let selected = self.state.selected();
+        let selected = self.list_state.selected();
         if selected.is_none() {
             return;
         }
@@ -590,7 +591,7 @@ impl TasksWidget {
     }
 
     async fn undo_changes(&mut self) {
-        let selected = self.state.selected();
+        let selected = self.list_state.selected();
         if selected.is_none() {
             return;
         }
@@ -601,7 +602,7 @@ impl TasksWidget {
     }
 
     async fn recreate_current_task_row(&mut self) {
-        let idx = self.state.selected().unwrap();
+        let idx = self.list_state.selected().unwrap();
         self.tasks[idx] = TaskRow::new(self.tasks[idx].task(), &self.changed_tasks);
     }
 
@@ -678,8 +679,8 @@ impl KeyboardHandler for TasksWidget {
 #[async_trait]
 impl WidgetTrait for TasksWidget {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        if self.state.selected().is_some_and(|idx| idx >= self.tasks.len()) {
-            self.state.select(Some(0));
+        if self.list_state.selected().is_some_and(|idx| idx >= self.tasks.len()) {
+            self.list_state.select(Some(0));
         }
 
         let changed = &self.changed_tasks;
@@ -689,12 +690,12 @@ impl WidgetTrait for TasksWidget {
             title.push_str(format!(" (uncommitted count {}, use 'c'+'c' to commit them)", changed.len()).as_str());
         }
 
-        let h = Header::new(title.as_str(), self.is_active, Some(&self.activate_shortcut));
+        let h = Header::new(title.as_str(), self.is_active(), Some(&self.activate_shortcut));
         h.block().render(area, buf);
 
         let mut y = area.y + 1;
 
-        let mut selected = self.state.selected();
+        let mut selected = self.list_state.selected();
         if selected.is_some_and(|idx| idx >= self.tasks.len()) {
             selected = Some(0);
         }
@@ -765,10 +766,6 @@ impl WidgetTrait for TasksWidget {
 
     fn size(&self) -> Size {
         Size::default()
-    }
-
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
     }
 
     fn as_any(&self) -> &dyn Any {

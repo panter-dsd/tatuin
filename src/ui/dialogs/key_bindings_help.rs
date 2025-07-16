@@ -6,8 +6,11 @@ use super::DialogTrait;
 use crate::{
     types::ArcRwLockBlocked,
     ui::{
-        keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::SharedData, style,
-        widgets::WidgetTrait,
+        keyboard_handler::KeyboardHandler,
+        mouse_handler::MouseHandler,
+        shortcut::SharedData,
+        style,
+        widgets::{State, StateTrait, WidgetTrait},
     },
 };
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
@@ -30,7 +33,9 @@ pub struct Dialog {
     active_block_shortcuts: Vec<Shortcut>,
     global_shortcuts: Vec<Shortcut>,
     should_be_closed: bool,
+    state: State,
 }
+crate::impl_state_trait!(Dialog);
 
 fn keys_to_str(keys: &[char]) -> String {
     let mut s = String::new();
@@ -67,6 +72,7 @@ impl Dialog {
             active_block_shortcuts: active,
             global_shortcuts: global,
             should_be_closed: false,
+            state: State::default(),
         }
     }
 }

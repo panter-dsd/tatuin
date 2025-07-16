@@ -4,8 +4,12 @@ use std::any::Any;
 
 use super::DialogTrait;
 use crate::ui::{
-    draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style, widgets::LineEdit,
-    widgets::WidgetTrait,
+    draw_helper::DrawHelper,
+    keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler,
+    style,
+    widgets::LineEdit,
+    widgets::{State, StateTrait, WidgetTrait},
 };
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
@@ -24,7 +28,9 @@ pub struct Dialog {
     edit: LineEdit,
     should_be_closed: bool,
     draw_helper: Option<DrawHelper>,
+    state: State,
 }
+crate::impl_state_trait!(Dialog);
 
 impl Dialog {
     pub fn new(title: &str, input_re: Regex) -> Self {
@@ -33,6 +39,7 @@ impl Dialog {
             edit: LineEdit::new(Some(input_re)),
             should_be_closed: false,
             draw_helper: None,
+            state: State::default(),
         }
     }
 

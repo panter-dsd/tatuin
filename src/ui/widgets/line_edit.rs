@@ -2,7 +2,7 @@
 
 use std::any::Any;
 
-use super::WidgetTrait;
+use super::{State, StateTrait, WidgetTrait};
 use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
@@ -19,7 +19,28 @@ pub struct LineEdit {
     validator: Option<Regex>,
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
-    is_active: bool,
+    state: State,
+}
+
+impl StateTrait for LineEdit {
+    fn is_active(&self) -> bool {
+        self.state.is_active()
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.state.set_active(is_active);
+        if is_active {
+            self.last_cursor_pos = Position::default();
+        }
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.state.is_enabled()
+    }
+
+    fn set_enabled(&mut self, is_enabled: bool) {
+        self.state.set_enabled(is_enabled);
+    }
 }
 
 impl LineEdit {
@@ -29,7 +50,7 @@ impl LineEdit {
             validator,
             draw_helper: None,
             last_cursor_pos: Position::default(),
-            is_active: false,
+            state: State::default(),
         }
     }
 
@@ -62,7 +83,7 @@ impl WidgetTrait for LineEdit {
         Paragraph::new(text.clone()).block(b).render(area, buf);
 
         if let Some(dh) = &self.draw_helper {
-            if self.is_active {
+            if self.is_active() {
                 let pos = Position::new(area.x + text.len() as u16 + 1, area.y + 1);
 
                 if pos != self.last_cursor_pos {
@@ -79,17 +100,6 @@ impl WidgetTrait for LineEdit {
 
     fn set_draw_helper(&mut self, dh: DrawHelper) {
         self.draw_helper = Some(dh)
-    }
-
-    fn is_active(&self) -> bool {
-        self.is_active
-    }
-
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active;
-        if !self.is_active {
-            self.last_cursor_pos = Position::default();
-        }
     }
 
     fn as_any(&self) -> &dyn Any {

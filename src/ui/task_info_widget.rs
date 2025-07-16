@@ -3,8 +3,13 @@
 use std::{any::Any, sync::Arc};
 
 use super::{
-    AppBlockWidget, header::Header, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::Shortcut,
-    widgets::HyperlinkWidget, widgets::Text, widgets::WidgetTrait,
+    AppBlockWidget,
+    header::Header,
+    keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler,
+    shortcut::Shortcut,
+    widgets::HyperlinkWidget,
+    widgets::{State, StateTrait, Text, WidgetTrait},
 };
 use crate::{
     task::{self, Task as TaskTrait},
@@ -29,19 +34,20 @@ struct Entry {
 }
 
 pub struct TaskInfoWidget {
-    is_active: bool,
     t: Option<Box<dyn TaskTrait>>,
     shortcut: Shortcut,
     entries: ArcRwLock<Vec<Entry>>,
+    state: State,
 }
+crate::impl_state_trait!(TaskInfoWidget);
 
 impl Default for TaskInfoWidget {
     fn default() -> Self {
         Self {
-            is_active: false,
             t: None,
             shortcut: Shortcut::new("Activate Task Info block", &['g', 'i']),
             entries: Arc::new(RwLock::new(Vec::new())),
+            state: State::default(),
         }
     }
 }
@@ -154,7 +160,7 @@ impl TaskInfoWidget {
 #[async_trait]
 impl WidgetTrait for TaskInfoWidget {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let h = Header::new("Task info", self.is_active, Some(&self.shortcut));
+        let h = Header::new("Task info", self.is_active(), Some(&self.shortcut));
 
         if self.t.is_none() {
             Paragraph::new("Nothing selected...")
@@ -189,10 +195,6 @@ impl WidgetTrait for TaskInfoWidget {
 
     fn size(&self) -> Size {
         Size::default()
-    }
-
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
     }
 
     fn as_any(&self) -> &dyn Any {
