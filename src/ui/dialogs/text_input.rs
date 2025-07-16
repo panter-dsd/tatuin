@@ -34,9 +34,12 @@ crate::impl_widget_state_trait!(Dialog);
 
 impl Dialog {
     pub fn new(title: &str, input_re: Regex) -> Self {
+        let mut edit = LineEdit::new(Some(input_re));
+        edit.set_active(true);
+
         Self {
             title: title.to_string(),
-            edit: LineEdit::new(Some(input_re)),
+            edit,
             should_be_closed: false,
             draw_helper: None,
             widget_state: WidgetState::default(),
