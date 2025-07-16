@@ -92,6 +92,13 @@ impl Dialog {
             dh.write().await.hide_cursor();
         }
     }
+
+    async fn update_enabled_state(&mut self) {
+        let provider_selected = self.provider_selector.value().await.is_some();
+        let project_selected = self.project_selector.value().await.is_some();
+        self.project_selector.set_enabled(provider_selected);
+        self.task_name_editor.set_enabled(provider_selected && project_selected);
+    }
 }
 
 #[async_trait]
