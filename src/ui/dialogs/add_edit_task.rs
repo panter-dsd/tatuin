@@ -239,7 +239,7 @@ impl KeyboardHandler for Dialog {
             KeyCode::BackTab => {
                 self.prev_widget().await;
             }
-            _ => return false,
+            _ => {}
         }
 
         if self.should_be_closed && self.draw_helper.is_some() {
