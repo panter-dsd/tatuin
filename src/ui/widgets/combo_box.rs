@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(dead_code)]
 pub struct Item {
     pub text: String,
@@ -192,7 +192,7 @@ impl KeyboardHandler for ComboBox {
                 }
             }
 
-            tracing::debug!(dialog_exists = data.dialog.is_some(), handled = handled);
+            tracing::debug!(dialog_exists = data.dialog.is_some(), handled = handled, selected=?selected);
 
             if should_delete_dialog {
                 data.dialog = None;

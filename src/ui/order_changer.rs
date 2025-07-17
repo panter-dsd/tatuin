@@ -22,19 +22,22 @@ impl<'a> OrderChanger<'a> {
     }
 
     fn active_widet_index(&self) -> Option<usize> {
-        self.widgets.iter().position(|w| w.is_active())
+        let mut w = self
+            .widgets
+            .iter()
+            .position(|w| w.is_visible() && w.is_enabled() && w.is_active());
+        if w.is_none() {
+            w = self.widgets.iter().position(|w| w.is_visible() && w.is_enabled())
+        }
+        w
     }
 
     pub fn select_next(&mut self) {
         let next_idx = match self.active_widet_index() {
             Some(idx) => {
                 self.widgets[idx].set_active(false);
-                println!("HERE {idx}");
                 match self.widgets.iter().skip(idx + 1).position(search_predicate) {
-                    Some(i) => {
-                        println!("HERE_i {i}");
-                        idx + i + 1
-                    }
+                    Some(i) => idx + i + 1,
                     None => self.widgets.iter().position(search_predicate).unwrap_or(idx),
                 }
             }
@@ -47,11 +50,6 @@ impl<'a> OrderChanger<'a> {
     pub fn select_prev(&mut self) {
         let prev_idx = match self.active_widet_index() {
             Some(idx) => {
-                println!(
-                    "HERE_PREV {idx}, match={:?}, none={:?}",
-                    self.widgets.iter().take(idx).rev().position(search_predicate),
-                    self.widgets.iter().rev().position(search_predicate)
-                );
                 self.widgets[idx].set_active(false);
                 match self.widgets.iter().take(idx).rev().position(search_predicate) {
                     Some(i) => idx - i - 1,
@@ -63,7 +61,6 @@ impl<'a> OrderChanger<'a> {
             None => 0,
         };
 
-        println!("PREV_INDEX {prev_idx}");
         self.widgets[prev_idx].set_active(true);
     }
 }
@@ -117,6 +114,49 @@ mod test {
         OrderChanger::new(vec![&mut button1, &mut button2, &mut button3]).select_prev();
         assert!(button1.is_active());
         assert!(!button2.is_active());
+        assert!(!button3.is_active());
+    }
+
+    #[test]
+    fn three_widgets_with_one_disabled_circle_next_test() {
+        let mut button1 = Button::new("");
+        let mut button2 = Button::new("");
+        button2.set_enabled(false);
+        let mut button3 = Button::new("");
+        OrderChanger::new(vec![&mut button1, &mut button2, &mut button3]).select_next();
+        assert!(!button1.is_active());
+        assert!(!button2.is_active());
+        assert!(button3.is_active());
+        OrderChanger::new(vec![&mut button1, &mut button2, &mut button3]).select_next();
+        assert!(button1.is_active());
+        assert!(!button2.is_active());
+        assert!(!button3.is_active());
+    }
+
+    #[test]
+    fn single_disabled_widget_test() {
+        let mut button = Button::new("");
+        button.set_enabled(false);
+        OrderChanger::new(vec![&mut button]).select_next();
+        assert!(button.is_active());
+        OrderChanger::new(vec![&mut button]).select_prev();
+        assert!(button.is_active());
+    }
+
+    #[test]
+    fn active_disabled_widget_test() {
+        let mut button1 = Button::new("");
+        button1.set_active(true);
+        button1.set_enabled(false);
+        let mut button2 = Button::new("");
+        let mut button3 = Button::new("");
+        OrderChanger::new(vec![&mut button1, &mut button2, &mut button3]).select_next();
+        assert!(!button1.is_active());
+        assert!(!button2.is_active());
+        assert!(button3.is_active());
+        OrderChanger::new(vec![&mut button1, &mut button2, &mut button3]).select_next();
+        assert!(!button1.is_active());
+        assert!(button2.is_active());
         assert!(!button3.is_active());
     }
 }

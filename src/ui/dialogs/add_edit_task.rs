@@ -53,20 +53,21 @@ impl Dialog {
                 data: String::new(),
             })
             .collect::<Vec<ComboBoxItem>>();
-        let mut provider_selector = ComboBox::new("Provider", &provider_items);
-        provider_selector.set_active(true);
 
-        Self {
+        let mut s = Self {
             title: title.to_string(),
             should_be_closed: false,
             draw_helper: None,
             providers_storage,
-            provider_selector,
+            provider_selector: ComboBox::new("Provider", &provider_items),
             widget_state: WidgetState::default(),
             project_selector: ComboBox::new("Project", &[]),
             task_name_caption: Text::new("Task name"),
             task_name_editor: LineEdit::new(None),
-        }
+        };
+        s.provider_selector.set_active(true);
+        s.update_enabled_state().await;
+        s
     }
 
     fn order_calculator(&mut self) -> OrderChanger<'_> {
@@ -98,6 +99,34 @@ impl Dialog {
         let project_selected = self.project_selector.value().await.is_some();
         self.project_selector.set_enabled(provider_selected);
         self.task_name_editor.set_enabled(provider_selected && project_selected);
+    }
+
+    async fn fill_project_selector_items(&mut self) {
+        let item = self.provider_selector.value().await;
+        if item.is_none() {
+            return;
+        }
+        let item = item.unwrap();
+
+        let mut providers = self.providers_storage.write().await;
+        let provider = providers.iter_mut().find(|p| p.name == item.text);
+        if provider.is_none() {
+            return;
+        }
+        let provider = provider.as_ref().unwrap();
+        if let Ok(projects) = provider.provider.write().await.projects().await {
+            self.project_selector
+                .set_items(
+                    &projects
+                        .iter()
+                        .map(|p| ComboBoxItem {
+                            text: p.name(),
+                            data: p.id(),
+                        })
+                        .collect::<Vec<ComboBoxItem>>(),
+                )
+                .await;
+        }
     }
 }
 
@@ -180,33 +209,14 @@ impl WidgetTrait for Dialog {
 #[async_trait]
 impl KeyboardHandler for Dialog {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
-        if self.provider_selector.is_active() {
-            let handled = self.provider_selector.handle_key(key).await;
-            if let Some(item) = self.provider_selector.value().await {
-                let mut providers = self.providers_storage.write().await;
-                let provider = providers.iter_mut().find(|p| p.name == item.text);
-                if let Some(p) = provider.as_ref() {
-                    if let Ok(projects) = p.provider.write().await.projects().await {
-                        tracing::debug!(target:"add_edit_task", projects=?projects);
-                        self.project_selector
-                            .set_items(
-                                &projects
-                                    .iter()
-                                    .map(|p| ComboBoxItem {
-                                        text: p.name(),
-                                        data: p.id(),
-                                    })
-                                    .collect::<Vec<ComboBoxItem>>(),
-                            )
-                            .await;
-                    }
-                }
+        let current_provider = self.provider_selector.value().await;
+        if self.provider_selector.is_active() && self.provider_selector.handle_key(key).await {
+            let new_provider = self.provider_selector.value().await;
+            if current_provider != new_provider {
+                self.fill_project_selector_items().await;
             }
-
-            if handled {
-                self.update_enabled_state().await;
-                return true;
-            }
+            self.update_enabled_state().await;
+            return true;
         }
 
         if self.project_selector.is_active() && self.project_selector.handle_key(key).await {
