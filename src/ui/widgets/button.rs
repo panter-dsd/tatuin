@@ -80,19 +80,12 @@ impl WidgetTrait for Button {
 impl KeyboardHandler for Button {
     #[tracing::instrument(level = "debug")]
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
-        if !self.widget_state.is_active() {
-            return false;
+        if self.widget_state.is_active() && key.code == KeyCode::Enter {
+            let _ = self.tx.send(());
+            return true;
         }
 
-        match key.code {
-            KeyCode::Enter => {
-                let _ = self.tx.send(());
-            }
-            _ => {
-                return false;
-            }
-        }
-        true
+        false
     }
 }
 

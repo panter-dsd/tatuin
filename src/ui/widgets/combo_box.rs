@@ -178,38 +178,35 @@ impl WidgetTrait for ComboBox {
 impl KeyboardHandler for ComboBox {
     #[tracing::instrument(level = "debug", target = "handle_keyboard")]
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
-        {
-            let mut handled = None;
-            let mut selected = None;
-            let mut should_delete_dialog = false;
+        if !self.is_active() {
+            return false;
+        }
 
-            let mut data = self.internal_data.write().await;
-            if let Some(d) = &mut data.dialog {
-                handled = Some(d.handle_key(key).await);
-                if handled.is_some_and(|h| h) && d.should_be_closed() {
-                    should_delete_dialog = true;
-                    selected = d.selected().clone();
-                }
-            }
+        let mut handled = None;
+        let mut selected = None;
+        let mut should_delete_dialog = false;
 
-            tracing::debug!(dialog_exists = data.dialog.is_some(), handled = handled, selected=?selected);
-
-            if should_delete_dialog {
-                data.dialog = None;
-            }
-
-            if let Some(selected) = selected {
-                data.selected = data.items.iter().find(|item| item.text == selected).cloned();
-            }
-
-            if let Some(handled) = handled {
-                return handled;
+        let mut data = self.internal_data.write().await;
+        if let Some(d) = &mut data.dialog {
+            handled = Some(d.handle_key(key).await);
+            if handled.is_some_and(|h| h) && d.should_be_closed() {
+                should_delete_dialog = true;
+                selected = d.selected().clone();
             }
         }
 
-        tracing::debug!(is_active = self.is_active());
-        if !self.is_active() {
-            return false;
+        tracing::debug!(dialog_exists = data.dialog.is_some(), handled = handled, selected=?selected);
+
+        if should_delete_dialog {
+            data.dialog = None;
+        }
+
+        if let Some(selected) = selected {
+            data.selected = data.items.iter().find(|item| item.text == selected).cloned();
+        }
+
+        if let Some(handled) = handled {
+            return handled;
         }
 
         return self.button.handle_key(key).await;
