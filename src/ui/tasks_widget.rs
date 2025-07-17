@@ -172,7 +172,7 @@ impl TasksWidget {
             change_due_shortcut: Shortcut::new("Change due date of the task", &['c', 'd']),
             change_priority_shortcut: Shortcut::new("Change priority of the task", &['c', 'p']),
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
-            add_task_shortcut: Shortcut::new("Add task", &['a']).global(),
+            add_task_shortcut: Shortcut::new("Add task", &['a']),
             last_filter: Filter::default(),
             dialog: None,
             is_global_dialog: true,
