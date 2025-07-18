@@ -88,11 +88,16 @@ trait AppBlockWidget: WidgetTrait {
 struct DrawHelper {
     tx: mpsc::UnboundedSender<()>,
     set_pos_tx: mpsc::UnboundedSender<Option<Position>>,
+    screen_size: Size,
 }
 
 impl DrawHelper {
     fn new(tx: mpsc::UnboundedSender<()>, set_pos_tx: mpsc::UnboundedSender<Option<Position>>) -> Self {
-        Self { tx, set_pos_tx }
+        Self {
+            tx,
+            set_pos_tx,
+            screen_size: Size::default(),
+        }
     }
 }
 
@@ -105,6 +110,14 @@ impl draw_helper::DrawHelperTrait for DrawHelper {
     }
     fn hide_cursor(&mut self) {
         let _ = self.set_pos_tx.send(None);
+    }
+
+    fn screen_size(&self) -> Size {
+        self.screen_size
+    }
+
+    fn set_screen_size(&mut self, s: Size) {
+        self.screen_size = s
     }
 }
 
@@ -283,7 +296,8 @@ impl App {
         let (redraw_tx, mut redraw_rx) = mpsc::unbounded_channel::<()>();
         let (set_cursor_pos_tx, mut set_cursor_pos_rx) = mpsc::unbounded_channel::<Option<Position>>();
         let dh = {
-            let d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, set_cursor_pos_tx));
+            let mut d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, set_cursor_pos_tx));
+            d.set_screen_size(terminal.get_frame().area().as_size());
             Arc::new(RwLock::new(d))
         };
 
@@ -305,10 +319,19 @@ impl App {
         let mut on_tasks_changed = self.tasks_widget.read().await.subscribe_on_changes();
         let mut on_jobs_changed = self.async_jobs_storage.read().await.subscribe_on_changes();
 
+        let mut screen_size = dh.read().await.screen_size();
         while !self.should_exit {
             if let Some(d) = &self.dialog {
                 if d.should_be_closed() {
                     self.close_dialog().await;
+                }
+            }
+
+            {
+                let ss = terminal.get_frame().area().as_size();
+                if ss != screen_size {
+                    dh.write().await.set_screen_size(ss);
+                    screen_size = ss;
                 }
             }
 

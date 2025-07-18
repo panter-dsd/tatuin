@@ -370,6 +370,13 @@ impl TasksWidget {
     }
 
     async fn render_dialog(&mut self, area: Rect, buf: &mut Buffer) {
+        if let Some(dh) = &self.draw_helper {
+            let screen_size = dh.read().await.screen_size();
+            self.dialog
+                .as_mut()
+                .unwrap()
+                .set_size(Size::new(screen_size.width / 2, screen_size.height / 2));
+        }
         let size = self.dialog.as_ref().unwrap().size();
         let area = if self.is_global_dialog {
             global_dialog_area(size, *buf.area())

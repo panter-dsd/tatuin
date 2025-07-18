@@ -33,6 +33,7 @@ pub struct Dialog {
     draw_helper: Option<DrawHelper>,
     providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
     widget_state: WidgetState,
+    size: Size,
 
     provider_selector: ComboBox,
     project_selector: ComboBox,
@@ -61,6 +62,7 @@ impl Dialog {
             providers_storage,
             provider_selector: ComboBox::new("Provider", &provider_items),
             widget_state: WidgetState::default(),
+            size: Size::new(RatatuiText::from(FOOTER).width() as u16 + 2, 20),
             project_selector: ComboBox::new("Project", &[]),
             task_name_caption: Text::new("Task name"),
             task_name_editor: LineEdit::new(None),
@@ -197,8 +199,12 @@ impl WidgetTrait for Dialog {
         self.draw_helper = Some(dh);
     }
 
+    fn set_size(&mut self, size: Size) {
+        self.size = size;
+    }
+
     fn size(&self) -> Size {
-        Size::new(RatatuiText::from(FOOTER).width() as u16 + 2, 20)
+        self.size
     }
 
     fn as_any(&self) -> &dyn Any {

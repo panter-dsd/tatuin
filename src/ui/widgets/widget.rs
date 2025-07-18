@@ -98,6 +98,7 @@ macro_rules! impl_widget_state_trait {
 pub trait WidgetTrait: WidgetStateTrait + KeyboardHandler + MouseHandler + Send + Sync {
     async fn render(&mut self, area: Rect, buf: &mut Buffer);
     fn size(&self) -> Size;
+    fn set_size(&mut self, _size: Size) {}
     fn set_draw_helper(&mut self, _dh: DrawHelper) {}
     fn set_pos(&mut self, _pos: Position) {}
     fn style(&self) -> Style {

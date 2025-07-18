@@ -7,6 +7,8 @@ pub trait DrawHelperTrait: Send + Sync {
     fn redraw(&mut self);
     fn set_cursor_pos(&mut self, pos: Position);
     fn hide_cursor(&mut self);
+    fn set_screen_size(&mut self, s: Size);
+    fn screen_size(&self) -> Size;
 }
 
 pub type DrawHelper = ArcRwLock<Box<dyn DrawHelperTrait>>;
