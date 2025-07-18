@@ -230,8 +230,8 @@ where
             KeyCode::Char('q') | KeyCode::Esc => {
                 self.should_be_closed = true;
             }
-            KeyCode::Char('j') | KeyCode::Down => self.items.select_next().await,
-            KeyCode::Char('k') | KeyCode::Up => self.items.select_previous().await,
+            KeyCode::Char('j') | KeyCode::Char('n') | KeyCode::Down => self.items.select_next().await,
+            KeyCode::Char('k') | KeyCode::Char('p') | KeyCode::Up => self.items.select_previous().await,
             KeyCode::Char('g') | KeyCode::Home => self.items.select_first().await,
             KeyCode::Char('G') | KeyCode::End => self.items.select_last().await,
             KeyCode::Enter => {
