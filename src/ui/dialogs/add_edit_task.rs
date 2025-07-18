@@ -19,7 +19,7 @@ use crate::{
         order_changer::OrderChanger,
         style,
         tasks_widget::ProvidersStorage,
-        widgets::{ComboBox, ComboBoxItem, LineEdit, Text, WidgetState, WidgetStateTrait, WidgetTrait},
+        widgets::{ComboBox, ComboBoxItem, LineEdit, Text, TextEdit, WidgetState, WidgetStateTrait, WidgetTrait},
     },
 };
 
@@ -40,6 +40,9 @@ pub struct Dialog {
 
     task_name_caption: Text,
     task_name_editor: LineEdit,
+
+    task_description_caption: Text,
+    task_description_editor: TextEdit,
 }
 crate::impl_widget_state_trait!(Dialog);
 
@@ -66,6 +69,8 @@ impl Dialog {
             project_selector: ComboBox::new("Project", &[]),
             task_name_caption: Text::new("Task name"),
             task_name_editor: LineEdit::new(None),
+            task_description_caption: Text::new("Task description"),
+            task_description_editor: TextEdit::new(),
         };
         s.provider_selector.set_active(true);
         s.update_enabled_state().await;
@@ -77,6 +82,7 @@ impl Dialog {
             &mut self.provider_selector,
             &mut self.project_selector,
             &mut self.task_name_editor,
+            &mut self.task_description_editor,
         ])
     }
 
@@ -101,6 +107,8 @@ impl Dialog {
         let project_selected = self.project_selector.value().await.is_some();
         self.project_selector.set_enabled(provider_selected);
         self.task_name_editor.set_enabled(provider_selected && project_selected);
+        self.task_description_editor
+            .set_enabled(provider_selected && project_selected && !self.task_name_editor.text().is_empty());
     }
 
     async fn fill_project_selector_items(&mut self) {
@@ -143,6 +151,10 @@ impl DialogTrait for Dialog {
     }
 }
 
+fn max_width(widgets: &[&dyn WidgetTrait]) -> u16 {
+    widgets.iter().map(|w| w.size().width).max().unwrap()
+}
+
 #[async_trait]
 impl WidgetTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
@@ -155,9 +167,12 @@ impl WidgetTrait for Dialog {
         let inner_area = b.inner(area);
         b.render(area, buf);
 
-        let [provider_and_project_area, task_name_area, _] = Layout::vertical([
+        let left_captions_width = max_width(&[&self.task_name_caption, &self.task_description_caption]);
+
+        let [provider_and_project_area, task_name_area, task_description_area, _] = Layout::vertical([
             Constraint::Length(self.provider_selector.size().height),
             Constraint::Length(self.task_name_editor.size().height),
+            Constraint::Length(self.task_description_editor.size().height),
             Constraint::Fill(1),
         ])
         .areas(inner_area);
@@ -165,18 +180,22 @@ impl WidgetTrait for Dialog {
         let [provider_area, project_area] =
             Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(provider_and_project_area);
 
-        let [mut task_name_caption_area, task_name_editor_area] = Layout::horizontal([
-            Constraint::Length(self.task_name_caption.size().width),
-            Constraint::Fill(1),
-        ])
-        .areas(task_name_area);
+        let [mut task_name_caption_area, task_name_editor_area] =
+            Layout::horizontal([Constraint::Length(left_captions_width), Constraint::Fill(1)]).areas(task_name_area);
         task_name_caption_area.y += 1;
+
+        let [mut task_description_caption_area, task_description_editor_area] =
+            Layout::horizontal([Constraint::Length(left_captions_width), Constraint::Fill(1)])
+                .areas(task_description_area);
+        task_description_caption_area.y += self.task_description_editor.size().height / 2;
 
         let mut to_render: Vec<(&mut dyn WidgetTrait, Rect)> = vec![
             (&mut self.provider_selector, provider_area),
             (&mut self.project_selector, project_area),
             (&mut self.task_name_caption, task_name_caption_area),
             (&mut self.task_name_editor, task_name_editor_area),
+            (&mut self.task_description_caption, task_description_caption_area),
+            (&mut self.task_description_editor, task_description_editor_area),
         ];
 
         // the active should render last
@@ -195,7 +214,10 @@ impl WidgetTrait for Dialog {
     }
 
     fn set_draw_helper(&mut self, dh: DrawHelper) {
+        self.provider_selector.set_draw_helper(dh.clone());
+        self.project_selector.set_draw_helper(dh.clone());
         self.task_name_editor.set_draw_helper(dh.clone());
+        self.task_description_editor.set_draw_helper(dh.clone());
         self.draw_helper = Some(dh);
     }
 
@@ -231,6 +253,11 @@ impl KeyboardHandler for Dialog {
         }
 
         if self.task_name_editor.is_active() && self.task_name_editor.handle_key(key).await {
+            self.update_enabled_state().await;
+            return true;
+        }
+
+        if self.task_description_editor.is_active() && self.task_description_editor.handle_key(key).await {
             self.update_enabled_state().await;
             return true;
         }
