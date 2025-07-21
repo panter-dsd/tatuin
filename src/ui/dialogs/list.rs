@@ -122,6 +122,7 @@ where
     pub fn add_custom_widget(&mut self, item: T, w: Box<dyn WidgetTrait>) {
         self.items.add_item(item);
         self.custom_widgets.push(w);
+        self.calculate_width();
     }
 
     fn current_custom_widget_index(&self) -> Option<usize> {
@@ -183,7 +184,7 @@ where
     fn size(&self) -> Size {
         let mut s = self.items.size();
         s.height += 2;
-        s.width = std::cmp::max(s.width, self.width) + 2;
+        s.width = self.width + 1/*selector*/ + 2 /*borders*/;
         s
     }
 
