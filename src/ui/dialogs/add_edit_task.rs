@@ -11,6 +11,8 @@ use ratatui::{
 
 use crate::{
     provider::Provider,
+    task::Priority,
+    task_patch::DuePatchItem,
     types::ArcRwLock,
     ui::{
         draw_helper::DrawHelper,
@@ -43,6 +45,9 @@ pub struct Dialog {
 
     task_description_caption: Text,
     task_description_editor: TextEdit,
+
+    priority_selector: ComboBox,
+    due_date_selector: ComboBox,
 }
 crate::impl_widget_state_trait!(Dialog);
 
@@ -71,6 +76,24 @@ impl Dialog {
             task_name_editor: LineEdit::new(None),
             task_description_caption: Text::new("Task description"),
             task_description_editor: TextEdit::new(),
+            priority_selector: ComboBox::new(
+                "Priority",
+                &Priority::values()
+                    .iter()
+                    .map(|p| ComboBoxItem::from_text(p.to_string().as_str()))
+                    .collect::<Vec<ComboBoxItem>>(),
+            )
+            .current_item(&ComboBoxItem::from_text(Priority::Normal.to_string().as_str()))
+            .await,
+            due_date_selector: ComboBox::new(
+                "Due date",
+                &DuePatchItem::values()
+                    .iter()
+                    .map(|d| ComboBoxItem::from_text(d.to_string().as_str()))
+                    .collect::<Vec<ComboBoxItem>>(),
+            )
+            .current_item(&ComboBoxItem::from_text(DuePatchItem::Today.to_string().as_str()))
+            .await,
         };
         s.provider_selector.set_active(true);
         s.update_enabled_state().await;
@@ -83,6 +106,8 @@ impl Dialog {
             &mut self.project_selector,
             &mut self.task_name_editor,
             &mut self.task_description_editor,
+            &mut self.priority_selector,
+            &mut self.due_date_selector,
         ])
     }
 
@@ -109,6 +134,8 @@ impl Dialog {
         self.task_name_editor.set_enabled(provider_selected && project_selected);
         self.task_description_editor
             .set_enabled(provider_selected && project_selected && !self.task_name_editor.text().is_empty());
+        self.priority_selector.set_enabled(self.task_name_editor.is_enabled());
+        self.due_date_selector.set_enabled(self.task_name_editor.is_enabled());
     }
 
     async fn fill_project_selector_items(&mut self) {
@@ -169,10 +196,17 @@ impl WidgetTrait for Dialog {
 
         let left_captions_width = max_width(&[&self.task_name_caption, &self.task_description_caption]);
 
-        let [provider_and_project_area, task_name_area, task_description_area, _] = Layout::vertical([
+        let [
+            provider_and_project_area,
+            task_name_area,
+            task_description_area,
+            priority_and_due_area,
+            _,
+        ] = Layout::vertical([
             Constraint::Length(self.provider_selector.size().height),
             Constraint::Length(self.task_name_editor.size().height),
             Constraint::Length(self.task_description_editor.size().height),
+            Constraint::Length(self.priority_selector.size().height),
             Constraint::Fill(1),
         ])
         .areas(inner_area);
@@ -189,6 +223,9 @@ impl WidgetTrait for Dialog {
                 .areas(task_description_area);
         task_description_caption_area.y += self.task_description_editor.size().height / 2;
 
+        let [priority_area, due_date_area] =
+            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(priority_and_due_area);
+
         let mut to_render: Vec<(&mut dyn WidgetTrait, Rect)> = vec![
             (&mut self.provider_selector, provider_area),
             (&mut self.project_selector, project_area),
@@ -196,6 +233,8 @@ impl WidgetTrait for Dialog {
             (&mut self.task_name_editor, task_name_editor_area),
             (&mut self.task_description_caption, task_description_caption_area),
             (&mut self.task_description_editor, task_description_editor_area),
+            (&mut self.priority_selector, priority_area),
+            (&mut self.due_date_selector, due_date_area),
         ];
 
         // the active should render last
@@ -265,6 +304,14 @@ impl KeyboardHandler for Dialog {
 
         if self.task_description_editor.is_active() && self.task_description_editor.handle_key(key).await {
             self.update_enabled_state().await;
+            return true;
+        }
+
+        if self.priority_selector.is_active() && self.priority_selector.handle_key(key).await {
+            return true;
+        }
+
+        if self.due_date_selector.is_active() && self.due_date_selector.handle_key(key).await {
             return true;
         }
 
