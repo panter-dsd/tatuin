@@ -64,11 +64,14 @@ impl WidgetTrait for Button {
         let inner_area = block.inner(area);
         block.render(area, buf);
 
-        Text::from(self.title.as_str()).render(inner_area, buf);
+        Text::from(self.title.as_str()).centered().render(inner_area, buf);
     }
 
     fn size(&self) -> Size {
-        Size::new(self.width, 3)
+        Size::new(
+            self.width,
+            self.title.chars().filter(|c| *c == '\n').count() as u16 + 1 + 2,
+        )
     }
 
     fn as_any(&self) -> &dyn Any {
