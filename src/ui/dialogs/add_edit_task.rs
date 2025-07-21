@@ -21,7 +21,9 @@ use crate::{
         order_changer::OrderChanger,
         style,
         tasks_widget::ProvidersStorage,
-        widgets::{ComboBox, ComboBoxItem, LineEdit, Text, TextEdit, WidgetState, WidgetStateTrait, WidgetTrait},
+        widgets::{
+            Button, ComboBox, ComboBoxItem, LineEdit, Text, TextEdit, WidgetState, WidgetStateTrait, WidgetTrait,
+        },
     },
 };
 
@@ -48,6 +50,9 @@ pub struct Dialog {
 
     priority_selector: ComboBox,
     due_date_selector: ComboBox,
+
+    create_task_button: Button,
+    create_task_and_another_one: Button,
 }
 crate::impl_widget_state_trait!(Dialog);
 
@@ -95,6 +100,8 @@ impl Dialog {
             )
             .current_item(&ComboBoxItem::from_text(DuePatchItem::Today.to_string().as_str()))
             .await,
+            create_task_button: Button::new("Create a task and close\nCtrl+Enter"),
+            create_task_and_another_one: Button::new("Create a task\nShift+Enter"),
         };
         s.provider_selector.set_active(true);
         s.update_enabled_state().await;
@@ -133,10 +140,16 @@ impl Dialog {
         let project_selected = self.project_selector.value().await.is_some();
         self.project_selector.set_enabled(provider_selected);
         self.task_name_editor.set_enabled(provider_selected && project_selected);
-        self.task_description_editor
-            .set_enabled(provider_selected && project_selected && !self.task_name_editor.text().is_empty());
+        let can_create_task = provider_selected && project_selected && !self.task_name_editor.text().is_empty();
+        self.task_description_editor.set_enabled(can_create_task);
         self.priority_selector.set_enabled(self.task_name_editor.is_enabled());
         self.due_date_selector.set_enabled(self.task_name_editor.is_enabled());
+
+        self.create_task_button.set_enabled(can_create_task);
+        self.create_task_and_another_one.set_enabled(can_create_task);
+        self.create_task_button.set_active(self.create_task_button.is_enabled());
+        self.create_task_and_another_one
+            .set_active(self.create_task_and_another_one.is_enabled());
     }
 
     async fn fill_project_selector_items(&mut self) {
@@ -203,12 +216,14 @@ impl WidgetTrait for Dialog {
             task_description_area,
             priority_and_due_area,
             _,
+            buttons_area,
         ] = Layout::vertical([
             Constraint::Length(self.provider_selector.size().height),
             Constraint::Length(self.task_name_editor.size().height),
             Constraint::Length(self.task_description_editor.size().height),
             Constraint::Length(self.priority_selector.size().height),
             Constraint::Fill(1),
+            Constraint::Length(self.create_task_button.size().height),
         ])
         .areas(inner_area);
 
@@ -227,6 +242,21 @@ impl WidgetTrait for Dialog {
         let [priority_area, due_date_area] =
             Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(priority_and_due_area);
 
+        let [
+            _,
+            create_task_button_area,
+            _,
+            create_task_and_another_one_button_area,
+            _,
+        ] = Layout::horizontal([
+            Constraint::Fill(1),
+            Constraint::Fill(1),
+            Constraint::Length(5),
+            Constraint::Fill(1),
+            Constraint::Fill(1),
+        ])
+        .areas(buttons_area);
+
         let mut to_render: Vec<(&mut dyn WidgetTrait, Rect)> = vec![
             (&mut self.provider_selector, provider_area),
             (&mut self.project_selector, project_area),
@@ -236,6 +266,11 @@ impl WidgetTrait for Dialog {
             (&mut self.task_description_editor, task_description_editor_area),
             (&mut self.priority_selector, priority_area),
             (&mut self.due_date_selector, due_date_area),
+            (&mut self.create_task_button, create_task_button_area),
+            (
+                &mut self.create_task_and_another_one,
+                create_task_and_another_one_button_area,
+            ),
         ];
 
         // the active should render last
