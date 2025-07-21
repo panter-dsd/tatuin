@@ -57,6 +57,7 @@ impl Dialog {
             .read()
             .await
             .iter()
+            .filter(|p| p.possibilities.create_task)
             .map(|p| ComboBoxItem {
                 text: p.name.clone(),
                 data: String::new(),
