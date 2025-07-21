@@ -26,6 +26,15 @@ pub struct Item {
     pub data: String,
 }
 
+impl Item {
+    pub fn from_text(text: &str) -> Self {
+        Self {
+            text: text.to_string(),
+            data: String::new(),
+        }
+    }
+}
+
 struct InternalData {
     items: Vec<Item>,
     selected: Option<Item>,
@@ -112,6 +121,15 @@ impl ComboBox {
             widget_state: WidgetState::default(),
             internal_data,
         }
+    }
+
+    pub async fn current_item(self, item: &Item) -> Self {
+        let mut data = self.internal_data.write().await;
+        if data.items.iter().any(|i| i == item) {
+            data.selected = Some(item.clone());
+        }
+        drop(data);
+        self
     }
 
     pub async fn set_items(&self, items: &[Item]) {
