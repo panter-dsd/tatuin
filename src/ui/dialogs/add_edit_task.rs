@@ -252,6 +252,12 @@ impl KeyboardHandler for Dialog {
             return true;
         }
 
+        if self.task_name_editor.is_active() && key.code == KeyCode::Enter {
+            // Move to description on Enter
+            self.next_widget().await;
+            return true;
+        }
+
         if self.task_name_editor.is_active() && self.task_name_editor.handle_key(key).await {
             self.update_enabled_state().await;
             return true;
