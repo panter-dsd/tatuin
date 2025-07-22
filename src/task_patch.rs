@@ -45,20 +45,24 @@ impl DuePatchItem {
 
 pub struct TaskPatch {
     pub task: Option<Box<dyn TaskTrait>>,
-    pub state: Option<State>,
+    pub name: Option<String>,
+    pub description: Option<String>,
     pub due: Option<DuePatchItem>,
     pub priority: Option<Priority>,
+    pub state: Option<State>,
 }
 
 impl std::fmt::Display for TaskPatch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
-            "TaskPatch {{ task_id: {}, task_title: {} state: {:?}, due: {:?}, priority: {:?} }}",
+            "TaskPatch {{ task_id: {}, task_title: {} state: {:?}, due: {:?}, priority: {:?}, name: {:?}, description: {:?}",
             self.task.as_ref().map(|t| t.id()).unwrap_or("-".to_string()),
             self.task.as_ref().map(|t| t.text()).unwrap_or("-".to_string()),
             self.state,
             self.due,
-            self.priority
+            self.priority,
+            self.name,
+            self.description,
         ))
     }
 }
@@ -83,9 +87,11 @@ impl Clone for TaskPatch {
             } else {
                 None
             },
-            state: self.state.clone(),
+            name: self.name.clone(),
+            description: self.description.clone(),
             due: self.due.clone(),
             priority: self.priority.clone(),
+            state: self.state.clone(),
         }
     }
 }

@@ -539,9 +539,11 @@ impl TasksWidget {
                 Some(p) => p.state = Some(new_state),
                 None => self.changed_tasks.push(TaskPatch {
                     task: Some(t.clone_boxed()),
-                    state: Some(new_state),
+                    name: None,
+                    description: None,
                     due: None,
                     priority: None,
+                    state: Some(new_state),
                 }),
             }
         }
@@ -560,9 +562,11 @@ impl TasksWidget {
             Some(p) => p.due = Some(due.clone()),
             None => self.changed_tasks.push(TaskPatch {
                 task: Some(t.clone_boxed()),
-                state: None,
+                name: None,
+                description: None,
                 due: Some(due.clone()),
                 priority: None,
+                state: None,
             }),
         }
         self.recreate_current_task_row().await;
@@ -588,9 +592,11 @@ impl TasksWidget {
             }
             None => self.changed_tasks.push(TaskPatch {
                 task: Some(t.clone_boxed()),
-                state: None,
+                name: None,
+                description: None,
                 due: None,
                 priority: Some(priority.clone()),
+                state: None,
             }),
         }
         self.recreate_current_task_row().await;
@@ -643,6 +649,8 @@ impl KeyboardHandler for TasksWidget {
         let mut need_to_update_view = false;
         let mut new_due = None;
         let mut new_priority = None;
+        let mut task_patch = None;
+        let mut add_another_one_task = false;
 
         if let Some(d) = &mut self.dialog {
             need_to_update_view = true;
@@ -664,7 +672,16 @@ impl KeyboardHandler for TasksWidget {
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<Priority>>() {
                     new_priority = d.selected().clone();
                 }
+
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<AddEditTaskDialog>() {
+                    task_patch = d.task_patch().await;
+                    add_another_one_task = d.add_another_one();
+                }
                 self.dialog = None;
+
+                if let Some(dh) = &self.draw_helper {
+                    dh.write().await.hide_cursor();
+                }
             }
         };
         if let Some(due) = new_due {
@@ -673,9 +690,17 @@ impl KeyboardHandler for TasksWidget {
         if let Some(p) = new_priority {
             self.change_priority(&p).await;
         }
+        if let Some(tp) = task_patch {
+            tracing::debug!(task_patch = tp.to_string(), "Create a task");
+            todo!("implement me");
+        }
 
         if need_to_update_view {
             self.update_task_info_view().await;
+        }
+
+        if add_another_one_task {
+            self.show_add_task_dialog().await;
         }
 
         handled

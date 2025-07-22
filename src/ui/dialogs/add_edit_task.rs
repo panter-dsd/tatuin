@@ -12,7 +12,7 @@ use ratatui::{
 use crate::{
     provider::Provider,
     task::Priority,
-    task_patch::DuePatchItem,
+    task_patch::{DuePatchItem, TaskPatch},
     types::ArcRwLock,
     ui::{
         draw_helper::DrawHelper,
@@ -122,18 +122,22 @@ impl Dialog {
         s
     }
 
-    // pub async fn task_patch(&self) -> Option<TaskPatch> {
-    //     if !self.can_create_task() {
-    //         return None;
-    //     }
-    //
-    //     Some(TaskPatch {
-    //         task: None,
-    //         state: None,
-    //         due: Some(self.due_date_selector.value().await),
-    //         priority: Some(self.priority_selector.value().await),
-    //     })
-    // }
+    pub async fn task_patch(&self) -> Option<TaskPatch> {
+        if !self.can_create_task() {
+            return None;
+        }
+
+        let description = self.task_description_editor.text();
+
+        Some(TaskPatch {
+            task: None,
+            name: Some(self.task_name_editor.text()),
+            description: (!description.is_empty()).then_some(description),
+            due: self.due_date_selector.value().await.map(|item| item.data),
+            priority: self.priority_selector.value().await.map(|item| item.data),
+            state: None,
+        })
+    }
 
     pub fn add_another_one(&self) -> bool {
         self.add_another_one
