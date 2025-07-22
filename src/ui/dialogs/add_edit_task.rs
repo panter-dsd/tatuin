@@ -1,7 +1,7 @@
 use std::any::Any;
 
 use async_trait::async_trait;
-use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Layout, Rect, Size},
@@ -135,12 +135,17 @@ impl Dialog {
         }
     }
 
+    fn can_create_task(&self) -> bool {
+        self.task_name_editor.is_enabled() && !self.task_name_editor.text().is_empty()
+    }
+
     async fn update_enabled_state(&mut self) {
         let provider_selected = self.provider_selector.value().await.is_some();
         let project_selected = self.project_selector.value().await.is_some();
         self.project_selector.set_enabled(provider_selected);
         self.task_name_editor.set_enabled(provider_selected && project_selected);
-        let can_create_task = provider_selected && project_selected && !self.task_name_editor.text().is_empty();
+
+        let can_create_task = self.can_create_task();
         self.task_description_editor.set_enabled(can_create_task);
         self.priority_selector.set_enabled(self.task_name_editor.is_enabled());
         self.due_date_selector.set_enabled(self.task_name_editor.is_enabled());
@@ -312,6 +317,20 @@ impl WidgetTrait for Dialog {
 #[async_trait]
 impl KeyboardHandler for Dialog {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        tracing::debug!( modifiers=?key.modifiers, "Creating task");
+
+        if self.can_create_task() && key.code == KeyCode::Enter {
+            let mut handled = true;
+            match key.modifiers {
+                KeyModifiers::CONTROL => self.should_be_closed = true,
+                KeyModifiers::SHIFT => self.should_be_closed = true,
+                _ => handled = false,
+            }
+            if handled {
+                return true;
+            }
+        }
+
         let current_provider = self.provider_selector.value().await;
         if self.provider_selector.is_active() && self.provider_selector.handle_key(key).await {
             let new_provider = self.provider_selector.value().await;
