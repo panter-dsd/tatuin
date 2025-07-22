@@ -40,8 +40,8 @@ pub struct Dialog {
     widget_state: WidgetState,
     size: Size,
 
-    provider_selector: ComboBox,
-    project_selector: ComboBox,
+    provider_selector: ComboBox<String>,
+    project_selector: ComboBox<String>,
 
     task_name_caption: Text,
     task_name_editor: LineEdit,
@@ -49,8 +49,8 @@ pub struct Dialog {
     task_description_caption: Text,
     task_description_editor: TextEdit,
 
-    priority_selector: ComboBox,
-    due_date_selector: ComboBox,
+    priority_selector: ComboBox<Priority>,
+    due_date_selector: ComboBox<DuePatchItem>,
 
     create_task_button: Button,
     create_task_and_another_one: Button,
@@ -68,7 +68,7 @@ impl Dialog {
                 text: p.name.clone(),
                 data: String::new(),
             })
-            .collect::<Vec<ComboBoxItem>>();
+            .collect::<Vec<ComboBoxItem<String>>>();
 
         let mut s = Self {
             title: title.to_string(),
@@ -88,19 +88,31 @@ impl Dialog {
                 "Priority",
                 &Priority::values()
                     .iter()
-                    .map(|p| ComboBoxItem::from_text(p.to_string().as_str()))
-                    .collect::<Vec<ComboBoxItem>>(),
+                    .map(|p| ComboBoxItem {
+                        text: p.to_string(),
+                        data: p.clone(),
+                    })
+                    .collect::<Vec<ComboBoxItem<Priority>>>(),
             )
-            .current_item(&ComboBoxItem::from_text(Priority::Normal.to_string().as_str()))
+            .current_item(&ComboBoxItem {
+                text: Priority::Normal.to_string(),
+                data: Priority::Normal,
+            })
             .await,
             due_date_selector: ComboBox::new(
                 "Due date",
                 &DuePatchItem::values()
                     .iter()
-                    .map(|d| ComboBoxItem::from_text(d.to_string().as_str()))
-                    .collect::<Vec<ComboBoxItem>>(),
+                    .map(|d| ComboBoxItem {
+                        text: d.to_string(),
+                        data: d.clone(),
+                    })
+                    .collect::<Vec<ComboBoxItem<DuePatchItem>>>(),
             )
-            .current_item(&ComboBoxItem::from_text(DuePatchItem::Today.to_string().as_str()))
+            .current_item(&ComboBoxItem {
+                text: DuePatchItem::Today.to_string(),
+                data: DuePatchItem::Today,
+            })
             .await,
             create_task_button: Button::new("Create a task and close\nCtrl+Enter"),
             create_task_and_another_one: Button::new("Create a task\nShift+Enter"),
@@ -109,6 +121,19 @@ impl Dialog {
         s.update_enabled_state().await;
         s
     }
+
+    // pub async fn task_patch(&self) -> Option<TaskPatch> {
+    //     if !self.can_create_task() {
+    //         return None;
+    //     }
+    //
+    //     Some(TaskPatch {
+    //         task: None,
+    //         state: None,
+    //         due: Some(self.due_date_selector.value().await),
+    //         priority: Some(self.priority_selector.value().await),
+    //     })
+    // }
 
     pub fn add_another_one(&self) -> bool {
         self.add_another_one
@@ -185,7 +210,7 @@ impl Dialog {
                             text: p.name(),
                             data: p.id(),
                         })
-                        .collect::<Vec<ComboBoxItem>>(),
+                        .collect::<Vec<ComboBoxItem<_>>>(),
                 )
                 .await;
         }

@@ -21,35 +21,26 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(dead_code)]
-pub struct Item {
+pub struct Item<T> {
     pub text: String,
-    pub data: String,
+    pub data: T,
 }
 
-impl Item {
-    pub fn from_text(text: &str) -> Self {
-        Self {
-            text: text.to_string(),
-            data: String::new(),
-        }
-    }
-}
-
-struct InternalData {
-    items: Vec<Item>,
-    selected: Option<Item>,
+struct InternalData<T> {
+    items: Vec<Item<T>>,
+    selected: Option<Item<T>>,
     dialog: Option<ListDialog<String>>,
 }
 
-pub struct ComboBox {
+pub struct ComboBox<T> {
     caption: Text,
     editor: LineEdit,
     button: Button,
     widget_state: WidgetState,
-    internal_data: ArcRwLock<InternalData>,
+    internal_data: ArcRwLock<InternalData<T>>,
 }
 
-impl WidgetStateTrait for ComboBox {
+impl<T> WidgetStateTrait for ComboBox<T> {
     fn is_active(&self) -> bool {
         self.widget_state.is_active()
     }
@@ -77,14 +68,17 @@ impl WidgetStateTrait for ComboBox {
     }
 }
 
-impl std::fmt::Debug for ComboBox {
+impl<T> std::fmt::Debug for ComboBox<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "ComboBox")
     }
 }
 
-impl ComboBox {
-    pub fn new(caption: &str, items: &[Item]) -> Self {
+impl<T> ComboBox<T>
+where
+    T: Clone + Sync + Send + Eq + 'static,
+{
+    pub fn new(caption: &str, items: &[Item<T>]) -> Self {
         let button = Button::new("▽");
 
         let internal_data = Arc::new(RwLock::new(InternalData {
@@ -123,7 +117,7 @@ impl ComboBox {
         }
     }
 
-    pub async fn current_item(self, item: &Item) -> Self {
+    pub async fn current_item(self, item: &Item<T>) -> Self {
         let mut data = self.internal_data.write().await;
         if data.items.iter().any(|i| i == item) {
             data.selected = Some(item.clone());
@@ -132,19 +126,22 @@ impl ComboBox {
         self
     }
 
-    pub async fn set_items(&self, items: &[Item]) {
+    pub async fn set_items(&self, items: &[Item<T>]) {
         let mut data = self.internal_data.write().await;
         data.items = items.to_vec();
         data.selected = None;
     }
 
-    pub async fn value(&self) -> Option<Item> {
+    pub async fn value(&self) -> Option<Item<T>> {
         self.internal_data.read().await.selected.clone()
     }
 }
 
 #[async_trait]
-impl WidgetTrait for ComboBox {
+impl<T> WidgetTrait for ComboBox<T>
+where
+    T: Clone + Send + Sync + 'static,
+{
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let [mut caption_area, editor_area, button_area] = Layout::horizontal([
             Constraint::Length(self.caption.size().width),
@@ -193,7 +190,10 @@ impl WidgetTrait for ComboBox {
 }
 
 #[async_trait]
-impl KeyboardHandler for ComboBox {
+impl<T> KeyboardHandler for ComboBox<T>
+where
+    T: Clone + Send + Sync,
+{
     #[tracing::instrument(level = "debug", target = "handle_keyboard")]
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         if !self.is_active() {
@@ -232,6 +232,9 @@ impl KeyboardHandler for ComboBox {
 }
 
 #[async_trait]
-impl MouseHandler for ComboBox {
+impl<T> MouseHandler for ComboBox<T>
+where
+    T: Sync + Send,
+{
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }
