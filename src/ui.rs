@@ -17,7 +17,7 @@ use async_trait::async_trait;
 use color_eyre::Result;
 use crossterm::event::{
     DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
-    MouseEvent,
+    KeyboardEnhancementFlags, MouseEvent, PushKeyboardEnhancementFlags,
 };
 use ratatui::{
     DefaultTerminal,
@@ -273,6 +273,11 @@ impl App {
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         execute!(std::io::stdout(), EnableMouseCapture)?;
+        execute!(
+            std::io::stdout(),
+            PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+        )?;
+
         for b in self.app_blocks.values_mut() {
             let mut b = b.write().await;
             self.all_shortcuts.extend(b.activate_shortcuts().iter().map(|s| {
