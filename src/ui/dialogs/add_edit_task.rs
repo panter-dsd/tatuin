@@ -34,6 +34,7 @@ const FOOTER: &str = "Input text and press Enter for applying or Esc for cancell
 pub struct Dialog {
     title: String,
     should_be_closed: bool,
+    add_another_one: bool,
     draw_helper: Option<DrawHelper>,
     providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
     widget_state: WidgetState,
@@ -72,6 +73,7 @@ impl Dialog {
         let mut s = Self {
             title: title.to_string(),
             should_be_closed: false,
+            add_another_one: false,
             draw_helper: None,
             providers_storage,
             provider_selector: ComboBox::new("Provider", &provider_items),
@@ -106,6 +108,10 @@ impl Dialog {
         s.provider_selector.set_active(true);
         s.update_enabled_state().await;
         s
+    }
+
+    pub fn add_another_one(&self) -> bool {
+        self.add_another_one
     }
 
     fn order_calculator(&mut self) -> OrderChanger<'_> {
@@ -317,13 +323,14 @@ impl WidgetTrait for Dialog {
 #[async_trait]
 impl KeyboardHandler for Dialog {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
-        tracing::debug!( modifiers=?key.modifiers, "Creating task");
-
         if self.can_create_task() && key.code == KeyCode::Enter {
             let mut handled = true;
             match key.modifiers {
                 KeyModifiers::CONTROL => self.should_be_closed = true,
-                KeyModifiers::SHIFT => self.should_be_closed = true,
+                KeyModifiers::SHIFT => {
+                    self.should_be_closed = true;
+                    self.add_another_one = true;
+                }
                 _ => handled = false,
             }
             if handled {
