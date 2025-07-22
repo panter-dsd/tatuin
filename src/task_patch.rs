@@ -44,7 +44,7 @@ impl DuePatchItem {
 }
 
 pub struct TaskPatch {
-    pub task: Box<dyn TaskTrait>,
+    pub task: Option<Box<dyn TaskTrait>>,
     pub state: Option<State>,
     pub due: Option<DuePatchItem>,
     pub priority: Option<Priority>,
@@ -54,8 +54,8 @@ impl std::fmt::Display for TaskPatch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "TaskPatch {{ task_id: {}, task_title: {} state: {:?}, due: {:?}, priority: {:?} }}",
-            self.task.id(),
-            self.task.text(),
+            self.task.as_ref().map(|t| t.id()).unwrap_or("-".to_string()),
+            self.task.as_ref().map(|t| t.text()).unwrap_or("-".to_string()),
             self.state,
             self.due,
             self.priority
@@ -69,14 +69,20 @@ impl TaskPatch {
     }
 
     pub fn is_task(&self, task: &dyn TaskTrait) -> bool {
-        self.task.id() == task.id() && self.task.provider() == task.provider()
+        self.task
+            .as_ref()
+            .is_some_and(|t| t.id() == task.id() && t.provider() == task.provider())
     }
 }
 
 impl Clone for TaskPatch {
     fn clone(&self) -> Self {
         Self {
-            task: self.task.clone_boxed(),
+            task: if self.task.is_some() {
+                Some(self.task.as_ref().unwrap().clone_boxed())
+            } else {
+                None
+            },
             state: self.state.clone(),
             due: self.due.clone(),
             priority: self.priority.clone(),

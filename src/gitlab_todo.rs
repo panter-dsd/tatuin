@@ -333,8 +333,9 @@ impl ProviderTrait for Provider {
 
         for p in patches {
             tracing::debug!(target:"gitlab_todo_patch_task", patch=p.to_string(), "Apply a patch");
+            let task = p.task.as_ref().unwrap();
 
-            let task = match p.task.as_any().downcast_ref::<Task>() {
+            let task = match task.as_any().downcast_ref::<Task>() {
                 Some(t) => t,
                 None => panic!("Wrong casting!"),
             };

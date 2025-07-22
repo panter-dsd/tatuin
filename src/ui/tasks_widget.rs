@@ -312,13 +312,8 @@ impl TasksWidget {
             let patches = self
                 .changed_tasks
                 .iter()
-                .filter(|c| &c.task.provider() == name)
-                .map(|c| TaskPatch {
-                    task: c.task.clone_boxed(),
-                    state: c.state.clone(),
-                    due: c.due.clone(),
-                    priority: c.priority.clone(),
-                })
+                .filter(|c| c.task.as_ref().is_some_and(|t| &t.provider() == name))
+                .cloned()
                 .collect::<Vec<TaskPatch>>();
 
             if patches.is_empty() {
@@ -329,8 +324,12 @@ impl TasksWidget {
             self.process_patch_errors(name, &errors).await;
 
             self.changed_tasks.retain(|c| {
-                let patched = patches.iter().any(|tp| c.is_task(tp.task.as_ref()))
-                    && !errors.iter().any(|pe| pe.is_task(c.task.as_ref()));
+                let patched = patches
+                    .iter()
+                    .any(|tp| tp.task.as_ref().is_some_and(|t| c.is_task(t.as_ref())))
+                    && !errors
+                        .iter()
+                        .any(|pe| c.task.as_ref().is_some_and(|t| pe.is_task(t.as_ref())));
                 !patched
             });
 
@@ -395,7 +394,7 @@ impl TasksWidget {
             self.all_tasks
                 .iter()
                 .find(|t| c.is_task(t.as_ref()))
-                .is_some_and(|t| t.state() == c.task.state())
+                .is_some_and(|t| c.task.as_ref().is_some_and(|task| t.state() == task.state()))
         });
     }
 
@@ -539,7 +538,7 @@ impl TasksWidget {
             match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
                 Some(p) => p.state = Some(new_state),
                 None => self.changed_tasks.push(TaskPatch {
-                    task: t.clone_boxed(),
+                    task: Some(t.clone_boxed()),
                     state: Some(new_state),
                     due: None,
                     priority: None,
@@ -560,7 +559,7 @@ impl TasksWidget {
         match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
             Some(p) => p.due = Some(due.clone()),
             None => self.changed_tasks.push(TaskPatch {
-                task: t.clone_boxed(),
+                task: Some(t.clone_boxed()),
                 state: None,
                 due: Some(due.clone()),
                 priority: None,
@@ -588,7 +587,7 @@ impl TasksWidget {
                 }
             }
             None => self.changed_tasks.push(TaskPatch {
-                task: t.clone_boxed(),
+                task: Some(t.clone_boxed()),
                 state: None,
                 due: None,
                 priority: Some(priority.clone()),

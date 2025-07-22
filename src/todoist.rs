@@ -160,23 +160,25 @@ impl ProviderTrait for Provider {
         let mut errors = Vec::new();
 
         for p in patches {
+            let task = p.task.as_ref().unwrap();
+
             if let Some(state) = &p.state {
                 match state {
-                    State::Completed => match self.c.close_task(p.task.id().as_str()).await {
+                    State::Completed => match self.c.close_task(task.id().as_str()).await {
                         Ok(_) => self.tasks.clear(),
                         Err(e) => errors.push(PatchError {
-                            task: p.task.clone_boxed(),
+                            task: task.clone_boxed(),
                             error: e.to_string(),
                         }),
                     },
                     State::InProgress | State::Unknown(_) => errors.push(PatchError {
-                        task: p.task.clone_boxed(),
+                        task: task.clone_boxed(),
                         error: format!("The state {state} is unsupported"),
                     }),
-                    State::Uncompleted => match self.c.reopen_task(p.task.id().as_str()).await {
+                    State::Uncompleted => match self.c.reopen_task(task.id().as_str()).await {
                         Ok(_) => self.tasks.clear(),
                         Err(e) => errors.push(PatchError {
-                            task: p.task.clone_boxed(),
+                            task: task.clone_boxed(),
                             error: e.to_string(),
                         }),
                     },
@@ -199,10 +201,10 @@ impl ProviderTrait for Provider {
                     }),
                     priority: p.priority.as_ref().map(task::priority_to_int),
                 };
-                match self.c.update_task(p.task.id().as_str(), &r).await {
+                match self.c.update_task(task.id().as_str(), &r).await {
                     Ok(_) => self.tasks.clear(),
                     Err(e) => errors.push(PatchError {
-                        task: p.task.clone_boxed(),
+                        task: task.clone_boxed(),
                         error: e.to_string(),
                     }),
                 }

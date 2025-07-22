@@ -75,7 +75,9 @@ impl ProviderTrait for Provider {
         let mut errors = Vec::new();
         let now = chrono::Utc::now();
         for p in patches.iter() {
-            match p.task.as_any().downcast_ref::<task::Task>() {
+            let task = p.task.as_ref().unwrap();
+
+            match task.as_any().downcast_ref::<task::Task>() {
                 Some(t) => client_patches.push(patch::TaskPatch {
                     task: t,
                     state: p.state.clone().map(|s| s.into()),
