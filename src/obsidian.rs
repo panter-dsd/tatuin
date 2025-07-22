@@ -8,7 +8,7 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{Possibilities, ProviderTrait, StringError};
+use crate::provider::{Capabilities, ProviderTrait, StringError};
 use crate::task::Task as TaskTrait;
 use crate::task_patch::{PatchError, TaskPatch};
 use async_trait::async_trait;
@@ -107,7 +107,7 @@ impl ProviderTrait for Provider {
         self.color
     }
 
-    fn possibilities(&self) -> Possibilities {
-        Possibilities { create_task: false }
+    fn capabilities(&self) -> Capabilities {
+        Capabilities { create_task: true }
     }
 }

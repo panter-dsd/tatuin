@@ -4,7 +4,7 @@ use crate::filter;
 use crate::gitlab::client::{Client, UpdateIssueRequest};
 use crate::gitlab::structs;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{Possibilities, ProviderTrait, StringError};
+use crate::provider::{Capabilities, ProviderTrait, StringError};
 use crate::task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group};
 use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
@@ -363,7 +363,7 @@ impl ProviderTrait for Provider {
         self.color
     }
 
-    fn possibilities(&self) -> Possibilities {
-        Possibilities { create_task: false }
+    fn capabilities(&self) -> Capabilities {
+        Capabilities { create_task: false }
     }
 }

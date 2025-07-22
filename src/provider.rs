@@ -33,7 +33,7 @@ impl std::fmt::Display for StringError {
 }
 
 #[derive(Debug)]
-pub struct Possibilities {
+pub struct Capabilities {
     pub create_task: bool,
 }
 
@@ -50,13 +50,13 @@ pub trait ProviderTrait: Send + Sync + Debug {
     async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError>;
     async fn reload(&mut self);
     fn color(&self) -> Color;
-    fn possibilities(&self) -> Possibilities;
+    fn capabilities(&self) -> Capabilities;
 }
 
 pub struct Provider {
     pub name: String,
     pub type_name: String,
     pub color: Color,
-    pub possibilities: Possibilities,
+    pub possibilities: Capabilities,
     pub provider: ArcRwLock<Box<dyn ProviderTrait>>,
 }

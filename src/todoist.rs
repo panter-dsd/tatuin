@@ -6,7 +6,7 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{Possibilities, ProviderTrait, StringError};
+use crate::provider::{Capabilities, ProviderTrait, StringError};
 use crate::task::{State, Task as TaskTrait};
 use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
 use ratatui::style::Color;
@@ -221,7 +221,7 @@ impl ProviderTrait for Provider {
         self.color
     }
 
-    fn possibilities(&self) -> Possibilities {
-        Possibilities { create_task: true }
+    fn capabilities(&self) -> Capabilities {
+        Capabilities { create_task: true }
     }
 }

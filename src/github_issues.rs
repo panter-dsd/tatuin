@@ -4,7 +4,7 @@ use crate::{
     filter,
     github::{client::Client, structs},
     project::Project as ProjectTrait,
-    provider::{Possibilities, ProviderTrait, StringError},
+    provider::{Capabilities, ProviderTrait, StringError},
     task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
     task_patch::{PatchError, TaskPatch},
 };
@@ -192,7 +192,7 @@ impl ProviderTrait for Provider {
         self.color
     }
 
-    fn possibilities(&self) -> Possibilities {
-        Possibilities { create_task: false }
+    fn capabilities(&self) -> Capabilities {
+        Capabilities { create_task: false }
     }
 }
