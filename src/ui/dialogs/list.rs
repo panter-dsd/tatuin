@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use std::{any::Any, fmt::Display};
+use std::{any::Any, fmt::Display, sync::Arc};
 
 use super::DialogTrait;
 use crate::ui::{
@@ -25,7 +25,7 @@ pub struct Dialog<T> {
     title: String,
     width: u16,
     items: SelectableList<T>,
-    custom_widgets: Vec<Box<dyn WidgetTrait>>,
+    custom_widgets: Vec<Arc<dyn WidgetTrait>>,
     should_be_closed: bool,
     selected_item: Option<T>,
     show_top_title: bool,
@@ -114,15 +114,19 @@ where
         &self.selected_item
     }
 
-    pub fn selected_custom_widget(&self) -> Option<&dyn WidgetTrait> {
+    pub fn selected_custom_widget(&self) -> Option<Arc<dyn WidgetTrait>> {
         self.current_custom_widget_index()
-            .map(|i| self.custom_widgets[i].as_ref() as &dyn WidgetTrait)
+            .map(|i| self.custom_widgets[i].clone())
     }
 
-    pub fn add_custom_widget(&mut self, item: T, w: Box<dyn WidgetTrait>) {
+    pub fn add_custom_widget(&mut self, item: T, w: Arc<dyn WidgetTrait>) {
         self.items.add_item(item);
         self.custom_widgets.push(w);
         self.calculate_width();
+    }
+
+    pub fn custom_widgets(&self) -> Vec<Arc<dyn WidgetTrait>> {
+        self.custom_widgets.clone()
     }
 
     fn current_custom_widget_index(&self) -> Option<usize> {
@@ -177,7 +181,7 @@ where
                 1,
             );
 
-            w.render(rect, buf).await;
+            Arc::get_mut(w).unwrap().render(rect, buf).await;
         }
     }
 
@@ -222,7 +226,7 @@ where
 {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         for w in self.custom_widgets.iter_mut() {
-            if w.handle_key(key).await {
+            if Arc::get_mut(w).unwrap().handle_key(key).await {
                 return true;
             }
         }
@@ -243,12 +247,12 @@ where
             }
             KeyCode::Char('l') | KeyCode::Right => {
                 if let Some(idx) = self.current_custom_widget_index() {
-                    self.custom_widgets[idx].set_active(true);
+                    Arc::get_mut(&mut self.custom_widgets[idx]).unwrap().set_active(true);
                 }
             }
             KeyCode::Char('h') | KeyCode::Left => {
                 if let Some(idx) = self.current_custom_widget_index() {
-                    self.custom_widgets[idx].set_active(false);
+                    Arc::get_mut(&mut self.custom_widgets[idx]).unwrap().set_active(false);
                 }
             }
             _ => {}

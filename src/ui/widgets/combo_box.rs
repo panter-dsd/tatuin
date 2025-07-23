@@ -1,4 +1,4 @@
-use std::{any::Any, sync::Arc};
+use std::{any::Any, fmt::Display, sync::Arc};
 
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -29,6 +29,7 @@ pub struct Item<T> {
 struct InternalData<T> {
     items: Vec<Item<T>>,
     selected: Option<Item<T>>,
+    custom_widgets: Vec<Arc<dyn WidgetTrait>>,
     dialog: Option<ListDialog<String>>,
 }
 
@@ -84,6 +85,7 @@ where
         let internal_data = Arc::new(RwLock::new(InternalData {
             items: items.to_vec(),
             selected: None,
+            custom_widgets: Vec::new(),
             dialog: None,
         }));
 
@@ -94,12 +96,27 @@ where
             async move {
                 loop {
                     tokio::select! {
-                        _ = rx.recv() => {
+                        r = rx.recv() => {
+                            if r.is_err() {
+                                return;
+                            }
                             let mut data = internal_data.write().await;
-                            let items = data.items.iter().map(|item| item.text.clone()).collect::<Vec<String>>();
+                            let custom_widgets_count = data.custom_widgets.len();
+                            let items = data.items.iter().take(data.items.len() - custom_widgets_count)
+                                        .map(|item| item.text.clone()).collect::<Vec<String>>();
                             if !items.is_empty() {
                                 let selected = data.selected.as_ref().map(|item| item.text.clone()).unwrap_or_default();
-                                let d = ListDialog::new(&items, selected.as_str()).show_top_title(false).show_bottom_title(false);
+                                let mut d = ListDialog::new(&items, selected.as_str()).show_top_title(false).show_bottom_title(false);
+
+                                // clear active flag
+                                for w in data.custom_widgets.iter_mut() {
+                                    Arc::get_mut(w).unwrap().set_active(false);
+                                }
+
+                                for (i, w) in data.custom_widgets.iter().enumerate() {
+                                    d.add_custom_widget(data.items[data.items.len() - custom_widgets_count + i].text.clone(), w.clone());
+                                }
+                                data.custom_widgets.clear();
                                 data.dialog = Some(d);
                             }
                         }
@@ -115,6 +132,12 @@ where
             widget_state: WidgetState::default(),
             internal_data,
         }
+    }
+
+    pub async fn add_custom_widget(&mut self, item: Item<T>, w: Arc<dyn WidgetTrait>) {
+        let mut data = self.internal_data.write().await;
+        data.items.push(item);
+        data.custom_widgets.push(w);
     }
 
     pub async fn current_item(self, item: &Item<T>) -> Self {
@@ -140,7 +163,7 @@ where
 #[async_trait]
 impl<T> WidgetTrait for ComboBox<T>
 where
-    T: Clone + Send + Sync + 'static,
+    T: Clone + Send + Sync + Display + 'static,
 {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let [mut caption_area, editor_area, button_area] = Layout::horizontal([
@@ -210,6 +233,7 @@ where
             if handled.is_some_and(|h| h) && d.should_be_closed() {
                 should_delete_dialog = true;
                 selected = d.selected().clone();
+                data.custom_widgets = d.custom_widgets();
             }
         }
 

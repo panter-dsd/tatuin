@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, sync::Arc};
 
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent};
@@ -11,7 +11,7 @@ use ratatui::{
 
 use crate::{
     provider::Provider,
-    task::Priority,
+    task::{DateTimeUtc, Priority},
     task_patch::{DuePatchItem, TaskPatch},
     types::ArcRwLock,
     ui::{
@@ -22,7 +22,8 @@ use crate::{
         style,
         tasks_widget::ProvidersStorage,
         widgets::{
-            Button, ComboBox, ComboBoxItem, LineEdit, Text, TextEdit, WidgetState, WidgetStateTrait, WidgetTrait,
+            Button, ComboBox, ComboBoxItem, DateEditor, LineEdit, Text, TextEdit, WidgetState, WidgetStateTrait,
+            WidgetTrait,
         },
     },
 };
@@ -70,6 +71,32 @@ impl Dialog {
             })
             .collect::<Vec<ComboBoxItem<String>>>();
 
+        let mut due_date_selector = ComboBox::new(
+            "Due date",
+            &DuePatchItem::values()
+                .iter()
+                .map(|d| ComboBoxItem {
+                    text: d.to_string(),
+                    data: d.clone(),
+                })
+                .collect::<Vec<ComboBoxItem<DuePatchItem>>>(),
+        )
+        .current_item(&ComboBoxItem {
+            text: DuePatchItem::Today.to_string(),
+            data: DuePatchItem::Today,
+        })
+        .await;
+
+        due_date_selector
+            .add_custom_widget(
+                ComboBoxItem {
+                    text: "Custom".to_string(),
+                    data: DuePatchItem::Custom(DateTimeUtc::default()),
+                },
+                Arc::new(DateEditor::new(None)),
+            )
+            .await;
+
         let mut s = Self {
             title: title.to_string(),
             should_be_closed: false,
@@ -99,21 +126,7 @@ impl Dialog {
                 data: Priority::Normal,
             })
             .await,
-            due_date_selector: ComboBox::new(
-                "Due date",
-                &DuePatchItem::values()
-                    .iter()
-                    .map(|d| ComboBoxItem {
-                        text: d.to_string(),
-                        data: d.clone(),
-                    })
-                    .collect::<Vec<ComboBoxItem<DuePatchItem>>>(),
-            )
-            .current_item(&ComboBoxItem {
-                text: DuePatchItem::Today.to_string(),
-                data: DuePatchItem::Today,
-            })
-            .await,
+            due_date_selector,
             create_task_button: Button::new("Create a task and close\nCtrl+Enter"),
             create_task_and_another_one: Button::new("Create a task\nShift+Enter"),
         };

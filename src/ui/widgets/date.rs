@@ -31,14 +31,14 @@ enum Element {
     Day,
 }
 
-pub struct DateTimeEditor {
+pub struct DateEditor {
     dt: DateTimeUtc,
     current_element: Element,
     widget_state: WidgetState,
 }
-crate::impl_widget_state_trait!(DateTimeEditor);
+crate::impl_widget_state_trait!(DateEditor);
 
-impl DateTimeEditor {
+impl DateEditor {
     pub fn new(dt: Option<DateTimeUtc>) -> Self {
         Self {
             dt: clear_time(&dt.unwrap_or(chrono::Local::now().to_utc())),
@@ -48,7 +48,7 @@ impl DateTimeEditor {
     }
 
     pub fn value(&self) -> DateTimeUtc {
-        self.dt
+        clear_time(&self.dt)
     }
 
     fn style(&self, element: Element) -> Style {
@@ -69,7 +69,7 @@ impl DateTimeEditor {
 }
 
 #[async_trait]
-impl WidgetTrait for DateTimeEditor {
+impl WidgetTrait for DateEditor {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let [
             year_area,
@@ -111,7 +111,7 @@ impl WidgetTrait for DateTimeEditor {
 }
 
 #[async_trait]
-impl KeyboardHandler for DateTimeEditor {
+impl KeyboardHandler for DateEditor {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         if !self.is_active() {
             return false;
@@ -155,6 +155,6 @@ impl KeyboardHandler for DateTimeEditor {
 }
 
 #[async_trait]
-impl MouseHandler for DateTimeEditor {
+impl MouseHandler for DateEditor {
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }

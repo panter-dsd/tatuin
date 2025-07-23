@@ -8,7 +8,7 @@ use super::{
     keyboard_handler::KeyboardHandler,
     mouse_handler::MouseHandler,
     shortcut::Shortcut,
-    widgets::{DateTimeEditor, TaskRow, WidgetState, WidgetStateTrait, WidgetTrait},
+    widgets::{DateEditor, TaskRow, WidgetState, WidgetStateTrait, WidgetTrait},
 };
 use crate::{
     async_jobs::{AsyncJob, AsyncJobStorage},
@@ -16,7 +16,7 @@ use crate::{
     patched_task::PatchedTask,
     project::Project as ProjectTrait,
     provider::Provider,
-    task::{self, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
+    task::{self, DateTimeUtc, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
     types::ArcRwLock,
 };
@@ -41,7 +41,14 @@ impl std::fmt::Display for DuePatchItem {
             DuePatchItem::ThisWeekend => write!(f, "This weekend"),
             DuePatchItem::NextWeek => write!(f, "Next week (Monday)"),
             DuePatchItem::NoDate => write!(f, "No date"),
-            DuePatchItem::Custom(_) => write!(f, "Custom"),
+            DuePatchItem::Custom(d) => {
+                if d == &DateTimeUtc::default() {
+                    write!(f, "Custom")
+                } else {
+                    let tz = Local::now().timezone();
+                    write!(f, "Custom ({})", datetime_to_str(Some(*d), &tz))
+                }
+            }
         }
     }
 }
@@ -469,8 +476,8 @@ impl TasksWidget {
                 datetime_to_str(t.due(), &Local::now().timezone()).as_str(),
             );
             d.add_custom_widget(
-                DuePatchItem::Custom(t.due().unwrap_or_default()),
-                Box::new(DateTimeEditor::new(t.due())),
+                DuePatchItem::Custom(DateTimeUtc::default()),
+                Arc::new(DateEditor::new(t.due())),
             );
             self.dialog = Some(Box::new(d));
             self.is_global_dialog = false;
@@ -660,7 +667,7 @@ impl KeyboardHandler for TasksWidget {
                     new_due = d.selected().as_ref().map(|p| match p {
                         DuePatchItem::Custom(_) => {
                             let w = d.selected_custom_widget().unwrap();
-                            if let Some(w) = w.as_any().downcast_ref::<DateTimeEditor>() {
+                            if let Some(w) = w.as_any().downcast_ref::<DateEditor>() {
                                 DuePatchItem::Custom(w.value())
                             } else {
                                 panic!("Unexpected custom widget type")
