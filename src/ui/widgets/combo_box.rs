@@ -1,4 +1,4 @@
-use std::{any::Any, fmt::Display, sync::Arc};
+use std::{any::Any, sync::Arc};
 
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -163,7 +163,7 @@ where
 #[async_trait]
 impl<T> WidgetTrait for ComboBox<T>
 where
-    T: Clone + Send + Sync + Display + 'static,
+    T: Clone + Send + Sync + 'static,
 {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let [mut caption_area, editor_area, button_area] = Layout::horizontal([
