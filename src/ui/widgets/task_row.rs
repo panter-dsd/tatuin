@@ -2,8 +2,8 @@
 
 use super::{MarkdownLine, Text, WidgetState, WidgetStateTrait, WidgetTrait};
 use crate::{
-    task::{self, Task as TaskTrait, datetime_to_str},
-    task_patch::{DuePatchItem, TaskPatch},
+    task::{self, Task as TaskTrait},
+    task_patch::TaskPatch,
     ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style},
 };
 use async_trait::async_trait;
@@ -52,10 +52,7 @@ impl TaskRow {
                 state = *s;
             }
             if let Some(d) = &patch.due {
-                due = match d {
-                    DuePatchItem::Custom(d) => format!("Custom ({})", datetime_to_str(Some(*d), &tz)),
-                    _ => d.to_string(),
-                }
+                due = d.to_string();
             }
             if let Some(p) = &patch.priority {
                 priority = *p;
