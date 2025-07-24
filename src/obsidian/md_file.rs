@@ -282,7 +282,7 @@ fn extract_priority(text: &str) -> (String, Priority) {
     let mut result_text = text.chars().take(last.1 - 1).collect::<String>();
     result_text.push_str(text.to_string().chars().skip(last.1 + 1).collect::<String>().as_str());
 
-    (result_text, last.0.clone())
+    (result_text, last.0)
 }
 
 #[cfg(test)]
