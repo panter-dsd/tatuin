@@ -53,6 +53,19 @@ impl std::fmt::Display for DuePatchItem {
     }
 }
 
+#[derive(Debug, Default)]
+struct Patch {
+    provider_name: Option<String>,
+    project_id: Option<String>,
+    task_patch: Option<TaskPatch>,
+}
+
+impl Patch {
+    fn is_valid(&self) -> bool {
+        self.provider_name.is_some() && self.project_id.is_some() && self.task_patch.is_some()
+    }
+}
+
 pub trait ProvidersStorage<T>: Send + Sync {
     fn iter_mut(&mut self) -> IterMut<'_, T>;
     fn iter(&self) -> Iter<'_, T>;
@@ -637,6 +650,9 @@ impl TasksWidget {
         self.dialog = Some(Box::new(d));
         self.is_global_dialog = true;
     }
+
+    #[tracing::instrument(level = "info", target = "tasks_widget")]
+    async fn create_or_update_task(&mut self, patch: &Patch) {}
 }
 
 #[async_trait]
@@ -656,7 +672,7 @@ impl KeyboardHandler for TasksWidget {
         let mut need_to_update_view = false;
         let mut new_due = None;
         let mut new_priority = None;
-        let mut task_patch = None;
+        let mut patch = Patch::default();
         let mut add_another_one_task = false;
 
         if let Some(d) = &mut self.dialog {
@@ -681,7 +697,9 @@ impl KeyboardHandler for TasksWidget {
                 }
 
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<AddEditTaskDialog>() {
-                    task_patch = d.task_patch().await;
+                    patch.provider_name = d.provider_name().await;
+                    patch.project_id = d.project_id().await;
+                    patch.task_patch = d.task_patch().await;
                     add_another_one_task = d.add_another_one();
                 }
                 self.dialog = None;
@@ -691,15 +709,17 @@ impl KeyboardHandler for TasksWidget {
                 }
             }
         };
+
         if let Some(due) = new_due {
             self.change_due_date(&due).await;
         }
+
         if let Some(p) = new_priority {
             self.change_priority(&p).await;
         }
-        if let Some(tp) = task_patch {
-            tracing::debug!(task_patch = tp.to_string(), "Create a task");
-            todo!("implement me");
+
+        if patch.is_valid() {
+            self.create_or_update_task(&patch).await;
         }
 
         if need_to_update_view {
@@ -808,6 +828,12 @@ impl WidgetTrait for TasksWidget {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+impl std::fmt::Debug for TasksWidget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TasksWidget")
     }
 }
 

@@ -67,6 +67,12 @@ impl std::fmt::Display for TaskPatch {
     }
 }
 
+impl std::fmt::Debug for TaskPatch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.to_string().as_str())
+    }
+}
+
 impl TaskPatch {
     pub fn is_empty(&self) -> bool {
         self.state.is_none() && self.due.is_none() && self.priority.is_none()

@@ -76,7 +76,7 @@ impl Dialog {
             .await
             .iter()
             .filter(|p| p.possibilities.create_task)
-            .map(|p| ComboBoxItem::new(p.name.as_str(), String::new()))
+            .map(|p| ComboBoxItem::new(p.name.as_str(), p.name.clone()))
             .collect::<Vec<ComboBoxItem<String>>>();
 
         let mut due_date_selector = ComboBox::new(
@@ -133,6 +133,22 @@ impl Dialog {
         s.provider_selector.set_active(true);
         s.update_enabled_state().await;
         s
+    }
+
+    pub async fn provider_name(&self) -> Option<String> {
+        if !self.can_create_task() {
+            return None;
+        }
+
+        self.provider_selector.value().await.map(|item| item.data().to_string())
+    }
+
+    pub async fn project_id(&self) -> Option<String> {
+        if !self.can_create_task() {
+            return None;
+        }
+
+        self.project_selector.value().await.map(|item| item.data().to_string())
     }
 
     pub async fn task_patch(&self) -> Option<TaskPatch> {
