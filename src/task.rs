@@ -13,7 +13,7 @@ use std::fmt::Write;
 
 pub type DateTimeUtc = DateTime<Utc>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum State {
     Unknown(char),
     Uncompleted,

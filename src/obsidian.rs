@@ -80,12 +80,12 @@ impl ProviderTrait for Provider {
             match task.as_any().downcast_ref::<task::Task>() {
                 Some(t) => client_patches.push(patch::TaskPatch {
                     task: t,
-                    state: p.state.clone().map(|s| s.into()),
+                    state: p.state.map(|s| s.into()),
                     due: match &p.due {
                         Some(due) => due.to_date(&now),
                         None => None,
                     },
-                    priority: p.priority.clone(),
+                    priority: p.priority,
                 }),
                 None => panic!("Wrong casting!"),
             };

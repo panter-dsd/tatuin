@@ -49,7 +49,7 @@ impl TaskRow {
         if let Some(patch) = changed_tasks.iter().find(|c| c.is_task(t)) {
             uncommitted = !patch.is_empty();
             if let Some(s) = &patch.state {
-                state = s.clone();
+                state = *s;
             }
             if let Some(d) = &patch.due {
                 due = match d {
@@ -58,7 +58,7 @@ impl TaskRow {
                 }
             }
             if let Some(p) = &patch.priority {
-                priority = p.clone();
+                priority = *p;
             }
         }
 

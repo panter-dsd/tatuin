@@ -16,7 +16,7 @@ pub enum DuePatchItem {
 }
 
 impl DuePatchItem {
-    pub fn to_date(&self, dt: &DateTimeUtc) -> Option<DateTimeUtc> {
+    pub fn to_date(self, dt: &DateTimeUtc) -> Option<DateTimeUtc> {
         let result = match self {
             DuePatchItem::Today => Some(*dt),
             DuePatchItem::Tomorrow => Some(add_days(dt, 1)),
@@ -26,7 +26,7 @@ impl DuePatchItem {
             },
             DuePatchItem::NextWeek => Some(add_days(dt, 7 - dt.weekday() as u64)),
             DuePatchItem::NoDate => None,
-            DuePatchItem::Custom(dt) => Some(*dt),
+            DuePatchItem::Custom(dt) => Some(dt),
         };
 
         result.map(|d| clear_time(&d))
@@ -89,9 +89,9 @@ impl Clone for TaskPatch {
             },
             name: self.name.clone(),
             description: self.description.clone(),
-            due: self.due.clone(),
-            priority: self.priority.clone(),
-            state: self.state.clone(),
+            due: self.due,
+            priority: self.priority,
+            state: self.state,
         }
     }
 }

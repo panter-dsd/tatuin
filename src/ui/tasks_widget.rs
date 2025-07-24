@@ -526,7 +526,7 @@ impl TasksWidget {
         if let Some(p) = self.changed_tasks.iter_mut().find(|c| c.is_task(t)) {
             span.record("existed_patch", p.to_string());
             if let Some(s) = &p.state {
-                current_state = s.clone();
+                current_state = *s;
                 span.record("current_state", current_state.to_string());
                 p.state = None;
                 if p.is_empty() {
@@ -566,12 +566,12 @@ impl TasksWidget {
 
         let t = self.tasks[selected.unwrap()].task();
         match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
-            Some(p) => p.due = Some(due.clone()),
+            Some(p) => p.due = Some(*due),
             None => self.changed_tasks.push(TaskPatch {
                 task: Some(t.clone_boxed()),
                 name: None,
                 description: None,
-                due: Some(due.clone()),
+                due: Some(*due),
                 priority: None,
                 state: None,
             }),
@@ -591,7 +591,7 @@ impl TasksWidget {
                 p.priority = if *priority == t.priority() {
                     None
                 } else {
-                    Some(priority.clone())
+                    Some(*priority)
                 };
                 if p.is_empty() {
                     self.changed_tasks.retain(|c| !c.is_task(t));
@@ -602,7 +602,7 @@ impl TasksWidget {
                 name: None,
                 description: None,
                 due: None,
-                priority: Some(priority.clone()),
+                priority: Some(*priority),
                 state: None,
             }),
         }
@@ -673,11 +673,11 @@ impl KeyboardHandler for TasksWidget {
                                 panic!("Unexpected custom widget type")
                             }
                         }
-                        _ => p.clone(),
+                        _ => *p,
                     });
                 }
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<Priority>>() {
-                    new_priority = d.selected().clone();
+                    new_priority = *d.selected();
                 }
 
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<AddEditTaskDialog>() {

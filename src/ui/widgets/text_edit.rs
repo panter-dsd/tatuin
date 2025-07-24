@@ -49,6 +49,7 @@ impl WidgetStateTrait for TextEdit {
     }
 }
 
+#[allow(dead_code)]
 impl TextEdit {
     pub fn new() -> Self {
         Self {
