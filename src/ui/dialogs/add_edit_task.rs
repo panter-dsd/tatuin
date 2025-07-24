@@ -433,6 +433,7 @@ impl KeyboardHandler for Dialog {
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => {
                 self.should_be_closed = true;
+                self.task_name_editor.clear(); // to make can_create_task return false
             }
             KeyCode::Tab => {
                 self.next_widget().await;
