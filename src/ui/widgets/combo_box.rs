@@ -26,13 +26,15 @@ pub struct Item<T> {
     pub data: T,
 }
 
-pub type CustomRenderer = dyn Fn(Arc<dyn WidgetTrait>) -> String + Send + Sync;
+pub trait CustomWidgetItemUpdater<T>: Sync + Send {
+    fn update(&self, w: Arc<dyn WidgetTrait>, item: &mut Item<T>);
+}
 
 struct InternalData<T> {
     items: Vec<Item<T>>,
     selected: Option<Item<T>>,
     custom_widgets: Vec<Arc<dyn WidgetTrait>>,
-    custom_renderers: Vec<Arc<CustomRenderer>>,
+    custom_widget_item_updaters: Vec<Arc<dyn CustomWidgetItemUpdater<T>>>,
     dialog: Option<ListDialog<String>>,
 }
 
@@ -89,7 +91,7 @@ where
             items: items.to_vec(),
             selected: None,
             custom_widgets: Vec::new(),
-            custom_renderers: Vec::new(),
+            custom_widget_item_updaters: Vec::new(),
             dialog: None,
         }));
 
@@ -138,11 +140,16 @@ where
         }
     }
 
-    pub async fn add_custom_widget(&mut self, item: Item<T>, w: Arc<dyn WidgetTrait>, r: Arc<CustomRenderer>) {
+    pub async fn add_custom_widget(
+        &mut self,
+        item: Item<T>,
+        w: Arc<dyn WidgetTrait>,
+        r: Arc<dyn CustomWidgetItemUpdater<T>>,
+    ) {
         let mut data = self.internal_data.write().await;
         data.items.push(item);
         data.custom_widgets.push(w);
-        data.custom_renderers.push(r);
+        data.custom_widget_item_updaters.push(r);
     }
 
     pub async fn current_item(self, item: &Item<T>) -> Self {
@@ -249,7 +256,14 @@ where
         }
 
         if let Some(selected) = selected {
-            data.selected = data.items.iter().find(|item| item.text == selected).cloned();
+            let idx = data.items.iter().position(|item| item.text == selected).unwrap();
+            if idx >= data.items.len() - data.custom_widgets.len() {
+                let widget_idx = idx - (data.items.len() - data.custom_widgets.len());
+                let w = data.custom_widgets[widget_idx].clone();
+                let f = data.custom_widget_item_updaters[widget_idx].clone();
+                f.update(w, &mut data.items[idx]);
+            }
+            data.selected = Some(data.items[idx].clone());
         }
 
         if let Some(handled) = handled {

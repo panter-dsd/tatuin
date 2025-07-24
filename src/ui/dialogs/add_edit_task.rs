@@ -11,7 +11,7 @@ use ratatui::{
 
 use crate::{
     provider::Provider,
-    task::{DateTimeUtc, Priority, datetime_to_str},
+    task::{DateTimeUtc, Priority},
     task_patch::{DuePatchItem, TaskPatch},
     types::ArcRwLock,
     ui::{
@@ -22,8 +22,8 @@ use crate::{
         style,
         tasks_widget::ProvidersStorage,
         widgets::{
-            Button, ComboBox, ComboBoxItem, DateEditor, LineEdit, Text, TextEdit, WidgetState, WidgetStateTrait,
-            WidgetTrait,
+            Button, ComboBox, ComboBoxItem, CustomWidgetItemUpdater, DateEditor, LineEdit, Text, TextEdit, WidgetState,
+            WidgetStateTrait, WidgetTrait,
         },
     },
 };
@@ -31,6 +31,16 @@ use crate::{
 use super::DialogTrait;
 
 const FOOTER: &str = "Input text and press Enter for applying or Esc for cancelling";
+
+struct ComboBoxItemUpdater {}
+
+impl CustomWidgetItemUpdater<DuePatchItem> for ComboBoxItemUpdater {
+    fn update(&self, w: Arc<dyn WidgetTrait>, item: &mut ComboBoxItem<DuePatchItem>) {
+        let editor = w.as_any().downcast_ref::<DateEditor>().unwrap();
+        item.data = DuePatchItem::Custom(editor.value());
+        item.text = item.data.to_string();
+    }
+}
 
 pub struct Dialog {
     title: String,
@@ -94,12 +104,7 @@ impl Dialog {
                     data: DuePatchItem::Custom(DateTimeUtc::default()),
                 },
                 Arc::new(DateEditor::new(None)),
-                Arc::new(|w| {
-                    w.as_any()
-                        .downcast_ref::<DateEditor>()
-                        .map(|w| datetime_to_str(Some(w.value()), &chrono::Local::now().timezone()))
-                        .unwrap_or(String::new())
-                }),
+                Arc::new(ComboBoxItemUpdater {}),
             )
             .await;
 

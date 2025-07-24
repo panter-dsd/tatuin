@@ -12,7 +12,7 @@ mod text_edit;
 mod widget;
 
 pub use button::Button;
-pub use combo_box::{ComboBox, Item as ComboBoxItem};
+pub use combo_box::{ComboBox, CustomWidgetItemUpdater, Item as ComboBoxItem};
 pub use date::DateEditor;
 pub use hyperlink_widget::HyperlinkWidget;
 pub use line_edit::LineEdit;
