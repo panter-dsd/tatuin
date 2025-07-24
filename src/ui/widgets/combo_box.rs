@@ -26,10 +26,13 @@ pub struct Item<T> {
     pub data: T,
 }
 
+pub type CustomRenderer = dyn Fn(Arc<dyn WidgetTrait>) -> String + Send + Sync;
+
 struct InternalData<T> {
     items: Vec<Item<T>>,
     selected: Option<Item<T>>,
     custom_widgets: Vec<Arc<dyn WidgetTrait>>,
+    custom_renderers: Vec<Arc<CustomRenderer>>,
     dialog: Option<ListDialog<String>>,
 }
 
@@ -86,6 +89,7 @@ where
             items: items.to_vec(),
             selected: None,
             custom_widgets: Vec::new(),
+            custom_renderers: Vec::new(),
             dialog: None,
         }));
 
@@ -134,10 +138,11 @@ where
         }
     }
 
-    pub async fn add_custom_widget(&mut self, item: Item<T>, w: Arc<dyn WidgetTrait>) {
+    pub async fn add_custom_widget(&mut self, item: Item<T>, w: Arc<dyn WidgetTrait>, r: Arc<CustomRenderer>) {
         let mut data = self.internal_data.write().await;
         data.items.push(item);
         data.custom_widgets.push(w);
+        data.custom_renderers.push(r);
     }
 
     pub async fn current_item(self, item: &Item<T>) -> Self {

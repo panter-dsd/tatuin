@@ -11,7 +11,7 @@ use ratatui::{
 
 use crate::{
     provider::Provider,
-    task::{DateTimeUtc, Priority},
+    task::{DateTimeUtc, Priority, datetime_to_str},
     task_patch::{DuePatchItem, TaskPatch},
     types::ArcRwLock,
     ui::{
@@ -94,6 +94,12 @@ impl Dialog {
                     data: DuePatchItem::Custom(DateTimeUtc::default()),
                 },
                 Arc::new(DateEditor::new(None)),
+                Arc::new(|w| {
+                    w.as_any()
+                        .downcast_ref::<DateEditor>()
+                        .map(|w| datetime_to_str(Some(w.value()), &chrono::Local::now().timezone()))
+                        .unwrap_or(String::new())
+                }),
             )
             .await;
 
