@@ -22,8 +22,38 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(dead_code)]
 pub struct Item<T> {
-    pub text: String,
-    pub data: T,
+    text: String,
+    display: String,
+    data: T,
+}
+
+impl<T> Item<T>
+where
+    T: Clone,
+{
+    pub fn new(text: &str, data: T) -> Self {
+        Self {
+            text: text.to_string(),
+            display: text.to_string(),
+            data,
+        }
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    pub fn set_display_text(&mut self, display: &str) {
+        self.display = display.to_string();
+    }
+
+    pub fn data(&self) -> &T {
+        &self.data
+    }
+
+    pub fn set_data(&mut self, data: &T) {
+        self.data = data.clone();
+    }
 }
 
 pub trait CustomWidgetItemUpdater<T>: Sync + Send {
@@ -194,7 +224,7 @@ where
                 .await
                 .selected
                 .as_ref()
-                .map(|item| item.text.clone())
+                .map(|item| item.display.clone())
                 .unwrap_or_default()
                 .as_str(),
         );

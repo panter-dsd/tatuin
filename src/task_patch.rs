@@ -5,7 +5,7 @@ use chrono::Datelike;
 use crate::task::{DateTimeUtc, Priority, State, Task as TaskTrait};
 use crate::time::{add_days, clear_time};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum DuePatchItem {
     Today,
     Tomorrow,

@@ -37,8 +37,9 @@ struct ComboBoxItemUpdater {}
 impl CustomWidgetItemUpdater<DuePatchItem> for ComboBoxItemUpdater {
     fn update(&self, w: Arc<dyn WidgetTrait>, item: &mut ComboBoxItem<DuePatchItem>) {
         let editor = w.as_any().downcast_ref::<DateEditor>().unwrap();
-        item.data = DuePatchItem::Custom(editor.value());
-        item.text = item.data.to_string();
+        let due = DuePatchItem::Custom(editor.value());
+        item.set_data(&due);
+        item.set_display_text(&due.to_string());
     }
 }
 
@@ -75,34 +76,25 @@ impl Dialog {
             .await
             .iter()
             .filter(|p| p.possibilities.create_task)
-            .map(|p| ComboBoxItem {
-                text: p.name.clone(),
-                data: String::new(),
-            })
+            .map(|p| ComboBoxItem::new(p.name.as_str(), String::new()))
             .collect::<Vec<ComboBoxItem<String>>>();
 
         let mut due_date_selector = ComboBox::new(
             "Due date",
             &DuePatchItem::values()
                 .iter()
-                .map(|d| ComboBoxItem {
-                    text: d.to_string(),
-                    data: d.clone(),
-                })
+                .map(|d| ComboBoxItem::new(d.to_string().as_str(), *d))
                 .collect::<Vec<ComboBoxItem<DuePatchItem>>>(),
         )
-        .current_item(&ComboBoxItem {
-            text: DuePatchItem::Today.to_string(),
-            data: DuePatchItem::Today,
-        })
+        .current_item(&ComboBoxItem::new(
+            DuePatchItem::Today.to_string().as_str(),
+            DuePatchItem::Today,
+        ))
         .await;
 
         due_date_selector
             .add_custom_widget(
-                ComboBoxItem {
-                    text: "Custom".to_string(),
-                    data: DuePatchItem::Custom(DateTimeUtc::default()),
-                },
+                ComboBoxItem::new("Custom", DuePatchItem::Custom(DateTimeUtc::default())),
                 Arc::new(DateEditor::new(None)),
                 Arc::new(ComboBoxItemUpdater {}),
             )
@@ -126,16 +118,13 @@ impl Dialog {
                 "Priority",
                 &Priority::values()
                     .iter()
-                    .map(|p| ComboBoxItem {
-                        text: p.to_string(),
-                        data: p.clone(),
-                    })
+                    .map(|p| ComboBoxItem::new(p.to_string().as_str(), *p))
                     .collect::<Vec<ComboBoxItem<Priority>>>(),
             )
-            .current_item(&ComboBoxItem {
-                text: Priority::Normal.to_string(),
-                data: Priority::Normal,
-            })
+            .current_item(&ComboBoxItem::new(
+                Priority::Normal.to_string().as_str(),
+                Priority::Normal,
+            ))
             .await,
             due_date_selector,
             create_task_button: Button::new("Create a task and close\nCtrl+Enter"),
@@ -157,8 +146,8 @@ impl Dialog {
             task: None,
             name: Some(self.task_name_editor.text()),
             description: (!description.is_empty()).then_some(description),
-            due: self.due_date_selector.value().await.map(|item| item.data),
-            priority: self.priority_selector.value().await.map(|item| item.data),
+            due: self.due_date_selector.value().await.map(|item| *item.data()),
+            priority: self.priority_selector.value().await.map(|item| *item.data()),
             state: None,
         })
     }
@@ -224,7 +213,7 @@ impl Dialog {
         let item = item.unwrap();
 
         let mut providers = self.providers_storage.write().await;
-        let provider = providers.iter_mut().find(|p| p.name == item.text);
+        let provider = providers.iter_mut().find(|p| p.name == item.text());
         if provider.is_none() {
             return;
         }
@@ -234,10 +223,7 @@ impl Dialog {
                 .set_items(
                     &projects
                         .iter()
-                        .map(|p| ComboBoxItem {
-                            text: p.name(),
-                            data: p.id(),
-                        })
+                        .map(|p| ComboBoxItem::new(p.name().as_str(), p.id()))
                         .collect::<Vec<ComboBoxItem<_>>>(),
                 )
                 .await;
