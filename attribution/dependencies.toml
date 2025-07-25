@@ -279,7 +279,7 @@ repository = "https://github.com/dylanede/cassowary-rs"
 
 [[dependencies]]
 name = "castaway"
-version = "0.2.3"
+version = "0.2.4"
 description = "Safe, zero-cost downcasting for limited compile-time specialization."
 license = "MIT"
 notices = ["Copyright (c) 2021 Stephen M. Coakley"]
@@ -288,7 +288,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.29"
+version = "1.2.30"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -502,7 +502,7 @@ repository = "https://github.com/RustCrypto/utils"
 
 [[dependencies]]
 name = "crc32fast"
-version = "1.4.2"
+version = "1.5.0"
 description = "Fast, SIMD-accelerated CRC32 (IEEE) checksum computation"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2018 Sam Rijs, Alex Crichton and contributors"]
@@ -1288,7 +1288,7 @@ repository = "https://github.com/dtolnay/indoc"
 
 [[dependencies]]
 name = "instability"
-version = "0.3.7"
+version = "0.3.9"
 description = "Rust API stability attributes for the rest of us. A fork of the `stability` crate."
 license = "MIT"
 notices = [
@@ -1299,7 +1299,7 @@ authors = [
   "Stephen M. Coakley <me@stephencoakley.com>",
   "The Ratatui Developers",
 ]
-repository = "https://github.com/ratatui-org/instability"
+repository = "https://github.com/ratatui/instability"
 
 [[dependencies]]
 name = "io-uring"
@@ -2136,7 +2136,7 @@ repository = "https://github.com/bytecodealliance/rustix"
 
 [[dependencies]]
 name = "rustix"
-version = "1.0.7"
+version = "1.0.8"
 description = "Safe Rust bindings to POSIX/Unix/Linux/Winsock-like syscalls"
 license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
 authors = [
@@ -2272,7 +2272,7 @@ homepage = "https://serde.rs"
 
 [[dependencies]]
 name = "serde_json"
-version = "1.0.140"
+version = "1.0.141"
 description = "A JSON serialization file format"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -2280,14 +2280,6 @@ authors = [
   "David Tolnay <dtolnay@gmail.com>",
 ]
 repository = "https://github.com/serde-rs/json"
-
-[[dependencies]]
-name = "serde_spanned"
-version = "0.6.9"
-description = "Serde-compatible spanned Value"
-license = "MIT OR Apache-2.0"
-notices = ["Copyright (c) Individual contributors"]
-repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
 name = "serde_spanned"
@@ -2744,32 +2736,12 @@ homepage = "https://tokio.rs"
 
 [[dependencies]]
 name = "toml"
-version = "0.8.23"
-description = """
-A native Rust encoder and decoder of TOML-formatted files and streams. Provides
-implementations of the standard Serialize/Deserialize traits for TOML data to
-facilitate deserializing and serializing Rust structures.
-"""
-license = "MIT OR Apache-2.0"
-notices = ["Copyright (c) Individual contributors"]
-repository = "https://github.com/toml-rs/toml"
-
-[[dependencies]]
-name = "toml"
 version = "0.9.2"
 description = """
 A native Rust encoder and decoder of TOML-formatted files and streams. Provides
 implementations of the standard Serialize/Deserialize traits for TOML data to
 facilitate deserializing and serializing Rust structures.
 """
-license = "MIT OR Apache-2.0"
-notices = ["Copyright (c) Individual contributors"]
-repository = "https://github.com/toml-rs/toml"
-
-[[dependencies]]
-name = "toml_datetime"
-version = "0.6.11"
-description = "A TOML-compatible datetime type"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
 repository = "https://github.com/toml-rs/toml"
@@ -2783,14 +2755,6 @@ notices = ["Copyright (c) Individual contributors"]
 repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
-name = "toml_edit"
-version = "0.22.27"
-description = "Yet another format-preserving TOML parser."
-license = "MIT OR Apache-2.0"
-notices = ["Copyright (c) Individual contributors"]
-repository = "https://github.com/toml-rs/toml"
-
-[[dependencies]]
 name = "toml_parser"
 version = "1.0.1"
 description = "Yet another format-preserving TOML parser."
@@ -2799,8 +2763,8 @@ notices = ["Copyright (c) Individual contributors"]
 repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
-name = "toml_write"
-version = "0.1.2"
+name = "toml_writer"
+version = "1.0.2"
 description = """
 A low-level interface for writing out TOML
 """
