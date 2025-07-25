@@ -10,7 +10,6 @@ use ratatui::{
 };
 
 use crate::{
-    provider::Provider,
     task::{DateTimeUtc, Priority},
     task_patch::{DuePatchItem, TaskPatch},
     types::ArcRwLock,
@@ -48,7 +47,7 @@ pub struct Dialog {
     should_be_closed: bool,
     add_another_one: bool,
     draw_helper: Option<DrawHelper>,
-    providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
+    providers_storage: ArcRwLock<dyn ProvidersStorage>,
     widget_state: WidgetState,
     size: Size,
 
@@ -70,7 +69,7 @@ pub struct Dialog {
 crate::impl_widget_state_trait!(Dialog);
 
 impl Dialog {
-    pub async fn new(title: &str, providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>) -> Self {
+    pub async fn new(title: &str, providers_storage: ArcRwLock<dyn ProvidersStorage>) -> Self {
         let provider_items = providers_storage
             .read()
             .await

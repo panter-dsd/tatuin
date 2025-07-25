@@ -182,14 +182,11 @@ pub struct App {
     cursor_pos: Option<Position>,
 }
 
-impl<T> tasks_widget::ProvidersStorage<T> for SelectableList<T>
-where
-    T: Send + Sync,
-{
-    fn iter_mut(&mut self) -> IterMut<'_, T> {
+impl tasks_widget::ProvidersStorage for SelectableList<Provider> {
+    fn iter_mut<'a>(&'a mut self) -> IterMut<'a, Provider> {
         self.iter_mut()
     }
-    fn iter(&self) -> Iter<'_, T> {
+    fn iter<'a>(&'a self) -> Iter<'a, Provider> {
         self.iter()
     }
 }

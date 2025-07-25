@@ -66,9 +66,9 @@ impl Patch {
     }
 }
 
-pub trait ProvidersStorage<T>: Send + Sync {
-    fn iter_mut(&mut self) -> IterMut<'_, T>;
-    fn iter(&self) -> Iter<'_, T>;
+pub trait ProvidersStorage: Send + Sync {
+    fn iter_mut<'a>(&'a mut self) -> IterMut<'a, Provider>;
+    fn iter<'a>(&'a self) -> Iter<'a, Provider>;
 }
 
 pub trait ErrorLoggerTrait: Send + Sync {
@@ -84,7 +84,7 @@ pub trait TaskInfoViewerTrait: Send + Sync {
 type TaskInfoViewer = ArcRwLock<dyn TaskInfoViewerTrait>;
 
 pub struct TasksWidget {
-    providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
+    providers_storage: ArcRwLock<dyn ProvidersStorage>,
     error_logger: ErrorLogger,
     task_info_viewer: TaskInfoViewer,
     all_tasks: Vec<Box<dyn TaskTrait>>,
@@ -164,7 +164,7 @@ impl AppBlockWidget for TasksWidget {
 
 impl TasksWidget {
     pub async fn new(
-        providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
+        providers_storage: ArcRwLock<dyn ProvidersStorage>,
         error_logger: ErrorLogger,
         task_info_viewer: TaskInfoViewer,
         async_jobs_storage: ArcRwLock<AsyncJobStorage>,
