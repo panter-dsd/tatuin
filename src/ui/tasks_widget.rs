@@ -661,10 +661,16 @@ impl TasksWidget {
             .provider(patch.provider_name.as_ref().unwrap());
         let project_id = patch.project_id.as_ref().unwrap();
         let tp = patch.task_patch.as_ref().unwrap();
-        if let Err(e) = provider.provider.write().await.create_task(project_id, tp).await {
-            tracing::error!(error=?e, "create a task");
-            self.error_logger.write().await.add_error(e.to_string().as_str());
-        }
+        match provider.provider.write().await.create_task(project_id, tp).await {
+            Ok(()) => {
+                provider.provider.write().await.reload().await;
+                self.load_tasks(&self.last_filter.clone()).await;
+            }
+            Err(e) => {
+                tracing::error!(error=?e, "create a task");
+                self.error_logger.write().await.add_error(e.to_string().as_str());
+            }
+        };
     }
 }
 
