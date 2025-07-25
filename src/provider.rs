@@ -10,8 +10,17 @@ use ratatui::style::Color;
 use std::error::Error;
 use std::fmt::Debug;
 
+#[derive(Debug)]
 pub struct StringError {
-    pub message: String,
+    message: String,
+}
+
+impl StringError {
+    pub fn new(message: &str) -> Self {
+        Self {
+            message: message.to_string(),
+        }
+    }
 }
 
 impl From<Box<dyn Error>> for StringError {
@@ -32,7 +41,7 @@ impl std::fmt::Display for StringError {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Capabilities {
     pub create_task: bool,
 }
@@ -51,12 +60,14 @@ pub trait ProviderTrait: Send + Sync + Debug {
     async fn reload(&mut self);
     fn color(&self) -> Color;
     fn capabilities(&self) -> Capabilities;
+    async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError>;
 }
 
+#[derive(Clone)]
 pub struct Provider {
     pub name: String,
     pub type_name: String,
     pub color: Color,
-    pub possibilities: Capabilities,
+    pub capabilities: Capabilities,
     pub provider: ArcRwLock<Box<dyn ProviderTrait>>,
 }

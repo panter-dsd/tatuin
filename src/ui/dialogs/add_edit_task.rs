@@ -74,7 +74,7 @@ impl Dialog {
             .read()
             .await
             .iter()
-            .filter(|p| p.possibilities.create_task)
+            .filter(|p| p.capabilities.create_task)
             .map(|p| ComboBoxItem::new(p.name.as_str(), p.name.clone()))
             .collect::<Vec<ComboBoxItem<String>>>();
 

@@ -69,6 +69,7 @@ impl Patch {
 pub trait ProvidersStorage: Send + Sync {
     fn iter_mut<'a>(&'a mut self) -> IterMut<'a, Provider>;
     fn iter<'a>(&'a self) -> Iter<'a, Provider>;
+    fn provider(&self, name: &str) -> Provider;
 }
 
 pub trait ErrorLoggerTrait: Send + Sync {
@@ -652,7 +653,19 @@ impl TasksWidget {
     }
 
     #[tracing::instrument(level = "info", target = "tasks_widget")]
-    async fn create_or_update_task(&mut self, patch: &Patch) {}
+    async fn create_or_update_task(&mut self, patch: &Patch) {
+        let provider = self
+            .providers_storage
+            .read()
+            .await
+            .provider(patch.provider_name.as_ref().unwrap());
+        let project_id = patch.project_id.as_ref().unwrap();
+        let tp = patch.task_patch.as_ref().unwrap();
+        if let Err(e) = provider.provider.write().await.create_task(project_id, tp).await {
+            tracing::error!(error=?e, "create a task");
+            self.error_logger.write().await.add_error(e.to_string().as_str());
+        }
+    }
 }
 
 #[async_trait]

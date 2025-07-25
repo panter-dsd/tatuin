@@ -112,4 +112,8 @@ impl ProviderTrait for Provider {
     fn capabilities(&self) -> Capabilities {
         Capabilities { create_task: true }
     }
+
+    async fn create_task(&mut self, _project_id: &str, _tp: &TaskPatch) -> Result<(), StringError> {
+        Err(StringError::new("Task creation is not supported"))
+    }
 }

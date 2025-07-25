@@ -189,6 +189,9 @@ impl tasks_widget::ProvidersStorage for SelectableList<Provider> {
     fn iter<'a>(&'a self) -> Iter<'a, Provider> {
         self.iter()
     }
+    fn provider(&self, name: &str) -> Provider {
+        self.iter().find(|p| p.name == name).unwrap().clone()
+    }
 }
 
 #[async_trait]
