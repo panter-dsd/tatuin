@@ -1125,7 +1125,7 @@ homepage = "https://hyper.rs"
 
 [[dependencies]]
 name = "hyper-util"
-version = "0.1.15"
+version = "0.1.16"
 description = "hyper utilities"
 license = "MIT"
 notices = ["Copyright (c) 2023-2025 Sean McArthur"]
@@ -1303,7 +1303,7 @@ repository = "https://github.com/ratatui/instability"
 
 [[dependencies]]
 name = "io-uring"
-version = "0.7.8"
+version = "0.7.9"
 description = "The low-level `io_uring` userspace interface for Rust"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -2010,7 +2010,7 @@ homepage = "https://ratatui.rs"
 
 [[dependencies]]
 name = "redox_syscall"
-version = "0.5.13"
+version = "0.5.15"
 description = "A Rust library to access raw Redox system calls"
 license = "MIT"
 notices = ["Copyright (c) 2017 Redox OS Developers"]
@@ -2472,7 +2472,7 @@ repository = "https://github.com/Peternator7/strum"
 
 [[dependencies]]
 name = "strum"
-version = "0.27.1"
+version = "0.27.2"
 description = "Helpful macros for working with enums and strings"
 license = "MIT"
 notices = ["Copyright (c) 2019 Peter Glotfelty"]
