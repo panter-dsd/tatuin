@@ -184,6 +184,9 @@ impl WidgetTrait for TaskInfoWidget {
             e.widget.render(row_area, buf).await;
             row_area.x = area.x;
             row_area.y += e.widget.size().height;
+            if row_area.y >= area.y + area.height {
+                break;
+            }
         }
     }
 
