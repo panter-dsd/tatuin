@@ -188,6 +188,8 @@ impl ProviderTrait for Provider {
             if p.due.is_some() || p.priority.is_some() {
                 let mut due_custom_dt = String::new();
                 let r = client::UpdateTaskRequest {
+                    content: None,
+                    description: None,
                     due_string: p.due.as_ref().map(|due| match due {
                         DuePatchItem::NoDate => "no date",
                         DuePatchItem::Today => "today",
@@ -227,7 +229,26 @@ impl ProviderTrait for Provider {
         Capabilities { create_task: true }
     }
 
-    async fn create_task(&mut self, _project_id: &str, _tp: &TaskPatch) -> Result<(), StringError> {
-        Err(StringError::new("Task creation is not supported"))
+    async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
+        let mut due_custom_dt = String::new();
+
+        let r = client::CreateTaskRequest {
+            content: tp.name.as_ref().unwrap(),
+            description: tp.description.as_deref(),
+            project_id: Some(project_id),
+            due_string: tp.due.as_ref().map(|due| match due {
+                DuePatchItem::NoDate => "no date",
+                DuePatchItem::Today => "today",
+                DuePatchItem::Tomorrow => "tomorrow",
+                DuePatchItem::ThisWeekend => "weekend",
+                DuePatchItem::NextWeek => "next week",
+                DuePatchItem::Custom(dt) => {
+                    due_custom_dt = dt.format("%Y-%m-%d").to_string();
+                    &due_custom_dt
+                }
+            }),
+            priority: tp.priority.as_ref().map(task::priority_to_int),
+        };
+        self.c.create_task(&r).await.map_err(|e| e.into())
     }
 }
