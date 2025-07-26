@@ -4,22 +4,24 @@ mod client;
 mod md_file;
 mod patch;
 mod project;
+mod rest;
 mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{GetTasksError, ProviderTrait};
+use crate::provider::{Capabilities, ProviderTrait, StringError};
 use crate::task::Task as TaskTrait;
 use crate::task_patch::{PatchError, TaskPatch};
 use async_trait::async_trait;
+use md_file::task_from_patch;
 use ratatui::style::Color;
-use std::error::Error;
 
 pub const PROVIDER_NAME: &str = "Obsidian";
 
 pub struct Provider {
     name: String,
     c: client::Client,
+    rest: rest::Client,
     color: Color,
 }
 
@@ -28,6 +30,7 @@ impl Provider {
         Self {
             name: name.to_string(),
             c: client::Client::new(path),
+            rest: rest::Client::new(path),
             color: *color,
         }
     }
@@ -53,7 +56,7 @@ impl ProviderTrait for Provider {
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn TaskTrait>>, GetTasksError> {
+    ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
         let tasks = self.c.tasks(f).await?;
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
         for mut t in tasks {
@@ -63,25 +66,22 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>> {
-        Ok(Vec::new())
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
+        Ok(vec![Box::new(project::Project::new(
+            self.name.as_str(),
+            self.c.root_path().as_str(),
+            format!("{}/daily.md", self.c.root_path()).as_str(),
+        ))])
     }
 
     async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
         let mut client_patches = Vec::new();
         let mut errors = Vec::new();
-        let now = chrono::Utc::now();
         for p in patches.iter() {
-            match p.task.as_any().downcast_ref::<task::Task>() {
-                Some(t) => client_patches.push(patch::TaskPatch {
-                    task: t,
-                    state: p.state.clone().map(|s| s.into()),
-                    due: match &p.due {
-                        Some(due) => due.to_date(&now),
-                        None => None,
-                    },
-                    priority: p.priority.clone(),
-                }),
+            let task = p.task.as_ref().unwrap();
+
+            match task.as_any().downcast_ref::<task::Task>() {
+                Some(t) => client_patches.push(patch_to_internal(t, p)),
                 None => panic!("Wrong casting!"),
             };
         }
@@ -102,5 +102,30 @@ impl ProviderTrait for Provider {
 
     fn color(&self) -> Color {
         self.color
+    }
+
+    fn capabilities(&self) -> Capabilities {
+        Capabilities {
+            create_task: self.rest.is_available(),
+        }
+    }
+
+    async fn create_task(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
+        let t = task::Task::default();
+        let p = patch_to_internal(&t, tp);
+        self.rest.add_text_to_daily_note(task_from_patch(&p).as_str()).await
+    }
+}
+
+fn patch_to_internal<'a>(t: &'a task::Task, tp: &TaskPatch) -> patch::TaskPatch<'a> {
+    patch::TaskPatch {
+        task: t,
+        name: tp.name.clone(),
+        state: tp.state.map(|s| s.into()),
+        due: match &tp.due {
+            Some(due) => due.to_date(&chrono::Utc::now()),
+            None => None,
+        },
+        priority: tp.priority,
     }
 }

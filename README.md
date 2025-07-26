@@ -13,7 +13,7 @@ Tatuin provides users with an easy-to-use Text User Interface (TUI) for viewing 
 
 ## Features
 
-- **Cross-provider Task Management:** Tatuin allows you to view and manage tasks across different task management platforms.
+- **Cross-provider Task Management:** Tatuin allows you to create(Todoist and Obsidian), view and manage tasks across different task management platforms.
 - **Command-line Interface (CLI):** The project is designed using a text-based interface, making it accessible from the command line.
 - **Task Filters & Status Changes:** Easily filter and update your tasks' statuses as needed.
 - **Save and load UI state:** The user can save the current view's state (selected provider, selected project, used filters) and switch between states.
@@ -54,6 +54,11 @@ This command will guide you through setting up the integration for the specified
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
+
+## Announces and Feedback
+
+You can find announcements about new functionality on the Telegram [channel](https://t.me/tatuin_project).
+I'd be glad to receive any feedback from you.
 
 ## License
 

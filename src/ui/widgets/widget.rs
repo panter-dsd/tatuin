@@ -12,19 +12,98 @@ use ratatui::{
 
 use async_trait::async_trait;
 
+pub trait WidgetStateTrait {
+    fn is_active(&self) -> bool;
+    fn set_active(&mut self, is_active: bool);
+    fn is_enabled(&self) -> bool;
+    fn set_enabled(&mut self, is_enabled: bool);
+    fn is_visible(&self) -> bool;
+    fn set_visible(&mut self, is_visible: bool);
+}
+
+pub struct WidgetState {
+    is_active: bool,
+    is_enabled: bool,
+    is_visible: bool,
+}
+
+impl Default for WidgetState {
+    fn default() -> Self {
+        Self {
+            is_active: false,
+            is_enabled: true,
+            is_visible: true,
+        }
+    }
+}
+
+impl WidgetStateTrait for WidgetState {
+    fn is_active(&self) -> bool {
+        self.is_active
+    }
+
+    fn set_active(&mut self, is_active: bool) {
+        self.is_active = is_active;
+    }
+
+    fn is_enabled(&self) -> bool {
+        self.is_enabled
+    }
+
+    fn set_enabled(&mut self, is_enabled: bool) {
+        self.is_enabled = is_enabled;
+    }
+
+    fn is_visible(&self) -> bool {
+        self.is_visible
+    }
+
+    fn set_visible(&mut self, is_visible: bool) {
+        self.is_visible = is_visible;
+    }
+}
+
+#[macro_export]
+macro_rules! impl_widget_state_trait {
+    ($struct_name:ident) => {
+        impl WidgetStateTrait for $struct_name {
+            fn is_active(&self) -> bool {
+                self.widget_state.is_active()
+            }
+
+            fn set_active(&mut self, is_active: bool) {
+                self.widget_state.set_active(is_active);
+            }
+
+            fn is_enabled(&self) -> bool {
+                self.widget_state.is_enabled()
+            }
+
+            fn set_enabled(&mut self, is_enabled: bool) {
+                self.widget_state.set_enabled(is_enabled);
+            }
+
+            fn is_visible(&self) -> bool {
+                self.widget_state.is_visible()
+            }
+
+            fn set_visible(&mut self, is_visible: bool) {
+                self.widget_state.set_visible(is_visible);
+            }
+        }
+    };
+}
+
 #[async_trait]
-pub trait WidgetTrait: KeyboardHandler + MouseHandler + Send + Sync {
+pub trait WidgetTrait: WidgetStateTrait + KeyboardHandler + MouseHandler + Send + Sync {
     async fn render(&mut self, area: Rect, buf: &mut Buffer);
     fn size(&self) -> Size;
+    fn set_size(&mut self, _size: Size) {}
     fn set_draw_helper(&mut self, _dh: DrawHelper) {}
     fn set_pos(&mut self, _pos: Position) {}
     fn style(&self) -> Style {
         Style::default()
     }
     fn set_style(&mut self, _style: Style) {}
-    fn is_active(&self) -> bool {
-        false
-    }
-    fn set_active(&mut self, _is_active: bool) {}
     fn as_any(&self) -> &dyn Any;
 }

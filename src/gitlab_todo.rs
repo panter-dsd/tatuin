@@ -4,7 +4,7 @@ use crate::filter;
 use crate::gitlab::client::{Client, UpdateIssueRequest};
 use crate::gitlab::structs;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{GetTasksError, ProviderTrait};
+use crate::provider::{Capabilities, ProviderTrait, StringError};
 use crate::task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group};
 use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
@@ -280,7 +280,7 @@ impl ProviderTrait for Provider {
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn TaskTrait>>, GetTasksError> {
+    ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
         let mut should_clear = false;
         if let Some(last_filter) = self.last_filter.as_mut() {
             should_clear = last_filter != f;
@@ -324,7 +324,7 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>> {
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
         Ok(Vec::new())
     }
 
@@ -333,8 +333,9 @@ impl ProviderTrait for Provider {
 
         for p in patches {
             tracing::debug!(target:"gitlab_todo_patch_task", patch=p.to_string(), "Apply a patch");
+            let task = p.task.as_ref().unwrap();
 
-            let task = match p.task.as_any().downcast_ref::<Task>() {
+            let task = match task.as_any().downcast_ref::<Task>() {
                 Some(t) => t,
                 None => panic!("Wrong casting!"),
             };
@@ -361,5 +362,13 @@ impl ProviderTrait for Provider {
 
     fn color(&self) -> Color {
         self.color
+    }
+
+    fn capabilities(&self) -> Capabilities {
+        Capabilities { create_task: false }
+    }
+
+    async fn create_task(&mut self, _project_id: &str, _tp: &TaskPatch) -> Result<(), StringError> {
+        Err(StringError::new("Task creation is not supported"))
     }
 }

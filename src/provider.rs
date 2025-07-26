@@ -10,26 +10,40 @@ use ratatui::style::Color;
 use std::error::Error;
 use std::fmt::Debug;
 
-pub struct GetTasksError {
-    pub message: String,
+#[derive(Debug, Clone)]
+pub struct StringError {
+    message: String,
 }
 
-impl From<Box<dyn Error>> for GetTasksError {
+impl StringError {
+    pub fn new(message: &str) -> Self {
+        Self {
+            message: message.to_string(),
+        }
+    }
+}
+
+impl From<Box<dyn Error>> for StringError {
     fn from(e: Box<dyn Error>) -> Self {
         Self { message: e.to_string() }
     }
 }
 
-impl From<GetTasksError> for Box<dyn Error> {
-    fn from(e: GetTasksError) -> Self {
+impl From<StringError> for Box<dyn Error> {
+    fn from(e: StringError) -> Self {
         Box::<dyn Error>::from(e.message)
     }
 }
 
-impl std::fmt::Display for GetTasksError {
+impl std::fmt::Display for StringError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.message)
     }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Capabilities {
+    pub create_task: bool,
 }
 
 #[async_trait]
@@ -40,16 +54,20 @@ pub trait ProviderTrait: Send + Sync + Debug {
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn TaskTrait>>, GetTasksError>;
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>>;
+    ) -> Result<Vec<Box<dyn TaskTrait>>, StringError>;
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError>;
     async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError>;
     async fn reload(&mut self);
     fn color(&self) -> Color;
+    fn capabilities(&self) -> Capabilities;
+    async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError>;
 }
 
+#[derive(Clone)]
 pub struct Provider {
     pub name: String,
     pub type_name: String,
     pub color: Color,
+    pub capabilities: Capabilities,
     pub provider: ArcRwLock<Box<dyn ProviderTrait>>,
 }

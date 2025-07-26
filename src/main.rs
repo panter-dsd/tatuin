@@ -214,6 +214,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 name: name.to_string(),
                 type_name: p.type_name(),
                 color: ProviderTrait::color(p.as_ref()),
+                capabilities: p.capabilities(),
                 provider: Arc::new(RwLock::new(p)),
             });
         }

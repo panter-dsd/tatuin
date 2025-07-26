@@ -27,6 +27,10 @@ impl Client {
         }
     }
 
+    pub fn root_path(&self) -> String {
+        self.path.clone()
+    }
+
     pub fn all_supported_files(&self) -> Result<Vec<String>, Box<dyn Error>> {
         supported_files(Path::new(self.path.as_str()))
     }

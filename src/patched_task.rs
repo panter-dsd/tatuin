@@ -37,7 +37,7 @@ impl TaskTrait for PatchedTask {
     fn priority(&self) -> Priority {
         if let Some(p) = &self.patch {
             if let Some(v) = &p.priority {
-                return v.clone();
+                return *v;
             }
         }
 
@@ -46,7 +46,7 @@ impl TaskTrait for PatchedTask {
     fn state(&self) -> State {
         if let Some(p) = &self.patch {
             if let Some(v) = &p.state {
-                return v.clone();
+                return *v;
             }
         }
 

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-use super::{MarkdownLine, Text, WidgetTrait};
+use super::{MarkdownLine, Text, WidgetState, WidgetStateTrait, WidgetTrait};
 use crate::{
-    task::{self, Task as TaskTrait, datetime_to_str},
-    task_patch::{DuePatchItem, TaskPatch},
+    task::{self, Task as TaskTrait},
+    task_patch::TaskPatch,
     ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style},
 };
 use async_trait::async_trait;
@@ -21,8 +21,9 @@ pub struct TaskRow {
     pos: Position,
     children: Vec<Box<dyn WidgetTrait>>,
     is_selected: bool,
-    is_visible: bool,
+    widget_state: WidgetState,
 }
+crate::impl_widget_state_trait!(TaskRow);
 
 impl TaskRow {
     pub fn new(t: &dyn TaskTrait, changed_tasks: &[TaskPatch]) -> Self {
@@ -48,16 +49,13 @@ impl TaskRow {
         if let Some(patch) = changed_tasks.iter().find(|c| c.is_task(t)) {
             uncommitted = !patch.is_empty();
             if let Some(s) = &patch.state {
-                state = s.clone();
+                state = *s;
             }
             if let Some(d) = &patch.due {
-                due = match d {
-                    DuePatchItem::Custom(d) => format!("Custom ({})", datetime_to_str(Some(*d), &tz)),
-                    _ => d.to_string(),
-                }
+                due = d.to_string();
             }
             if let Some(p) = &patch.priority {
-                priority = p.clone();
+                priority = *p;
             }
         }
 
@@ -90,7 +88,7 @@ impl TaskRow {
             children,
             pos: Position::default(),
             is_selected: false,
-            is_visible: true,
+            widget_state: WidgetState::default(),
         }
     }
 
@@ -100,10 +98,6 @@ impl TaskRow {
 
     pub fn set_selected(&mut self, is_selected: bool) {
         self.is_selected = is_selected
-    }
-
-    pub fn set_visible(&mut self, is_visible: bool) {
-        self.is_visible = is_visible
     }
 }
 
@@ -164,7 +158,7 @@ impl WidgetTrait for TaskRow {
 #[async_trait]
 impl KeyboardHandler for TaskRow {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
-        if !self.is_visible {
+        if !self.is_visible() {
             return false;
         }
 
@@ -181,7 +175,7 @@ impl KeyboardHandler for TaskRow {
 #[async_trait]
 impl MouseHandler for TaskRow {
     async fn handle_mouse(&mut self, ev: &MouseEvent) {
-        if !self.is_visible {
+        if !self.is_visible() {
             return;
         }
 
