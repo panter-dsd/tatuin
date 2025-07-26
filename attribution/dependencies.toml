@@ -1431,7 +1431,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "litrs"
-version = "0.4.1"
+version = "0.4.2"
 description = """
 Parse and inspect Rust literals (i.e. tokens in the Rust programming language
 representing fixed values). Particularly useful for proc macros, but can also
@@ -2426,6 +2426,21 @@ authors = [
 repository = "https://github.com/rust-lang/socket2"
 
 [[dependencies]]
+name = "socket2"
+version = "0.6.0"
+description = """
+Utilities for handling networking sockets with a maximal amount of configuration
+possible intended.
+"""
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2014 Alex Crichton"]
+authors = [
+  "Alex Crichton <alex@alexcrichton.com>",
+  "Thomas de Zeeuw <thomasdezeeuw@gmail.com>",
+]
+repository = "https://github.com/rust-lang/socket2"
+
+[[dependencies]]
 name = "stable_deref_trait"
 version = "1.2.0"
 description = """
@@ -2490,7 +2505,7 @@ repository = "https://github.com/Peternator7/strum"
 
 [[dependencies]]
 name = "strum_macros"
-version = "0.27.1"
+version = "0.27.2"
 description = "Helpful macros for working with enums and strings"
 license = "MIT"
 notices = ["Copyright (c) 2019 Peter Glotfelty"]
