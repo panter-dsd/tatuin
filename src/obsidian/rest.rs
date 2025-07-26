@@ -41,6 +41,10 @@ impl Client {
         }
     }
 
+    pub fn is_available(&self) -> bool {
+        self.cfg.is_some()
+    }
+
     fn token(&self) -> Result<String, StringError> {
         let cfg = self.cfg.as_ref().ok_or(not_connected_err())?;
         Ok(cfg.api_key.clone())

@@ -105,7 +105,9 @@ impl ProviderTrait for Provider {
     }
 
     fn capabilities(&self) -> Capabilities {
-        Capabilities { create_task: true }
+        Capabilities {
+            create_task: self.rest.is_available(),
+        }
     }
 
     async fn create_task(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
