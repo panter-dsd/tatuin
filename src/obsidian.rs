@@ -4,6 +4,7 @@ mod client;
 mod md_file;
 mod patch;
 mod project;
+mod rest;
 mod task;
 
 use crate::filter;
@@ -12,6 +13,7 @@ use crate::provider::{Capabilities, ProviderTrait, StringError};
 use crate::task::Task as TaskTrait;
 use crate::task_patch::{PatchError, TaskPatch};
 use async_trait::async_trait;
+use md_file::task_from_patch;
 use ratatui::style::Color;
 
 pub const PROVIDER_NAME: &str = "Obsidian";
@@ -19,6 +21,7 @@ pub const PROVIDER_NAME: &str = "Obsidian";
 pub struct Provider {
     name: String,
     c: client::Client,
+    rest: rest::Client,
     color: Color,
 }
 
@@ -27,6 +30,7 @@ impl Provider {
         Self {
             name: name.to_string(),
             c: client::Client::new(path),
+            rest: rest::Client::new(path),
             color: *color,
         }
     }
@@ -73,20 +77,11 @@ impl ProviderTrait for Provider {
     async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
         let mut client_patches = Vec::new();
         let mut errors = Vec::new();
-        let now = chrono::Utc::now();
         for p in patches.iter() {
             let task = p.task.as_ref().unwrap();
 
             match task.as_any().downcast_ref::<task::Task>() {
-                Some(t) => client_patches.push(patch::TaskPatch {
-                    task: t,
-                    state: p.state.map(|s| s.into()),
-                    due: match &p.due {
-                        Some(due) => due.to_date(&now),
-                        None => None,
-                    },
-                    priority: p.priority,
-                }),
+                Some(t) => client_patches.push(patch_to_internal(t, p)),
                 None => panic!("Wrong casting!"),
             };
         }
@@ -113,7 +108,22 @@ impl ProviderTrait for Provider {
         Capabilities { create_task: true }
     }
 
-    async fn create_task(&mut self, _project_id: &str, _tp: &TaskPatch) -> Result<(), StringError> {
-        Err(StringError::new("Task creation is not supported"))
+    async fn create_task(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
+        let t = task::Task::default();
+        let p = patch_to_internal(&t, tp);
+        self.rest.add_text_to_daily_note(task_from_patch(&p).as_str()).await
+    }
+}
+
+fn patch_to_internal<'a>(t: &'a task::Task, tp: &TaskPatch) -> patch::TaskPatch<'a> {
+    patch::TaskPatch {
+        task: t,
+        name: tp.name.clone(),
+        state: tp.state.map(|s| s.into()),
+        due: match &tp.due {
+            Some(due) => due.to_date(&chrono::Utc::now()),
+            None => None,
+        },
+        priority: tp.priority,
     }
 }

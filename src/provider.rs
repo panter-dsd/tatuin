@@ -10,7 +10,7 @@ use ratatui::style::Color;
 use std::error::Error;
 use std::fmt::Debug;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StringError {
     message: String,
 }
