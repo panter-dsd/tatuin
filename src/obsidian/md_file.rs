@@ -207,6 +207,18 @@ impl File {
     }
 }
 
+pub fn task_to_string(t: &Task) -> String {
+    let mut elements = vec![format!("- [{}]", t.state.to_string()), t.text.clone()];
+    let priority_str = priority_to_str(&t.priority).to_string();
+    if !priority_str.is_empty() {
+        elements.push(priority_str);
+    }
+    if let Some(due) = &t.due {
+        elements.push(format!("{DUE_EMOJI} {}", due.format("%Y-%m-%d")))
+    }
+    elements.join(" ")
+}
+
 fn extract_date_after_emoji(text: &str, emoji: char) -> (String, Option<DateTimeUtc>) {
     let start = format!(" {emoji} ");
     let idx = text.rfind(start.as_str());
@@ -282,7 +294,7 @@ fn extract_priority(text: &str) -> (String, Priority) {
     let mut result_text = text.chars().take(last.1 - 1).collect::<String>();
     result_text.push_str(text.to_string().chars().skip(last.1 + 1).collect::<String>().as_str());
 
-    (result_text, last.0.clone())
+    (result_text, last.0)
 }
 
 #[cfg(test)]
@@ -508,6 +520,7 @@ some another text
                 let r = p.patch_task_in_content(
                     &TaskPatch {
                         task: &tasks[i],
+                        name: None,
                         state: Some(State::Completed),
                         due: None,
                         priority: None,
@@ -600,6 +613,7 @@ some another text
             for i in 0..original_tasks.len() {
                 let r = p.patch_task_in_content(
                     &TaskPatch {
+                        name: None,
                         task: &tasks[i],
                         state: Some(State::Uncompleted),
                         due: None,

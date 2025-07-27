@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: MIT
 
 use super::{
-    AppBlockWidget, dialogs::DialogTrait, dialogs::ListDialog, draw_helper::DrawHelper, header::Header,
-    keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, shortcut::Shortcut, widgets::DateTimeEditor,
-    widgets::TaskRow, widgets::WidgetTrait,
+    AppBlockWidget,
+    dialogs::{CreateUpdateTaskDialog, DialogTrait, ListDialog},
+    draw_helper::{DrawHelper, global_dialog_area},
+    header::Header,
+    keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler,
+    shortcut::Shortcut,
+    widgets::{DateEditor, TaskRow, WidgetState, WidgetStateTrait, WidgetTrait},
 };
 use crate::{
     async_jobs::{AsyncJob, AsyncJobStorage},
@@ -11,7 +16,7 @@ use crate::{
     patched_task::PatchedTask,
     project::Project as ProjectTrait,
     provider::Provider,
-    task::{self, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
+    task::{self, DateTimeUtc, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
     types::ArcRwLock,
 };
@@ -24,7 +29,7 @@ use ratatui::{
     text::Text,
     widgets::{Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
-use std::{any::Any, slice::IterMut, sync::Arc};
+use std::{any::Any, slice::Iter, slice::IterMut, sync::Arc};
 use tokio::sync::{RwLock, broadcast};
 use tracing::{Instrument, Level};
 
@@ -36,13 +41,35 @@ impl std::fmt::Display for DuePatchItem {
             DuePatchItem::ThisWeekend => write!(f, "This weekend"),
             DuePatchItem::NextWeek => write!(f, "Next week (Monday)"),
             DuePatchItem::NoDate => write!(f, "No date"),
-            DuePatchItem::Custom(_) => write!(f, "Custom"),
+            DuePatchItem::Custom(d) => {
+                if d == &DateTimeUtc::default() {
+                    write!(f, "Custom")
+                } else {
+                    let tz = Local::now().timezone();
+                    write!(f, "Custom ({})", datetime_to_str(Some(*d), &tz))
+                }
+            }
         }
     }
 }
 
-pub trait ProvidersStorage<T>: Send + Sync {
-    fn iter_mut(&mut self) -> IterMut<'_, T>;
+#[derive(Debug, Default)]
+struct Patch {
+    provider_name: Option<String>,
+    project_id: Option<String>,
+    task_patch: Option<TaskPatch>,
+}
+
+impl Patch {
+    fn is_valid(&self) -> bool {
+        self.provider_name.is_some() && self.project_id.is_some() && self.task_patch.is_some()
+    }
+}
+
+pub trait ProvidersStorage: Send + Sync {
+    fn iter_mut<'a>(&'a mut self) -> IterMut<'a, Provider>;
+    fn iter<'a>(&'a self) -> Iter<'a, Provider>;
+    fn provider(&self, name: &str) -> Provider;
 }
 
 pub trait ErrorLoggerTrait: Send + Sync {
@@ -58,7 +85,7 @@ pub trait TaskInfoViewerTrait: Send + Sync {
 type TaskInfoViewer = ArcRwLock<dyn TaskInfoViewerTrait>;
 
 pub struct TasksWidget {
-    providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
+    providers_storage: ArcRwLock<dyn ProvidersStorage>,
     error_logger: ErrorLogger,
     task_info_viewer: TaskInfoViewer,
     all_tasks: Vec<Box<dyn TaskTrait>>,
@@ -69,8 +96,8 @@ pub struct TasksWidget {
     draw_helper: Option<DrawHelper>,
     on_changes_broadcast: broadcast::Sender<()>,
     async_jobs_storage: ArcRwLock<AsyncJobStorage>,
-    is_active: bool,
-    state: ListState,
+    list_state: ListState,
+    widget_state: WidgetState,
 
     activate_shortcut: Shortcut,
     commit_changes_shortcut: Shortcut,
@@ -79,13 +106,16 @@ pub struct TasksWidget {
     change_due_shortcut: Shortcut,
     change_priority_shortcut: Shortcut,
     undo_changes_shortcut: Shortcut,
+    add_task_shortcut: Shortcut,
 
     last_filter: Filter,
 
-    change_dalog: Option<Box<dyn DialogTrait>>,
+    dialog: Option<Box<dyn DialogTrait>>,
+    is_global_dialog: bool,
 
     arc_self: Option<ArcRwLock<Self>>,
 }
+crate::impl_widget_state_trait!(TasksWidget);
 
 #[async_trait]
 impl AppBlockWidget for TasksWidget {
@@ -100,33 +130,34 @@ impl AppBlockWidget for TasksWidget {
             &mut self.change_due_shortcut,
             &mut self.change_priority_shortcut,
             &mut self.undo_changes_shortcut,
+            &mut self.add_task_shortcut,
         ]
     }
 
     async fn select_next(&mut self) {
-        if self.state.selected().is_none_or(|i| i < self.tasks.len() - 1) {
-            self.state.select_next();
+        if self.list_state.selected().is_none_or(|i| i < self.tasks.len() - 1) {
+            self.list_state.select_next();
             self.update_task_info_view().await;
         }
     }
 
     async fn select_previous(&mut self) {
-        if self.state.selected().is_some_and(|i| i > 0) {
-            self.state.select_previous();
+        if self.list_state.selected().is_some_and(|i| i > 0) {
+            self.list_state.select_previous();
             self.update_task_info_view().await;
         }
     }
 
     async fn select_first(&mut self) {
         if !self.tasks.is_empty() {
-            self.state.select_first();
+            self.list_state.select_first();
             self.update_task_info_view().await;
         }
     }
 
     async fn select_last(&mut self) {
         if !self.tasks.is_empty() {
-            self.state.select(Some(self.tasks.len() - 1));
+            self.list_state.select(Some(self.tasks.len() - 1));
             self.update_task_info_view().await;
         }
     }
@@ -134,7 +165,7 @@ impl AppBlockWidget for TasksWidget {
 
 impl TasksWidget {
     pub async fn new(
-        providers_storage: ArcRwLock<dyn ProvidersStorage<Provider>>,
+        providers_storage: ArcRwLock<dyn ProvidersStorage>,
         error_logger: ErrorLogger,
         task_info_viewer: TaskInfoViewer,
         async_jobs_storage: ArcRwLock<AsyncJobStorage>,
@@ -147,8 +178,8 @@ impl TasksWidget {
             task_info_viewer,
             all_tasks: Vec::new(),
             changed_tasks: Vec::new(),
-            is_active: false,
-            state: ListState::default(),
+            list_state: ListState::default(),
+            widget_state: WidgetState::default(),
             activate_shortcut: Shortcut::new("Activate Tasks block", &['g', 't']),
             tasks: Vec::new(),
             projects_filter: Vec::new(),
@@ -162,20 +193,25 @@ impl TasksWidget {
             change_due_shortcut: Shortcut::new("Change due date of the task", &['c', 'd']),
             change_priority_shortcut: Shortcut::new("Change priority of the task", &['c', 'p']),
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
+            add_task_shortcut: Shortcut::new("Create a task", &['a']),
             last_filter: Filter::default(),
-            change_dalog: None,
+            dialog: None,
+            is_global_dialog: true,
             arc_self: None,
         }));
         s.write().await.arc_self = Some(s.clone());
         tokio::spawn({
             let s = s.clone();
             async move {
-                let mut commit_changes_rx = s.read().await.commit_changes_shortcut.subscribe_to_accepted();
-                let mut swap_completed_state_rx = s.read().await.swap_completed_state_shortcut.subscribe_to_accepted();
-                let mut in_progress_rx = s.read().await.in_progress_shortcut.subscribe_to_accepted();
-                let mut change_due_rx = s.read().await.change_due_shortcut.subscribe_to_accepted();
-                let mut change_priority_rx = s.read().await.change_priority_shortcut.subscribe_to_accepted();
-                let mut undo_changes_rx = s.read().await.undo_changes_shortcut.subscribe_to_accepted();
+                let s_guard = s.read().await;
+                let mut commit_changes_rx = s_guard.commit_changes_shortcut.subscribe_to_accepted();
+                let mut swap_completed_state_rx = s_guard.swap_completed_state_shortcut.subscribe_to_accepted();
+                let mut in_progress_rx = s_guard.in_progress_shortcut.subscribe_to_accepted();
+                let mut change_due_rx = s_guard.change_due_shortcut.subscribe_to_accepted();
+                let mut change_priority_rx = s_guard.change_priority_shortcut.subscribe_to_accepted();
+                let mut undo_changes_rx = s_guard.undo_changes_shortcut.subscribe_to_accepted();
+                let mut add_task_rx = s_guard.add_task_shortcut.subscribe_to_accepted();
+                drop(s_guard);
                 loop {
                     tokio::select! {
                         _ = commit_changes_rx.recv() => {
@@ -194,6 +230,7 @@ impl TasksWidget {
                         _ = change_due_rx.recv() => s.write().await.show_change_due_date_dialog().await,
                         _ = change_priority_rx.recv() => s.write().await.show_change_priority_dialog().await,
                         _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
+                        _ = add_task_rx.recv() => s.write().await.show_add_task_dialog().await,
                     }
 
                     s.write().await.update_task_info_view().await;
@@ -238,11 +275,11 @@ impl TasksWidget {
             .map(|t| TaskRow::new(t.as_ref(), &self.changed_tasks))
             .collect();
 
-        self.state = if self.all_tasks.is_empty() {
+        self.list_state = if self.all_tasks.is_empty() {
             ListState::default()
         } else {
             let selected_idx = self
-                .state
+                .list_state
                 .selected()
                 .map(|i| {
                     if i >= self.all_tasks.len() {
@@ -279,7 +316,7 @@ impl TasksWidget {
         }
 
         let t = self
-            .state
+            .list_state
             .selected()
             .map(|i| self.tasks[std::cmp::min(i, self.tasks.len() - 1)].task())?;
         let p = self.changed_tasks.iter().find(|p| p.is_task(t));
@@ -296,13 +333,8 @@ impl TasksWidget {
             let patches = self
                 .changed_tasks
                 .iter()
-                .filter(|c| &c.task.provider() == name)
-                .map(|c| TaskPatch {
-                    task: c.task.clone_boxed(),
-                    state: c.state.clone(),
-                    due: c.due.clone(),
-                    priority: c.priority.clone(),
-                })
+                .filter(|c| c.task.as_ref().is_some_and(|t| &t.provider() == name))
+                .cloned()
                 .collect::<Vec<TaskPatch>>();
 
             if patches.is_empty() {
@@ -313,8 +345,12 @@ impl TasksWidget {
             self.process_patch_errors(name, &errors).await;
 
             self.changed_tasks.retain(|c| {
-                let patched = patches.iter().any(|tp| c.is_task(tp.task.as_ref()))
-                    && !errors.iter().any(|pe| pe.is_task(c.task.as_ref()));
+                let patched = patches
+                    .iter()
+                    .any(|tp| tp.task.as_ref().is_some_and(|t| c.is_task(t.as_ref())))
+                    && !errors
+                        .iter()
+                        .any(|pe| c.task.as_ref().is_some_and(|t| pe.is_task(t.as_ref())));
                 !patched
             });
 
@@ -337,25 +373,41 @@ impl TasksWidget {
         }
     }
 
-    async fn render_change_due_dialog(&mut self, area: Rect, buf: &mut Buffer) {
-        if let Some(d) = &mut self.change_dalog {
-            let size = d.size();
-            let idx = self.state.selected().unwrap_or(0) as u16;
+    fn inline_dialog_area(&self, size: Size, area: Rect) -> Rect {
+        let idx = self.list_state.selected().unwrap_or(0) as u16;
 
-            let mut y = area.y + 1 /*title*/ + idx+1/*right below the item*/;
-            if area.height - y < size.height {
-                y = area.y + area.height - size.height;
-            }
-
-            let mut area = area;
-            area.y = y;
-            area.height = size.height;
-            area.x += 1; //TODO: constant
-            area.width = std::cmp::min(size.width, area.width - area.x);
-
-            Clear {}.render(area, buf);
-            d.render(area, buf).await;
+        let mut y = area.y + 1 /*title*/ + idx+1/*right below the item*/;
+        if area.height - y < size.height {
+            y = area.y + area.height - size.height;
         }
+
+        Rect {
+            x: area.x + 1, //TODO: constant
+            y,
+            width: std::cmp::min(size.width, area.width - area.x),
+            height: size.height,
+        }
+    }
+
+    async fn render_dialog(&mut self, area: Rect, buf: &mut Buffer) {
+        if let Some(dh) = &self.draw_helper {
+            let screen_size = dh.read().await.screen_size();
+            self.dialog
+                .as_mut()
+                .unwrap()
+                .set_size(Size::new(screen_size.width / 2, screen_size.height / 2));
+        }
+        let size = self.dialog.as_ref().unwrap().size();
+        let area = if self.is_global_dialog {
+            global_dialog_area(size, *buf.area())
+        } else {
+            self.inline_dialog_area(size, area)
+        };
+
+        Clear {}.render(area, buf);
+
+        let d = self.dialog.as_mut().unwrap();
+        d.render(area, buf).await;
     }
 
     fn remove_changed_tasks_that_are_not_exists_anymore(&mut self) {
@@ -363,7 +415,7 @@ impl TasksWidget {
             self.all_tasks
                 .iter()
                 .find(|t| c.is_task(t.as_ref()))
-                .is_some_and(|t| t.state() == c.task.state())
+                .is_some_and(|t| c.task.as_ref().is_some_and(|task| t.state() == task.state()))
         });
     }
 
@@ -438,10 +490,11 @@ impl TasksWidget {
                 datetime_to_str(t.due(), &Local::now().timezone()).as_str(),
             );
             d.add_custom_widget(
-                DuePatchItem::Custom(t.due().unwrap_or_default()),
-                Box::new(DateTimeEditor::new(t.due())),
+                DuePatchItem::Custom(DateTimeUtc::default()),
+                Arc::new(DateEditor::new(t.due())),
             );
-            self.change_dalog = Some(Box::new(d));
+            self.dialog = Some(Box::new(d));
+            self.is_global_dialog = false;
         }
     }
 
@@ -455,7 +508,8 @@ impl TasksWidget {
         let available_priorities = t.patch_policy().available_priorities;
         if !available_priorities.is_empty() {
             let d = ListDialog::new(&available_priorities, t.priority().to_string().as_str());
-            self.change_dalog = Some(Box::new(d));
+            self.dialog = Some(Box::new(d));
+            self.is_global_dialog = false;
         }
     }
 
@@ -470,7 +524,7 @@ impl TasksWidget {
             "Change check state");
         let _enter = span.enter();
 
-        let selected = self.state.selected();
+        let selected = self.list_state.selected();
         if selected.is_none() {
             return;
         }
@@ -486,7 +540,7 @@ impl TasksWidget {
         if let Some(p) = self.changed_tasks.iter_mut().find(|c| c.is_task(t)) {
             span.record("existed_patch", p.to_string());
             if let Some(s) = &p.state {
-                current_state = s.clone();
+                current_state = *s;
                 span.record("current_state", current_state.to_string());
                 p.state = None;
                 if p.is_empty() {
@@ -505,10 +559,12 @@ impl TasksWidget {
             match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
                 Some(p) => p.state = Some(new_state),
                 None => self.changed_tasks.push(TaskPatch {
-                    task: t.clone_boxed(),
-                    state: Some(new_state),
+                    task: Some(t.clone_boxed()),
+                    name: None,
+                    description: None,
                     due: None,
                     priority: None,
+                    state: Some(new_state),
                 }),
             }
         }
@@ -517,26 +573,28 @@ impl TasksWidget {
     }
 
     async fn change_due_date(&mut self, due: &DuePatchItem) {
-        let selected = self.state.selected();
+        let selected = self.list_state.selected();
         if selected.is_none() {
             return;
         }
 
         let t = self.tasks[selected.unwrap()].task();
         match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
-            Some(p) => p.due = Some(due.clone()),
+            Some(p) => p.due = Some(*due),
             None => self.changed_tasks.push(TaskPatch {
-                task: t.clone_boxed(),
-                state: None,
-                due: Some(due.clone()),
+                task: Some(t.clone_boxed()),
+                name: None,
+                description: None,
+                due: Some(*due),
                 priority: None,
+                state: None,
             }),
         }
         self.recreate_current_task_row().await;
     }
 
     async fn change_priority(&mut self, priority: &Priority) {
-        let selected = self.state.selected();
+        let selected = self.list_state.selected();
         if selected.is_none() {
             return;
         }
@@ -547,24 +605,26 @@ impl TasksWidget {
                 p.priority = if *priority == t.priority() {
                     None
                 } else {
-                    Some(priority.clone())
+                    Some(*priority)
                 };
                 if p.is_empty() {
                     self.changed_tasks.retain(|c| !c.is_task(t));
                 }
             }
             None => self.changed_tasks.push(TaskPatch {
-                task: t.clone_boxed(),
-                state: None,
+                task: Some(t.clone_boxed()),
+                name: None,
+                description: None,
                 due: None,
-                priority: Some(priority.clone()),
+                priority: Some(*priority),
+                state: None,
             }),
         }
         self.recreate_current_task_row().await;
     }
 
     async fn undo_changes(&mut self) {
-        let selected = self.state.selected();
+        let selected = self.list_state.selected();
         if selected.is_none() {
             return;
         }
@@ -575,12 +635,47 @@ impl TasksWidget {
     }
 
     async fn recreate_current_task_row(&mut self) {
-        let idx = self.state.selected().unwrap();
+        let idx = self.list_state.selected().unwrap();
         self.tasks[idx] = TaskRow::new(self.tasks[idx].task(), &self.changed_tasks);
     }
 
     async fn update_task_info_view(&mut self) {
         self.task_info_viewer.write().await.set_task(self.selected_task()).await;
+    }
+
+    async fn show_add_task_dialog(&mut self) {
+        let mut d = CreateUpdateTaskDialog::new("Create a task", self.providers_storage.clone()).await;
+        if let Some(dh) = &self.draw_helper {
+            d.set_draw_helper(dh.clone());
+        }
+        self.dialog = Some(Box::new(d));
+        self.is_global_dialog = true;
+    }
+
+    #[tracing::instrument(level = "info", target = "tasks_widget")]
+    async fn create_or_update_task(&mut self, patch: &Patch) {
+        let provider = self
+            .providers_storage
+            .read()
+            .await
+            .provider(patch.provider_name.as_ref().unwrap());
+        let project_id = patch.project_id.as_ref().unwrap();
+        let tp = patch.task_patch.as_ref().unwrap();
+
+        {
+            let mut provider = provider.provider.write().await;
+            match provider.create_task(project_id, tp).await {
+                Ok(()) => {
+                    provider.reload().await;
+                }
+                Err(e) => {
+                    tracing::error!(error=?e, "Create a task");
+                    self.error_logger.write().await.add_error(e.to_string().as_str());
+                }
+            };
+        }
+
+        self.load_tasks(&self.last_filter.clone()).await;
     }
 }
 
@@ -601,8 +696,10 @@ impl KeyboardHandler for TasksWidget {
         let mut need_to_update_view = false;
         let mut new_due = None;
         let mut new_priority = None;
+        let mut patch = Patch::default();
+        let mut add_another_one_task = false;
 
-        if let Some(d) = &mut self.change_dalog {
+        if let Some(d) = &mut self.dialog {
             need_to_update_view = true;
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
@@ -610,30 +707,51 @@ impl KeyboardHandler for TasksWidget {
                     new_due = d.selected().as_ref().map(|p| match p {
                         DuePatchItem::Custom(_) => {
                             let w = d.selected_custom_widget().unwrap();
-                            if let Some(w) = w.as_any().downcast_ref::<DateTimeEditor>() {
+                            if let Some(w) = w.as_any().downcast_ref::<DateEditor>() {
                                 DuePatchItem::Custom(w.value())
                             } else {
                                 panic!("Unexpected custom widget type")
                             }
                         }
-                        _ => p.clone(),
+                        _ => *p,
                     });
                 }
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<Priority>>() {
-                    new_priority = d.selected().clone();
+                    new_priority = *d.selected();
                 }
-                self.change_dalog = None;
+
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<CreateUpdateTaskDialog>() {
+                    patch.provider_name = d.provider_name().await;
+                    patch.project_id = d.project_id().await;
+                    patch.task_patch = d.task_patch().await;
+                    add_another_one_task = d.add_another_one();
+                }
+                self.dialog = None;
+
+                if let Some(dh) = &self.draw_helper {
+                    dh.write().await.hide_cursor();
+                }
             }
         };
+
         if let Some(due) = new_due {
             self.change_due_date(&due).await;
         }
+
         if let Some(p) = new_priority {
             self.change_priority(&p).await;
         }
 
+        if patch.is_valid() {
+            self.create_or_update_task(&patch).await;
+        }
+
         if need_to_update_view {
             self.update_task_info_view().await;
+        }
+
+        if add_another_one_task {
+            self.show_add_task_dialog().await;
         }
 
         handled
@@ -643,8 +761,8 @@ impl KeyboardHandler for TasksWidget {
 #[async_trait]
 impl WidgetTrait for TasksWidget {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        if self.state.selected().is_some_and(|idx| idx >= self.tasks.len()) {
-            self.state.select(Some(0));
+        if self.list_state.selected().is_some_and(|idx| idx >= self.tasks.len()) {
+            self.list_state.select(Some(0));
         }
 
         let changed = &self.changed_tasks;
@@ -654,12 +772,12 @@ impl WidgetTrait for TasksWidget {
             title.push_str(format!(" (uncommitted count {}, use 'c'+'c' to commit them)", changed.len()).as_str());
         }
 
-        let h = Header::new(title.as_str(), self.is_active, Some(&self.activate_shortcut));
+        let h = Header::new(title.as_str(), self.is_active(), Some(&self.activate_shortcut));
         h.block().render(area, buf);
 
         let mut y = area.y + 1;
 
-        let mut selected = self.state.selected();
+        let mut selected = self.list_state.selected();
         if selected.is_some_and(|idx| idx >= self.tasks.len()) {
             selected = Some(0);
         }
@@ -719,8 +837,8 @@ impl WidgetTrait for TasksWidget {
             &mut scrollbar_state,
         );
 
-        if self.change_dalog.is_some() {
-            self.render_change_due_dialog(area, buf).await;
+        if self.dialog.is_some() {
+            self.render_dialog(area, buf).await;
         }
     }
 
@@ -732,12 +850,14 @@ impl WidgetTrait for TasksWidget {
         Size::default()
     }
 
-    fn set_active(&mut self, is_active: bool) {
-        self.is_active = is_active
-    }
-
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+impl std::fmt::Debug for TasksWidget {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TasksWidget")
     }
 }
 

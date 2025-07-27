@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 
-pub mod dialog;
-pub mod key_bindings_help_dialog;
-pub mod list_dialog;
-pub mod states_dialog;
-pub mod text_input_dialog;
+mod create_update_task;
+mod dialog;
+mod key_bindings_help;
+mod list;
+mod states;
+mod text_input;
 
+pub use create_update_task::Dialog as CreateUpdateTaskDialog;
 pub use dialog::DialogTrait;
-pub use key_bindings_help_dialog::Dialog as KeyBindingsHelpDialog;
-pub use list_dialog::Dialog as ListDialog;
-pub use states_dialog::Dialog as StatesDialog;
-pub use text_input_dialog::Dialog as TextInputDialog;
+pub use key_bindings_help::Dialog as KeyBindingsHelpDialog;
+pub use list::Dialog as ListDialog;
+pub use states::Dialog as StatesDialog;
+pub use text_input::Dialog as TextInputDialog;

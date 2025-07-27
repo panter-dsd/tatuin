@@ -10,19 +10,17 @@ use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
     text::Text,
-    widgets::{Block, Borders, Paragraph, Widget},
+    widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
-use regex::Regex;
 
-pub struct LineEdit {
+pub struct TextEdit {
     text: String,
-    validator: Option<Regex>,
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
     widget_state: WidgetState,
 }
 
-impl WidgetStateTrait for LineEdit {
+impl WidgetStateTrait for TextEdit {
     fn is_active(&self) -> bool {
         self.widget_state.is_active()
     }
@@ -51,11 +49,11 @@ impl WidgetStateTrait for LineEdit {
     }
 }
 
-impl LineEdit {
-    pub fn new(validator: Option<Regex>) -> Self {
+#[allow(dead_code)]
+impl TextEdit {
+    pub fn new() -> Self {
         Self {
             text: String::new(),
-            validator,
             draw_helper: None,
             last_cursor_pos: Position::default(),
             widget_state: WidgetState::default(),
@@ -76,23 +74,51 @@ impl LineEdit {
 }
 
 #[async_trait]
-impl WidgetTrait for LineEdit {
+impl WidgetTrait for TextEdit {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default().borders(Borders::ALL).border_style(style::BORDER_COLOR);
 
         let inner_area = b.inner(area);
-        let mut text = self.text.clone();
-        let text_width = Text::from(text.clone()).width() as u16;
-        if text_width >= inner_area.width - 1 {
-            let count_to_drop = (text_width + 1 - inner_area.width) as usize;
-            text.drain(..count_to_drop);
+
+        let mut lines = self.text.split('\n').collect::<Vec<&str>>();
+        let lines_count = lines.len();
+        let possible_line_count = inner_area.height - 2;
+
+        let not_all_fit = lines_count > possible_line_count as usize;
+        if not_all_fit {
+            lines = lines
+                .iter()
+                .skip(lines.len() - possible_line_count as usize)
+                .cloned()
+                .collect::<Vec<&str>>();
         }
 
-        Paragraph::new(text.clone()).block(b).render(area, buf);
+        Paragraph::new(lines.join("\n")).block(b).render(inner_area, buf);
+
+        if not_all_fit {
+            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(Some("↑"))
+                .end_symbol(Some("↓"));
+            let mut scrollbar_state = ScrollbarState::new(lines_count).position(lines_count);
+            scrollbar.render(
+                Rect {
+                    x: inner_area.x,
+                    y: inner_area.y + 1, // header
+                    width: inner_area.width,
+                    height: inner_area.height - 1,
+                },
+                buf,
+                &mut scrollbar_state,
+            );
+        }
 
         if let Some(dh) = &self.draw_helper {
             if self.is_active() {
-                let pos = Position::new(area.x + text.len() as u16 + 1, area.y + 1);
+                let last_line_width = Text::raw(lines[lines.len() - 1]).width() as u16;
+                let pos = Position::new(
+                    std::cmp::min(inner_area.x + last_line_width + 1, inner_area.x + inner_area.width - 2),
+                    std::cmp::min(inner_area.y + lines.len() as u16, inner_area.y + inner_area.height - 2),
+                );
 
                 if pos != self.last_cursor_pos {
                     dh.write().await.set_cursor_pos(pos);
@@ -103,7 +129,7 @@ impl WidgetTrait for LineEdit {
     }
 
     fn size(&self) -> Size {
-        Size::new(30, 3)
+        Size::new(30, 10)
     }
 
     fn set_draw_helper(&mut self, dh: DrawHelper) {
@@ -116,18 +142,11 @@ impl WidgetTrait for LineEdit {
 }
 
 #[async_trait]
-impl KeyboardHandler for LineEdit {
+impl KeyboardHandler for TextEdit {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         match key.code {
-            KeyCode::Char(ch) => {
-                let validated = self
-                    .validator
-                    .as_ref()
-                    .is_none_or(|v| v.is_match(format!("{}{ch}", self.text).as_str()));
-                if validated {
-                    self.text.push(ch);
-                }
-            }
+            KeyCode::Char(ch) => self.text.push(ch),
+            KeyCode::Enter => self.text.push('\n'),
             KeyCode::Backspace => {
                 self.text.pop();
             }
@@ -140,6 +159,6 @@ impl KeyboardHandler for LineEdit {
 }
 
 #[async_trait]
-impl MouseHandler for LineEdit {
+impl MouseHandler for TextEdit {
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
 }

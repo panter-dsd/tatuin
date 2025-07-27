@@ -10,14 +10,14 @@ use super::{
     types::ArcRwLock,
     ui::{
         dialogs::{DialogTrait, KeyBindingsHelpDialog, StatesDialog, TextInputDialog},
-        widgets::WidgetTrait,
+        widgets::{WidgetStateTrait, WidgetTrait},
     },
 };
 use async_trait::async_trait;
 use color_eyre::Result;
 use crossterm::event::{
     DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
-    MouseEvent,
+    KeyboardEnhancementFlags, MouseEvent, PushKeyboardEnhancementFlags,
 };
 use ratatui::{
     DefaultTerminal,
@@ -29,7 +29,9 @@ use ratatui::{
 };
 use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
-use std::{collections::HashMap, hash::Hash, io::Write, slice::IterMut, str::FromStr, sync::Arc, time::Duration};
+use std::{
+    collections::HashMap, hash::Hash, io::Write, slice::Iter, slice::IterMut, str::FromStr, sync::Arc, time::Duration,
+};
 use tasks_widget::ErrorLoggerTrait;
 use tokio::sync::{OnceCell, RwLock, mpsc};
 mod dialogs;
@@ -47,6 +49,7 @@ use crossterm::execute;
 mod keyboard_handler;
 use widgets::HyperlinkWidget;
 mod draw_helper;
+mod order_changer;
 use mouse_handler::MouseHandler;
 use selectable_list::SelectableList;
 use strum::{Display, EnumString};
@@ -85,11 +88,16 @@ trait AppBlockWidget: WidgetTrait {
 struct DrawHelper {
     tx: mpsc::UnboundedSender<()>,
     set_pos_tx: mpsc::UnboundedSender<Option<Position>>,
+    screen_size: Size,
 }
 
 impl DrawHelper {
     fn new(tx: mpsc::UnboundedSender<()>, set_pos_tx: mpsc::UnboundedSender<Option<Position>>) -> Self {
-        Self { tx, set_pos_tx }
+        Self {
+            tx,
+            set_pos_tx,
+            screen_size: Size::default(),
+        }
     }
 }
 
@@ -102,6 +110,14 @@ impl draw_helper::DrawHelperTrait for DrawHelper {
     }
     fn hide_cursor(&mut self) {
         let _ = self.set_pos_tx.send(None);
+    }
+
+    fn screen_size(&self) -> Size {
+        self.screen_size
+    }
+
+    fn set_screen_size(&mut self, s: Size) {
+        self.screen_size = s
     }
 }
 
@@ -166,12 +182,15 @@ pub struct App {
     cursor_pos: Option<Position>,
 }
 
-impl<T> tasks_widget::ProvidersStorage<T> for SelectableList<T>
-where
-    T: Send + Sync,
-{
-    fn iter_mut(&mut self) -> IterMut<'_, T> {
+impl tasks_widget::ProvidersStorage for SelectableList<Provider> {
+    fn iter_mut<'a>(&'a mut self) -> IterMut<'a, Provider> {
         self.iter_mut()
+    }
+    fn iter<'a>(&'a self) -> Iter<'a, Provider> {
+        self.iter()
+    }
+    fn provider(&self, name: &str) -> Provider {
+        self.iter().find(|p| p.name == name).unwrap().clone()
     }
 }
 
@@ -254,6 +273,11 @@ impl App {
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         execute!(std::io::stdout(), EnableMouseCapture)?;
+        execute!(
+            std::io::stdout(),
+            PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+        )?;
+
         for b in self.app_blocks.values_mut() {
             let mut b = b.write().await;
             self.all_shortcuts.extend(b.activate_shortcuts().iter().map(|s| {
@@ -277,7 +301,8 @@ impl App {
         let (redraw_tx, mut redraw_rx) = mpsc::unbounded_channel::<()>();
         let (set_cursor_pos_tx, mut set_cursor_pos_rx) = mpsc::unbounded_channel::<Option<Position>>();
         let dh = {
-            let d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, set_cursor_pos_tx));
+            let mut d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, set_cursor_pos_tx));
+            d.set_screen_size(terminal.get_frame().area().as_size());
             Arc::new(RwLock::new(d))
         };
 
@@ -299,10 +324,19 @@ impl App {
         let mut on_tasks_changed = self.tasks_widget.read().await.subscribe_on_changes();
         let mut on_jobs_changed = self.async_jobs_storage.read().await.subscribe_on_changes();
 
+        let mut screen_size = dh.read().await.screen_size();
         while !self.should_exit {
             if let Some(d) = &self.dialog {
                 if d.should_be_closed() {
                     self.close_dialog().await;
+                }
+            }
+
+            {
+                let ss = terminal.get_frame().area().as_size();
+                if ss != screen_size {
+                    dh.write().await.set_screen_size(ss);
+                    screen_size = ss;
                 }
             }
 
@@ -713,8 +747,8 @@ impl App {
             buf,
         );
         self.render_filters(filter_area, buf).await;
-        self.render_tasks(list_area, buf).await;
         self.render_task_description(task_description_area, buf).await;
+        self.render_tasks(list_area, buf).await;
 
         if !self.error_logger.read().await.is_empty() {
             let block = Block::bordered()

@@ -6,7 +6,7 @@ mod task;
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::provider::{GetTasksError, ProviderTrait};
+use crate::provider::{Capabilities, ProviderTrait, StringError};
 use crate::task::{State, Task as TaskTrait};
 use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
 use ratatui::style::Color;
@@ -85,7 +85,7 @@ impl ProviderTrait for Provider {
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
-    ) -> Result<Vec<Box<dyn TaskTrait>>, GetTasksError> {
+    ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
         let mut should_clear = false;
         if let Some(last_filter) = self.last_filter.as_mut() {
             should_clear = last_filter != f;
@@ -146,7 +146,7 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, Box<dyn Error>> {
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
         self.load_projects().await?;
         let mut result: Vec<Box<dyn ProjectTrait>> = Vec::new();
         for p in &self.projects {
@@ -160,23 +160,25 @@ impl ProviderTrait for Provider {
         let mut errors = Vec::new();
 
         for p in patches {
+            let task = p.task.as_ref().unwrap();
+
             if let Some(state) = &p.state {
                 match state {
-                    State::Completed => match self.c.close_task(p.task.id().as_str()).await {
+                    State::Completed => match self.c.close_task(task.id().as_str()).await {
                         Ok(_) => self.tasks.clear(),
                         Err(e) => errors.push(PatchError {
-                            task: p.task.clone_boxed(),
+                            task: task.clone_boxed(),
                             error: e.to_string(),
                         }),
                     },
                     State::InProgress | State::Unknown(_) => errors.push(PatchError {
-                        task: p.task.clone_boxed(),
+                        task: task.clone_boxed(),
                         error: format!("The state {state} is unsupported"),
                     }),
-                    State::Uncompleted => match self.c.reopen_task(p.task.id().as_str()).await {
+                    State::Uncompleted => match self.c.reopen_task(task.id().as_str()).await {
                         Ok(_) => self.tasks.clear(),
                         Err(e) => errors.push(PatchError {
-                            task: p.task.clone_boxed(),
+                            task: task.clone_boxed(),
                             error: e.to_string(),
                         }),
                     },
@@ -186,6 +188,8 @@ impl ProviderTrait for Provider {
             if p.due.is_some() || p.priority.is_some() {
                 let mut due_custom_dt = String::new();
                 let r = client::UpdateTaskRequest {
+                    content: None,
+                    description: None,
                     due_string: p.due.as_ref().map(|due| match due {
                         DuePatchItem::NoDate => "no date",
                         DuePatchItem::Today => "today",
@@ -199,10 +203,10 @@ impl ProviderTrait for Provider {
                     }),
                     priority: p.priority.as_ref().map(task::priority_to_int),
                 };
-                match self.c.update_task(p.task.id().as_str(), &r).await {
+                match self.c.update_task(task.id().as_str(), &r).await {
                     Ok(_) => self.tasks.clear(),
                     Err(e) => errors.push(PatchError {
-                        task: p.task.clone_boxed(),
+                        task: task.clone_boxed(),
                         error: e.to_string(),
                     }),
                 }
@@ -219,5 +223,32 @@ impl ProviderTrait for Provider {
 
     fn color(&self) -> Color {
         self.color
+    }
+
+    fn capabilities(&self) -> Capabilities {
+        Capabilities { create_task: true }
+    }
+
+    async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
+        let mut due_custom_dt = String::new();
+
+        let r = client::CreateTaskRequest {
+            content: tp.name.as_ref().unwrap(),
+            description: tp.description.as_deref(),
+            project_id: Some(project_id),
+            due_string: tp.due.as_ref().map(|due| match due {
+                DuePatchItem::NoDate => "no date",
+                DuePatchItem::Today => "today",
+                DuePatchItem::Tomorrow => "tomorrow",
+                DuePatchItem::ThisWeekend => "weekend",
+                DuePatchItem::NextWeek => "next week",
+                DuePatchItem::Custom(dt) => {
+                    due_custom_dt = dt.format("%Y-%m-%d").to_string();
+                    &due_custom_dt
+                }
+            }),
+            priority: tp.priority.as_ref().map(task::priority_to_int),
+        };
+        self.c.create_task(&r).await.map_err(|e| e.into())
     }
 }

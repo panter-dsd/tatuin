@@ -5,7 +5,7 @@ use chrono::Datelike;
 use crate::task::{DateTimeUtc, Priority, State, Task as TaskTrait};
 use crate::time::{add_days, clear_time};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum DuePatchItem {
     Today,
     Tomorrow,
@@ -16,17 +16,17 @@ pub enum DuePatchItem {
 }
 
 impl DuePatchItem {
-    pub fn to_date(&self, dt: &DateTimeUtc) -> Option<DateTimeUtc> {
+    pub fn to_date(self, current_dt: &DateTimeUtc) -> Option<DateTimeUtc> {
         let result = match self {
-            DuePatchItem::Today => Some(*dt),
-            DuePatchItem::Tomorrow => Some(add_days(dt, 1)),
-            DuePatchItem::ThisWeekend => match dt.weekday() {
-                chrono::Weekday::Sat | chrono::Weekday::Sun => Some(*dt),
-                wd => Some(add_days(dt, 5 - wd as u64)),
+            DuePatchItem::Today => Some(*current_dt),
+            DuePatchItem::Tomorrow => Some(add_days(current_dt, 1)),
+            DuePatchItem::ThisWeekend => match current_dt.weekday() {
+                chrono::Weekday::Sat | chrono::Weekday::Sun => Some(*current_dt),
+                wd => Some(add_days(current_dt, 5 - wd as u64)),
             },
-            DuePatchItem::NextWeek => Some(add_days(dt, 7 - dt.weekday() as u64)),
+            DuePatchItem::NextWeek => Some(add_days(current_dt, 7 - current_dt.weekday() as u64)),
             DuePatchItem::NoDate => None,
-            DuePatchItem::Custom(dt) => Some(*dt),
+            DuePatchItem::Custom(dt) => Some(dt),
         };
 
         result.map(|d| clear_time(&d))
@@ -44,22 +44,32 @@ impl DuePatchItem {
 }
 
 pub struct TaskPatch {
-    pub task: Box<dyn TaskTrait>,
-    pub state: Option<State>,
+    pub task: Option<Box<dyn TaskTrait>>,
+    pub name: Option<String>,
+    pub description: Option<String>,
     pub due: Option<DuePatchItem>,
     pub priority: Option<Priority>,
+    pub state: Option<State>,
 }
 
 impl std::fmt::Display for TaskPatch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
-            "TaskPatch {{ task_id: {}, task_title: {} state: {:?}, due: {:?}, priority: {:?} }}",
-            self.task.id(),
-            self.task.text(),
+            "TaskPatch {{ task_id: {}, task_title: {} state: {:?}, due: {:?}, priority: {:?}, name: {:?}, description: {:?}",
+            self.task.as_ref().map(|t| t.id()).unwrap_or("-".to_string()),
+            self.task.as_ref().map(|t| t.text()).unwrap_or("-".to_string()),
             self.state,
             self.due,
-            self.priority
+            self.priority,
+            self.name,
+            self.description,
         ))
+    }
+}
+
+impl std::fmt::Debug for TaskPatch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.to_string().as_str())
     }
 }
 
@@ -69,17 +79,25 @@ impl TaskPatch {
     }
 
     pub fn is_task(&self, task: &dyn TaskTrait) -> bool {
-        self.task.id() == task.id() && self.task.provider() == task.provider()
+        self.task
+            .as_ref()
+            .is_some_and(|t| t.id() == task.id() && t.provider() == task.provider())
     }
 }
 
 impl Clone for TaskPatch {
     fn clone(&self) -> Self {
         Self {
-            task: self.task.clone_boxed(),
-            state: self.state.clone(),
-            due: self.due.clone(),
-            priority: self.priority.clone(),
+            task: if self.task.is_some() {
+                Some(self.task.as_ref().unwrap().clone_boxed())
+            } else {
+                None
+            },
+            name: self.name.clone(),
+            description: self.description.clone(),
+            due: self.due,
+            priority: self.priority,
+            state: self.state,
         }
     }
 }

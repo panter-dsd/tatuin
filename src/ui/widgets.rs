@@ -1,17 +1,23 @@
 // SPDX-License-Identifier: MIT
 
-pub mod date_time;
-pub mod hyperlink_widget;
-pub mod line_edit;
-pub mod markdown_line;
-pub mod task_row;
-pub mod text;
-pub mod widget;
+mod button;
+mod combo_box;
+mod date;
+mod hyperlink_widget;
+mod line_edit;
+mod markdown_line;
+mod task_row;
+mod text;
+mod text_edit;
+mod widget;
 
-pub use date_time::DateTimeEditor;
+pub use button::Button;
+pub use combo_box::{ComboBox, CustomWidgetItemUpdater, Item as ComboBoxItem};
+pub use date::DateEditor;
 pub use hyperlink_widget::HyperlinkWidget;
 pub use line_edit::LineEdit;
 pub use markdown_line::MarkdownLine;
 pub use task_row::TaskRow;
 pub use text::Text;
-pub use widget::WidgetTrait;
+pub use text_edit::TextEdit;
+pub use widget::{WidgetState, WidgetStateTrait, WidgetTrait};

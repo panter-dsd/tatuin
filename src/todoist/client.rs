@@ -13,8 +13,19 @@ use urlencoding::encode;
 
 const BASE_URL: &str = "https://todoist.com/api/v1";
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
+pub struct CreateTaskRequest<'a> {
+    pub content: &'a str,
+    pub description: Option<&'a str>,
+    pub project_id: Option<&'a str>,
+    pub due_string: Option<&'a str>,
+    pub priority: Option<i32>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct UpdateTaskRequest<'a> {
+    pub content: Option<&'a str>,
+    pub description: Option<&'a str>,
     pub due_string: Option<&'a str>,
     pub priority: Option<i32>,
 }
@@ -215,37 +226,44 @@ impl Client {
     }
 
     pub async fn reopen_task(&self, task_id: &str) -> Result<(), Box<dyn Error>> {
-        let resp = self
-            .client
+        self.client
             .post(format!("{BASE_URL}/tasks/{task_id}/reopen"))
             .headers(self.default_header.clone())
             .send()
-            .await?;
-        if resp.status().is_success() {
-            return Ok(());
-        }
-        Err(Box::<dyn Error>::from(format!(
-            "wrong status: {}",
-            resp.status().as_str()
-        )))
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                tracing::error!(target:"todoist_client", task_id=?task_id, error=?e, "Reopen the task");
+                Box::<dyn Error>::from(e.to_string())
+            })
     }
 
     pub async fn update_task(&self, task_id: &str, r: &UpdateTaskRequest<'_>) -> Result<(), Box<dyn Error>> {
-        let resp = self
-            .client
+        self.client
             .post(format!("{BASE_URL}/tasks/{task_id}"))
             .json(r)
             .headers(self.default_header.clone())
             .send()
-            .await?;
-        if resp.status().is_success() {
-            return Ok(());
-        }
-        Err(Box::<dyn Error>::from(format!(
-            "wrong status {}: {}",
-            resp.status().as_str(),
-            resp.text().await.unwrap_or("unknown".to_string())
-        )))
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                tracing::error!(target:"todoist_client", request=?r, error=?e, "Update the task");
+                Box::<dyn Error>::from(e.to_string())
+            })
+    }
+
+    pub async fn create_task(&self, r: &CreateTaskRequest<'_>) -> Result<(), Box<dyn Error>> {
+        self.client
+            .post(format!("{BASE_URL}/tasks"))
+            .json(r)
+            .headers(self.default_header.clone())
+            .send()
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                tracing::error!(target:"todoist_client", request=?r, error=?e, "Create the task");
+                Box::<dyn Error>::from(e.to_string())
+            })
     }
 }
 

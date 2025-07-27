@@ -152,7 +152,7 @@ impl TaskTrait for Task {
     }
 
     fn priority(&self) -> Priority {
-        self.priority.clone()
+        self.priority
     }
 
     fn url(&self) -> String {

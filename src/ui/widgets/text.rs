@@ -14,14 +14,16 @@ use ratatui::{
 
 use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 
-use super::WidgetTrait;
+use super::{WidgetState, WidgetStateTrait, WidgetTrait};
 
 pub struct Text {
     text: String,
     width: u16,
     style: Style,
     modifier: Modifier,
+    widget_state: WidgetState,
 }
+crate::impl_widget_state_trait!(Text);
 
 impl Text {
     pub fn new(text: &str) -> Self {
@@ -30,6 +32,7 @@ impl Text {
             width: RatatuiText::from(text).width() as u16,
             style: style::REGULAR_TEXT_STYLE,
             modifier: Modifier::empty(),
+            widget_state: WidgetState::default(),
         }
     }
 
@@ -47,15 +50,17 @@ impl Text {
 #[async_trait]
 impl WidgetTrait for Text {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        RatatuiText::styled(self.text.as_str(), self.style.add_modifier(self.modifier)).render(
-            Rect {
-                x: area.x,
-                y: area.y,
-                width: self.width,
-                height: 1,
-            },
-            buf,
-        );
+        RatatuiText::styled(self.text.as_str(), self.style.add_modifier(self.modifier))
+            .centered()
+            .render(
+                Rect {
+                    x: area.x,
+                    y: area.y,
+                    width: self.width,
+                    height: 1,
+                },
+                buf,
+            );
     }
 
     fn size(&self) -> Size {

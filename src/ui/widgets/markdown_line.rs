@@ -2,7 +2,7 @@
 
 use std::{any::Any, sync::Arc};
 
-use super::{HyperlinkWidget, Text, WidgetTrait};
+use super::{HyperlinkWidget, Text, WidgetState, WidgetStateTrait, WidgetTrait};
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
@@ -16,7 +16,7 @@ use tokio::sync::RwLock;
 
 use crate::{
     types::ArcRwLock,
-    ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler},
+    ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style},
 };
 
 pub struct MarkdownLine {
@@ -24,7 +24,9 @@ pub struct MarkdownLine {
     width: u16,
     style: Option<Style>,
     widgets: ArcRwLock<Vec<Box<dyn WidgetTrait>>>,
+    widget_state: WidgetState,
 }
+crate::impl_widget_state_trait!(MarkdownLine);
 
 impl MarkdownLine {
     pub fn new(text: &str) -> Self {
@@ -41,6 +43,7 @@ impl MarkdownLine {
                 .unwrap_or_default(),
             style: None,
             widgets: Arc::new(RwLock::new(widgets)),
+            widget_state: WidgetState::default(),
         }
     }
 
@@ -135,6 +138,11 @@ fn widgets(node: &Node) -> Vec<Box<dyn WidgetTrait>> {
             Node::Emphasis(_) => {
                 result.push(Box::new(
                     Text::new(generate_node_text(n).as_str()).modifier(Modifier::ITALIC),
+                ));
+            }
+            Node::InlineCode(n) => {
+                result.push(Box::new(
+                    Text::new(n.value.as_str()).style(style::INLINE_CODE_TEXT_STYLE),
                 ));
             }
             Node::Delete(_) => {
