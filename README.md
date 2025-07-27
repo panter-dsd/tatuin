@@ -47,7 +47,13 @@ This command will guide you through setting up the integration for the specified
 
 ## Screenshots
 
+### Main window
+
 ![Main screenshot](https://raw.github.com/panter-dsd/tatuin/master/assets/screenshots/main.png?raw=true "Main screenshot")
+
+### Create a task
+
+![Task creation dialog](https://raw.github.com/panter-dsd/tatuin/master/assets/screenshots/task_creation_dialog.png?raw=true "Task creation dialog")
 
 ## Contributing
 
