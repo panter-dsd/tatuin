@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::{any::Any, sync::Arc};
 
 use async_trait::async_trait;

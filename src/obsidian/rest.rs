@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use serde::Deserialize;
 use std::fs;
 use std::path;
