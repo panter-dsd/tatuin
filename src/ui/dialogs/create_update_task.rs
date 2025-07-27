@@ -5,7 +5,6 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Layout, Rect, Size},
-    text::Text as RatatuiText,
     widgets::{Block, Borders, Widget},
 };
 
@@ -28,8 +27,6 @@ use crate::{
 };
 
 use super::DialogTrait;
-
-const FOOTER: &str = "Input text and press Enter for applying or Esc for cancelling";
 
 struct ComboBoxItemUpdater {}
 
@@ -107,7 +104,7 @@ impl Dialog {
             providers_storage,
             provider_selector: ComboBox::new("Provider", &provider_items),
             widget_state: WidgetState::default(),
-            size: Size::new(RatatuiText::from(FOOTER).width() as u16 + 2, 20),
+            size: Size::new(100, 20),
             project_selector: ComboBox::new("Project", &[]),
             task_name_caption: Text::new("Task name"),
             task_name_editor: LineEdit::new(None),
@@ -266,7 +263,6 @@ impl WidgetTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let b = Block::default()
             .title_top(self.title.clone())
-            .title_bottom(FOOTER)
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
             .border_style(style::BORDER_COLOR);

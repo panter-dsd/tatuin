@@ -2,7 +2,7 @@
 
 use super::{
     AppBlockWidget,
-    dialogs::{AddEditTaskDialog, DialogTrait, ListDialog},
+    dialogs::{CreateUpdateTaskDialog, DialogTrait, ListDialog},
     draw_helper::{DrawHelper, global_dialog_area},
     header::Header,
     keyboard_handler::KeyboardHandler,
@@ -193,7 +193,7 @@ impl TasksWidget {
             change_due_shortcut: Shortcut::new("Change due date of the task", &['c', 'd']),
             change_priority_shortcut: Shortcut::new("Change priority of the task", &['c', 'p']),
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
-            add_task_shortcut: Shortcut::new("Add task", &['a']),
+            add_task_shortcut: Shortcut::new("Create a task", &['a']),
             last_filter: Filter::default(),
             dialog: None,
             is_global_dialog: true,
@@ -644,7 +644,7 @@ impl TasksWidget {
     }
 
     async fn show_add_task_dialog(&mut self) {
-        let mut d = AddEditTaskDialog::new("Add a task", self.providers_storage.clone()).await;
+        let mut d = CreateUpdateTaskDialog::new("Create a task", self.providers_storage.clone()).await;
         if let Some(dh) = &self.draw_helper {
             d.set_draw_helper(dh.clone());
         }
@@ -720,7 +720,7 @@ impl KeyboardHandler for TasksWidget {
                     new_priority = *d.selected();
                 }
 
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<AddEditTaskDialog>() {
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<CreateUpdateTaskDialog>() {
                     patch.provider_name = d.provider_name().await;
                     patch.project_id = d.project_id().await;
                     patch.task_patch = d.task_patch().await;
