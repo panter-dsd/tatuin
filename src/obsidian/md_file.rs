@@ -207,19 +207,14 @@ impl File {
     }
 }
 
-pub fn task_from_patch(tp: &TaskPatch) -> String {
-    let mut elements = vec![format!(
-        "- [{}] ",
-        tp.state.as_ref().unwrap_or(&State::Uncompleted).to_string()
-    )];
-    if let Some(name) = &tp.name {
-        elements.push(name.clone());
+pub fn task_to_string(t: &Task) -> String {
+    let mut elements = vec![format!("- [{}]", t.state.to_string()), t.text.clone()];
+    let priority_str = priority_to_str(&t.priority).to_string();
+    if !priority_str.is_empty() {
+        elements.push(priority_str);
     }
-    if let Some(due) = &tp.due {
+    if let Some(due) = &t.due {
         elements.push(format!("{DUE_EMOJI} {}", due.format("%Y-%m-%d")))
-    }
-    if let Some(p) = &tp.priority {
-        elements.push(priority_to_str(p).to_string())
     }
     elements.join(" ")
 }

@@ -22,11 +22,14 @@ pub struct Client {
     client: reqwest::Client,
 }
 
+impl std::fmt::Debug for Client {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Rest client")
+    }
+}
+
 fn read_config(file_name: path::PathBuf) -> Option<Config> {
-    tracing::info!(target:"HERE", path=?file_name);
     if let Ok(data) = fs::read_to_string(file_name) {
-        let x: Result<Config, serde_json::Error> = serde_json::from_str(data.as_str());
-        tracing::info!(target:"HERE", x=?x);
         serde_json::from_str(data.as_str()).ok()
     } else {
         None
@@ -55,12 +58,30 @@ impl Client {
         Ok(format!("https://localhost:{}{uri}", cfg.port))
     }
 
+    #[tracing::instrument(level = "info", target = "obsidian_rest_client")]
     pub async fn add_text_to_daily_note(&self, data: &str) -> Result<(), StringError> {
-        self.client
-            .post(self.url("/periodic/daily")?)
-            .bearer_auth(self.token()?)
-            .body(reqwest::Body::wrap(data.to_string()))
+        // Sometimes, if the daily note doesn't exist, it is created but without any sent data.
+        // I think, it might be because of temlates applying.
+        // So, we send the empty request first to create the note.
+        let url = self.url("/periodic/daily")?;
+        let token = self.token()?;
+
+        let _ = self
+            .client
+            .post(&url)
+            .bearer_auth(&token)
             .header(reqwest::header::CONTENT_TYPE, "text/markdown")
+            .send()
+            .await
+            .map_err(|e| {
+                tracing::error!(target:"obsidian_rest_client", data=?data, cfg=?self.cfg, "Create the daily note");
+                StringError::new(e.to_string().as_str())
+            })?;
+        self.client
+            .post(&url)
+            .bearer_auth(&token)
+            .header(reqwest::header::CONTENT_TYPE, "text/markdown")
+            .body(reqwest::Body::wrap(data.to_string()))
             .send()
             .await
             .map(|_| ())

@@ -16,15 +16,15 @@ pub enum DuePatchItem {
 }
 
 impl DuePatchItem {
-    pub fn to_date(self, dt: &DateTimeUtc) -> Option<DateTimeUtc> {
+    pub fn to_date(self, current_dt: &DateTimeUtc) -> Option<DateTimeUtc> {
         let result = match self {
-            DuePatchItem::Today => Some(*dt),
-            DuePatchItem::Tomorrow => Some(add_days(dt, 1)),
-            DuePatchItem::ThisWeekend => match dt.weekday() {
-                chrono::Weekday::Sat | chrono::Weekday::Sun => Some(*dt),
-                wd => Some(add_days(dt, 5 - wd as u64)),
+            DuePatchItem::Today => Some(*current_dt),
+            DuePatchItem::Tomorrow => Some(add_days(current_dt, 1)),
+            DuePatchItem::ThisWeekend => match current_dt.weekday() {
+                chrono::Weekday::Sat | chrono::Weekday::Sun => Some(*current_dt),
+                wd => Some(add_days(current_dt, 5 - wd as u64)),
             },
-            DuePatchItem::NextWeek => Some(add_days(dt, 7 - dt.weekday() as u64)),
+            DuePatchItem::NextWeek => Some(add_days(current_dt, 7 - current_dt.weekday() as u64)),
             DuePatchItem::NoDate => None,
             DuePatchItem::Custom(dt) => Some(dt),
         };

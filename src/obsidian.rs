@@ -7,13 +7,15 @@ mod project;
 mod rest;
 mod task;
 
-use crate::filter;
-use crate::project::Project as ProjectTrait;
-use crate::provider::{Capabilities, ProviderTrait, StringError};
-use crate::task::Task as TaskTrait;
-use crate::task_patch::{PatchError, TaskPatch};
+use crate::{
+    filter,
+    project::Project as ProjectTrait,
+    provider::{Capabilities, ProviderTrait, StringError},
+    task::{Priority, Task as TaskTrait},
+    task_patch::{DuePatchItem, PatchError, TaskPatch},
+};
 use async_trait::async_trait;
-use md_file::task_from_patch;
+use md_file::task_to_string;
 use ratatui::style::Color;
 
 pub const PROVIDER_NAME: &str = "Obsidian";
@@ -111,9 +113,14 @@ impl ProviderTrait for Provider {
     }
 
     async fn create_task(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
-        let t = task::Task::default();
-        let p = patch_to_internal(&t, tp);
-        self.rest.add_text_to_daily_note(task_from_patch(&p).as_str()).await
+        let t = task::Task {
+            text: tp.name.clone().unwrap(),
+            state: task::State::Uncompleted,
+            due: tp.due.unwrap_or(DuePatchItem::NoDate).to_date(&chrono::Utc::now()),
+            priority: tp.priority.unwrap_or(Priority::Normal),
+            ..task::Task::default()
+        };
+        self.rest.add_text_to_daily_note(task_to_string(&t).as_str()).await
     }
 }
 
