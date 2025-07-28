@@ -10,6 +10,8 @@ use crate::provider::StringError;
 #[serde(rename_all = "camelCase")]
 struct Config {
     port: u16,
+    insecure_port: u16,
+    enable_insecure_server: bool,
     api_key: String,
 }
 
@@ -57,7 +59,12 @@ impl Client {
 
     fn url(&self, uri: &str) -> Result<String, StringError> {
         let cfg = self.cfg.as_ref().ok_or(not_connected_err())?;
-        Ok(format!("https://localhost:{}{uri}", cfg.port))
+        let (transport, port) = if cfg.enable_insecure_server {
+            ("http", cfg.insecure_port)
+        } else {
+            ("https", cfg.port)
+        };
+        Ok(format!("{transport}://localhost:{port}{uri}"))
     }
 
     #[tracing::instrument(level = "info", target = "obsidian_rest_client")]
@@ -76,7 +83,7 @@ impl Client {
             .send()
             .await
             .map_err(|e| {
-                tracing::error!(target:"obsidian_rest_client", data=?data, cfg=?self.cfg, "Create the daily note");
+                tracing::error!(target:"obsidian_rest_client", data=?data, cfg=?self.cfg, error=?e, "Create the daily note");
                 StringError::new(e.to_string().as_str())
             })?;
         self.client
@@ -88,7 +95,7 @@ impl Client {
             .await
             .map(|_| ())
             .map_err(|e| {
-                tracing::error!(target:"obsidian_rest_client", data=?data, cfg=?self.cfg, "Add text to daily note");
+                tracing::error!(target:"obsidian_rest_client", data=?data, cfg=?self.cfg, error=?e, "Add text to daily note");
                 StringError::new(e.to_string().as_str())
             })
     }
