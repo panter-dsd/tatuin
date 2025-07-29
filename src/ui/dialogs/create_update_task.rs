@@ -243,6 +243,37 @@ impl Dialog {
                 .await;
         }
     }
+
+    async fn fill_priority_selector_items(&mut self) {
+        let item = self.provider_selector.value().await;
+        if item.is_none() {
+            return;
+        }
+        let item = item.unwrap();
+
+        let mut providers = self.providers_storage.write().await;
+        let provider = providers.iter_mut().find(|p| p.name == item.text());
+        if provider.is_none() {
+            return;
+        }
+
+        let provider = provider.as_ref().unwrap();
+        self.priority_selector
+            .set_items(
+                &provider
+                    .supported_priorities
+                    .iter()
+                    .map(|p| ComboBoxItem::new(p.to_string().as_str(), *p))
+                    .collect::<Vec<ComboBoxItem<_>>>(),
+            )
+            .await;
+        self.priority_selector
+            .set_current_item(&ComboBoxItem::new(
+                Priority::Normal.to_string().as_str(),
+                Priority::Normal,
+            ))
+            .await;
+    }
 }
 
 #[async_trait]
@@ -395,6 +426,7 @@ impl KeyboardHandler for Dialog {
             let new_provider = self.provider_selector.value().await;
             if current_provider != new_provider {
                 self.fill_project_selector_items().await;
+                self.fill_priority_selector_items().await;
             }
             self.update_enabled_state().await;
             return true;

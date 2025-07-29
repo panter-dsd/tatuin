@@ -11,7 +11,7 @@ use std::any::Any;
 
 use super::project::Project;
 
-const SUPPORTED_PRIORITIES: &[Priority] = &[Priority::Normal, Priority::Medium, Priority::High, Priority::Highest];
+pub const SUPPORTED_PRIORITIES: &[Priority] = &[Priority::Normal, Priority::Medium, Priority::High, Priority::Highest];
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone)]

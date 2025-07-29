@@ -4,15 +4,15 @@ pub mod client;
 mod project;
 mod task;
 
-use crate::filter;
-use crate::project::Project as ProjectTrait;
-use crate::provider::{Capabilities, ProviderTrait, StringError};
-use crate::task::{State, Task as TaskTrait};
-use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
+use crate::{
+    filter,
+    project::Project as ProjectTrait,
+    provider::{Capabilities, ProviderTrait, StringError},
+    task::{Priority, State, Task as TaskTrait},
+    task_patch::{DuePatchItem, PatchError, TaskPatch},
+};
 use ratatui::style::Color;
-use std::cmp::Ordering;
-use std::error::Error;
-use std::fmt::Debug;
+use std::{cmp::Ordering, error::Error, fmt::Debug};
 
 use async_trait::async_trait;
 
@@ -250,5 +250,9 @@ impl ProviderTrait for Provider {
             priority: tp.priority.as_ref().map(task::priority_to_int),
         };
         self.c.create_task(&r).await.map_err(|e| e.into())
+    }
+
+    fn supported_priorities(&self) -> Vec<Priority> {
+        task::SUPPORTED_PRIORITIES.into()
     }
 }
