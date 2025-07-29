@@ -11,6 +11,8 @@ use std::any::Any;
 
 use super::project::Project;
 
+const SUPPORTED_PRIORITIES: &[Priority] = &[Priority::Normal, Priority::Medium, Priority::High, Priority::Highest];
+
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone)]
 pub struct Duration {
@@ -174,7 +176,7 @@ impl TaskTrait for Task {
     fn const_patch_policy(&self) -> PatchPolicy {
         PatchPolicy {
             available_states: vec![TaskState::Uncompleted, TaskState::Completed],
-            available_priorities: vec![Priority::Normal, Priority::Medium, Priority::High, Priority::Highest],
+            available_priorities: SUPPORTED_PRIORITIES.into(),
             available_due_items: DuePatchItem::values(),
         }
     }
