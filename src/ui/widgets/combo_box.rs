@@ -199,6 +199,13 @@ where
         data.selected = None;
     }
 
+    pub async fn set_current_item(&self, item: &Item<T>) {
+        let mut data = self.internal_data.write().await;
+        if data.items.iter().any(|i| i == item) {
+            data.selected = Some(item.clone());
+        }
+    }
+
     pub async fn value(&self) -> Option<Item<T>> {
         self.internal_data.read().await.selected.clone()
     }
