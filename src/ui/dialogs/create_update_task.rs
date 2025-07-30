@@ -220,14 +220,14 @@ impl Dialog {
     }
 
     async fn fill_project_selector_items(&mut self) {
-        let item = self.provider_selector.value().await;
-        if item.is_none() {
+        let provider_name = self.provider_selector.value().await.map(|item| item.text().to_string());
+        if provider_name.is_none() {
             return;
         }
-        let item = item.unwrap();
+        let provider_name = provider_name.unwrap();
 
         let mut providers = self.providers_storage.write().await;
-        let provider = providers.iter_mut().find(|p| p.name == item.text());
+        let provider = providers.iter_mut().find(|p| p.name == provider_name);
         if provider.is_none() {
             return;
         }
@@ -245,14 +245,14 @@ impl Dialog {
     }
 
     async fn fill_priority_selector_items(&mut self) {
-        let item = self.provider_selector.value().await;
-        if item.is_none() {
+        let provider_name = self.provider_selector.value().await.map(|item| item.text().to_string());
+        if provider_name.is_none() {
             return;
         }
-        let item = item.unwrap();
+        let provider_name = provider_name.unwrap();
 
         let mut providers = self.providers_storage.write().await;
-        let provider = providers.iter_mut().find(|p| p.name == item.text());
+        let provider = providers.iter_mut().find(|p| p.name == provider_name);
         if provider.is_none() {
             return;
         }
