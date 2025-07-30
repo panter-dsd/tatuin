@@ -41,7 +41,7 @@ impl Client {
         };
 
         loop {
-            let mut resp = self
+            let r = self
                 .client
                 .get(format!(
                     "{}/todos?page={page}&per_page={PER_PAGE}&{state_query}",
@@ -50,14 +50,23 @@ impl Client {
                 .headers(self.default_header.clone())
                 .send()
                 .await?
+                .error_for_status()?
                 .json::<Vec<Todo>>()
-                .await?;
-            if resp.is_empty() {
-                break;
-            }
+                .await;
 
-            result.append(&mut resp);
-            page += 1;
+            match r {
+                Ok(mut v) => {
+                    if v.is_empty() {
+                        break;
+                    }
+                    result.append(&mut v);
+                    page += 1;
+                }
+                Err(e) => {
+                    tracing::error!(target:"gitlab_todo_client", state_query=state_query, page=page, error=?e);
+                    return Err(e.into());
+                }
+            }
         }
 
         Ok(result)
