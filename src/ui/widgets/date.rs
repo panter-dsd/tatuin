@@ -51,6 +51,10 @@ impl DateEditor {
         clear_time(&self.dt)
     }
 
+    pub fn set_value(&mut self, dt: DateTimeUtc) {
+        self.dt = clear_time(&dt)
+    }
+
     fn style(&self, element: Element) -> Style {
         if self.is_active() && self.current_element == element {
             style::DATE_TIME_EDITOR_ACTIVE_ELEMENT

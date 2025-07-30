@@ -154,6 +154,21 @@ impl Dialog {
                 task.priority(),
             ))
             .await;
+        let task_due = task.due();
+        let due: DuePatchItem = task_due.map_or(DuePatchItem::NoDate, |d| d.into());
+        if let Some(dt) = task_due {
+            self.due_date_selector.remove_all_custom_widgets().await;
+            self.due_date_selector
+                .add_custom_widget(
+                    ComboBoxItem::new("Custom", DuePatchItem::Custom(dt)),
+                    Arc::new(DateEditor::new(Some(dt))),
+                    Arc::new(ComboBoxItemUpdater {}),
+                )
+                .await;
+        }
+        self.due_date_selector
+            .set_current_item(&ComboBoxItem::new(due.to_string().as_str(), due))
+            .await;
         self.update_enabled_state().await
     }
 
