@@ -107,6 +107,7 @@ pub struct TasksWidget {
     change_priority_shortcut: Shortcut,
     undo_changes_shortcut: Shortcut,
     add_task_shortcut: Shortcut,
+    edit_task_shortcut: Shortcut,
 
     last_filter: Filter,
 
@@ -131,6 +132,7 @@ impl AppBlockWidget for TasksWidget {
             &mut self.change_priority_shortcut,
             &mut self.undo_changes_shortcut,
             &mut self.add_task_shortcut,
+            &mut self.edit_task_shortcut,
         ]
     }
 
@@ -194,6 +196,7 @@ impl TasksWidget {
             change_priority_shortcut: Shortcut::new("Change priority of the task", &['c', 'p']),
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
             add_task_shortcut: Shortcut::new("Create a task", &['a']),
+            edit_task_shortcut: Shortcut::new("Edit the task", &['e']),
             last_filter: Filter::default(),
             dialog: None,
             is_global_dialog: true,
@@ -211,6 +214,7 @@ impl TasksWidget {
                 let mut change_priority_rx = s_guard.change_priority_shortcut.subscribe_to_accepted();
                 let mut undo_changes_rx = s_guard.undo_changes_shortcut.subscribe_to_accepted();
                 let mut add_task_rx = s_guard.add_task_shortcut.subscribe_to_accepted();
+                let mut edit_task_rx = s_guard.edit_task_shortcut.subscribe_to_accepted();
                 drop(s_guard);
                 loop {
                     tokio::select! {
@@ -230,7 +234,11 @@ impl TasksWidget {
                         _ = change_due_rx.recv() => s.write().await.show_change_due_date_dialog().await,
                         _ = change_priority_rx.recv() => s.write().await.show_change_priority_dialog().await,
                         _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
-                        _ = add_task_rx.recv() => s.write().await.show_add_task_dialog().await,
+                        _ = add_task_rx.recv() => s.write().await.show_add_task_dialog(None).await,
+                        _ = edit_task_rx.recv() => {
+                            let task = s.read().await.selected_task();
+                            s.write().await.show_add_task_dialog(task).await;
+                        },
                     }
 
                     s.write().await.update_task_info_view().await;
@@ -242,6 +250,7 @@ impl TasksWidget {
         });
         s
     }
+
     pub fn set_providers_filter(&mut self, providers: &[String]) {
         self.providers_filter = providers.to_vec();
         self.filter_tasks();
@@ -643,8 +652,11 @@ impl TasksWidget {
         self.task_info_viewer.write().await.set_task(self.selected_task()).await;
     }
 
-    async fn show_add_task_dialog(&mut self) {
+    async fn show_add_task_dialog(&mut self, task: Option<Box<dyn TaskTrait>>) {
         let mut d = CreateUpdateTaskDialog::new("Create a task", self.providers_storage.clone()).await;
+        if let Some(t) = task {
+            d.set_task(t.as_ref()).await;
+        }
         if let Some(dh) = &self.draw_helper {
             d.set_draw_helper(dh.clone());
         }
@@ -751,7 +763,7 @@ impl KeyboardHandler for TasksWidget {
         }
 
         if add_another_one_task {
-            self.show_add_task_dialog().await;
+            self.show_add_task_dialog(None).await;
         }
 
         handled

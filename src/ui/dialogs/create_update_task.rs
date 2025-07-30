@@ -11,7 +11,7 @@ use ratatui::{
 };
 
 use crate::{
-    task::{DateTimeUtc, Priority},
+    task::{DateTimeUtc, Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, TaskPatch},
     types::ArcRwLock,
     ui::{
@@ -49,6 +49,7 @@ pub struct Dialog {
     providers_storage: ArcRwLock<dyn ProvidersStorage>,
     widget_state: WidgetState,
     size: Size,
+    task: Option<Box<dyn TaskTrait>>,
 
     provider_selector: ComboBox<String>,
     project_selector: ComboBox<String>,
@@ -74,8 +75,8 @@ impl Dialog {
             .await
             .iter()
             .filter(|p| p.capabilities.create_task)
-            .map(|p| ComboBoxItem::new(p.name.as_str(), p.name.clone()))
-            .collect::<Vec<ComboBoxItem<String>>>();
+            .map(|p| p.name.clone().into())
+            .collect::<Vec<ComboBoxItem<_>>>();
 
         let mut due_date_selector = ComboBox::new(
             "Due date",
@@ -107,6 +108,7 @@ impl Dialog {
             provider_selector: ComboBox::new("Provider", &provider_items),
             widget_state: WidgetState::default(),
             size: Size::new(100, 20),
+            task: None,
             project_selector: ComboBox::new("Project", &[]),
             task_name_caption: Text::new("Task name"),
             task_name_editor: LineEdit::new(None),
@@ -133,12 +135,28 @@ impl Dialog {
         s
     }
 
+    pub async fn set_task(&mut self, task: &dyn TaskTrait) {
+        self.task = Some(task.clone_boxed());
+        self.create_task_and_another_one.set_visible(false);
+        self.create_task_button.set_title("Update a task and close\nCtrl+Enter");
+        self.provider_selector.set_current_item(&task.provider().into()).await;
+        self.fill_project_selector_items().await;
+        self.fill_priority_selector_items().await;
+        if let Some(p) = task.project() {
+            self.project_selector
+                .set_current_item(&ComboBoxItem::new(p.name().as_str(), p.id()))
+                .await;
+        }
+        self.task_name_editor.set_text(task.text().as_str());
+        self.update_enabled_state().await
+    }
+
     pub async fn provider_name(&self) -> Option<String> {
         if !self.can_create_task() {
             return None;
         }
 
-        self.provider_selector.value().await.map(|item| item.data().to_string())
+        self.provider_selector.value().await.map(|item| item.text().to_string())
     }
 
     pub async fn project_id(&self) -> Option<String> {
@@ -342,14 +360,25 @@ impl WidgetTrait for Dialog {
             _,
             create_task_and_another_one_button_area,
             _,
-        ] = Layout::horizontal([
-            Constraint::Fill(1),
-            Constraint::Fill(1),
-            Constraint::Length(5),
-            Constraint::Fill(1),
-            Constraint::Fill(1),
-        ])
-        .areas(buttons_area);
+        ] = if self.task.is_none() {
+            Layout::horizontal([
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Length(5),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+            ])
+            .areas(buttons_area)
+        } else {
+            Layout::horizontal([
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(0),
+                Constraint::Fill(0),
+                Constraint::Fill(1),
+            ])
+            .areas(buttons_area)
+        };
 
         let mut to_render: Vec<(&mut dyn WidgetTrait, Rect)> = vec![
             (&mut self.provider_selector, provider_area),
@@ -378,7 +407,9 @@ impl WidgetTrait for Dialog {
             }
         });
         for (w, a) in to_render {
-            w.render(a, buf).await;
+            if w.is_visible() {
+                w.render(a, buf).await;
+            }
         }
     }
 

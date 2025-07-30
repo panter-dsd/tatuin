@@ -26,18 +26,28 @@ crate::impl_widget_state_trait!(Button);
 
 impl Button {
     pub fn new(title: &str) -> Self {
-        let width = Text::from(title).width() as u16 + 2;
         let (tx, _) = broadcast::channel(1);
-        Self {
+        let mut s = Self {
             title: title.to_string(),
-            width,
+            width: 0,
             tx,
             widget_state: WidgetState::default(),
-        }
+        };
+        s.calculate_width();
+        s
+    }
+
+    fn calculate_width(&mut self) {
+        self.width = Text::from(self.title.as_str()).width() as u16 + 2;
     }
 
     pub fn on_pressed_subscribe(&self) -> broadcast::Receiver<()> {
         self.tx.subscribe()
+    }
+
+    pub fn set_title(&mut self, title: &str) {
+        self.title = title.to_string();
+        self.calculate_width();
     }
 }
 

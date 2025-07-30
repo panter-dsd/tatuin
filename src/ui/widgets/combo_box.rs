@@ -21,12 +21,21 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct Item<T> {
     text: String,
     display: String,
     data: T,
+}
+
+impl<T> PartialEq for Item<T>
+where
+    T: std::cmp::Eq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.text == other.text && self.data == other.data
+    }
 }
 
 impl<T> Item<T>
@@ -55,6 +64,19 @@ where
 
     pub fn set_data(&mut self, data: &T) {
         self.data = data.clone();
+    }
+}
+
+impl<T> From<String> for Item<T>
+where
+    T: Default,
+{
+    fn from(text: String) -> Self {
+        Self {
+            text: text.clone(),
+            display: text.clone(),
+            data: T::default(),
+        }
     }
 }
 
