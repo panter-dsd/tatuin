@@ -231,7 +231,7 @@ impl Dialog {
         if provider.is_none() {
             return;
         }
-        let provider = provider.as_ref().unwrap();
+        let provider = provider.unwrap();
         if let Ok(projects) = provider.provider.write().await.projects().await {
             self.project_selector
                 .set_items(
@@ -257,7 +257,7 @@ impl Dialog {
             return;
         }
 
-        let provider = provider.as_ref().unwrap();
+        let provider = provider.unwrap();
         self.priority_selector
             .set_items(
                 &provider
