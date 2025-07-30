@@ -148,6 +148,12 @@ impl Dialog {
                 .await;
         }
         self.task_name_editor.set_text(task.text().as_str());
+        self.priority_selector
+            .set_current_item(&ComboBoxItem::new(
+                task.priority().to_string().as_str(),
+                task.priority(),
+            ))
+            .await;
         self.update_enabled_state().await
     }
 
