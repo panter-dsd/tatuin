@@ -120,8 +120,8 @@ impl Dialog {
                     .collect::<Vec<ComboBoxItem<Priority>>>(),
             )
             .current_item(&ComboBoxItem::new(
-                Priority::Normal.to_string().as_str(),
-                Priority::Normal,
+                Priority::default().to_string().as_str(),
+                Priority::default(),
             ))
             .await,
             due_date_selector,
@@ -269,8 +269,8 @@ impl Dialog {
             .await;
         self.priority_selector
             .set_current_item(&ComboBoxItem::new(
-                Priority::Normal.to_string().as_str(),
-                Priority::Normal,
+                Priority::default().to_string().as_str(),
+                Priority::default(),
             ))
             .await;
     }
