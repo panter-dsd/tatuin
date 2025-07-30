@@ -17,6 +17,12 @@ pub struct Client {
     client: reqwest::Client,
 }
 
+impl std::fmt::Debug for Client {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GitLab client base_url={}", self.base_url)
+    }
+}
+
 impl Client {
     pub fn new(base_url: &str, api_key: &str) -> Self {
         let mut headers = HeaderMap::new();
@@ -28,6 +34,7 @@ impl Client {
         }
     }
 
+    #[tracing::instrument(level = "info", target = "gitlab_cient")]
     pub async fn todos(&self, state: &FilterState) -> Result<Vec<Todo>, Box<dyn Error>> {
         let mut result = Vec::new();
 
