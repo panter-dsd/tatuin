@@ -120,8 +120,8 @@ impl Dialog {
                     .collect::<Vec<ComboBoxItem<Priority>>>(),
             )
             .current_item(&ComboBoxItem::new(
-                Priority::Normal.to_string().as_str(),
-                Priority::Normal,
+                Priority::default().to_string().as_str(),
+                Priority::default(),
             ))
             .await,
             due_date_selector,
@@ -220,18 +220,18 @@ impl Dialog {
     }
 
     async fn fill_project_selector_items(&mut self) {
-        let item = self.provider_selector.value().await;
-        if item.is_none() {
+        let provider_name = self.provider_selector.value().await.map(|item| item.text().to_string());
+        if provider_name.is_none() {
             return;
         }
-        let item = item.unwrap();
+        let provider_name = provider_name.unwrap();
 
         let mut providers = self.providers_storage.write().await;
-        let provider = providers.iter_mut().find(|p| p.name == item.text());
+        let provider = providers.iter_mut().find(|p| p.name == provider_name);
         if provider.is_none() {
             return;
         }
-        let provider = provider.as_ref().unwrap();
+        let provider = provider.unwrap();
         if let Ok(projects) = provider.provider.write().await.projects().await {
             self.project_selector
                 .set_items(
@@ -242,6 +242,37 @@ impl Dialog {
                 )
                 .await;
         }
+    }
+
+    async fn fill_priority_selector_items(&mut self) {
+        let provider_name = self.provider_selector.value().await.map(|item| item.text().to_string());
+        if provider_name.is_none() {
+            return;
+        }
+        let provider_name = provider_name.unwrap();
+
+        let mut providers = self.providers_storage.write().await;
+        let provider = providers.iter_mut().find(|p| p.name == provider_name);
+        if provider.is_none() {
+            return;
+        }
+
+        let provider = provider.unwrap();
+        self.priority_selector
+            .set_items(
+                &provider
+                    .supported_priorities
+                    .iter()
+                    .map(|p| ComboBoxItem::new(p.to_string().as_str(), *p))
+                    .collect::<Vec<ComboBoxItem<_>>>(),
+            )
+            .await;
+        self.priority_selector
+            .set_current_item(&ComboBoxItem::new(
+                Priority::default().to_string().as_str(),
+                Priority::default(),
+            ))
+            .await;
     }
 }
 
@@ -395,6 +426,7 @@ impl KeyboardHandler for Dialog {
             let new_provider = self.provider_selector.value().await;
             if current_provider != new_provider {
                 self.fill_project_selector_items().await;
+                self.fill_priority_selector_items().await;
             }
             self.update_enabled_state().await;
             return true;

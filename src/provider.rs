@@ -2,7 +2,7 @@
 
 use crate::filter;
 use crate::project::Project as ProjectTrait;
-use crate::task::Task as TaskTrait;
+use crate::task::{Priority, Task as TaskTrait};
 use crate::task_patch::{PatchError, TaskPatch};
 use crate::types::ArcRwLock;
 use async_trait::async_trait;
@@ -61,6 +61,9 @@ pub trait ProviderTrait: Send + Sync + Debug {
     fn color(&self) -> Color;
     fn capabilities(&self) -> Capabilities;
     async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError>;
+    fn supported_priorities(&self) -> Vec<Priority> {
+        Priority::values()
+    }
 }
 
 #[derive(Clone)]
@@ -69,5 +72,6 @@ pub struct Provider {
     pub type_name: String,
     pub color: Color,
     pub capabilities: Capabilities,
+    pub supported_priorities: Vec<Priority>,
     pub provider: ArcRwLock<Box<dyn ProviderTrait>>,
 }
