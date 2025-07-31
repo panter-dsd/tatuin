@@ -217,7 +217,7 @@ impl Dialog {
         let description = self.task_description_editor.text();
 
         Some(TaskPatch {
-            task: None,
+            task: self.task.as_ref().map(|t| t.clone_boxed()),
             name: Some(self.task_name_editor.text()),
             description: (!description.is_empty()).then_some(description),
             due: self.due_date_selector.value().await.map(|item| *item.data()),
