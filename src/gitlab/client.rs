@@ -34,7 +34,7 @@ impl Client {
         }
     }
 
-    #[tracing::instrument(level = "info", target = "gitlab_cient")]
+    #[tracing::instrument(level = "info", target = "gitlab_client")]
     pub async fn todos(&self, state: &FilterState) -> Result<Vec<Todo>, Box<dyn Error>> {
         let mut result = Vec::new();
 
