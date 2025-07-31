@@ -231,11 +231,18 @@ where
         data.selected = None;
     }
 
-    pub async fn set_current_item(&self, item: &Item<T>) {
+    pub async fn add_item(&mut self, item: Item<T>) {
+        self.internal_data.write().await.items.push(item);
+    }
+
+    pub async fn set_current_item(&self, item: &Item<T>) -> bool {
         let mut data = self.internal_data.write().await;
         if let Some(item) = data.items.iter().find(|i| *i == item) {
             data.selected = Some(item.clone());
+            return true;
         }
+
+        false
     }
 
     pub async fn value(&self) -> Option<Item<T>> {
