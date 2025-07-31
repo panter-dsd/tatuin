@@ -230,9 +230,7 @@ where
         data.selected = None;
     }
 
-    pub async fn set_current_item(&mut self, item: &Item<T>) {
-        self.update_all_custom_items().await;
-
+    pub async fn set_current_item(&self, item: &Item<T>) {
         let mut data = self.internal_data.write().await;
         if data.items.iter().any(|i| i == item) {
             data.selected = Some(item.clone());
@@ -242,23 +240,12 @@ where
     pub async fn value(&self) -> Option<Item<T>> {
         self.internal_data.read().await.selected.clone()
     }
-
-    async fn update_all_custom_items(&mut self) {
-        let mut data = self.internal_data.write().await;
-        let start = data.items.len() - data.custom_widgets.iter().len();
-        for i in start..data.items.len() {
-            let widget_idx = i - start;
-            let w = data.custom_widgets[widget_idx].clone();
-            let f = data.custom_widget_item_updaters[widget_idx].clone();
-            f.update(w, &mut data.items[i]);
-        }
-    }
 }
 
 #[async_trait]
 impl<T> WidgetTrait for ComboBox<T>
 where
-    T: Clone + Send + Sync + Eq + 'static,
+    T: Clone + Send + Sync + 'static,
 {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let [mut caption_area, editor_area, button_area] = Layout::horizontal([
@@ -310,7 +297,7 @@ where
 #[async_trait]
 impl<T> KeyboardHandler for ComboBox<T>
 where
-    T: Clone + Send + Sync + Eq + 'static,
+    T: Clone + Send + Sync,
 {
     #[tracing::instrument(level = "debug", target = "handle_keyboard")]
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
@@ -322,27 +309,30 @@ where
         let mut selected = None;
         let mut should_delete_dialog = false;
 
-        {
-            let mut data = self.internal_data.write().await;
-            if let Some(d) = &mut data.dialog {
-                handled = Some(d.handle_key(key).await);
-                if handled.is_some_and(|h| h) && d.should_be_closed() {
-                    should_delete_dialog = true;
-                    selected = d.selected().clone();
-                    data.custom_widgets = d.custom_widgets();
-                }
-            }
-
-            if should_delete_dialog {
-                data.dialog = None;
+        let mut data = self.internal_data.write().await;
+        if let Some(d) = &mut data.dialog {
+            handled = Some(d.handle_key(key).await);
+            if handled.is_some_and(|h| h) && d.should_be_closed() {
+                should_delete_dialog = true;
+                selected = d.selected().clone();
+                data.custom_widgets = d.custom_widgets();
             }
         }
 
-        if let Some(selected) = selected {
-            self.update_all_custom_items().await;
+        tracing::debug!(dialog_exists = data.dialog.is_some(), handled = handled, selected=?selected);
 
-            let mut data = self.internal_data.write().await;
+        if should_delete_dialog {
+            data.dialog = None;
+        }
+
+        if let Some(selected) = selected {
             let idx = data.items.iter().position(|item| item.text == selected).unwrap();
+            if idx >= data.items.len() - data.custom_widgets.len() {
+                let widget_idx = idx - (data.items.len() - data.custom_widgets.len());
+                let w = data.custom_widgets[widget_idx].clone();
+                let f = data.custom_widget_item_updaters[widget_idx].clone();
+                f.update(w, &mut data.items[idx]);
+            }
             data.selected = Some(data.items[idx].clone());
         }
 
