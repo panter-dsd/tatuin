@@ -2,8 +2,6 @@
 
 use std::any::Any;
 
-use chrono::Utc;
-
 use super::project::Project as ProjectTrait;
 use super::{
     task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
@@ -63,8 +61,8 @@ impl TaskTrait for PatchedTask {
     }
     fn due(&self) -> Option<DateTimeUtc> {
         if let Some(p) = &self.patch {
-            if let Some(v) = &p.due {
-                return v.to_date(&Utc::now());
+            if let Some(v) = p.due {
+                return v.into();
             }
         }
 

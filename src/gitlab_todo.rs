@@ -239,10 +239,8 @@ impl Provider {
             task: t.clone_boxed(),
             error: "The task doesn't support due changing".to_string(),
         })?;
-        let d = due
-            .to_date(&Utc::now())
-            .map(|d| d.format("%Y-%m-%d").to_string())
-            .unwrap_or_default();
+        let dt: Option<DateTimeUtc> = (*due).into();
+        let d = dt.map(|d| d.format("%Y-%m-%d").to_string()).unwrap_or_default();
 
         self.client
             .patch_issue(

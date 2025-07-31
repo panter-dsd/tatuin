@@ -116,7 +116,7 @@ impl ProviderTrait for Provider {
         let t = task::Task {
             text: tp.name.clone().unwrap(),
             state: task::State::Uncompleted,
-            due: tp.due.unwrap_or(DuePatchItem::NoDate).to_date(&chrono::Utc::now()),
+            due: tp.due.unwrap_or(DuePatchItem::NoDate).into(),
             priority: tp.priority.unwrap_or(Priority::Normal),
             ..task::Task::default()
         };
@@ -129,8 +129,8 @@ fn patch_to_internal<'a>(t: &'a task::Task, tp: &TaskPatch) -> patch::TaskPatch<
         task: t,
         name: tp.name.clone(),
         state: tp.state.map(|s| s.into()),
-        due: match &tp.due {
-            Some(due) => due.to_date(&chrono::Utc::now()),
+        due: match tp.due {
+            Some(due) => due.into(),
             None => None,
         },
         priority: tp.priority,
