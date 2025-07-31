@@ -236,8 +236,12 @@ impl TasksWidget {
                         _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
                         _ = add_task_rx.recv() => s.write().await.show_add_task_dialog(None).await,
                         _ = edit_task_rx.recv() => {
-                            let task = s.read().await.selected_task();
-                            s.write().await.show_add_task_dialog(task).await;
+                            let mut s = s.write().await;
+                            let task = s
+                                    .list_state
+                                    .selected()
+                                    .map(|i| s.tasks[std::cmp::min(i, s.tasks.len() - 1)].task().clone_boxed());
+                            s.show_add_task_dialog(task).await;
                         },
                     }
 
@@ -674,7 +678,15 @@ impl TasksWidget {
         let project_id = patch.project_id.as_ref().unwrap();
         let tp = patch.task_patch.as_ref().unwrap();
 
-        {
+        if tp.task.is_some() {
+            let mut provider = provider.provider.write().await;
+            let errors = provider.patch_tasks(&[tp.clone()]).await;
+            if !errors.is_empty() {
+                let e = &errors[0];
+                tracing::error!(error = e.to_string(), "Update the task");
+                self.error_logger.write().await.add_error(e.to_string().as_str());
+            }
+        } else {
             let mut provider = provider.provider.write().await;
             match provider.create_task(project_id, tp).await {
                 Ok(()) => {

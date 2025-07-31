@@ -84,7 +84,11 @@ impl ProviderTrait for Provider {
 
             match task.as_any().downcast_ref::<task::Task>() {
                 Some(t) => client_patches.push(patch_to_internal(t, p)),
-                None => panic!("Wrong casting!"),
+                None => panic!(
+                    "Wrong casting the task id=`{}` name=`{}` to obsidian!",
+                    task.id(),
+                    task.text(),
+                ),
             };
         }
 
