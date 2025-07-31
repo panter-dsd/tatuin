@@ -137,7 +137,7 @@ impl Dialog {
         s
     }
 
-    fn is_create(&self) -> bool {
+    fn is_task_creation(&self) -> bool {
         self.task.is_none()
     }
 
@@ -264,8 +264,9 @@ impl Dialog {
     async fn update_enabled_state(&mut self) {
         let provider_selected = self.provider_selector.value().await.is_some();
         let project_selected = self.project_selector.value().await.is_some();
-        self.provider_selector.set_enabled(self.is_create());
-        self.project_selector.set_enabled(self.is_create() && provider_selected);
+        self.provider_selector.set_enabled(self.is_task_creation());
+        self.project_selector
+            .set_enabled(self.is_task_creation() && provider_selected);
 
         self.task_name_editor.set_enabled(provider_selected && project_selected);
 
@@ -404,7 +405,7 @@ impl WidgetTrait for Dialog {
             _,
             create_task_and_another_one_button_area,
             _,
-        ] = if self.is_create() {
+        ] = if self.is_task_creation() {
             Layout::horizontal([
                 Constraint::Fill(1),
                 Constraint::Fill(1),
