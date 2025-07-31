@@ -716,7 +716,7 @@ impl KeyboardHandler for TasksWidget {
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DuePatchItem>>() {
-                    new_due = d.selected().as_ref().map(|p| match p {
+                    new_due = d.selected().map(|p| match p {
                         DuePatchItem::Custom(_) => {
                             let w = d.selected_custom_widget().unwrap();
                             if let Some(w) = w.as_any().downcast_ref::<DateEditor>() {
@@ -729,7 +729,7 @@ impl KeyboardHandler for TasksWidget {
                     });
                 }
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<Priority>>() {
-                    new_priority = *d.selected();
+                    new_priority = d.selected().cloned();
                 }
 
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<CreateUpdateTaskDialog>() {

@@ -45,8 +45,8 @@ impl DuePatchItem {
 
 impl From<DateTimeUtc> for DuePatchItem {
     fn from(dt: DateTimeUtc) -> Self {
-        let now = chrono::Utc::now();
-        match (now - dt).num_days() {
+        let now = clear_time(&chrono::Utc::now());
+        match (dt - now).num_days() {
             0 => DuePatchItem::Today,
             1 => DuePatchItem::Tomorrow,
             _ => DuePatchItem::Custom(dt),

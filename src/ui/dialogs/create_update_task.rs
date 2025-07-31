@@ -30,6 +30,8 @@ use crate::{
 
 use super::DialogTrait;
 
+const CUSTOM_DUE_TEXT: &str = "Custom";
+
 struct ComboBoxItemUpdater {}
 
 impl CustomWidgetItemUpdater<DuePatchItem> for ComboBoxItemUpdater {
@@ -93,7 +95,7 @@ impl Dialog {
 
         due_date_selector
             .add_custom_widget(
-                ComboBoxItem::new("Custom", DuePatchItem::Custom(DateTimeUtc::default())),
+                ComboBoxItem::new(CUSTOM_DUE_TEXT, DuePatchItem::Custom(DateTimeUtc::default())),
                 Arc::new(DateEditor::new(None)),
                 Arc::new(ComboBoxItemUpdater {}),
             )
@@ -154,21 +156,31 @@ impl Dialog {
                 task.priority(),
             ))
             .await;
+
         let task_due = task.due();
         let due: DuePatchItem = task_due.map_or(DuePatchItem::NoDate, |d| d.into());
         if let Some(dt) = task_due {
             self.due_date_selector.remove_all_custom_widgets().await;
+            let custom_due = DuePatchItem::Custom(dt);
             self.due_date_selector
                 .add_custom_widget(
-                    ComboBoxItem::new("Custom", DuePatchItem::Custom(dt)),
+                    ComboBoxItem::new(CUSTOM_DUE_TEXT, custom_due).display(custom_due.to_string().as_str()),
                     Arc::new(DateEditor::new(Some(dt))),
                     Arc::new(ComboBoxItemUpdater {}),
                 )
                 .await;
         }
         self.due_date_selector
-            .set_current_item(&ComboBoxItem::new(due.to_string().as_str(), due))
+            .set_current_item(&ComboBoxItem::new(
+                match due {
+                    DuePatchItem::Custom(_) => CUSTOM_DUE_TEXT.to_string(),
+                    _ => due.to_string(),
+                }
+                .as_str(),
+                due,
+            ))
             .await;
+
         self.update_enabled_state().await
     }
 

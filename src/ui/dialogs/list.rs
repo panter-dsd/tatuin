@@ -27,7 +27,7 @@ pub struct Dialog<T> {
     items: SelectableList<T>,
     custom_widgets: Vec<Arc<dyn WidgetTrait>>,
     should_be_closed: bool,
-    selected_item: Option<T>,
+    item_has_chosen: bool,
     show_top_title: bool,
     show_bottom_title: bool,
     widget_state: WidgetState,
@@ -73,7 +73,7 @@ where
             ),
             custom_widgets: Vec::new(),
             should_be_closed: false,
-            selected_item: None,
+            item_has_chosen: false,
             show_top_title: true,
             show_bottom_title: true,
             widget_state: WidgetState::default(),
@@ -110,8 +110,20 @@ where
         self
     }
 
-    pub fn selected(&self) -> &Option<T> {
-        &self.selected_item
+    pub fn selected(&self) -> Option<&T> {
+        if self.item_has_chosen {
+            self.items.selected()
+        } else {
+            None
+        }
+    }
+
+    pub fn selected_index(&self) -> Option<usize> {
+        if self.item_has_chosen {
+            self.items.selected_index()
+        } else {
+            None
+        }
     }
 
     pub fn selected_custom_widget(&self) -> Option<Arc<dyn WidgetTrait>> {
@@ -241,9 +253,7 @@ where
             KeyCode::Char('G') | KeyCode::End => self.items.select_last().await,
             KeyCode::Enter => {
                 self.should_be_closed = true;
-                if let Some(s) = self.items.selected() {
-                    self.selected_item = Some(s.clone());
-                }
+                self.item_has_chosen = true;
             }
             KeyCode::Char('l') | KeyCode::Right => {
                 if let Some(idx) = self.current_custom_widget_index() {
