@@ -60,21 +60,9 @@ impl File {
         let (text, completed_at) = extract_date_after_emoji(text.as_str(), COMPLETED_EMOJI);
         let (text, priority) = extract_priority(text.as_str());
 
-        let mut text = text;
-        let mut removed_chars_count = 0;
-
         let tags = TAG_RE
             .captures_iter(text.clone().as_str())
-            .map(|tag_cap| {
-                let m = tag_cap.get(1).unwrap();
-                text = [
-                    text.get(..m.start() - removed_chars_count).unwrap(),
-                    text.get(m.end() - removed_chars_count + 1..).unwrap_or_default(), // if the tag at the end
-                ]
-                .join(" ");
-                removed_chars_count += m.len();
-                tag_cap[2].to_string()
-            })
+            .map(|tag_cap| tag_cap[2].to_string())
             .collect::<Vec<String>>();
 
         Some(Task {
@@ -118,7 +106,7 @@ impl File {
     }
 
     fn patch_task_in_content(&self, p: &TaskPatch, content: &str) -> Result<String, Box<dyn Error>> {
-        let t = p.task;
+        let mut t = p.task.clone();
         let line = content
             .chars()
             .skip(t.start_pos)
@@ -127,7 +115,7 @@ impl File {
 
         match self.try_parse_task(&line, t.start_pos) {
             Some(task) => {
-                if task != *t {
+                if task != t {
                     return Err(Box::<dyn std::error::Error>::from(
                         "Task has been changed since last loading",
                     ));
@@ -140,87 +128,42 @@ impl File {
             }
         }
 
-        let state = p.state.as_ref().unwrap_or(&t.state);
+        t.text = p.name.as_ref().unwrap_or(&t.text).clone();
+        t.state = *p.state.as_ref().unwrap_or(&t.state);
+        t.priority = *p.priority.as_ref().unwrap_or(&t.priority);
+        t.due = p.due.or(t.due);
+        t.completed_at = p
+            .state
+            .as_ref()
+            .is_some_and(|s| s == &State::Completed)
+            .then_some(chrono::Utc::now());
 
-        let mut pos_found = false;
-        let mut found = false;
-        let mut result: String = content
-            .chars()
-            .enumerate()
-            .map(|(i, c)| {
-                let mut result = c;
-                if i > t.start_pos && !found {
-                    if pos_found {
-                        found = true;
-                        result = char::from(state.clone());
-                    } else {
-                        pos_found = c == '[';
-                    }
-                }
-                result
-            })
-            .collect();
-
-        if let Some(due) = p.due {
-            let task: String = result.chars().skip(t.start_pos).take(t.end_pos - t.start_pos).collect();
-            let (task, _) = extract_date_after_emoji(task.as_str(), DUE_EMOJI);
-
-            let mut chapters = vec![result.chars().take(t.start_pos).collect::<String>(), task];
-            if due != DateTimeUtc::from_timestamp(0, 0).unwrap() {
-                chapters.push(format!(" {DUE_EMOJI} {}", due.format("%Y-%m-%d")));
-            }
-            chapters.push(result.chars().skip(t.end_pos).collect::<String>());
-            result = chapters.join("");
-        }
-
-        if let Some(p) = &p.priority {
-            let task: String = result.chars().skip(t.start_pos).take(t.end_pos - t.start_pos).collect();
-            let (task, _) = extract_priority(task.as_str());
-
-            let mut chapters = vec![
-                result.chars().take(t.start_pos).collect::<String>(),
-                task,
-                " ".to_string(),
-                priority_to_str(p).to_string(),
-                " ".to_string(),
-                result.chars().skip(t.end_pos).collect::<String>(),
-            ];
-            if let Some(pos) = chapters.iter().rev().position(|s| !s.is_empty() && s != " ") {
-                // remove all empty lines from the end
-                chapters.truncate(chapters.len() - pos);
-            }
-            result = chapters.join("");
-        }
-
-        if p.state.as_ref().is_some_and(|s| *s == State::Completed) {
-            Ok([
-                result.chars().take(t.end_pos).collect::<String>(),
-                format!(" {COMPLETED_EMOJI} {}", chrono::Utc::now().format("%Y-%m-%d")),
-                result.chars().skip(t.end_pos).collect::<String>(),
-            ]
-            .join(""))
-        } else {
-            let task: String = result.chars().skip(t.start_pos).take(t.end_pos - t.start_pos).collect();
-            let (task, _) = extract_date_after_emoji(task.as_str(), COMPLETED_EMOJI);
-
-            Ok([
-                result.chars().take(t.start_pos).collect::<String>(),
-                task,
-                result.chars().skip(t.end_pos).collect::<String>(),
-            ]
-            .join(""))
-        }
+        Ok([
+            content.chars().take(t.start_pos).collect::<String>(),
+            content
+                .chars()
+                .skip(t.start_pos)
+                .take_while(|c| *c == ' ')
+                .collect::<String>(),
+            task_to_string(&t),
+            content.chars().skip(t.end_pos).collect::<String>(),
+        ]
+        .join(""))
     }
 }
 
 pub fn task_to_string(t: &Task) -> String {
-    let mut elements = vec![format!("- [{}]", t.state.to_string()), t.text.clone()];
+    let state_char: char = t.state.into();
+    let mut elements = vec![format!("- [{state_char}]"), t.text.clone()];
+    if let Some(due) = &t.due {
+        elements.push(format!("{DUE_EMOJI} {}", due.format("%Y-%m-%d")))
+    }
     let priority_str = priority_to_str(&t.priority).to_string();
     if !priority_str.is_empty() {
         elements.push(priority_str);
     }
-    if let Some(due) = &t.due {
-        elements.push(format!("{DUE_EMOJI} {}", due.format("%Y-%m-%d")))
+    if let Some(d) = &t.completed_at {
+        elements.push(format!("{COMPLETED_EMOJI} {}", d.format("%Y-%m-%d")))
     }
     elements.join(" ")
 }
@@ -392,7 +335,7 @@ some another text
         let task = p.try_parse_task(text.as_str(), 0);
         assert!(task.is_some());
         let task = task.unwrap();
-        assert_eq!(task.text, "Some task text");
+        assert_eq!(task.text, "Some #tag task #группа/имя_tag-name123 text #tag_at_end");
         assert_eq!(task.state, State::Completed);
         assert!(task.due.is_some());
         assert_eq!(task.due.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
@@ -527,7 +470,7 @@ some text
                 ),
                 file_content_after: format!(
                     "some text
-- [x] Correct task ⏫ {DUE_EMOJI} 2025-03-01{completed_string}
+- [x] Correct task {DUE_EMOJI} 2025-03-01 ⏫{completed_string}
 some text
 "
                 ),
@@ -831,6 +774,77 @@ Some another text";
                 result = r.unwrap();
                 tasks = p.tasks_from_content(&result).unwrap();
             }
+            assert_eq!(c.file_content_after, result, "Test '{}' was failed", c.name);
+        }
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn task_patching_test() {
+        struct Case<'a> {
+            name: &'a str,
+            file_content_before: String,
+            file_content_after: String,
+            patch: TaskPatch<'a>,
+        }
+        let cases: &[Case] = &[
+            Case {
+                name: "unchanged",
+                file_content_before: format!("  - [ ] Some text #tag #другой.тег {DUE_EMOJI} 2025-03-01 ⏫ #tag3"),
+                file_content_after: format!("  - [ ] Some text #tag #другой.тег #tag3 {DUE_EMOJI} 2025-03-01 ⏫"),
+                patch: TaskPatch {
+                    task: &Task::default(),
+                    name: None,
+                    state: None,
+                    due: None,
+                    priority: None,
+                },
+            },
+            Case {
+                name: "change name",
+                file_content_before: format!("  - [ ] Some text #tag #другой.тег {DUE_EMOJI} 2025-03-01 ⏫ #tag3"),
+                file_content_after: format!("  - [ ] Some another text {DUE_EMOJI} 2025-03-01 ⏫"),
+                patch: TaskPatch {
+                    task: &Task::default(),
+                    name: Some("Some another text".to_string()),
+                    state: None,
+                    due: None,
+                    priority: None,
+                },
+            },
+            Case {
+                name: "change all",
+                file_content_before: format!("  - [ ] Some text #tag #другой.тег {DUE_EMOJI} 2025-03-01 ⏫ #tag3"),
+                file_content_after: format!("  - [/] Some another text {DUE_EMOJI} 2025-01-27 🔺"),
+                patch: TaskPatch {
+                    task: &Task::default(),
+                    name: Some("Some another text".to_string()),
+                    state: Some(State::InProgress),
+                    due: Some(DateTimeUtc::from_naive_utc_and_offset(
+                        NaiveDate::parse_from_str("2025-01-27", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                        Utc,
+                    )),
+                    priority: Some(Priority::Highest),
+                },
+            },
+        ];
+
+        let p = File::new("");
+
+        for c in cases {
+            let original_tasks = p.tasks_from_content(c.file_content_before.as_str()).unwrap();
+            let task = original_tasks[0].clone();
+            let mut result = c.file_content_before.to_string();
+            let patch = TaskPatch {
+                task: &task,
+                ..c.patch.clone()
+            };
+            let r = p.patch_task_in_content(&patch, result.as_str());
+            assert!(r.is_ok(), "{}: {}", c.name, r.unwrap_err());
+            result = r.unwrap();
             assert_eq!(c.file_content_after, result, "Test '{}' was failed", c.name);
         }
     }
