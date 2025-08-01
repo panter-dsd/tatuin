@@ -177,13 +177,19 @@ impl File {
             let task: String = result.chars().skip(t.start_pos).take(t.end_pos - t.start_pos).collect();
             let (task, _) = extract_priority(task.as_str());
 
-            result = [
+            let mut chapters = vec![
                 result.chars().take(t.start_pos).collect::<String>(),
                 task,
+                " ".to_string(),
                 priority_to_str(p).to_string(),
+                " ".to_string(),
                 result.chars().skip(t.end_pos).collect::<String>(),
-            ]
-            .join("");
+            ];
+            if let Some(pos) = chapters.iter().rev().position(|s| !s.is_empty() && s != " ") {
+                // remove all empty lines from the end
+                chapters.truncate(chapters.len() - pos);
+            }
+            result = chapters.join("");
         }
 
         if p.state.as_ref().is_some_and(|s| *s == State::Completed) {
@@ -444,13 +450,13 @@ some another text
         let completed_string = format!(" ✅ {}", chrono::Utc::now().format("%Y-%m-%d"));
         struct Case<'a> {
             name: &'a str,
-            file_content_before: &'a str,
+            file_content_before: String,
             file_content_after: String,
         }
         let cases: &[Case] = &[
             Case {
                 name: "content contain the single task and nothing else",
-                file_content_before: "- [ ] Some text",
+                file_content_before: "- [ ] Some text".to_string(),
                 file_content_after: format!("- [x] Some text{completed_string}"),
             },
             Case {
@@ -458,7 +464,8 @@ some another text
                 file_content_before: "some text
 - [ ] Some text
 some another text
-",
+"
+                .to_string(),
                 file_content_after: format!(
                     "some text
 - [x] Some text{completed_string}
@@ -479,7 +486,8 @@ some another text
 - [ ]
 -[ ] Wrong task
 some another text
-",
+"
+                .to_string(),
                 file_content_after: format!(
                     "some text
 - [x] Correct task{completed_string}
@@ -500,11 +508,42 @@ some another text
                 file_content_before: "какой-то текст
 - [ ] Текст задачи
 длинный текст в конце
-",
+"
+                .to_string(),
                 file_content_after: format!(
                     "какой-то текст
 - [x] Текст задачи{completed_string}
 длинный текст в конце
+"
+                ),
+            },
+            Case {
+                name: "content contain priority and due",
+                file_content_before: format!(
+                    "some text
+- [ ] Correct task ⏫ {DUE_EMOJI} 2025-03-01
+some text
+"
+                ),
+                file_content_after: format!(
+                    "some text
+- [x] Correct task ⏫ {DUE_EMOJI} 2025-03-01{completed_string}
+some text
+"
+                ),
+            },
+            Case {
+                name: "content contain due and prority",
+                file_content_before: format!(
+                    "some text
+- [ ] Correct task {DUE_EMOJI} 2025-03-01 ⏫
+some text
+"
+                ),
+                file_content_after: format!(
+                    "some text
+- [x] Correct task {DUE_EMOJI} 2025-03-01 ⏫{completed_string}
+some text
 "
                 ),
             },
@@ -513,7 +552,7 @@ some another text
         let p = File::new("");
 
         for c in cases {
-            let original_tasks = p.tasks_from_content(c.file_content_before).unwrap();
+            let original_tasks = p.tasks_from_content(c.file_content_before.as_str()).unwrap();
             let mut tasks = original_tasks.clone();
             let mut result = c.file_content_before.to_string();
             for i in 0..original_tasks.len() {
@@ -714,6 +753,85 @@ Some another text";
             let (s, p) = extract_priority(c.line);
             assert_eq!(p, c.expected_priority, "Test {} was failed", c.name);
             assert_eq!(s, c.expected_string, "Test {} was failed", c.name);
+        }
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn change_priority_in_content_test() {
+        struct Case<'a> {
+            name: &'a str,
+            file_content_before: String,
+            file_content_after: String,
+            priority: Priority,
+        }
+        let cases: &[Case] = &[
+            Case {
+                name: "normal to low",
+                file_content_before: "- [ ] Some text".to_string(),
+                file_content_after: "- [ ] Some text 🔽".to_string(),
+                priority: Priority::Low,
+            },
+            Case {
+                name: "low to normal",
+                file_content_before: "- [ ] Some text 🔽".to_string(),
+                file_content_after: "- [ ] Some text".to_string(),
+                priority: Priority::Normal,
+            },
+            Case {
+                name: "low to high",
+                file_content_before: "- [ ] Some text 🔽".to_string(),
+                file_content_after: "- [ ] Some text ⏫".to_string(),
+                priority: Priority::High,
+            },
+            Case {
+                name: "due and normal to low",
+                file_content_before: format!("- [ ] Some text {DUE_EMOJI} 2025-03-01"),
+                file_content_after: format!("- [ ] Some text {DUE_EMOJI} 2025-03-01 🔽"),
+                priority: Priority::Low,
+            },
+            Case {
+                name: "due and low to normal",
+                file_content_before: format!("- [ ] Some text {DUE_EMOJI} 2025-03-01 🔽"),
+                file_content_after: format!("- [ ] Some text {DUE_EMOJI} 2025-03-01"),
+                priority: Priority::Normal,
+            },
+            Case {
+                name: "due and low to high",
+                file_content_before: format!("- [ ] Some text {DUE_EMOJI} 2025-03-01 🔽"),
+                file_content_after: format!("- [ ] Some text {DUE_EMOJI} 2025-03-01 ⏫"),
+                priority: Priority::High,
+            },
+            Case {
+                name: "due and low to high priority before due",
+                file_content_before: format!("- [ ] Some text 🔽 {DUE_EMOJI} 2025-03-01"),
+                file_content_after: format!("- [ ] Some text {DUE_EMOJI} 2025-03-01 ⏫"),
+                priority: Priority::High,
+            },
+        ];
+
+        let p = File::new("");
+
+        for c in cases {
+            let original_tasks = p.tasks_from_content(c.file_content_before.as_str()).unwrap();
+            let mut tasks = original_tasks.clone();
+            let mut result = c.file_content_before.to_string();
+            for i in 0..original_tasks.len() {
+                let r = p.patch_task_in_content(
+                    &TaskPatch {
+                        task: &tasks[i],
+                        name: None,
+                        state: None,
+                        due: None,
+                        priority: Some(c.priority),
+                    },
+                    result.as_str(),
+                );
+                assert!(r.is_ok(), "{}: {}", c.name, r.unwrap_err());
+                result = r.unwrap();
+                tasks = p.tasks_from_content(&result).unwrap();
+            }
+            assert_eq!(c.file_content_after, result, "Test '{}' was failed", c.name);
         }
     }
 }
