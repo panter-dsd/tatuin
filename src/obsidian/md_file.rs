@@ -476,7 +476,7 @@ some text
                 ),
             },
             Case {
-                name: "content contain due and prority",
+                name: "content contain due and priority",
                 file_content_before: format!(
                     "some text
 - [ ] Correct task {DUE_EMOJI} 2025-03-01 ⏫
