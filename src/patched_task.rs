@@ -17,6 +17,10 @@ impl PatchedTask {
     pub fn new(task: Box<dyn TaskTrait>, patch: Option<TaskPatch>) -> Self {
         Self { task, patch }
     }
+
+    pub fn original_task(&self) -> Box<dyn TaskTrait> {
+        self.task.clone_boxed()
+    }
 }
 
 impl TaskTrait for PatchedTask {
@@ -25,10 +29,22 @@ impl TaskTrait for PatchedTask {
     }
 
     fn text(&self) -> String {
+        if let Some(p) = &self.patch {
+            if let Some(name) = &p.name {
+                return name.to_string();
+            }
+        }
+
         self.task.text()
     }
 
     fn description(&self) -> Option<String> {
+        if let Some(p) = &self.patch {
+            if p.description.is_some() {
+                return p.description.clone();
+            }
+        }
+
         self.task.description()
     }
 

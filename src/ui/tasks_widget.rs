@@ -237,11 +237,8 @@ impl TasksWidget {
                         _ = add_task_rx.recv() => s.write().await.show_add_task_dialog(None).await,
                         _ = edit_task_rx.recv() => {
                             let mut s = s.write().await;
-                            let task = s
-                                    .list_state
-                                    .selected()
-                                    .map(|i| s.tasks[std::cmp::min(i, s.tasks.len() - 1)].task().clone_boxed());
-                            s.show_add_task_dialog(task).await;
+                            let t = s.selected_task();
+                            s.show_add_task_dialog(t).await;
                         },
                     }
 
@@ -679,13 +676,31 @@ impl TasksWidget {
         let tp = patch.task_patch.as_ref().unwrap();
 
         if tp.task.is_some() {
-            let mut provider = provider.provider.write().await;
-            let errors = provider.patch_tasks(&[tp.clone()]).await;
-            if !errors.is_empty() {
-                let e = &errors[0];
-                tracing::error!(error = e.to_string(), "Update the task");
-                self.error_logger.write().await.add_error(e.to_string().as_str());
+            let patched_task = tp
+                .task
+                .as_ref()
+                .unwrap()
+                .as_any()
+                .downcast_ref::<PatchedTask>()
+                .expect("Wrong logic! PatchedTask was expected.");
+
+            let task = patched_task.original_task();
+
+            match self.changed_tasks.iter_mut().find(|p| p.is_task(task.as_ref())) {
+                Some(p) => {
+                    replace_if(&mut p.name, &tp.name);
+                    replace_if(&mut p.description, &tp.description);
+                    replace_if(&mut p.due, &tp.due);
+                    replace_if(&mut p.priority, &tp.priority);
+                    replace_if(&mut p.state, &tp.state);
+                }
+                None => {
+                    let mut tp = tp.clone();
+                    tp.task = Some(task);
+                    self.changed_tasks.push(tp);
+                }
             }
+            self.recreate_current_task_row().await;
         } else {
             let mut provider = provider.provider.write().await;
             match provider.create_task(project_id, tp).await {
@@ -697,9 +712,8 @@ impl TasksWidget {
                     self.error_logger.write().await.add_error(e.to_string().as_str());
                 }
             };
+            self.load_tasks(&self.last_filter.clone()).await;
         }
-
-        self.load_tasks(&self.last_filter.clone()).await;
     }
 }
 
@@ -887,4 +901,13 @@ impl std::fmt::Debug for TasksWidget {
 
 fn project_name(t: &dyn TaskTrait) -> String {
     t.project().map(|p| p.name()).unwrap_or_default()
+}
+
+fn replace_if<T>(op: &mut Option<T>, other: &Option<T>)
+where
+    T: Clone,
+{
+    if let Some(t) = other {
+        op.replace(t.clone());
+    }
 }
