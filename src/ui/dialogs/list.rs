@@ -82,6 +82,11 @@ where
         s
     }
 
+    pub fn set_current_item(&mut self, current: &str) {
+        let idx = self.items.iter().position(|s| s.to_string() == current).or(Some(0));
+        self.items.set_selected_index(idx);
+    }
+
     fn calculate_width(&mut self) {
         let mut w = self
             .items

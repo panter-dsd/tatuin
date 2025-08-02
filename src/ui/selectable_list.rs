@@ -174,6 +174,10 @@ impl<T> SelectableList<T> {
         self.state.selected()
     }
 
+    pub fn set_selected_index(&mut self, index: Option<usize>) {
+        self.state.select(index);
+    }
+
     pub fn selected(&self) -> Option<&T> {
         if self.state.selected().is_some() && !self.items.is_empty() {
             let idx = std::cmp::min(

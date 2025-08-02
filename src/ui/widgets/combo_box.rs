@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 #[allow(dead_code)]
 pub struct Item<T> {
     text: String,
@@ -85,6 +85,19 @@ where
     }
 }
 
+impl<T> std::fmt::Debug for Item<T>
+where
+    T: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Item text={}, display={}, data={:?}",
+            self.text, self.display, self.data
+        )
+    }
+}
+
 pub trait CustomWidgetItemUpdater<T>: Sync + Send {
     fn update(&self, w: Arc<dyn WidgetTrait>, item: &mut Item<T>);
 }
@@ -141,7 +154,7 @@ impl<T> std::fmt::Debug for ComboBox<T> {
 
 impl<T> ComboBox<T>
 where
-    T: Clone + Sync + Send + Eq + 'static,
+    T: Clone + Sync + Send + Eq + 'static + std::fmt::Debug,
 {
     pub fn new(caption: &str, items: &[Item<T>]) -> Self {
         let button = Button::new("▽");
@@ -183,6 +196,7 @@ where
                                     d.add_custom_widget(item_it.next().unwrap().text.clone(), w.clone());
                                 }
                                 data.custom_widgets.clear();
+                                d.set_current_item(selected.as_str());
                                 data.dialog = Some(d);
                             }
                         }
