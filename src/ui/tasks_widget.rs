@@ -107,6 +107,7 @@ pub struct TasksWidget {
     change_priority_shortcut: Shortcut,
     undo_changes_shortcut: Shortcut,
     add_task_shortcut: Shortcut,
+    edit_task_shortcut: Shortcut,
 
     last_filter: Filter,
 
@@ -131,6 +132,7 @@ impl AppBlockWidget for TasksWidget {
             &mut self.change_priority_shortcut,
             &mut self.undo_changes_shortcut,
             &mut self.add_task_shortcut,
+            &mut self.edit_task_shortcut,
         ]
     }
 
@@ -194,6 +196,7 @@ impl TasksWidget {
             change_priority_shortcut: Shortcut::new("Change priority of the task", &['c', 'p']),
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
             add_task_shortcut: Shortcut::new("Create a task", &['a']),
+            edit_task_shortcut: Shortcut::new("Edit the task", &['e']),
             last_filter: Filter::default(),
             dialog: None,
             is_global_dialog: true,
@@ -211,6 +214,7 @@ impl TasksWidget {
                 let mut change_priority_rx = s_guard.change_priority_shortcut.subscribe_to_accepted();
                 let mut undo_changes_rx = s_guard.undo_changes_shortcut.subscribe_to_accepted();
                 let mut add_task_rx = s_guard.add_task_shortcut.subscribe_to_accepted();
+                let mut edit_task_rx = s_guard.edit_task_shortcut.subscribe_to_accepted();
                 drop(s_guard);
                 loop {
                     tokio::select! {
@@ -230,7 +234,12 @@ impl TasksWidget {
                         _ = change_due_rx.recv() => s.write().await.show_change_due_date_dialog().await,
                         _ = change_priority_rx.recv() => s.write().await.show_change_priority_dialog().await,
                         _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
-                        _ = add_task_rx.recv() => s.write().await.show_add_task_dialog().await,
+                        _ = add_task_rx.recv() => s.write().await.show_add_task_dialog(None).await,
+                        _ = edit_task_rx.recv() => {
+                            let mut s = s.write().await;
+                            let t = s.selected_task();
+                            s.show_add_task_dialog(t).await;
+                        },
                     }
 
                     s.write().await.update_task_info_view().await;
@@ -242,6 +251,7 @@ impl TasksWidget {
         });
         s
     }
+
     pub fn set_providers_filter(&mut self, providers: &[String]) {
         self.providers_filter = providers.to_vec();
         self.filter_tasks();
@@ -643,8 +653,11 @@ impl TasksWidget {
         self.task_info_viewer.write().await.set_task(self.selected_task()).await;
     }
 
-    async fn show_add_task_dialog(&mut self) {
+    async fn show_add_task_dialog(&mut self, task: Option<Box<dyn TaskTrait>>) {
         let mut d = CreateUpdateTaskDialog::new("Create a task", self.providers_storage.clone()).await;
+        if let Some(t) = task {
+            d.set_task(t.as_ref()).await;
+        }
         if let Some(dh) = &self.draw_helper {
             d.set_draw_helper(dh.clone());
         }
@@ -662,7 +675,33 @@ impl TasksWidget {
         let project_id = patch.project_id.as_ref().unwrap();
         let tp = patch.task_patch.as_ref().unwrap();
 
-        {
+        if tp.task.is_some() {
+            let patched_task = tp
+                .task
+                .as_ref()
+                .unwrap()
+                .as_any()
+                .downcast_ref::<PatchedTask>()
+                .expect("Wrong logic! PatchedTask was expected.");
+
+            let task = patched_task.original_task();
+
+            match self.changed_tasks.iter_mut().find(|p| p.is_task(task.as_ref())) {
+                Some(p) => {
+                    replace_if(&mut p.name, &tp.name);
+                    replace_if(&mut p.description, &tp.description);
+                    replace_if(&mut p.due, &tp.due);
+                    replace_if(&mut p.priority, &tp.priority);
+                    replace_if(&mut p.state, &tp.state);
+                }
+                None => {
+                    let mut tp = tp.clone();
+                    tp.task = Some(task);
+                    self.changed_tasks.push(tp);
+                }
+            }
+            self.recreate_current_task_row().await;
+        } else {
             let mut provider = provider.provider.write().await;
             match provider.create_task(project_id, tp).await {
                 Ok(()) => {
@@ -673,9 +712,8 @@ impl TasksWidget {
                     self.error_logger.write().await.add_error(e.to_string().as_str());
                 }
             };
+            self.load_tasks(&self.last_filter.clone()).await;
         }
-
-        self.load_tasks(&self.last_filter.clone()).await;
     }
 }
 
@@ -704,7 +742,7 @@ impl KeyboardHandler for TasksWidget {
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DuePatchItem>>() {
-                    new_due = d.selected().as_ref().map(|p| match p {
+                    new_due = d.selected().map(|p| match p {
                         DuePatchItem::Custom(_) => {
                             let w = d.selected_custom_widget().unwrap();
                             if let Some(w) = w.as_any().downcast_ref::<DateEditor>() {
@@ -717,7 +755,7 @@ impl KeyboardHandler for TasksWidget {
                     });
                 }
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<Priority>>() {
-                    new_priority = *d.selected();
+                    new_priority = d.selected().cloned();
                 }
 
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<CreateUpdateTaskDialog>() {
@@ -751,7 +789,7 @@ impl KeyboardHandler for TasksWidget {
         }
 
         if add_another_one_task {
-            self.show_add_task_dialog().await;
+            self.show_add_task_dialog(None).await;
         }
 
         handled
@@ -863,4 +901,13 @@ impl std::fmt::Debug for TasksWidget {
 
 fn project_name(t: &dyn TaskTrait) -> String {
     t.project().map(|p| p.name()).unwrap_or_default()
+}
+
+fn replace_if<T>(op: &mut Option<T>, other: &Option<T>)
+where
+    T: Clone,
+{
+    if let Some(t) = other {
+        op.replace(t.clone());
+    }
 }

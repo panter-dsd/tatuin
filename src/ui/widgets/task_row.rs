@@ -42,12 +42,16 @@ impl TaskRow {
                 None => style::NO_DATE_TASK_FG,
             }
         };
+        let mut name = t.text();
         let mut state = t.state();
         let mut due = task::datetime_to_str(t.due(), &tz);
         let mut priority = t.priority();
         let mut uncommitted = false;
         if let Some(patch) = changed_tasks.iter().find(|c| c.is_task(t)) {
             uncommitted = !patch.is_empty();
+            if let Some(n) = &patch.name {
+                name = n.to_string();
+            }
             if let Some(s) = &patch.state {
                 state = *s;
             }
@@ -61,7 +65,7 @@ impl TaskRow {
 
         let mut children: Vec<Box<dyn WidgetTrait>> = vec![
             Box::new(Text::new(format!("[{state}] ").as_str())),
-            Box::new(MarkdownLine::new(t.text().as_str()).style(Style::default().fg(fg_color))),
+            Box::new(MarkdownLine::new(name.as_str()).style(Style::default().fg(fg_color))),
             Box::new(Text::new(format!(" (due: {due})").as_str()).style(Style::default().fg(Color::Blue))),
             Box::new(
                 Text::new(format!(" (Priority: {priority})").as_str())

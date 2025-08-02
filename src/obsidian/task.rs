@@ -9,7 +9,7 @@ use std::fmt::{self, Write};
 use std::path::PathBuf;
 use urlencoding::encode;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum State {
     Unknown(char),
     Uncompleted,

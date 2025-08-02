@@ -16,7 +16,7 @@ pub enum DuePatchItem {
 }
 
 impl DuePatchItem {
-    pub fn to_date(self, current_dt: &DateTimeUtc) -> Option<DateTimeUtc> {
+    fn to_date(self, current_dt: &DateTimeUtc) -> Option<DateTimeUtc> {
         let result = match self {
             DuePatchItem::Today => Some(*current_dt),
             DuePatchItem::Tomorrow => Some(add_days(current_dt, 1)),
@@ -40,6 +40,23 @@ impl DuePatchItem {
             DuePatchItem::NextWeek,
             DuePatchItem::NoDate,
         ]
+    }
+}
+
+impl From<DuePatchItem> for Option<DateTimeUtc> {
+    fn from(value: DuePatchItem) -> Option<DateTimeUtc> {
+        value.to_date(&chrono::Utc::now())
+    }
+}
+
+impl From<DateTimeUtc> for DuePatchItem {
+    fn from(dt: DateTimeUtc) -> Self {
+        let now = clear_time(&chrono::Utc::now());
+        match (dt - now).num_days() {
+            0 => DuePatchItem::Today,
+            1 => DuePatchItem::Tomorrow,
+            _ => DuePatchItem::Custom(dt),
+        }
     }
 }
 

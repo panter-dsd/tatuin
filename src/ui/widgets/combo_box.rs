@@ -21,12 +21,21 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone)]
 #[allow(dead_code)]
 pub struct Item<T> {
     text: String,
     display: String,
     data: T,
+}
+
+impl<T> PartialEq for Item<T>
+where
+    T: std::cmp::Eq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.text == other.text && self.data == other.data
+    }
 }
 
 impl<T> Item<T>
@@ -45,8 +54,13 @@ where
         &self.text
     }
 
-    pub fn set_display_text(&mut self, display: &str) {
-        self.display = display.to_string();
+    pub fn display(mut self, text: &str) -> Self {
+        self.display = text.to_string();
+        self
+    }
+
+    pub fn set_display_text(&mut self, text: &str) {
+        self.display = text.to_string();
     }
 
     pub fn data(&self) -> &T {
@@ -55,6 +69,32 @@ where
 
     pub fn set_data(&mut self, data: &T) {
         self.data = data.clone();
+    }
+}
+
+impl<T> From<String> for Item<T>
+where
+    T: Default,
+{
+    fn from(text: String) -> Self {
+        Self {
+            text: text.clone(),
+            display: text.clone(),
+            data: T::default(),
+        }
+    }
+}
+
+impl<T> std::fmt::Debug for Item<T>
+where
+    T: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Item text={}, display={}, data={:?}",
+            self.text, self.display, self.data
+        )
     }
 }
 
@@ -114,7 +154,7 @@ impl<T> std::fmt::Debug for ComboBox<T> {
 
 impl<T> ComboBox<T>
 where
-    T: Clone + Sync + Send + Eq + 'static,
+    T: Clone + Sync + Send + Eq + 'static + std::fmt::Debug,
 {
     pub fn new(caption: &str, items: &[Item<T>]) -> Self {
         let button = Button::new("▽");
@@ -151,10 +191,12 @@ where
                                     Arc::get_mut(w).unwrap().set_active(false);
                                 }
 
-                                for (i, w) in data.custom_widgets.iter().enumerate() {
-                                    d.add_custom_widget(data.items[data.items.len() - custom_widgets_count + i].text.clone(), w.clone());
+                                let mut item_it = data.items.iter().skip(data.items.len() - custom_widgets_count);
+                                for w in data.custom_widgets.iter() {
+                                    d.add_custom_widget(item_it.next().unwrap().text.clone(), w.clone());
                                 }
                                 data.custom_widgets.clear();
+                                d.set_current_item(selected.as_str());
                                 data.dialog = Some(d);
                             }
                         }
@@ -184,12 +226,16 @@ where
         data.custom_widget_item_updaters.push(r);
     }
 
-    pub async fn current_item(self, item: &Item<T>) -> Self {
+    pub async fn remove_all_custom_widgets(&mut self) {
         let mut data = self.internal_data.write().await;
-        if data.items.iter().any(|i| i == item) {
-            data.selected = Some(item.clone());
-        }
-        drop(data);
+        let truncate_count = data.items.len() - data.custom_widgets.len();
+        data.items.truncate(truncate_count);
+        data.custom_widgets.clear();
+        data.custom_widget_item_updaters.clear();
+    }
+
+    pub async fn current_item(self, item: &Item<T>) -> Self {
+        self.set_current_item(item).await;
         self
     }
 
@@ -199,11 +245,18 @@ where
         data.selected = None;
     }
 
-    pub async fn set_current_item(&self, item: &Item<T>) {
+    pub async fn add_item(&mut self, item: Item<T>) {
+        self.internal_data.write().await.items.push(item);
+    }
+
+    pub async fn set_current_item(&self, item: &Item<T>) -> bool {
         let mut data = self.internal_data.write().await;
-        if data.items.iter().any(|i| i == item) {
+        if let Some(item) = data.items.iter().find(|i| *i == item) {
             data.selected = Some(item.clone());
+            return true;
         }
+
+        false
     }
 
     pub async fn value(&self) -> Option<Item<T>> {
@@ -275,7 +328,7 @@ where
         }
 
         let mut handled = None;
-        let mut selected = None;
+        let mut selected_index = None;
         let mut should_delete_dialog = false;
 
         let mut data = self.internal_data.write().await;
@@ -283,19 +336,18 @@ where
             handled = Some(d.handle_key(key).await);
             if handled.is_some_and(|h| h) && d.should_be_closed() {
                 should_delete_dialog = true;
-                selected = d.selected().clone();
+                selected_index = d.selected_index();
                 data.custom_widgets = d.custom_widgets();
             }
         }
 
-        tracing::debug!(dialog_exists = data.dialog.is_some(), handled = handled, selected=?selected);
+        tracing::debug!(dialog_exists = data.dialog.is_some(), handled = handled, selected_index=?selected_index);
 
         if should_delete_dialog {
             data.dialog = None;
         }
 
-        if let Some(selected) = selected {
-            let idx = data.items.iter().position(|item| item.text == selected).unwrap();
+        if let Some(idx) = selected_index {
             if idx >= data.items.len() - data.custom_widgets.len() {
                 let widget_idx = idx - (data.items.len() - data.custom_widgets.len());
                 let w = data.custom_widgets[widget_idx].clone();

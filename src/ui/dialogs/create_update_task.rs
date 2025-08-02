@@ -11,7 +11,7 @@ use ratatui::{
 };
 
 use crate::{
-    task::{DateTimeUtc, Priority},
+    task::{DateTimeUtc, Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, TaskPatch},
     types::ArcRwLock,
     ui::{
@@ -29,6 +29,8 @@ use crate::{
 };
 
 use super::DialogTrait;
+
+const CUSTOM_DUE_TEXT: &str = "Custom";
 
 struct ComboBoxItemUpdater {}
 
@@ -49,6 +51,7 @@ pub struct Dialog {
     providers_storage: ArcRwLock<dyn ProvidersStorage>,
     widget_state: WidgetState,
     size: Size,
+    task: Option<Box<dyn TaskTrait>>,
 
     provider_selector: ComboBox<String>,
     project_selector: ComboBox<String>,
@@ -74,8 +77,8 @@ impl Dialog {
             .await
             .iter()
             .filter(|p| p.capabilities.create_task)
-            .map(|p| ComboBoxItem::new(p.name.as_str(), p.name.clone()))
-            .collect::<Vec<ComboBoxItem<String>>>();
+            .map(|p| p.name.clone().into())
+            .collect::<Vec<ComboBoxItem<_>>>();
 
         let mut due_date_selector = ComboBox::new(
             "Due date",
@@ -92,7 +95,7 @@ impl Dialog {
 
         due_date_selector
             .add_custom_widget(
-                ComboBoxItem::new("Custom", DuePatchItem::Custom(DateTimeUtc::default())),
+                ComboBoxItem::new(CUSTOM_DUE_TEXT, DuePatchItem::Custom(DateTimeUtc::default())),
                 Arc::new(DateEditor::new(None)),
                 Arc::new(ComboBoxItemUpdater {}),
             )
@@ -107,6 +110,7 @@ impl Dialog {
             provider_selector: ComboBox::new("Provider", &provider_items),
             widget_state: WidgetState::default(),
             size: Size::new(100, 20),
+            task: None,
             project_selector: ComboBox::new("Project", &[]),
             task_name_caption: Text::new("Task name"),
             task_name_editor: LineEdit::new(None),
@@ -133,12 +137,68 @@ impl Dialog {
         s
     }
 
+    fn is_task_creation(&self) -> bool {
+        self.task.is_none()
+    }
+
+    pub async fn set_task(&mut self, task: &dyn TaskTrait) {
+        self.task = Some(task.clone_boxed());
+        self.create_task_and_another_one.set_visible(false);
+        self.create_task_button.set_title("Update a task and close\nCtrl+Enter");
+        self.provider_selector.set_current_item(&task.provider().into()).await;
+        self.fill_project_selector_items().await;
+        self.fill_priority_selector_items().await;
+        if let Some(p) = task.project() {
+            let item = ComboBoxItem::new(p.name().as_str(), p.id());
+            let found = self.project_selector.set_current_item(&item).await;
+            if !found {
+                self.project_selector.add_item(item.clone()).await;
+                self.project_selector.set_current_item(&item).await;
+            }
+        }
+        self.task_name_editor.set_text(task.text().as_str());
+        self.priority_selector
+            .set_current_item(&ComboBoxItem::new(
+                task.priority().to_string().as_str(),
+                task.priority(),
+            ))
+            .await;
+
+        let task_due = task.due();
+        let due: DuePatchItem = task_due.map_or(DuePatchItem::NoDate, |d| d.into());
+        if let Some(dt) = task_due {
+            self.due_date_selector.remove_all_custom_widgets().await;
+            let custom_due = DuePatchItem::Custom(dt);
+            self.due_date_selector
+                .add_custom_widget(
+                    ComboBoxItem::new(CUSTOM_DUE_TEXT, custom_due).display(custom_due.to_string().as_str()),
+                    Arc::new(DateEditor::new(Some(dt))),
+                    Arc::new(ComboBoxItemUpdater {}),
+                )
+                .await;
+        }
+        self.due_date_selector
+            .set_current_item(&ComboBoxItem::new(
+                match due {
+                    DuePatchItem::Custom(_) => CUSTOM_DUE_TEXT.to_string(),
+                    _ => due.to_string(),
+                }
+                .as_str(),
+                due,
+            ))
+            .await;
+
+        self.provider_selector.set_active(false);
+        self.task_name_editor.set_active(true);
+        self.update_enabled_state().await
+    }
+
     pub async fn provider_name(&self) -> Option<String> {
         if !self.can_create_task() {
             return None;
         }
 
-        self.provider_selector.value().await.map(|item| item.data().to_string())
+        self.provider_selector.value().await.map(|item| item.text().to_string())
     }
 
     pub async fn project_id(&self) -> Option<String> {
@@ -157,7 +217,7 @@ impl Dialog {
         let description = self.task_description_editor.text();
 
         Some(TaskPatch {
-            task: None,
+            task: self.task.as_ref().map(|t| t.clone_boxed()),
             name: Some(self.task_name_editor.text()),
             description: (!description.is_empty()).then_some(description),
             due: self.due_date_selector.value().await.map(|item| *item.data()),
@@ -204,7 +264,10 @@ impl Dialog {
     async fn update_enabled_state(&mut self) {
         let provider_selected = self.provider_selector.value().await.is_some();
         let project_selected = self.project_selector.value().await.is_some();
-        self.project_selector.set_enabled(provider_selected);
+        self.provider_selector.set_enabled(self.is_task_creation());
+        self.project_selector
+            .set_enabled(self.is_task_creation() && provider_selected);
+
         self.task_name_editor.set_enabled(provider_selected && project_selected);
 
         let can_create_task = self.can_create_task();
@@ -342,14 +405,25 @@ impl WidgetTrait for Dialog {
             _,
             create_task_and_another_one_button_area,
             _,
-        ] = Layout::horizontal([
-            Constraint::Fill(1),
-            Constraint::Fill(1),
-            Constraint::Length(5),
-            Constraint::Fill(1),
-            Constraint::Fill(1),
-        ])
-        .areas(buttons_area);
+        ] = if self.is_task_creation() {
+            Layout::horizontal([
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Length(5),
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+            ])
+            .areas(buttons_area)
+        } else {
+            Layout::horizontal([
+                Constraint::Fill(1),
+                Constraint::Fill(1),
+                Constraint::Fill(0),
+                Constraint::Fill(0),
+                Constraint::Fill(1),
+            ])
+            .areas(buttons_area)
+        };
 
         let mut to_render: Vec<(&mut dyn WidgetTrait, Rect)> = vec![
             (&mut self.provider_selector, provider_area),
@@ -378,7 +452,9 @@ impl WidgetTrait for Dialog {
             }
         });
         for (w, a) in to_render {
-            w.render(a, buf).await;
+            if w.is_visible() {
+                w.render(a, buf).await;
+            }
         }
     }
 

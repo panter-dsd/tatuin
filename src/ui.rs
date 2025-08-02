@@ -190,7 +190,10 @@ impl tasks_widget::ProvidersStorage for SelectableList<Provider> {
         self.iter()
     }
     fn provider(&self, name: &str) -> Provider {
-        self.iter().find(|p| p.name == name).unwrap().clone()
+        self.iter()
+            .find(|p| p.name == name)
+            .unwrap_or_else(|| panic!("Provider with name='{name}' not found"))
+            .clone()
     }
 }
 

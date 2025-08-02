@@ -17,6 +17,12 @@ pub struct Client {
     client: reqwest::Client,
 }
 
+impl std::fmt::Debug for Client {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GitLab client base_url={}", self.base_url)
+    }
+}
+
 impl Client {
     pub fn new(base_url: &str, api_key: &str) -> Self {
         let mut headers = HeaderMap::new();
@@ -28,6 +34,7 @@ impl Client {
         }
     }
 
+    #[tracing::instrument(level = "info", target = "gitlab_client")]
     pub async fn todos(&self, state: &FilterState) -> Result<Vec<Todo>, Box<dyn Error>> {
         let mut result = Vec::new();
 
@@ -41,7 +48,7 @@ impl Client {
         };
 
         loop {
-            let mut resp = self
+            let r = self
                 .client
                 .get(format!(
                     "{}/todos?page={page}&per_page={PER_PAGE}&{state_query}",
@@ -50,14 +57,23 @@ impl Client {
                 .headers(self.default_header.clone())
                 .send()
                 .await?
+                .error_for_status()?
                 .json::<Vec<Todo>>()
-                .await?;
-            if resp.is_empty() {
-                break;
-            }
+                .await;
 
-            result.append(&mut resp);
-            page += 1;
+            match r {
+                Ok(mut v) => {
+                    if v.is_empty() {
+                        break;
+                    }
+                    result.append(&mut v);
+                    page += 1;
+                }
+                Err(e) => {
+                    tracing::error!(target:"gitlab_todo_client", state_query=state_query, page=page, error=?e);
+                    return Err(e.into());
+                }
+            }
         }
 
         Ok(result)

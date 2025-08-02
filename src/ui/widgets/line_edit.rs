@@ -82,17 +82,18 @@ impl WidgetTrait for LineEdit {
 
         let inner_area = b.inner(area);
         let mut text = self.text.clone();
-        let text_width = Text::from(text.clone()).width() as u16;
+        let mut text_width = Text::from(text.as_str()).width() as u16;
         if text_width >= inner_area.width - 1 {
             let count_to_drop = (text_width + 1 - inner_area.width) as usize;
             text.drain(..count_to_drop);
+            text_width = Text::from(text.as_str()).width() as u16;
         }
 
-        Paragraph::new(text.clone()).block(b).render(area, buf);
+        Paragraph::new(text.as_str()).block(b).render(area, buf);
 
         if let Some(dh) = &self.draw_helper {
             if self.is_active() {
-                let pos = Position::new(area.x + text.len() as u16 + 1, area.y + 1);
+                let pos = Position::new(area.x + text_width + 1, area.y + 1);
 
                 if pos != self.last_cursor_pos {
                     dh.write().await.set_cursor_pos(pos);
