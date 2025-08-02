@@ -518,6 +518,7 @@ some text
     }
 
     #[test]
+    #[cfg_attr(miri, ignore)]
     fn change_state_to_incomplete_in_content_test() {
         struct Case<'a> {
             name: &'a str,
