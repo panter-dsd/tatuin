@@ -288,7 +288,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.30"
+version = "1.2.31"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -325,7 +325,7 @@ repository = "https://github.com/chronotope/chrono"
 
 [[dependencies]]
 name = "clap"
-version = "4.5.41"
+version = "4.5.42"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -333,7 +333,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_builder"
-version = "4.5.41"
+version = "4.5.42"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -2010,7 +2010,7 @@ homepage = "https://ratatui.rs"
 
 [[dependencies]]
 name = "redox_syscall"
-version = "0.5.15"
+version = "0.5.17"
 description = "A Rust library to access raw Redox system calls"
 license = "MIT"
 notices = ["Copyright (c) 2017 Redox OS Developers"]
@@ -2114,7 +2114,7 @@ repository = "https://github.com/zonyitoo/rust-ini"
 
 [[dependencies]]
 name = "rustc-demangle"
-version = "0.1.25"
+version = "0.1.26"
 description = """
 Rust compiler symbol demangling.
 """
@@ -2147,7 +2147,7 @@ repository = "https://github.com/bytecodealliance/rustix"
 
 [[dependencies]]
 name = "rustls"
-version = "0.23.29"
+version = "0.23.31"
 description = "Rustls is a modern TLS library written in Rust."
 license = "Apache-2.0 OR ISC OR MIT"
 notices = [
@@ -2272,7 +2272,7 @@ homepage = "https://serde.rs"
 
 [[dependencies]]
 name = "serde_json"
-version = "1.0.141"
+version = "1.0.142"
 description = "A JSON serialization file format"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -2678,7 +2678,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "tokio"
-version = "1.46.1"
+version = "1.47.1"
 description = """
 An event-driven, non-blocking I/O platform for writing asynchronous I/O
 backed applications.
@@ -2751,7 +2751,7 @@ homepage = "https://tokio.rs"
 
 [[dependencies]]
 name = "toml"
-version = "0.9.2"
+version = "0.9.4"
 description = """
 A native Rust encoder and decoder of TOML-formatted files and streams. Provides
 implementations of the standard Serialize/Deserialize traits for TOML data to
@@ -3418,7 +3418,7 @@ repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "windows-targets"
-version = "0.53.2"
+version = "0.53.3"
 description = "Import libs for Windows"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]
