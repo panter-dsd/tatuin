@@ -57,12 +57,12 @@ pub const ACTIVE_BLOCK_STYLE: Style = DEFAULT_STYLE.fg(COLOR_PALLETE[0]).bg(COLO
 pub const INACTIVE_BLOCK_STYLE: Style = DEFAULT_STYLE.fg(COLOR_PALLETE[4]).bg(COLOR_PALLETE[10]);
 pub const SELECTED_ROW_STYLE: Style = DEFAULT_STYLE.bg(COLOR_PALLETE[2]).add_modifier(Modifier::BOLD);
 pub const REGULAR_ROW_STYLE: Style = DEFAULT_STYLE;
-pub const REGULAR_TEXT_STYLE: Style = DEFAULT_STYLE.fg(Color::White);
+pub const REGULAR_TEXT_STYLE: Style = DEFAULT_STYLE.fg(COLOR_PALLETE[4]);
 pub const INLINE_CODE_TEXT_STYLE: Style = DEFAULT_STYLE.add_modifier(Modifier::ITALIC);
-pub const LABEL_STYLE: Style = DEFAULT_STYLE.fg(Color::Cyan).add_modifier(Modifier::ITALIC);
+pub const LABEL_STYLE: Style = DEFAULT_STYLE.fg(COLOR_PALLETE[7]).add_modifier(Modifier::ITALIC);
 
-pub const DATE_TIME_EDITOR_ACTIVE_ELEMENT: Style = DEFAULT_STYLE.fg(Color::Black).bg(Color::LightBlue);
-pub const DATE_TIME_EDITOR_INACTIVE_ELEMENT: Style = DEFAULT_STYLE.fg(Color::Black).bg(Color::Gray);
+pub const DATE_TIME_EDITOR_ACTIVE_ELEMENT: Style = DEFAULT_STYLE.fg(COLOR_PALLETE[0]).bg(COLOR_PALLETE[4]);
+pub const DATE_TIME_EDITOR_INACTIVE_ELEMENT: Style = DEFAULT_STYLE.fg(COLOR_PALLETE[4]).bg(COLOR_PALLETE[3]);
 
 pub const ACTIVE_BUTTON_STYLE: Style = DEFAULT_STYLE.fg(SLATE.c100).bg(GREEN.c800);
 pub const INACTIVE_BUTTON_STYLE: Style = DEFAULT_STYLE.fg(Color::White);
