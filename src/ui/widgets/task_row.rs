@@ -12,7 +12,7 @@ use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
 };
 use std::{any::Any, cmp::Ordering};
 
@@ -124,10 +124,7 @@ impl WidgetTrait for TaskRow {
         };
         s.fg = None;
         for child in self.children.iter_mut() {
-            let mut current_style = child.style();
-            current_style.add_modifier = Modifier::empty();
-            current_style.sub_modifier = Modifier::empty();
-            child.set_style(current_style.patch(s));
+            child.set_style(child.style().patch(s));
             child.render(area, buf).await;
             area.x += child.size().width;
         }
