@@ -91,6 +91,7 @@ impl Client {
                 .client
                 .get(format!("{BASE_URL}/tasks/completed?{}", &q.join("&")))
                 .headers(self.default_header.clone())
+                .timeout(std::time::Duration::from_secs(5))
                 .send()
                 .await?
                 .json::<Response>()
@@ -147,6 +148,7 @@ impl Client {
                 .client
                 .get(built_url)
                 .headers(self.default_header.clone())
+                .timeout(std::time::Duration::from_secs(5))
                 .send()
                 .await?
                 .json::<Response>()
@@ -179,6 +181,7 @@ impl Client {
                 .client
                 .get(format!("{BASE_URL}/projects{query}"))
                 .headers(self.default_header.clone())
+                .timeout(std::time::Duration::from_secs(5))
                 .send()
                 .await?
                 .json::<ProjectResponse>()
@@ -201,6 +204,7 @@ impl Client {
             .client
             .get(format!("{BASE_URL}/projects/{id}"))
             .headers(self.default_header.clone())
+            .timeout(std::time::Duration::from_secs(5))
             .send()
             .await?
             .json::<Project>()
@@ -214,6 +218,7 @@ impl Client {
             .client
             .post(format!("{BASE_URL}/tasks/{task_id}/close"))
             .headers(self.default_header.clone())
+            .timeout(std::time::Duration::from_secs(5))
             .send()
             .await?;
         if resp.status().is_success() {
