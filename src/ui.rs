@@ -720,8 +720,6 @@ impl App {
     }
 
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        buf.set_style(area, style::DEFAULT_STYLE);
-
         let [header_area, main_area, footer_area] =
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
 
@@ -742,7 +740,6 @@ impl App {
             Layout::vertical([Constraint::Fill(1), Constraint::Percentage(20)]).areas(right_area);
 
         App::render_header(header_area, buf);
-        self.render_footer(footer_area, buf).await;
         self.render_providers(providers_area, buf).await;
         self.render_projects(projects_area, buf).await;
         self.async_jobs.write().await.render(
@@ -754,6 +751,7 @@ impl App {
         self.render_filters(filter_area, buf).await;
         self.render_task_description(task_description_area, buf).await;
         self.render_tasks(list_area, buf).await;
+        self.render_footer(footer_area, buf).await;
 
         if !self.error_logger.read().await.is_empty() {
             let block = Block::bordered()
@@ -788,7 +786,10 @@ impl App {
                 "Use ↓↑ to move up/down, Tab/BackTab to move between blocks, ? for help. ",
                 style::FOOTER_KEYS_HELP_COLOR,
             ),
-            Span::styled("Current date/time: ", style::FOOTER_DATETIME_LABEL_FG),
+            Span::styled(
+                "Current date/time: ",
+                style::DEFAULT_STYLE.fg(style::FOOTER_DATETIME_LABEL_FG),
+            ),
             Span::styled(
                 chrono::Local::now().format("%Y-%m-%d %H:%M").to_string(),
                 style::FOOTER_DATETIME_FG,

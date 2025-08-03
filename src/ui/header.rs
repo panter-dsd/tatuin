@@ -33,15 +33,14 @@ impl<'a> Header<'a> {
             .title(Line::raw(self.title).centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
-            .border_style(border_style)
-            .bg(style::NORMAL_ROW_BG);
+            .border_style(border_style);
 
         if let Some(s) = self.shortcut {
             let mut l = Vec::new();
             for c in s.current_input_keys() {
                 l.push(Span::styled(
                     c.to_string(),
-                    style::DEFAULT_STYLE.bold().fg(style::HEADER_KEY_SELECTED_FG),
+                    border_style.bold().fg(style::HEADER_KEY_SELECTED_FG),
                 ));
             }
             for c in s.keys().iter().skip(s.current_input_keys().len()) {
