@@ -12,7 +12,7 @@ use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
-    style::{Color, Style},
+    style::{Color, Modifier, Style},
 };
 use std::{any::Any, cmp::Ordering};
 
@@ -65,13 +65,13 @@ impl TaskRow {
 
         let mut children: Vec<Box<dyn WidgetTrait>> = vec![
             Box::new(Text::new(format!("[{state}] ").as_str())),
-            Box::new(MarkdownLine::new(name.as_str()).style(Style::default().fg(fg_color))),
-            Box::new(Text::new(format!(" (due: {due})").as_str()).style(Style::default().fg(Color::Blue))),
+            Box::new(MarkdownLine::new(name.as_str()).style(style::DEFAULT_STYLE.fg(fg_color))),
+            Box::new(Text::new(format!(" (due: {due})").as_str()).style(style::DEFAULT_STYLE.fg(Color::Blue))),
             Box::new(
                 Text::new(format!(" (Priority: {priority})").as_str())
-                    .style(Style::default().fg(style::priority_color(&priority))),
+                    .style(style::DEFAULT_STYLE.fg(style::priority_color(&priority))),
             ),
-            Box::new(Text::new(format!(" ({})", t.place()).as_str()).style(Style::default().fg(Color::Yellow))),
+            Box::new(Text::new(format!(" ({})", t.place()).as_str()).style(style::DEFAULT_STYLE.fg(Color::Yellow))),
         ];
 
         for l in t.labels() {
@@ -114,12 +114,20 @@ impl WidgetTrait for TaskRow {
             width: area.width,
             height: self.size().height,
         };
-        if self.is_selected {
+
+        let mut s = if self.is_selected {
             buf.set_style(area, style::SELECTED_ROW_STYLE);
+            style::SELECTED_ROW_STYLE
         } else {
             buf.set_style(area, style::REGULAR_ROW_STYLE);
-        }
+            style::REGULAR_ROW_STYLE
+        };
+        s.fg = None;
         for child in self.children.iter_mut() {
+            let mut current_style = child.style();
+            current_style.add_modifier = Modifier::empty();
+            current_style.sub_modifier = Modifier::empty();
+            child.set_style(current_style.patch(s));
             child.render(area, buf).await;
             area.x += child.size().width;
         }

@@ -59,8 +59,8 @@ impl WidgetTrait for MarkdownLine {
         if let Some(s) = &self.style {
             for w in self.widgets.write().await.iter_mut() {
                 let mut style = w.style();
-                style.bg = None;
-                w.set_style(style.patch(*s));
+                style.bg = s.bg;
+                w.set_style(style);
             }
         }
         self.style = None;
@@ -88,8 +88,12 @@ impl WidgetTrait for MarkdownLine {
         self.pos = pos
     }
 
+    fn style(&self) -> Style {
+        self.style.unwrap_or(style::DEFAULT_STYLE)
+    }
+
     fn set_style(&mut self, style: Style) {
-        self.style = self.style.map(|s| s.patch(style)).or(Some(style))
+        self.style = Some(style)
     }
 
     fn as_any(&self) -> &dyn Any {

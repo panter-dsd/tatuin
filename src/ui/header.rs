@@ -2,7 +2,6 @@
 
 use super::shortcut::Shortcut;
 use super::style;
-use ratatui::style::Style;
 use ratatui::style::Stylize;
 use ratatui::symbols;
 use ratatui::text::{Line, Span};
@@ -30,6 +29,7 @@ impl<'a> Header<'a> {
         };
 
         let mut b = Block::new()
+            .style(style::DEFAULT_STYLE)
             .title(Line::raw(self.title).centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
@@ -41,7 +41,7 @@ impl<'a> Header<'a> {
             for c in s.current_input_keys() {
                 l.push(Span::styled(
                     c.to_string(),
-                    Style::default().bold().fg(style::HEADER_KEY_SELECTED_FG),
+                    style::DEFAULT_STYLE.bold().fg(style::HEADER_KEY_SELECTED_FG),
                 ));
             }
             for c in s.keys().iter().skip(s.current_input_keys().len()) {

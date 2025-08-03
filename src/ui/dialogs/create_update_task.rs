@@ -357,7 +357,8 @@ fn max_width(widgets: &[&dyn WidgetTrait]) -> u16 {
 #[async_trait]
 impl WidgetTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let b = Block::default()
+        let b = Block::new()
+            .style(style::DEFAULT_STYLE)
             .title_top(self.title.clone())
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)

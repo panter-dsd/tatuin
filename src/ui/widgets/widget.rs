@@ -2,7 +2,7 @@
 
 use std::any::Any;
 
-use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler};
+use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 
 use ratatui::{
     buffer::Buffer,
@@ -102,7 +102,7 @@ pub trait WidgetTrait: WidgetStateTrait + KeyboardHandler + MouseHandler + Send 
     fn set_draw_helper(&mut self, _dh: DrawHelper) {}
     fn set_pos(&mut self, _pos: Position) {}
     fn style(&self) -> Style {
-        Style::default()
+        style::DEFAULT_STYLE
     }
     fn set_style(&mut self, _style: Style) {}
     fn as_any(&self) -> &dyn Any;

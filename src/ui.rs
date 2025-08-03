@@ -23,7 +23,7 @@ use ratatui::{
     DefaultTerminal,
     buffer::Buffer,
     layout::{Constraint, Flex, Layout, Position, Rect, Size},
-    style::{Color, Style, Stylize},
+    style::{Color, Stylize},
     text::{Line, Span},
     widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wrap},
 };
@@ -720,6 +720,8 @@ impl App {
     }
 
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        buf.set_style(area, style::DEFAULT_STYLE);
+
         let [header_area, main_area, footer_area] =
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
 
@@ -755,7 +757,7 @@ impl App {
 
         if !self.error_logger.read().await.is_empty() {
             let block = Block::bordered()
-                .border_style(Style::default().fg(Color::Red))
+                .border_style(style::DEFAULT_STYLE.fg(Color::Red))
                 .title("Alert!");
             let area = popup_area(area, Size::new(area.width / 2, 40));
             Clear {}.render(area, buf);

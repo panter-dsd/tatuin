@@ -22,9 +22,9 @@ use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
-    style::{Modifier, Style, Stylize},
+    style::{Modifier, Stylize},
     text::{Line, Text as RatatuiText},
-    widgets::{Paragraph, Widget, Wrap},
+    widgets::{Block, Paragraph, Widget, Wrap},
 };
 use tokio::sync::RwLock;
 
@@ -145,7 +145,7 @@ impl TaskInfoWidget {
                 });
             }
 
-            let value_style = Style::default().fg(style::DESCRIPTION_VALUE_COLOR);
+            let value_style = style::DEFAULT_STYLE.fg(style::DESCRIPTION_VALUE_COLOR);
             for e in entries.iter_mut() {
                 e.widget.set_style(value_style);
             }
@@ -165,6 +165,7 @@ impl WidgetTrait for TaskInfoWidget {
         if self.t.is_none() {
             Paragraph::new("Nothing selected...")
                 .block(h.block())
+                .style(style::DEFAULT_STYLE)
                 .fg(style::DESCRIPTION_VALUE_COLOR)
                 .wrap(Wrap { trim: false })
                 .render(area, buf);
@@ -178,7 +179,7 @@ impl WidgetTrait for TaskInfoWidget {
         for e in self.entries.write().await.iter_mut() {
             let label = RatatuiText::from(Line::styled(
                 format!("{}: ", e.title),
-                Style::new()
+                style::DEFAULT_STYLE
                     .fg(style::DESCRIPTION_KEY_COLOR)
                     .add_modifier(Modifier::BOLD),
             ));
@@ -194,6 +195,9 @@ impl WidgetTrait for TaskInfoWidget {
                 break;
             }
         }
+        Block::new()
+            .style(style::DEFAULT_STYLE)
+            .render(Rect::new(area.x, row_area.y, area.width, area.height), buf);
     }
 
     fn size(&self) -> Size {
