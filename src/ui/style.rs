@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 use crate::task::Priority;
-use ratatui::style::palette::tailwind::{BLUE, GREEN, SLATE};
 use ratatui::style::{Color, Modifier, Style};
 
 pub const COLOR_PALLETE: [Color; 16] = [
