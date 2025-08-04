@@ -23,6 +23,7 @@ pub struct MarkdownLine {
     pos: Position,
     width: u16,
     style: Option<Style>,
+    style_applied: bool,
     widgets: ArcRwLock<Vec<Box<dyn WidgetTrait>>>,
     widget_state: WidgetState,
 }
@@ -42,6 +43,7 @@ impl MarkdownLine {
                 .reduce(|acc, w| acc + w)
                 .unwrap_or_default(),
             style: None,
+            style_applied: true,
             widgets: Arc::new(RwLock::new(widgets)),
             widget_state: WidgetState::default(),
         }
@@ -49,6 +51,7 @@ impl MarkdownLine {
 
     pub fn style(mut self, s: Style) -> Self {
         self.style = Some(s);
+        self.style_applied = false;
         self
     }
 }
@@ -56,14 +59,17 @@ impl MarkdownLine {
 #[async_trait]
 impl WidgetTrait for MarkdownLine {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        if let Some(s) = &self.style {
-            for w in self.widgets.write().await.iter_mut() {
-                let mut style = w.style();
-                style.bg = s.bg;
-                w.set_style(style);
+        if !self.style_applied {
+            if let Some(s) = &self.style {
+                for w in self.widgets.write().await.iter_mut() {
+                    let mut style = w.style();
+                    style.bg = s.bg;
+                    style.fg = s.fg;
+                    w.set_style(style);
+                }
             }
+            self.style_applied = true;
         }
-        self.style = None;
 
         let mut area = Rect {
             x: self.pos.x,
@@ -93,7 +99,12 @@ impl WidgetTrait for MarkdownLine {
     }
 
     fn set_style(&mut self, style: Style) {
-        self.style = Some(style)
+        let mut style = style;
+        if let Some(s) = &mut self.style {
+            style.fg = s.fg;
+        }
+        self.style = Some(style);
+        self.style_applied = false;
     }
 
     fn as_any(&self) -> &dyn Any {
