@@ -274,7 +274,6 @@ pub fn border_color() -> Color {
     element_color(ColorElement::BorderColor)
 }
 
-// pub fn DEFAULT_STYLE: Style = Style::new().bg(Color::White).fg(Color::Black);
 pub fn default_style() -> Style {
     Style::new()
         .bg(element_color(ColorElement::DefaultBG))
