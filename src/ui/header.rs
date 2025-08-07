@@ -23,13 +23,13 @@ impl<'a> Header<'a> {
     }
     pub fn block(&self) -> Block<'a> {
         let border_style = if self.is_active {
-            style::ACTIVE_BLOCK_STYLE
+            style::active_block_style()
         } else {
-            style::INACTIVE_BLOCK_STYLE
+            style::inactive_block_style()
         };
 
         let mut b = Block::new()
-            .style(style::DEFAULT_STYLE)
+            .style(style::default_style())
             .title(Line::raw(self.title).centered())
             .borders(Borders::TOP)
             .border_set(symbols::border::EMPTY)
@@ -40,11 +40,11 @@ impl<'a> Header<'a> {
             for c in s.current_input_keys() {
                 l.push(Span::styled(
                     c.to_string(),
-                    border_style.bold().fg(style::HEADER_KEY_SELECTED_FG),
+                    border_style.bold().fg(style::header_key_selected_fg()),
                 ));
             }
             for c in s.keys().iter().skip(s.current_input_keys().len()) {
-                l.push(Span::styled(c.to_string(), style::HEADER_KEY_FG));
+                l.push(Span::styled(c.to_string(), style::header_key_fg()));
             }
             b = b.title(Line::from(l).right_aligned());
         }

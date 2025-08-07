@@ -67,11 +67,11 @@ impl WidgetTrait for Button {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let block = Block::default()
             .borders(Borders::ALL)
-            .border_style(style::BORDER_COLOR)
+            .border_style(style::border_color())
             .style(if self.widget_state.is_active() {
-                style::ACTIVE_BUTTON_STYLE
+                style::active_button_style()
             } else {
-                style::INACTIVE_BUTTON_STYLE
+                style::inactive_button_style()
             });
         let inner_area = block.inner(area);
         block.render(area, buf);

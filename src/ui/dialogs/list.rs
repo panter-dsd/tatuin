@@ -168,7 +168,7 @@ where
             .style(self.style())
             .title_alignment(ratatui::layout::Alignment::Center)
             .borders(Borders::ALL)
-            .border_style(style::BORDER_COLOR);
+            .border_style(style::border_color());
         if self.show_top_title {
             b = b.title_top(self.title.as_str());
         }

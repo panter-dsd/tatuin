@@ -8,7 +8,7 @@ use super::{
     keyboard_handler::KeyboardHandler,
     mouse_handler::MouseHandler,
     shortcut::Shortcut,
-    style::DEFAULT_STYLE,
+    style::default_style,
     widgets::{DateEditor, TaskRow, WidgetState, WidgetStateTrait, WidgetTrait},
 };
 use crate::{
@@ -846,7 +846,7 @@ impl WidgetTrait for TasksWidget {
             w.set_selected(is_row_selected);
 
             Text::from(if is_row_selected { ">" } else { " " })
-                .style(DEFAULT_STYLE)
+                .style(default_style())
                 .render(
                     Rect {
                         x: area.x,
@@ -864,7 +864,7 @@ impl WidgetTrait for TasksWidget {
         }
 
         Block::new()
-            .style(style::DEFAULT_STYLE)
+            .style(style::default_style())
             .render(Rect::new(area.x, y, area.width, area.height - y + 2), buf);
 
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)

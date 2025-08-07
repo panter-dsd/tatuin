@@ -1,85 +1,293 @@
 // SPDX-License-Identifier: MIT
 
+use std::{collections::HashMap, str::FromStr, sync::RwLock};
+
 use crate::task::Priority;
-use ratatui::style::{Color, Modifier, Style};
+use clap::ValueEnum;
+use ratatui::style::{
+    Color, Modifier, Style,
+    palette::tailwind::{BLUE, GREEN, SLATE},
+};
 
-pub const COLOR_PALETTE: [Color; 16] = [
-    Color::from_u32(0x2e3440), // #2e3440 0
-    Color::from_u32(0x3b4252), // #3b4252 1
-    Color::from_u32(0x434c5e), // #434c5e 2
-    Color::from_u32(0x4c566a), // #4c566a 3
-    Color::from_u32(0xd8dee9), // #d8dee9 4
-    Color::from_u32(0xe5e9f0), // #e5e9f0 5
-    Color::from_u32(0xeceff4), // #eceff4 6
-    Color::from_u32(0x8fbcbb), // #8fbcbb 7
-    Color::from_u32(0x88c0d0), // #88c0d0 8
-    Color::from_u32(0x81a1c1), // #81a1c1 9
-    Color::from_u32(0x5e81ac), // #5e81ac 10
-    Color::from_u32(0xbf616a), // #bf616a 11
-    Color::from_u32(0xd08770), // #d08770 12
-    Color::from_u32(0xebcb8b), // #ebcb8b 13
-    Color::from_u32(0xa3be8c), // #a3be8c 14
-    Color::from_u32(0xb48ead), // #b48ead 15
-];
+#[derive(PartialEq, Eq, std::hash::Hash, ValueEnum, Copy, Clone, Debug)]
+#[clap(rename_all = "snake_case")]
+enum ColorElement {
+    DefaultBG,
+    DefaultFG,
+    TaskRowDueFG,
+    TaskRowPlaceFG,
+    UrlFG,
+    UrlUnderMouseFG,
+    ActiveBlockFG,
+    ActiveBlockBG,
+    InactiveBlockFG,
+    InactiveBlockBG,
+    OverdueTaskFG,
+    TodayTaskFG,
+    FutureTaskFG,
+    NoDateTaskFG,
+    DescriptionKeyFG,
+    DescriptionValueFG,
+    Provider1FG,
+    Provider2FG,
+    Provider3FG,
+    Provider4FG,
+    Provider5FG,
+    Provider6FG,
+    FooterKeysHelpFG,
+    FooterDatetimeLabelFG,
+    FooterDatetimeFG,
+    FooterKeysLabelFG,
+    FooterKeysFG,
+    HeaderKeySelectedFG,
+    HeaderKeyFG,
+    SelectedRowBG,
+    RegularTextFG,
+    LabelFG,
+    DateTimeEditorActiveElementFG,
+    DateTimeEditorActiveElementBG,
+    DateTimeEditorInactiveElementFG,
+    DateTimeEditorInactiveElementBG,
+    ActiveButtonFG,
+    ActiveButtonBG,
+    InactiveButtonFG,
+    WarningTextFG,
+    BorderColor,
+    LowestPriorityFG,
+    LowPriorityFG,
+    NormalPriorityFG,
+    MediumPriorityFG,
+    HighPriorityFG,
+    HighestPriorityFG,
+}
 
-pub const URL_UNDER_MOUSE_COLOR: Color = COLOR_PALETTE[10];
-pub const URL_COLOR: Color = COLOR_PALETTE[4];
+static THEME_MAP: RwLock<Option<HashMap<ColorElement, Color>>> = RwLock::new(None);
 
-pub const OVERDUE_TASK_FG: Color = COLOR_PALETTE[11];
-pub const TODAY_TASK_FG: Color = COLOR_PALETTE[4];
-pub const FUTURE_TASK_FG: Color = COLOR_PALETTE[14];
-pub const NO_DATE_TASK_FG: Color = TODAY_TASK_FG;
-pub const DESCRIPTION_KEY_COLOR: Color = COLOR_PALETTE[7];
-pub const DESCRIPTION_VALUE_COLOR: Color = COLOR_PALETTE[4];
-pub const PROVIDER_COLORS: &[Color] = &[
-    COLOR_PALETTE[7],
-    COLOR_PALETTE[8],
-    COLOR_PALETTE[9],
-    COLOR_PALETTE[10],
-    COLOR_PALETTE[11],
-    COLOR_PALETTE[12],
-    COLOR_PALETTE[13],
-    COLOR_PALETTE[14],
-    COLOR_PALETTE[15],
-];
+fn element_color(element: ColorElement) -> Color {
+    if let Some(m) = &*THEME_MAP.read().unwrap() {
+        if let Some(c) = m.get(&element) {
+            return *c;
+        }
+    }
 
-pub const FOOTER_KEYS_HELP_COLOR: Color = COLOR_PALETTE[4];
-pub const FOOTER_DATETIME_LABEL_FG: Color = COLOR_PALETTE[13];
-pub const FOOTER_DATETIME_FG: Color = COLOR_PALETTE[7];
-pub const FOOTER_KEYS_LABEL_FG: Color = COLOR_PALETTE[14];
-pub const FOOTER_KEYS_FG: Color = COLOR_PALETTE[11];
+    match element {
+        ColorElement::DefaultBG => Color::Black,
+        ColorElement::DefaultFG => Color::White,
+        ColorElement::TaskRowDueFG => Color::Blue,
+        ColorElement::TaskRowPlaceFG => Color::Yellow,
+        ColorElement::UrlFG => Color::White,
+        ColorElement::UrlUnderMouseFG => Color::Blue,
+        ColorElement::ActiveBlockFG => SLATE.c100,
+        ColorElement::ActiveBlockBG => GREEN.c800,
+        ColorElement::InactiveBlockFG => SLATE.c100,
+        ColorElement::InactiveBlockBG => BLUE.c800,
+        ColorElement::OverdueTaskFG => Color::LightRed,
+        ColorElement::TodayTaskFG => Color::White,
+        ColorElement::FutureTaskFG => Color::LightGreen,
+        ColorElement::NoDateTaskFG => Color::White,
+        ColorElement::DescriptionKeyFG => Color::Blue,
+        ColorElement::DescriptionValueFG => Color::White,
+        ColorElement::Provider1FG => Color::Green,
+        ColorElement::Provider2FG => Color::Magenta,
+        ColorElement::Provider3FG => Color::Cyan,
+        ColorElement::Provider4FG => Color::Yellow,
+        ColorElement::Provider5FG => Color::Blue,
+        ColorElement::Provider6FG => Color::Red,
+        ColorElement::FooterKeysHelpFG => Color::White,
+        ColorElement::FooterDatetimeLabelFG => Color::Yellow,
+        ColorElement::FooterDatetimeFG => Color::LightCyan,
+        ColorElement::FooterKeysLabelFG => Color::Green,
+        ColorElement::FooterKeysFG => Color::LightRed,
+        ColorElement::HeaderKeySelectedFG => Color::LightRed,
+        ColorElement::HeaderKeyFG => Color::Rgb(255, 192, 203),
+        ColorElement::SelectedRowBG => SLATE.c800,
+        ColorElement::RegularTextFG => Color::White,
+        ColorElement::LabelFG => Color::Cyan,
+        ColorElement::DateTimeEditorActiveElementFG => Color::Black,
+        ColorElement::DateTimeEditorActiveElementBG => Color::LightBlue,
+        ColorElement::DateTimeEditorInactiveElementFG => Color::Black,
+        ColorElement::DateTimeEditorInactiveElementBG => Color::Gray,
+        ColorElement::ActiveButtonFG => SLATE.c100,
+        ColorElement::ActiveButtonBG => GREEN.c800,
+        ColorElement::InactiveButtonFG => Color::White,
+        ColorElement::WarningTextFG => Color::Yellow,
+        ColorElement::BorderColor => Color::White,
+        ColorElement::LowestPriorityFG => Color::DarkGray,
+        ColorElement::LowPriorityFG => Color::Gray,
+        ColorElement::NormalPriorityFG => Color::LightGreen,
+        ColorElement::MediumPriorityFG => Color::Rgb(255, 192, 203),
+        ColorElement::HighPriorityFG => Color::LightRed,
+        ColorElement::HighestPriorityFG => Color::Red,
+    }
+}
 
-pub const HEADER_KEY_SELECTED_FG: Color = COLOR_PALETTE[11];
-pub const HEADER_KEY_FG: Color = COLOR_PALETTE[1];
+pub fn load_theme(file_path: &std::path::PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+    let data = std::fs::read_to_string(file_path)?;
 
-pub const ACTIVE_BLOCK_STYLE: Style = DEFAULT_STYLE.fg(COLOR_PALETTE[0]).bg(COLOR_PALETTE[14]);
-pub const INACTIVE_BLOCK_STYLE: Style = DEFAULT_STYLE.fg(COLOR_PALETTE[4]).bg(COLOR_PALETTE[10]);
-pub const SELECTED_ROW_STYLE: Style = DEFAULT_STYLE.bg(COLOR_PALETTE[2]).add_modifier(Modifier::BOLD);
-pub const REGULAR_ROW_STYLE: Style = DEFAULT_STYLE;
-pub const REGULAR_TEXT_STYLE: Style = DEFAULT_STYLE.fg(COLOR_PALETTE[4]);
-pub const INLINE_CODE_TEXT_STYLE: Style = DEFAULT_STYLE.add_modifier(Modifier::ITALIC);
-pub const LABEL_STYLE: Style = DEFAULT_STYLE.fg(COLOR_PALETTE[7]).add_modifier(Modifier::ITALIC);
+    let mut theme_map = HashMap::new();
 
-pub const DATE_TIME_EDITOR_ACTIVE_ELEMENT: Style = DEFAULT_STYLE.fg(COLOR_PALETTE[0]).bg(COLOR_PALETTE[4]);
-pub const DATE_TIME_EDITOR_INACTIVE_ELEMENT: Style = DEFAULT_STYLE.fg(COLOR_PALETTE[4]).bg(COLOR_PALETTE[3]);
+    for line in data.lines() {
+        if let Some(l) = line.split_once('=') {
+            let k = ColorElement::from_str(l.0.trim(), true);
+            let v = Color::from_str(l.1.trim());
+            if v.is_err() || v.is_err() {
+                println!("Can't parse line `{line}`: {k:?} {v:?}");
+            }
+            if let Ok(k) = k {
+                if let Ok(v) = v {
+                    theme_map.insert(k, v);
+                }
+            }
+        }
+    }
 
-pub const ACTIVE_BUTTON_STYLE: Style = DEFAULT_STYLE.fg(COLOR_PALETTE[0]).bg(COLOR_PALETTE[7]);
-pub const INACTIVE_BUTTON_STYLE: Style = DEFAULT_STYLE.fg(COLOR_PALETTE[4]);
+    *THEME_MAP.write().unwrap() = Some(theme_map);
 
-pub const WARNING_TEXT_STYLE: Style = DEFAULT_STYLE.fg(COLOR_PALETTE[13]);
+    Ok(())
+}
 
-pub const BORDER_COLOR: Color = COLOR_PALETTE[6];
+pub fn due_color() -> Color {
+    element_color(ColorElement::TaskRowDueFG)
+}
 
-// pub const DEFAULT_STYLE: Style = Style::new().bg(Color::White).fg(Color::Black);
-pub static DEFAULT_STYLE: Style = Style::new().bg(COLOR_PALETTE[0]).fg(COLOR_PALETTE[4]);
+pub fn place_color() -> Color {
+    element_color(ColorElement::TaskRowPlaceFG)
+}
+
+pub fn url_under_mouse_color() -> Color {
+    element_color(ColorElement::UrlUnderMouseFG)
+}
+
+pub fn url_color() -> Color {
+    element_color(ColorElement::UrlFG)
+}
+
+pub fn overdue_task_fg() -> Color {
+    element_color(ColorElement::OverdueTaskFG)
+}
+pub fn today_task_fg() -> Color {
+    element_color(ColorElement::TodayTaskFG)
+}
+pub fn future_task_fg() -> Color {
+    element_color(ColorElement::FutureTaskFG)
+}
+pub fn no_date_task_fg() -> Color {
+    element_color(ColorElement::NoDateTaskFG)
+}
+pub fn description_key_color() -> Color {
+    element_color(ColorElement::DescriptionKeyFG)
+}
+pub fn description_value_color() -> Color {
+    element_color(ColorElement::DescriptionValueFG)
+}
+
+pub fn provider_colors() -> Vec<Color> {
+    vec![
+        element_color(ColorElement::Provider1FG),
+        element_color(ColorElement::Provider2FG),
+        element_color(ColorElement::Provider3FG),
+        element_color(ColorElement::Provider4FG),
+        element_color(ColorElement::Provider5FG),
+        element_color(ColorElement::Provider6FG),
+    ]
+}
+
+pub fn footer_keys_help_color() -> Color {
+    element_color(ColorElement::FooterKeysHelpFG)
+}
+pub fn footer_datetime_label_fg() -> Color {
+    element_color(ColorElement::FooterDatetimeLabelFG)
+}
+pub fn footer_datetime_fg() -> Color {
+    element_color(ColorElement::FooterDatetimeFG)
+}
+pub fn footer_keys_label_fg() -> Color {
+    element_color(ColorElement::FooterKeysLabelFG)
+}
+pub fn footer_keys_fg() -> Color {
+    element_color(ColorElement::FooterKeysFG)
+}
+
+pub fn header_key_selected_fg() -> Color {
+    element_color(ColorElement::HeaderKeySelectedFG)
+}
+pub fn header_key_fg() -> Color {
+    element_color(ColorElement::HeaderKeyFG)
+}
+
+pub fn active_block_style() -> Style {
+    default_style()
+        .fg(element_color(ColorElement::ActiveBlockFG))
+        .bg(element_color(ColorElement::ActiveBlockBG))
+}
+pub fn inactive_block_style() -> Style {
+    default_style()
+        .fg(element_color(ColorElement::InactiveBlockFG))
+        .bg(element_color(ColorElement::InactiveBlockBG))
+}
+
+pub fn selected_row_style() -> Style {
+    default_style()
+        .bg(element_color(ColorElement::SelectedRowBG))
+        .add_modifier(Modifier::BOLD)
+}
+pub fn regular_row_style() -> Style {
+    default_style()
+}
+pub fn regular_text_style() -> Style {
+    default_style().fg(element_color(ColorElement::RegularTextFG))
+}
+pub fn inline_code_text_style() -> Style {
+    default_style().add_modifier(Modifier::ITALIC)
+}
+pub fn label_style() -> Style {
+    default_style()
+        .fg(element_color(ColorElement::LabelFG))
+        .add_modifier(Modifier::ITALIC)
+}
+
+pub fn date_time_editor_active_element() -> Style {
+    default_style()
+        .fg(element_color(ColorElement::DateTimeEditorActiveElementFG))
+        .bg(element_color(ColorElement::DateTimeEditorActiveElementBG))
+}
+pub fn date_time_editor_inactive_element() -> Style {
+    default_style()
+        .fg(element_color(ColorElement::DateTimeEditorInactiveElementFG))
+        .bg(element_color(ColorElement::DateTimeEditorInactiveElementBG))
+}
+
+pub fn active_button_style() -> Style {
+    default_style()
+        .fg(element_color(ColorElement::ActiveButtonFG))
+        .bg(element_color(ColorElement::ActiveButtonBG))
+}
+pub fn inactive_button_style() -> Style {
+    default_style().fg(element_color(ColorElement::InactiveButtonFG))
+}
+
+pub fn warning_text_style() -> Style {
+    default_style().fg(element_color(ColorElement::WarningTextFG))
+}
+
+pub fn border_color() -> Color {
+    element_color(ColorElement::BorderColor)
+}
+
+// pub fn DEFAULT_STYLE: Style = Style::new().bg(Color::White).fg(Color::Black);
+pub fn default_style() -> Style {
+    Style::new()
+        .bg(element_color(ColorElement::DefaultBG))
+        .fg(element_color(ColorElement::DefaultFG))
+}
 
 pub fn priority_color(p: &Priority) -> Color {
     match p {
-        Priority::Lowest => COLOR_PALETTE[1],
-        Priority::Low => COLOR_PALETTE[3],
-        Priority::Normal => COLOR_PALETTE[14],
-        Priority::Medium => COLOR_PALETTE[13],
-        Priority::High => COLOR_PALETTE[12],
-        Priority::Highest => COLOR_PALETTE[11],
+        Priority::Lowest => element_color(ColorElement::LowestPriorityFG),
+        Priority::Low => element_color(ColorElement::LowPriorityFG),
+        Priority::Normal => element_color(ColorElement::NormalPriorityFG),
+        Priority::Medium => element_color(ColorElement::MediumPriorityFG),
+        Priority::High => element_color(ColorElement::HighPriorityFG),
+        Priority::Highest => element_color(ColorElement::HighestPriorityFG),
     }
 }

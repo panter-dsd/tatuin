@@ -53,9 +53,9 @@ impl DateEditor {
 
     fn style(&self, element: Element) -> Style {
         if self.is_active() && self.current_element == element {
-            style::DATE_TIME_EDITOR_ACTIVE_ELEMENT
+            style::date_time_editor_active_element()
         } else {
-            style::DATE_TIME_EDITOR_INACTIVE_ELEMENT
+            style::date_time_editor_inactive_element()
         }
     }
 
@@ -88,7 +88,7 @@ impl WidgetTrait for DateEditor {
         ])
         .areas(area);
 
-        let suffix_style = style::DATE_TIME_EDITOR_INACTIVE_ELEMENT;
+        let suffix_style = style::date_time_editor_inactive_element();
         Text::styled(format!("{}", self.dt.format("%Y")), self.style(Element::Year)).render(year_area, buf);
         Text::styled(self.suffix(Element::Year), suffix_style).render(year_suffix_area, buf);
 

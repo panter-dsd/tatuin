@@ -207,7 +207,7 @@ where
         });
 
         Self {
-            caption: Text::new(caption).style(style::DEFAULT_STYLE),
+            caption: Text::new(caption).style(style::default_style()),
             editor: LineEdit::new(None),
             button,
             widget_state: WidgetState::default(),

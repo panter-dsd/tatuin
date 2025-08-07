@@ -42,9 +42,9 @@ impl HyperlinkWidget {
 impl WidgetTrait for HyperlinkWidget {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         let fg = if self.is_under_mouse {
-            style::URL_UNDER_MOUSE_COLOR
+            style::url_under_mouse_color()
         } else {
-            style::URL_COLOR
+            style::url_color()
         };
 
         self.area = Rect {

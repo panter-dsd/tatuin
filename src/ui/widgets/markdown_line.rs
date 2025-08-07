@@ -95,7 +95,7 @@ impl WidgetTrait for MarkdownLine {
     }
 
     fn style(&self) -> Style {
-        self.style.unwrap_or(style::DEFAULT_STYLE)
+        self.style.unwrap_or(style::default_style())
     }
 
     fn set_style(&mut self, style: Style) {
@@ -157,7 +157,7 @@ fn widgets(node: &Node) -> Vec<Box<dyn WidgetTrait>> {
             }
             Node::InlineCode(n) => {
                 result.push(Box::new(
-                    Text::new(n.value.as_str()).style(style::INLINE_CODE_TEXT_STYLE),
+                    Text::new(n.value.as_str()).style(style::inline_code_text_style()),
                 ));
             }
             Node::Delete(_) => {

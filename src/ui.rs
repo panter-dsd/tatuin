@@ -755,7 +755,7 @@ impl App {
 
         if !self.error_logger.read().await.is_empty() {
             let block = Block::bordered()
-                .border_style(style::DEFAULT_STYLE.fg(Color::Red))
+                .border_style(style::default_style().fg(Color::Red))
                 .title("Alert!");
             let area = popup_area(area, Size::new(area.width / 2, 40));
             Clear {}.render(area, buf);
@@ -784,21 +784,21 @@ impl App {
         let mut lines = vec![
             Span::styled(
                 "Use ↓↑ to move up/down, Tab/BackTab to move between blocks, ? for help. ",
-                style::FOOTER_KEYS_HELP_COLOR,
+                style::footer_keys_help_color(),
             ),
             Span::styled(
                 "Current date/time: ",
-                style::DEFAULT_STYLE.fg(style::FOOTER_DATETIME_LABEL_FG),
+                style::default_style().fg(style::footer_datetime_label_fg()),
             ),
             Span::styled(
                 chrono::Local::now().format("%Y-%m-%d %H:%M").to_string(),
-                style::FOOTER_DATETIME_FG,
+                style::footer_datetime_fg(),
             ),
         ];
 
         if !self.key_buffer.is_empty() {
-            lines.push(Span::styled(" Keys: ", style::FOOTER_KEYS_LABEL_FG));
-            lines.push(Span::styled(self.key_buffer.to_string(), style::FOOTER_KEYS_FG));
+            lines.push(Span::styled(" Keys: ", style::footer_keys_label_fg()));
+            lines.push(Span::styled(self.key_buffer.to_string(), style::footer_keys_fg()));
         }
 
         Paragraph::new(Line::from(lines)).centered().render(area, buf);

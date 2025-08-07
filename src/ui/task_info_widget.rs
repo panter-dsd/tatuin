@@ -145,7 +145,7 @@ impl TaskInfoWidget {
                 });
             }
 
-            let value_style = style::DEFAULT_STYLE.fg(style::DESCRIPTION_VALUE_COLOR);
+            let value_style = style::default_style().fg(style::description_value_color());
             for e in entries.iter_mut() {
                 e.widget.set_style(value_style);
             }
@@ -165,8 +165,8 @@ impl WidgetTrait for TaskInfoWidget {
         if self.t.is_none() {
             Paragraph::new("Nothing selected...")
                 .block(h.block())
-                .style(style::DEFAULT_STYLE)
-                .fg(style::DESCRIPTION_VALUE_COLOR)
+                .style(style::default_style())
+                .fg(style::description_value_color())
                 .wrap(Wrap { trim: false })
                 .render(area, buf);
             return;
@@ -179,8 +179,8 @@ impl WidgetTrait for TaskInfoWidget {
         for e in self.entries.write().await.iter_mut() {
             let label = RatatuiText::from(Line::styled(
                 format!("{}: ", e.title),
-                style::DEFAULT_STYLE
-                    .fg(style::DESCRIPTION_KEY_COLOR)
+                style::default_style()
+                    .fg(style::description_key_color())
                     .add_modifier(Modifier::BOLD),
             ));
             let label_width = label.width() as u16;
@@ -196,7 +196,7 @@ impl WidgetTrait for TaskInfoWidget {
             }
         }
         Block::new()
-            .style(style::DEFAULT_STYLE)
+            .style(style::default_style())
             .render(Rect::new(area.x, row_area.y, area.width, area.height), buf);
     }
 

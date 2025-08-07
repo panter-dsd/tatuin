@@ -44,6 +44,9 @@ struct Cli {
 
     #[arg(short, long, name("PATH_TO_CONFIG_FILE"), help("/path/to/settings.toml"))]
     settings_file: Option<String>,
+
+    #[arg(short, long, name("THEME_NAME"), help("theme name"))]
+    theme: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
@@ -137,6 +140,20 @@ fn add_provider(cfg: &mut settings::Settings) -> Result<(), Box<dyn std::error::
     w.run(cfg)
 }
 
+fn load_theme(theme: &Option<String>) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(theme) = theme {
+        let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME);
+        let file_name = xdg_dirs
+            .get_config_home()
+            .unwrap_or_default()
+            .join(format!("{theme}.theme"));
+        println!("Try to load theme from the file: {file_name:?}");
+        return style::load_theme(&file_name);
+    }
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // console_subscriber::init();
@@ -157,16 +174,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Settings::new(config_path.to_str().unwrap())
     };
 
+    if let Err(e) = load_theme(&cli.theme.or(cfg.theme.clone())) {
+        println!("Load theme error: {e}")
+    }
+
     let mut providers: Vec<provider::Provider> = Vec::new();
 
-    let mut it = style::PROVIDER_COLORS.iter();
+    let providers_colors = style::provider_colors();
+    let mut it = providers_colors.iter();
     let mut color = || -> &Color {
         let it = &mut it;
 
         if let Some(n) = it.next() {
             n
         } else {
-            *it = style::PROVIDER_COLORS.iter();
+            *it = providers_colors.iter();
             it.next().unwrap()
         }
     };

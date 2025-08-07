@@ -102,7 +102,7 @@ pub trait WidgetTrait: WidgetStateTrait + KeyboardHandler + MouseHandler + Send 
     fn set_draw_helper(&mut self, _dh: DrawHelper) {}
     fn set_pos(&mut self, _pos: Position) {}
     fn style(&self) -> Style {
-        style::DEFAULT_STYLE
+        style::default_style()
     }
     fn set_style(&mut self, _style: Style) {}
     fn as_any(&self) -> &dyn Any;
