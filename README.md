@@ -17,6 +17,7 @@ Tatuin provides users with an easy-to-use Text User Interface (TUI) for viewing 
 - **Command-line Interface (CLI):** The project is designed using a text-based interface, making it accessible from the command line.
 - **Task Filters & Status Changes:** Easily filter and update your tasks' statuses as needed.
 - **Save and load UI state:** The user can save the current view's state (selected provider, selected project, used filters) and switch between states.
+- **Theming support**: The user can choose between themes or create their own.
 
 ## Quick Start
 
@@ -51,6 +52,20 @@ Currently, only the Todoist and Obsidian providers support task creation. The To
 you must use the [obsidian-local-rest-api](https://github.com/coddingtonbear/obsidian-local-rest-api) plugin.
 The information about the installation and configuration process can be found within Obsidian's UI.
 Tatuin works seamlessly with both secure and insecure configurations, but note that you must install a certificate for the secure setup (refer to the [wiki](https://github.com/coddingtonbear/obsidian-web/wiki/How-do-I-get-my-browser-trust-my-Obsidian-Local-REST-API-certificate%3F) for details).
+
+### Theming Support
+
+Tatuin now includes theming support, allowing you to customize the application's appearance to suit your preferences. To use a new theme, download a theme file (for instance, [nord.theme](https://github.com/panter-dsd/tatuin/blob/master/assets/themes/nord.theme)) and save it into the configuration directory: `~/.config/tatuin`. For example, you might place a theme file as `~/.config/tatuin/nord.theme`.
+
+You can activate a theme at launch by using the `--theme` command-line option followed by the theme name: `tatuin --theme nord`
+
+Alternatively, to set a default theme, edit the configuration file located at `~/.config/tatuin/settings.toml` and specify the theme name as follows:
+
+```toml
+theme = "nord"
+```
+
+This feature enables seamless switching between themes, offering both flexibility and a personalized experience.
 
 ## Screenshots
 
