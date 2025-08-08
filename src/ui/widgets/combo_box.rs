@@ -18,6 +18,7 @@ use crate::{
         dialogs::{DialogTrait, ListDialog},
         keyboard_handler::KeyboardHandler,
         mouse_handler::MouseHandler,
+        style,
     },
 };
 
@@ -206,7 +207,7 @@ where
         });
 
         Self {
-            caption: Text::new(caption),
+            caption: Text::new(caption).style(style::default_style()),
             editor: LineEdit::new(None),
             button,
             widget_state: WidgetState::default(),

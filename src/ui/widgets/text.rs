@@ -30,7 +30,7 @@ impl Text {
         Self {
             text: text.to_string(),
             width: RatatuiText::from(text).width() as u16,
-            style: style::REGULAR_TEXT_STYLE,
+            style: style::regular_text_style(),
             modifier: Modifier::empty(),
             widget_state: WidgetState::default(),
         }

@@ -78,7 +78,9 @@ impl LineEdit {
 #[async_trait]
 impl WidgetTrait for LineEdit {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let b = Block::default().borders(Borders::ALL).border_style(style::BORDER_COLOR);
+        let b = Block::default()
+            .borders(Borders::ALL)
+            .border_style(style::border_color());
 
         let inner_area = b.inner(area);
         let mut text = self.text.clone();

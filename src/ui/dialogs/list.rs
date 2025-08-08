@@ -164,10 +164,11 @@ where
     T: Display + Clone + Send + Sync + 'static,
 {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let mut b = Block::default()
+        let mut b = Block::new()
+            .style(self.style())
             .title_alignment(ratatui::layout::Alignment::Center)
             .borders(Borders::ALL)
-            .border_style(style::BORDER_COLOR);
+            .border_style(style::border_color());
         if self.show_top_title {
             b = b.title_top(self.title.as_str());
         }

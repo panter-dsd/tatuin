@@ -8,6 +8,7 @@ use super::{
     keyboard_handler::KeyboardHandler,
     mouse_handler::MouseHandler,
     shortcut::Shortcut,
+    style::default_style,
     widgets::{DateEditor, TaskRow, WidgetState, WidgetStateTrait, WidgetTrait},
 };
 use crate::{
@@ -16,6 +17,7 @@ use crate::{
     patched_task::PatchedTask,
     project::Project as ProjectTrait,
     provider::Provider,
+    style,
     task::{self, DateTimeUtc, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
     types::ArcRwLock,
@@ -27,7 +29,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
     text::Text,
-    widgets::{Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
+    widgets::{Block, Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
 use std::{any::Any, slice::Iter, slice::IterMut, sync::Arc};
 use tokio::sync::{RwLock, broadcast};
@@ -842,8 +844,10 @@ impl WidgetTrait for TasksWidget {
 
             let is_row_selected = selected.is_some_and(|idx| idx == i);
             w.set_selected(is_row_selected);
-            if is_row_selected {
-                Text::from(">").render(
+
+            Text::from(if is_row_selected { ">" } else { " " })
+                .style(default_style())
+                .render(
                     Rect {
                         x: area.x,
                         y,
@@ -852,13 +856,16 @@ impl WidgetTrait for TasksWidget {
                     },
                     buf,
                 );
-            }
             w.set_pos(Position::new(area.x + 1, y));
             w.render(area, buf).await;
 
             let size = w.size();
             y += size.height;
         }
+
+        Block::new()
+            .style(style::default_style())
+            .render(Rect::new(area.x, y, area.width, area.height - y + 2), buf);
 
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
             .begin_symbol(Some("↑"))

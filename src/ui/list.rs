@@ -44,8 +44,9 @@ where
         };
 
         ListWidget::new(self.items.to_vec())
-            .block(block)
-            .highlight_style(style::SELECTED_ROW_STYLE)
+            .block(block.style(style::default_style()))
+            .style(style::default_style())
+            .highlight_style(style::selected_row_style())
             .highlight_symbol(">")
             .highlight_spacing(HighlightSpacing::Always)
     }

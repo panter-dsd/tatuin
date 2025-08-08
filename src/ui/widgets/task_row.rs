@@ -12,7 +12,7 @@ use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
-    style::{Color, Style},
+    style::Style,
 };
 use std::{any::Any, cmp::Ordering};
 
@@ -34,12 +34,12 @@ impl TaskRow {
                 Some(d) => {
                     let now = chrono::Utc::now().date_naive();
                     match d.date_naive().cmp(&now) {
-                        Ordering::Less => style::OVERDUE_TASK_FG,
-                        Ordering::Equal => style::TODAY_TASK_FG,
-                        Ordering::Greater => style::FUTURE_TASK_FG,
+                        Ordering::Less => style::overdue_task_fg(),
+                        Ordering::Equal => style::today_task_fg(),
+                        Ordering::Greater => style::future_task_fg(),
                     }
                 }
-                None => style::NO_DATE_TASK_FG,
+                None => style::no_date_task_fg(),
             }
         };
         let mut name = t.text();
@@ -65,18 +65,22 @@ impl TaskRow {
 
         let mut children: Vec<Box<dyn WidgetTrait>> = vec![
             Box::new(Text::new(format!("[{state}] ").as_str())),
-            Box::new(MarkdownLine::new(name.as_str()).style(Style::default().fg(fg_color))),
-            Box::new(Text::new(format!(" (due: {due})").as_str()).style(Style::default().fg(Color::Blue))),
+            Box::new(MarkdownLine::new(name.as_str()).style(style::default_style().fg(fg_color))),
+            Box::new(Text::new(format!(" (due: {due})").as_str()).style(style::default_style().fg(style::due_color()))),
             Box::new(
                 Text::new(format!(" (Priority: {priority})").as_str())
-                    .style(Style::default().fg(style::priority_color(&priority))),
+                    .style(style::default_style().fg(style::priority_color(&priority))),
             ),
-            Box::new(Text::new(format!(" ({})", t.place()).as_str()).style(Style::default().fg(Color::Yellow))),
+            Box::new(
+                Text::new(format!(" ({})", t.place()).as_str()).style(style::default_style().fg(style::place_color())),
+            ),
         ];
 
         for l in t.labels() {
             children.push(Box::new(Text::new(" ")));
-            children.push(Box::new(Text::new(format!("🏷️{l}").as_str()).style(style::LABEL_STYLE)));
+            children.push(Box::new(
+                Text::new(format!("🏷️{l}").as_str()).style(style::label_style()),
+            ));
         }
 
         if !t.description().unwrap_or_default().is_empty() {
@@ -114,12 +118,17 @@ impl WidgetTrait for TaskRow {
             width: area.width,
             height: self.size().height,
         };
-        if self.is_selected {
-            buf.set_style(area, style::SELECTED_ROW_STYLE);
+
+        let mut s = if self.is_selected {
+            buf.set_style(area, style::selected_row_style());
+            style::selected_row_style()
         } else {
-            buf.set_style(area, style::REGULAR_ROW_STYLE);
-        }
+            buf.set_style(area, style::regular_row_style());
+            style::regular_row_style()
+        };
+        s.fg = None;
         for child in self.children.iter_mut() {
+            child.set_style(child.style().patch(s));
             child.render(area, buf).await;
             area.x += child.size().width;
         }

@@ -17,7 +17,7 @@ use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Layout, Rect, Size},
-    style::{Style, Stylize},
+    style::Stylize,
     text::{Line, Span},
     widgets::{Block, Borders, List, Paragraph, Widget},
 };
@@ -80,12 +80,13 @@ impl Dialog {
 #[async_trait]
 impl WidgetTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let b = Block::default()
+        let b = Block::new()
+            .style(style::default_style())
             .title_alignment(Alignment::Center)
             .title_top("Key bindings")
             .title_bottom("Press q or Esc to close")
             .borders(Borders::ALL)
-            .border_style(style::BORDER_COLOR);
+            .border_style(style::border_color());
 
         Widget::render(&b, area, buf);
 
@@ -104,7 +105,7 @@ impl WidgetTrait for Dialog {
         if self.active_block_shortcuts.is_empty() {
             Paragraph::new("There are no shortcut keys in the active panel")
                 .alignment(Alignment::Center)
-                .style(style::WARNING_TEXT_STYLE)
+                .style(style::warning_text_style())
                 .render(active_area, buf);
         } else {
             let active_items = self
@@ -112,12 +113,13 @@ impl WidgetTrait for Dialog {
                 .iter()
                 .map(|s| {
                     Line::from(vec![
-                        Span::styled(format!("{}: ", s.name), Style::new().bold()),
+                        Span::styled(format!("{}: ", s.name), style::default_style().bold()),
                         Span::raw(s.keys.clone()),
                     ])
                 })
                 .collect::<Vec<Line>>();
-            let active_block = Block::default()
+            let active_block = Block::new()
+                .style(style::default_style())
                 .title_alignment(Alignment::Center)
                 .title_top("Active block");
             List::new(active_items).block(active_block).render(active_area, buf);
@@ -128,7 +130,7 @@ impl WidgetTrait for Dialog {
             .iter()
             .map(|s| {
                 Line::from(vec![
-                    Span::styled(format!("{}: ", s.name), Style::new().bold()),
+                    Span::styled(format!("{}: ", s.name), style::default_style().bold()),
                     Span::raw(s.keys.clone()),
                 ])
             })

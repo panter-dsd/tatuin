@@ -59,7 +59,7 @@ impl WidgetTrait for Dialog {
             .title_bottom(FOOTER)
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
-            .border_style(style::BORDER_COLOR);
+            .border_style(style::border_color());
         let inner_area = b.inner(area);
         b.render(area, buf);
         self.edit.render(inner_area, buf).await;

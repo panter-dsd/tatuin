@@ -23,7 +23,7 @@ use ratatui::{
     DefaultTerminal,
     buffer::Buffer,
     layout::{Constraint, Flex, Layout, Position, Rect, Size},
-    style::{Color, Style, Stylize},
+    style::{Color, Stylize},
     text::{Line, Span},
     widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wrap},
 };
@@ -740,7 +740,6 @@ impl App {
             Layout::vertical([Constraint::Fill(1), Constraint::Percentage(20)]).areas(right_area);
 
         App::render_header(header_area, buf);
-        self.render_footer(footer_area, buf).await;
         self.render_providers(providers_area, buf).await;
         self.render_projects(projects_area, buf).await;
         self.async_jobs.write().await.render(
@@ -752,10 +751,11 @@ impl App {
         self.render_filters(filter_area, buf).await;
         self.render_task_description(task_description_area, buf).await;
         self.render_tasks(list_area, buf).await;
+        self.render_footer(footer_area, buf).await;
 
         if !self.error_logger.read().await.is_empty() {
             let block = Block::bordered()
-                .border_style(Style::default().fg(Color::Red))
+                .border_style(style::default_style().fg(Color::Red))
                 .title("Alert!");
             let area = popup_area(area, Size::new(area.width / 2, 40));
             Clear {}.render(area, buf);
@@ -784,18 +784,21 @@ impl App {
         let mut lines = vec![
             Span::styled(
                 "Use ↓↑ to move up/down, Tab/BackTab to move between blocks, ? for help. ",
-                style::FOOTER_KEYS_HELP_COLOR,
+                style::footer_keys_help_color(),
             ),
-            Span::styled("Current date/time: ", style::FOOTER_DATETIME_LABEL_FG),
+            Span::styled(
+                "Current date/time: ",
+                style::default_style().fg(style::footer_datetime_label_fg()),
+            ),
             Span::styled(
                 chrono::Local::now().format("%Y-%m-%d %H:%M").to_string(),
-                style::FOOTER_DATETIME_FG,
+                style::footer_datetime_fg(),
             ),
         ];
 
         if !self.key_buffer.is_empty() {
-            lines.push(Span::styled(" Keys: ", style::FOOTER_KEYS_LABEL_FG));
-            lines.push(Span::styled(self.key_buffer.to_string(), style::FOOTER_KEYS_FG));
+            lines.push(Span::styled(" Keys: ", style::footer_keys_label_fg()));
+            lines.push(Span::styled(self.key_buffer.to_string(), style::footer_keys_fg()));
         }
 
         Paragraph::new(Line::from(lines)).centered().render(area, buf);

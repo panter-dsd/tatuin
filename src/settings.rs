@@ -18,6 +18,8 @@ pub struct Settings {
 
     #[serde(default = "default_states_hash_map")]
     states: HashMap<String, State>,
+
+    pub theme: Option<String>,
 }
 
 fn default_states_hash_map() -> HashMap<String, State> {

@@ -54,7 +54,7 @@ impl WidgetTrait for Dialog {
             .title_top("States")
             .title_bottom("Use j/k (up/down) for moving, d for deleting and Enter for applying")
             .borders(Borders::ALL)
-            .border_style(style::BORDER_COLOR);
+            .border_style(style::border_color());
         Widget::render(&b, area, buf);
 
         self.states
