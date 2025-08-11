@@ -60,7 +60,7 @@ Tatuin works seamlessly with both secure and insecure configurations, but note t
 
 ### Theming Support
 
-Tatuin now includes theming support, allowing you to customize the application's appearance to suit your preferences. To use a new theme, download a theme file (for instance, [nord.theme](https://github.com/panter-dsd/tatuin/blob/master/assets/themes/nord.theme)) and save it into the configuration directory: `~/.config/tatuin`. For example, you might place a theme file as `~/.config/tatuin/nord.theme`.
+Tatuin includes theming support, allowing you to customize the application's appearance to suit your preferences. To use a new theme, download a theme file (for instance, [nord.theme](https://github.com/panter-dsd/tatuin/blob/master/assets/themes/nord.theme)) and save it into the configuration directory: `~/.config/tatuin`. For example, you might place a theme file as `~/.config/tatuin/nord.theme`.
 
 You can activate a theme at launch by using the `--theme` command-line option followed by the theme name: `tatuin --theme nord`
 
