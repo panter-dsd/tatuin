@@ -82,6 +82,10 @@ This feature enables seamless switching between themes, offering both flexibilit
 
 ![Task creation dialog](https://raw.github.com/panter-dsd/tatuin/master/assets/screenshots/task_creation_dialog.png?raw=true "Task creation dialog")
 
+### Edit the task (Nord theme)
+
+![Task editing dialog](https://raw.github.com/panter-dsd/tatuin/master/assets/screenshots/task_editing_nord_theme.png?raw=true "Task editing dialog")
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
