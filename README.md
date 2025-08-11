@@ -46,12 +46,17 @@ tatuin add-provider
 
 This command will guide you through setting up the integration for the specified provider.
 
-### Task Creation support
+### Task Creation and Editing support
 
-Currently, only the Todoist and Obsidian providers support task creation. The Todoist provider is out of the box, but for Obsidian,
+Currently, only the Todoist and Obsidian providers support task creation and editing. The Todoist provider is out of the box, but for Obsidian,
 you must use the [obsidian-local-rest-api](https://github.com/coddingtonbear/obsidian-local-rest-api) plugin.
 The information about the installation and configuration process can be found within Obsidian's UI.
 Tatuin works seamlessly with both secure and insecure configurations, but note that you must install a certificate for the secure setup (refer to the [wiki](https://github.com/coddingtonbear/obsidian-web/wiki/How-do-I-get-my-browser-trust-my-Obsidian-Local-REST-API-certificate%3F) for details).
+
+#### Shortcuts
+
+- a: Create a task
+- e: Edit the task under cursor
 
 ### Theming Support
 
