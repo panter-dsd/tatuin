@@ -1,4 +1,5 @@
 mod client;
+mod task;
 use async_trait::async_trait;
 use ratatui::style::Color;
 
@@ -10,6 +11,7 @@ use crate::{
     task_patch::{PatchError, TaskPatch},
 };
 use client::Client;
+use task::Task;
 
 pub const PROVIDER_NAME: &str = "iCal";
 
@@ -18,6 +20,7 @@ pub struct Provider {
     color: Color,
 
     c: Client,
+    tasks: Vec<Task>,
 }
 
 impl Provider {
@@ -26,13 +29,11 @@ impl Provider {
             name: name.to_string(),
             color: *color,
             c: Client::new(url),
+            tasks: Vec::new(),
         };
 
         if let Ok(f) = folders::provider_cache_folder(&s) {
             s.c.set_cache_folder(&f);
-        }
-        if let Err(e) = folders::provider_cache_folder(&s) {
-            println!("ERROR {e:?}");
         }
         s
     }
@@ -60,7 +61,12 @@ impl ProviderTrait for Provider {
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
-        Err(StringError::new("not implemented"))
+        if self.tasks.is_empty() {
+            self.c.download_calendar().await?;
+            self.tasks = self.c.parse_calendar().await?;
+        }
+
+        return Ok(self.tasks.iter().map(|t| t.clone_boxed()).collect());
     }
 
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
@@ -71,7 +77,9 @@ impl ProviderTrait for Provider {
         todo!("Not implemented")
     }
 
-    async fn reload(&mut self) {}
+    async fn reload(&mut self) {
+        self.tasks.clear();
+    }
 
     fn color(&self) -> Color {
         self.color
