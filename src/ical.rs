@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use ratatui::style::Color;
 
 use crate::{
-    filter,
+    filter, folders,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait, StringError},
     task::Task as TaskTrait,
@@ -22,11 +22,19 @@ pub struct Provider {
 
 impl Provider {
     pub fn new(name: &str, url: &str, color: &Color) -> Self {
-        Self {
+        let mut s = Self {
             name: name.to_string(),
             color: *color,
             c: Client::new(url),
+        };
+
+        if let Ok(f) = folders::provider_cache_folder(&s) {
+            s.c.set_cache_folder(&f);
         }
+        if let Err(e) = folders::provider_cache_folder(&s) {
+            println!("ERROR {e:?}");
+        }
+        s
     }
 }
 
@@ -52,11 +60,11 @@ impl ProviderTrait for Provider {
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
-        todo!("Not implemented")
+        Err(StringError::new("not implemented"))
     }
 
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
-        todo!("Not implemented")
+        Err(StringError::new("not implemented"))
     }
 
     async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
