@@ -22,8 +22,8 @@ impl Task {
         !self.uid.is_empty() && !self.name.is_empty()
     }
 
-    pub fn set_provider(&mut self, p: String) {
-        self.provider = p;
+    pub fn set_provider(&mut self, p: &str) {
+        self.provider = p.to_string();
     }
 }
 
