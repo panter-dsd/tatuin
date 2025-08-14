@@ -81,11 +81,7 @@ where
 }
 
 fn dt_from_property(p: &Property) -> Option<DateTimeUtc> {
-    if p.value.is_none() {
-        return None;
-    }
-
-    let s = p.value.as_ref().unwrap();
+    let s = p.value.as_ref()?;
 
     if let Ok(d) = NaiveDate::parse_from_str(s, "%Y%m%d") {
         let dt = d.and_hms_opt(0, 0, 0)?;
