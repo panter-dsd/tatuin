@@ -55,7 +55,7 @@ impl ProviderTrait for Provider {
         PROVIDER_NAME.to_string()
     }
 
-    #[tracing::instrument(level = "info", target = "todoist_tasks")]
+    #[tracing::instrument(level = "info", target = "ical_tasks")]
     async fn tasks(
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,
