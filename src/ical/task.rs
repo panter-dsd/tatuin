@@ -98,6 +98,6 @@ impl TaskTrait for Task {
     }
 
     fn place(&self) -> String {
-        "calendar".to_string()
+        self.provider()
     }
 }
