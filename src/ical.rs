@@ -85,7 +85,7 @@ impl ProviderTrait for Provider {
     }
 
     async fn patch_tasks(&mut self, _patches: &[TaskPatch]) -> Vec<PatchError> {
-        todo!("Not implemented")
+        panic!("Not implemented")
     }
 
     async fn reload(&mut self) {
@@ -101,6 +101,6 @@ impl ProviderTrait for Provider {
     }
 
     async fn create_task(&mut self, _project_id: &str, _tp: &TaskPatch) -> Result<(), StringError> {
-        todo!("Not implemented")
+        panic!("Not implemented")
     }
 }

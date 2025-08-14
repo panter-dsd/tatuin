@@ -1,7 +1,7 @@
 use chrono::Duration;
 
 use crate::project::Project as ProjectTrait;
-use crate::task::{DateTimeUtc, Priority, State, Task as TaskTrait};
+use crate::task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait};
 
 #[derive(Default, Debug, Clone)]
 pub struct Task {
@@ -77,5 +77,13 @@ impl TaskTrait for Task {
 
     fn clone_boxed(&self) -> Box<dyn TaskTrait> {
         Box::new(self.clone())
+    }
+
+    fn const_patch_policy(&self) -> PatchPolicy {
+        PatchPolicy {
+            available_states: Vec::new(),
+            available_priorities: Vec::new(),
+            available_due_items: Vec::new(),
+        }
     }
 }
