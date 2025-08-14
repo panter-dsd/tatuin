@@ -58,8 +58,8 @@ impl ProviderTrait for Provider {
     #[tracing::instrument(level = "info", target = "todoist_tasks")]
     async fn tasks(
         &mut self,
-        project: Option<Box<dyn ProjectTrait>>,
-        f: &filter::Filter,
+        _project: Option<Box<dyn ProjectTrait>>,
+        _f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
         if self.tasks.is_empty() {
             self.c.download_calendar().await?;
@@ -73,7 +73,7 @@ impl ProviderTrait for Provider {
         Err(StringError::new("not implemented"))
     }
 
-    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+    async fn patch_tasks(&mut self, _patches: &[TaskPatch]) -> Vec<PatchError> {
         todo!("Not implemented")
     }
 
@@ -89,7 +89,7 @@ impl ProviderTrait for Provider {
         Capabilities { create_task: false }
     }
 
-    async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
+    async fn create_task(&mut self, _project_id: &str, _tp: &TaskPatch) -> Result<(), StringError> {
         todo!("Not implemented")
     }
 }

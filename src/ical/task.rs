@@ -1,37 +1,81 @@
-use crate::task::Task as TaskTrait;
+use chrono::Duration;
 
-#[derive(Default)]
+use crate::project::Project as ProjectTrait;
+use crate::task::{DateTimeUtc, Priority, State, Task as TaskTrait};
+
+#[derive(Default, Debug, Clone)]
 pub struct Task {
+    pub provider: String,
+
     pub uid: String,
     pub name: String,
+    pub priority: u8,
+    pub start: Option<DateTimeUtc>,
+    pub end: Option<DateTimeUtc>,
+    pub due: Option<DateTimeUtc>,
+    pub completed: Option<DateTimeUtc>,
+    pub duration: Option<Duration>,
+}
+
+impl Task {
+    pub fn is_valid(&self) -> bool {
+        !self.uid.is_empty() && !self.name.is_empty()
+    }
+
+    pub fn set_provider(&mut self, p: String) {
+        self.provider = p;
+    }
 }
 
 impl TaskTrait for Task {
     fn id(&self) -> String {
-        todo!()
+        self.uid.clone()
     }
 
     fn text(&self) -> String {
-        todo!()
+        self.name.clone()
     }
 
-    fn state(&self) -> crate::task::State {
-        todo!()
+    fn state(&self) -> State {
+        if self.completed.is_some() {
+            State::Completed
+        } else {
+            State::Uncompleted
+        }
     }
 
     fn provider(&self) -> String {
-        todo!()
+        self.provider.clone()
     }
 
-    fn project(&self) -> Option<Box<dyn crate::project::Project>> {
-        todo!()
+    fn project(&self) -> Option<Box<dyn ProjectTrait>> {
+        None
+    }
+
+    fn due(&self) -> Option<DateTimeUtc> {
+        if self.due.is_some() { self.due } else { self.start }
+    }
+
+    fn completed_at(&self) -> Option<DateTimeUtc> {
+        self.completed
+    }
+
+    fn priority(&self) -> Priority {
+        match self.priority {
+            0 | 5 => Priority::Normal,
+            1 => Priority::Highest,
+            2 | 3 => Priority::High,
+            4 => Priority::Medium,
+            6 | 7 => Priority::Low,
+            8.. => Priority::Lowest,
+        }
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
-        todo!()
+        self
     }
 
     fn clone_boxed(&self) -> Box<dyn TaskTrait> {
-        todo!()
+        Box::new(self.clone())
     }
 }
