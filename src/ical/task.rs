@@ -9,11 +9,13 @@ pub struct Task {
 
     pub uid: String,
     pub name: String,
+    pub description: Option<String>,
     pub priority: u8,
     pub start: Option<DateTimeUtc>,
     pub end: Option<DateTimeUtc>,
     pub due: Option<DateTimeUtc>,
     pub completed: Option<DateTimeUtc>,
+    pub created: Option<DateTimeUtc>,
     pub duration: Option<Duration>,
 }
 
@@ -85,5 +87,17 @@ impl TaskTrait for Task {
             available_priorities: Vec::new(),
             available_due_items: Vec::new(),
         }
+    }
+
+    fn description(&self) -> Option<String> {
+        self.description.clone()
+    }
+
+    fn created_at(&self) -> Option<DateTimeUtc> {
+        self.created
+    }
+
+    fn place(&self) -> String {
+        "calendar".to_string()
     }
 }

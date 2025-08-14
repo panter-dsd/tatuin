@@ -108,13 +108,15 @@ fn duration_from_property(p: &Property) -> Option<Duration> {
 fn fill_task(t: &mut Task, properties: &[Property]) {
     for p in properties {
         match p.name.as_str() {
-            "SUMMARY" => t.name = p.value.clone().unwrap_or_default(),
             "UID" => t.uid = p.value.clone().unwrap_or_default(),
+            "SUMMARY" => t.name = p.value.clone().unwrap_or_default(),
+            "DESCRIPTION" => t.description = p.value.clone(),
             "PRIORITY" => t.priority = p.value.as_ref().map(|s| s.parse::<u8>().unwrap_or(0)).unwrap_or(0),
             "DUE" => t.due = dt_from_property(p),
             "DTSTART" => t.start = dt_from_property(p),
             "DTEND" => t.end = dt_from_property(p),
             "COMPLETED" => t.completed = dt_from_property(p),
+            "CREATED" => t.created = dt_from_property(p),
             "DURATION" => t.duration = duration_from_property(p),
             _ => {}
         }
