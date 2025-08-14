@@ -59,7 +59,7 @@ impl ProviderTrait for Provider {
     async fn tasks(
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,
-        _f: &filter::Filter,
+        f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
         if self.tasks.is_empty() {
             self.c.download_calendar().await?;
@@ -68,6 +68,7 @@ impl ProviderTrait for Provider {
                 .parse_calendar()
                 .await?
                 .iter()
+                .filter(|t| f.accept(*t))
                 .map(|t| {
                     let mut task = t.clone();
                     task.set_provider(self.name.as_str());
