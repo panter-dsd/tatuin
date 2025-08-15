@@ -3,8 +3,7 @@
 use super::patch::{PatchError, TaskPatch};
 use crate::filter;
 use crate::obsidian::md_file;
-use crate::obsidian::task::{State, Task};
-use crate::task::due_group;
+use crate::obsidian::task::Task;
 use itertools::Itertools;
 use std::cmp::Ordering;
 use std::error::Error;
@@ -75,7 +74,7 @@ impl Client {
                 .await
                 .unwrap()
                 .iter()
-                .filter(|t| accept_filter(t, f))
+                .filter(|t| f.accept(*t))
                 .cloned()
                 .collect::<Vec<Task>>();
 
@@ -156,25 +155,4 @@ fn supported_files(p: &Path) -> Result<Vec<String>, Box<dyn Error>> {
     }
 
     Ok(result)
-}
-
-const fn state_to_list_state(s: &State) -> filter::FilterState {
-    match s {
-        State::Completed => filter::FilterState::Completed,
-        State::Uncompleted => filter::FilterState::Uncompleted,
-        State::InProgress => filter::FilterState::InProgress,
-        State::Unknown(_) => filter::FilterState::Unknown,
-    }
-}
-
-fn accept_filter(t: &Task, f: &filter::Filter) -> bool {
-    if !f.states.contains(&state_to_list_state(&t.state)) {
-        return false;
-    }
-
-    if !f.due.contains(&due_group(t)) {
-        return false;
-    }
-
-    true
 }

@@ -21,6 +21,8 @@ crossterm = { version = "0.29.0", features = [
   "event-stream",
   "bracketed-paste",
 ] }
+ical = "0.11.0"
+iso8601-duration = { version = "0.2.0", features = ["chrono"] }
 itertools = "0.14.0"
 markdown = "1.0.0"
 ratatui = "0.29.0"
