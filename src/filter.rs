@@ -18,6 +18,17 @@ impl std::fmt::Display for FilterState {
     }
 }
 
+impl From<State> for FilterState {
+    fn from(s: State) -> Self {
+        match s {
+            State::Completed => FilterState::Completed,
+            State::Uncompleted => FilterState::Uncompleted,
+            State::InProgress => FilterState::InProgress,
+            State::Unknown(_) => FilterState::Unknown,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ValueEnum, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum Due {
     Overdue,
@@ -38,18 +49,9 @@ pub struct Filter {
     pub due: Vec<Due>,
 }
 
-pub const fn state_to_filter_state(s: &State) -> FilterState {
-    match s {
-        State::Completed => FilterState::Completed,
-        State::Uncompleted => FilterState::Uncompleted,
-        State::InProgress => FilterState::InProgress,
-        State::Unknown(_) => FilterState::Unknown,
-    }
-}
-
 impl Filter {
     pub fn accept(&self, t: &dyn TaskTrait) -> bool {
-        if !self.states.contains(&state_to_filter_state(&t.state())) {
+        if !self.states.contains(&t.state().into()) {
             return false;
         }
 
