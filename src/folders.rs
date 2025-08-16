@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::{APP_NAME, provider::ProviderTrait};
 use std::{io::ErrorKind, path::PathBuf};
 

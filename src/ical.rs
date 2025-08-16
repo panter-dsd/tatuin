@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 mod client;
 mod task;
 use async_trait::async_trait;
