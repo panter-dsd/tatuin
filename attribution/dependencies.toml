@@ -95,7 +95,7 @@ repository = "https://github.com/rust-cli/anstyle.git"
 
 [[dependencies]]
 name = "anyhow"
-version = "1.0.98"
+version = "1.0.99"
 description = "Flexible concrete Error type built on std::error::Error"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -138,7 +138,7 @@ repository = "https://github.com/tokio-rs/async-stream"
 
 [[dependencies]]
 name = "async-trait"
-version = "0.1.88"
+version = "0.1.89"
 description = "Type erasure for async trait methods"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -325,7 +325,7 @@ repository = "https://github.com/chronotope/chrono"
 
 [[dependencies]]
 name = "clap"
-version = "4.5.43"
+version = "4.5.45"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -333,7 +333,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_builder"
-version = "4.5.43"
+version = "4.5.44"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -341,7 +341,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_derive"
-version = "4.5.41"
+version = "4.5.45"
 description = "Parse command line argument by defining a struct, derive crate."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -398,7 +398,7 @@ repository = "https://github.com/ParkMyCar/compact_str"
 
 [[dependencies]]
 name = "config"
-version = "0.15.13"
+version = "0.15.14"
 description = "Layered configuration system for Rust applications."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -715,6 +715,14 @@ description = "Traits for key comparison in maps."
 license = "Apache-2.0 OR MIT"
 notices = ["Copyright (c) 2016--2023"]
 repository = "https://github.com/indexmap-rs/equivalent"
+
+[[dependencies]]
+name = "erased-serde"
+version = "0.4.6"
+description = "Type-erased Serialize and Serializer traits"
+license = "MIT OR Apache-2.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+repository = "https://github.com/dtolnay/erased-serde"
 
 [[dependencies]]
 name = "errno"
@@ -1156,6 +1164,13 @@ authors = ["René Kijewski <crates.io@k6i.de>"]
 repository = "https://github.com/strawlab/iana-time-zone"
 
 [[dependencies]]
+name = "ical"
+version = "0.11.0"
+description = "Ical/Vcard parser for Rust"
+authors = ["Peltoche <dev@halium.fr>"]
+repository = "https://github.com/Peltoche/ical-rs"
+
+[[dependencies]]
 name = "icu_collections"
 version = "2.0.0"
 description = "Collection of API for use in ICU libraries."
@@ -1340,6 +1355,14 @@ notices = ["Copyright (c) Individual contributors"]
 repository = "https://github.com/polyfill-rs/is_terminal_polyfill"
 
 [[dependencies]]
+name = "iso8601-duration"
+version = "0.2.0"
+description = "Parse ISO8601 duration format."
+license = "MIT"
+authors = ["PoiScript <poiscript@gmail.com>"]
+repository = "https://github.com/PoiScript/iso8601-duration"
+
+[[dependencies]]
 name = "itertools"
 version = "0.13.0"
 description = "Extra iterator adaptors, iterator methods, free functions, and macros."
@@ -1397,7 +1420,7 @@ repository = "https://github.com/rust-lang-nursery/lazy-static.rs"
 
 [[dependencies]]
 name = "libc"
-version = "0.2.174"
+version = "0.2.175"
 description = "Raw FFI bindings to platform libraries like libc."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014-2020 The Rust Project Developers"]
@@ -1882,7 +1905,7 @@ repository = "https://github.com/cryptocorrosion/cryptocorrosion"
 
 [[dependencies]]
 name = "proc-macro2"
-version = "1.0.95"
+version = "1.0.97"
 description = "A substitute implementation of the compiler's `proc_macro` API to decouple token-based libraries from the procedural macro use case."
 license = "MIT OR Apache-2.0"
 authors = [
@@ -2067,7 +2090,7 @@ repository = "https://github.com/rust-lang/regex/tree/master/regex-syntax"
 
 [[dependencies]]
 name = "reqwest"
-version = "0.12.22"
+version = "0.12.23"
 description = "higher level HTTP client library"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -2257,6 +2280,14 @@ authors = [
 ]
 repository = "https://github.com/serde-rs/serde"
 homepage = "https://serde.rs"
+
+[[dependencies]]
+name = "serde-untagged"
+version = "0.1.8"
+description = "Serde `Visitor` implementation for deserializing untagged enums"
+license = "MIT OR Apache-2.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+repository = "https://github.com/dtolnay/serde-untagged"
 
 [[dependencies]]
 name = "serde_derive"
@@ -2530,7 +2561,7 @@ homepage = "https://dalek.rs/"
 
 [[dependencies]]
 name = "syn"
-version = "2.0.104"
+version = "2.0.106"
 description = "Parser for Rust source code"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2597,7 +2628,7 @@ repository = "https://github.com/dtolnay/thiserror"
 
 [[dependencies]]
 name = "thiserror"
-version = "2.0.12"
+version = "2.0.14"
 description = "derive(Error)"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2613,7 +2644,7 @@ repository = "https://github.com/dtolnay/thiserror"
 
 [[dependencies]]
 name = "thiserror-impl"
-version = "2.0.12"
+version = "2.0.14"
 description = "Implementation detail of the `thiserror` crate"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2968,6 +2999,14 @@ authors = ["Sean McArthur <sean@seanmonstar.com>"]
 repository = "https://github.com/seanmonstar/try-lock"
 
 [[dependencies]]
+name = "typeid"
+version = "1.0.3"
+description = "Const TypeId and non-'static TypeId"
+license = "MIT OR Apache-2.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+repository = "https://github.com/dtolnay/typeid"
+
+[[dependencies]]
 name = "typenum"
 version = "1.18.0"
 description = """
@@ -3140,7 +3179,7 @@ repository = "https://github.com/alacritty/vte"
 
 [[dependencies]]
 name = "uuid"
-version = "1.17.0"
+version = "1.18.0"
 description = "A library to generate and parse UUIDs."
 license = "Apache-2.0 OR MIT"
 notices = [
