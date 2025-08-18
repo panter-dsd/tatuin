@@ -6,7 +6,7 @@ description = "Task Aggregator TUI for N providers"
 repository = "https://github.com/panter-dsd/tatuin"
 license-file = "LICENSE.txt"
 readme = "README.md"
-rust-version = "1.86"
+rust-version = "1.88"
 
 [dependencies]
 async-recursion = "1.1.1"
