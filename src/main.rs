@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 mod async_jobs;
+mod caldav;
 mod filter;
 mod folders;
 mod github;

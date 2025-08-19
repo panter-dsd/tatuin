@@ -1,21 +1,20 @@
 // SPDX-License-Identifier: MIT
 
 mod client;
-mod task;
 use async_trait::async_trait;
 use ratatui::style::Color;
 
 use crate::{
     filter, folders,
+    ical::Task,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait, StringError},
     task::Task as TaskTrait,
     task_patch::{PatchError, TaskPatch},
 };
-use client::Client;
-pub use task::Task;
+use client::{Client, Config};
 
-pub const PROVIDER_NAME: &str = "iCal";
+pub const PROVIDER_NAME: &str = "CalDav";
 
 pub struct Provider {
     name: String,
@@ -26,11 +25,15 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(name: &str, url: &str, color: &Color) -> Self {
+    pub fn new(name: &str, url: &str, login: &str, password: &str, color: &Color) -> Self {
         let mut s = Self {
             name: name.to_string(),
             color: *color,
-            c: Client::new(url),
+            c: Client::new(Config {
+                url: url.to_string(),
+                login: login.to_string(),
+                password: password.to_string(),
+            }),
             tasks: Vec::new(),
         };
 
@@ -57,26 +60,26 @@ impl ProviderTrait for Provider {
         PROVIDER_NAME.to_string()
     }
 
-    #[tracing::instrument(level = "info", target = "ical_tasks")]
+    #[tracing::instrument(level = "info", target = "caldav_tasks")]
     async fn tasks(
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
         if self.tasks.is_empty() {
-            self.c.download_calendar().await?;
-            self.tasks = self
-                .c
-                .parse_calendar()
-                .await?
-                .iter()
-                .filter(|t| f.accept(*t))
-                .map(|t| {
-                    let mut task = t.clone();
-                    task.set_provider(self.name.as_str());
-                    task
-                })
-                .collect();
+            self.c.download().await?;
+            // self.tasks = self
+            //     .c
+            //     .parse_calendar()
+            //     .await?
+            //     .iter()
+            //     .filter(|t| f.accept(*t))
+            //     .map(|t| {
+            //         let mut task = t.clone();
+            //         task.set_provider(self.name.as_str());
+            //         task
+            //     })
+            //     .collect();
         }
 
         return Ok(self.tasks.iter().map(|t| t.clone_boxed()).collect());

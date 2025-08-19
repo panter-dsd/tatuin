@@ -28,6 +28,7 @@ markdown = "1.0.0"
 ratatui = "0.29.0"
 regex = "1.11.1"
 reqwest = { version = "0.12.23", features = ["json"] }
+reqwest_dav = "0.2.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
 sha256 = "1.6.0"
