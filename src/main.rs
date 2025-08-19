@@ -227,6 +227,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 config.get("url").unwrap().as_str(),
                 color(),
             ))),
+            caldav::PROVIDER_NAME => Some(Box::new(caldav::Provider::new(
+                name,
+                config.get("url").unwrap().as_str(),
+                config.get("login").unwrap().as_str(),
+                config.get("password").unwrap().as_str(),
+                color(),
+            ))),
             _ => {
                 println!("Unknown provider configuration for section: {name}");
                 None

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use crate::caldav;
 use crate::github_issues;
 use crate::gitlab_todo;
 use crate::ical;
@@ -16,6 +17,7 @@ pub const AVAILABLE_PROVIDERS: &[&str] = &[
     gitlab_todo::PROVIDER_NAME,
     github_issues::PROVIDER_NAME,
     ical::PROVIDER_NAME,
+    caldav::PROVIDER_NAME,
 ];
 
 pub struct AddProvider {}
@@ -55,6 +57,7 @@ impl AddProvider {
                     gitlab_todo::PROVIDER_NAME => self.add_gitlab_todo()?,
                     github_issues::PROVIDER_NAME => self.add_github_issues()?,
                     ical::PROVIDER_NAME => self.add_ical()?,
+                    caldav::PROVIDER_NAME => self.add_caldav()?,
                     _ => panic!("Unknown provider {provider}"),
                 };
                 provider_cfg.insert("type".to_string(), provider.to_string());
@@ -154,6 +157,38 @@ impl AddProvider {
         let url = input_line.trim().to_string();
 
         Ok(HashMap::from([("url".to_string(), url)]))
+    }
+
+    fn add_caldav(&self) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+        print!("Please, provide a caldav url (aka https://domain/remote.php/dav/calendars/login/personal/)> ");
+        let _ = io::stdout().flush();
+
+        let mut input_line = String::new();
+
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
+        let url = input_line.trim().to_string();
+
+        print!("Please, provide a login> ");
+        let _ = io::stdout().flush();
+
+        let mut input_line = String::new();
+
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
+        let login = input_line.trim().to_string();
+
+        print!("Please, provide a password> ");
+        let _ = io::stdout().flush();
+
+        let mut input_line = String::new();
+
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
+        let password = input_line.trim().to_string();
+
+        Ok(HashMap::from([
+            ("url".to_string(), url),
+            ("login".to_string(), login),
+            ("password".to_string(), password),
+        ]))
     }
 
     fn get_provider_name(&self) -> Result<String, Box<dyn std::error::Error>> {
