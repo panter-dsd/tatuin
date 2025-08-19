@@ -81,7 +81,7 @@ impl Client {
 }
 
 impl Client {
-    fn client<'a>(&'a mut self) -> Result<&'a WebDavClient, Box<dyn Error>> {
+    fn client(&mut self) -> Result<&WebDavClient, Box<dyn Error>> {
         if self.c.is_none() {
             self.c = Some(
                 ClientBuilder::new()
