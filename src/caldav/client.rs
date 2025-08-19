@@ -49,7 +49,7 @@ impl Client {
 
     pub async fn download(&mut self) -> Result<(), Box<dyn Error>> {
         let url = self.cfg.url.clone();
-        let mut current_cached_files = self.load_cached_files();
+        let mut current_cached_files = self.load_cached_files().await;
         let mut new_cached_files = CachedFiles::default();
 
         let c = self.client()?;
