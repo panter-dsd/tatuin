@@ -48,12 +48,13 @@ impl Client {
     }
 
     pub async fn download(&mut self) -> Result<(), Box<dyn Error>> {
-        let url = self.cfg.url.clone();
+        let url = url::Url::parse(&self.cfg.url)?;
         let mut current_cached_files = self.load_cached_files().await;
         let mut new_cached_files = CachedFiles::default();
 
+        tracing::debug!(path = url.path(), "Get entries list");
         let c = self.client()?;
-        let files = c.list(url.as_str(), Depth::Number(0)).await?;
+        let files = c.list(url.path(), Depth::Number(1)).await?;
 
         for f in files {
             if let ListEntity::File(f) = f {
@@ -83,9 +84,17 @@ impl Client {
 impl Client {
     fn client(&mut self) -> Result<&WebDavClient, Box<dyn Error>> {
         if self.c.is_none() {
+            let mut u = url::Url::parse(&self.cfg.url)?;
+            u.set_path("/");
+            tracing::debug!(
+                url = u.to_string(),
+                login = self.cfg.login,
+                password = self.cfg.password,
+                "Connect to the server"
+            );
             self.c = Some(
                 ClientBuilder::new()
-                    .set_host(self.cfg.url.clone())
+                    .set_host(u.to_string())
                     .set_auth(Auth::Basic(self.cfg.login.clone(), self.cfg.password.clone()))
                     .build()?,
             );
