@@ -8,6 +8,8 @@ use tokio::io::AsyncWriteExt;
 
 use crate::{provider::StringError, task::DateTimeUtc};
 
+const INDEX_FILE_NAME: &str = "index.toml";
+
 pub struct Config {
     pub url: String,
     pub login: String,
@@ -47,7 +49,7 @@ impl Client {
 
     pub async fn download(&mut self) -> Result<(), Box<dyn Error>> {
         let url = self.cfg.url.clone();
-        let mut current_cached_files = self.cached_files();
+        let mut current_cached_files = self.load_cached_files();
         let mut new_cached_files = CachedFiles::default();
 
         let c = self.client()?;
@@ -72,6 +74,7 @@ impl Client {
         }
 
         self.clean_missed_files(&current_cached_files.files).await;
+        self.save_cached_files(&new_cached_files).await?;
 
         Ok(())
     }
@@ -91,12 +94,18 @@ impl Client {
         Ok(self.c.as_ref().unwrap())
     }
 
-    fn cached_files(&self) -> CachedFiles {
-        if let Ok(s) = std::fs::read_to_string(self.cache_folder.join("index.toml")) {
+    async fn load_cached_files(&self) -> CachedFiles {
+        if let Ok(s) = tokio::fs::read_to_string(self.cache_folder.join(INDEX_FILE_NAME)).await {
             toml::from_str(s.as_str()).unwrap_or_default()
         }
 
         CachedFiles::default()
+    }
+
+    async fn save_cached_files(&self, files: &CachedFiles) -> Result<(), Box<dyn Error>> {
+        let s = toml::to_string(files)?;
+        tokio::fs::write(self.cache_folder.join(INDEX_FILE_NAME), s).await?;
+        Ok(())
     }
 
     async fn clean_missed_files(&self, files: &[CachedFile]) {
