@@ -68,18 +68,18 @@ impl ProviderTrait for Provider {
     ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
         if self.tasks.is_empty() {
             self.c.download().await?;
-            // self.tasks = self
-            //     .c
-            //     .parse_calendar()
-            //     .await?
-            //     .iter()
-            //     .filter(|t| f.accept(*t))
-            //     .map(|t| {
-            //         let mut task = t.clone();
-            //         task.set_provider(self.name.as_str());
-            //         task
-            //     })
-            //     .collect();
+            self.tasks = self
+                .c
+                .parse_calendars()
+                .await?
+                .iter()
+                .filter(|t| f.accept(*t))
+                .map(|t| {
+                    let mut task = t.clone();
+                    task.set_provider(self.name.as_str());
+                    task
+                })
+                .collect();
         }
 
         return Ok(self.tasks.iter().map(|t| t.clone_boxed()).collect());

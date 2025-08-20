@@ -6,7 +6,7 @@ use std::{
 };
 use tokio::io::AsyncWriteExt;
 
-use crate::{provider::StringError, task::DateTimeUtc};
+use crate::{ical::Task, provider::StringError, task::DateTimeUtc};
 
 const INDEX_FILE_NAME: &str = "index.toml";
 
@@ -83,6 +83,17 @@ impl Client {
 
         Ok(())
     }
+
+    pub async fn parse_calendars(&self) -> Result<Vec<Task>, Box<dyn Error>> {
+        let mut result = Vec::new();
+
+        for f in self.load_cached_files().await.files {
+            let mut tasks = self.parse_calendar(&f.file_name).await?;
+            result.append(&mut tasks);
+        }
+
+        Ok(result)
+    }
 }
 
 impl Client {
@@ -146,6 +157,10 @@ impl Client {
         }
 
         Ok(file_name)
+    }
+
+    async fn parse_calendar(&self, file_name: &str) -> Result<Vec<Task>, Box<dyn Error>> {
+        crate::ical::parse_calendar(&self.cache_folder.join(file_name)).await
     }
 }
 

@@ -13,6 +13,7 @@ use crate::{
     task_patch::{PatchError, TaskPatch},
 };
 use client::Client;
+pub use client::parse_calendar;
 pub use task::Task;
 
 pub const PROVIDER_NAME: &str = "iCal";
