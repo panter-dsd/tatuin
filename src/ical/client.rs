@@ -46,11 +46,15 @@ impl Client {
     }
 
     pub async fn parse_calendar(&self) -> Result<Vec<Task>, Box<dyn Error>> {
-        let buf = BufReader::new(File::open(&self.file_name)?);
-        let reader = IcalParser::new(buf);
-
-        read_tasks_from_calendar(reader)
+        parse_calendar(&self.file_name).await
     }
+}
+
+pub async fn parse_calendar(file_path: &PathBuf) -> Result<Vec<Task>, Box<dyn Error>> {
+    let buf = BufReader::new(File::open(file_path)?);
+    let reader = IcalParser::new(buf);
+
+    read_tasks_from_calendar(reader)
 }
 
 fn read_tasks_from_calendar<B>(reader: IcalParser<B>) -> Result<Vec<Task>, Box<dyn Error>>
@@ -120,6 +124,15 @@ fn fill_task(t: &mut Task, properties: &[Property]) {
             "COMPLETED" => t.completed = dt_from_property(p),
             "CREATED" => t.created = dt_from_property(p),
             "DURATION" => t.duration = duration_from_property(p),
+            "CATEGORIES" if p.value.is_some() => {
+                t.categories = p
+                    .value
+                    .as_ref()
+                    .unwrap()
+                    .split(",")
+                    .map(|s| s.to_string())
+                    .collect::<Vec<String>>()
+            }
             _ => {}
         }
     }
@@ -208,6 +221,7 @@ END:VCALENDAR
         assert_eq!(task.text(), "Submit Quebec Income Tax Return for 2006");
         assert_eq!(task.state(), State::Uncompleted);
         assert_eq!(task.priority(), Priority::Normal);
+        assert_eq!(task.labels(), vec!["FAMILY", "FINANCE"]);
 
         assert!(task.due.is_some());
         assert_eq!(task.due.unwrap().to_string(), "2007-05-01 00:00:00 UTC");

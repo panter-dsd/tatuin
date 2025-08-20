@@ -19,6 +19,7 @@ pub struct Task {
     pub completed: Option<DateTimeUtc>,
     pub created: Option<DateTimeUtc>,
     pub duration: Option<Duration>,
+    pub categories: Vec<String>,
 }
 
 impl Task {
@@ -101,5 +102,9 @@ impl TaskTrait for Task {
 
     fn place(&self) -> String {
         self.provider()
+    }
+
+    fn labels(&self) -> Vec<String> {
+        self.categories.clone()
     }
 }
