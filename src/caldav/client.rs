@@ -126,6 +126,7 @@ impl Client {
 
     async fn clean_missed_files(&self, files: &[CachedFile]) {
         for f in files {
+            tracing::debug!(href = f.href, file_name = f.file_name, "Remove cached file");
             if let Err(e) = tokio::fs::remove_file(self.cache_folder.join(f.file_name.as_str())).await {
                 tracing::error!(error=?e, path=?self.cache_folder, file=f.file_name, "Remove cached file");
             }
