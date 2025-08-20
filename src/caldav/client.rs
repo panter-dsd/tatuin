@@ -1,5 +1,5 @@
 use reqwest_dav::{Auth, Client as WebDavClient, ClientBuilder, Depth, list_cmd::ListEntity};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
     path::{Path, PathBuf},
@@ -16,14 +16,14 @@ pub struct Config {
     pub password: String,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct CachedFile {
     href: String,
     last_modified: DateTimeUtc,
     file_name: String,
 }
 
-#[derive(Default, Serialize, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
 struct CachedFiles {
     files: Vec<CachedFile>,
 }
@@ -52,7 +52,8 @@ impl Client {
         let mut current_cached_files = self.load_cached_files().await;
         let mut new_cached_files = CachedFiles::default();
 
-        tracing::debug!(path = url.path(), "Get entries list");
+        tracing::debug!(uri = url.path(), "Get file list");
+
         let c = self.client()?;
         let files = c.list(url.path(), Depth::Number(1)).await?;
 
@@ -61,9 +62,12 @@ impl Client {
                 if let Some(pos) = current_cached_files.files.iter().position(|cf| cf.href == f.href) {
                     let cached_file = current_cached_files.files.remove(pos);
                     if cached_file.last_modified == f.last_modified {
+                        tracing::debug!(href = f.href, "The file wasn't changed");
                         new_cached_files.files.push(cached_file);
                         continue;
                     }
+
+                    tracing::debug!(href = f.href, "The file was changed");
                 }
 
                 new_cached_files.files.push(CachedFile {
@@ -105,7 +109,10 @@ impl Client {
 
     async fn load_cached_files(&self) -> CachedFiles {
         if let Ok(s) = tokio::fs::read_to_string(self.cache_folder.join(INDEX_FILE_NAME)).await {
-            toml::from_str(s.as_str()).unwrap_or_default()
+            match toml::from_str(s.as_str()) {
+                Ok(files) => return files,
+                Err(e) => tracing::error!(error=?e, "Load cached files"),
+            }
         }
 
         CachedFiles::default()
@@ -130,6 +137,8 @@ impl Client {
         let mut r = c.get(href).await?;
 
         let file_name = file_name_from_href(href)?;
+        tracing::debug!(href = href, file_name = file_name, "Download the file");
+
         let mut f = tokio::fs::File::create(self.cache_folder.join(file_name.as_str())).await?;
         while let Some(chunk) = r.chunk().await? {
             f.write_all(&chunk).await?;
