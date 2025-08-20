@@ -134,10 +134,10 @@ pub fn load_theme(file_path: &std::path::PathBuf) -> Result<(), Box<dyn std::err
             if v.is_err() || v.is_err() {
                 println!("Can't parse line `{line}`: {k:?} {v:?}");
             }
-            if let Ok(k) = k {
-                if let Ok(v) = v {
-                    theme_map.insert(k, v);
-                }
+            if let Ok(k) = k
+                && let Ok(v) = v
+            {
+                theme_map.insert(k, v);
             }
         }
     }

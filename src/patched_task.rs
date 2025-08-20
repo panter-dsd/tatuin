@@ -29,10 +29,10 @@ impl TaskTrait for PatchedTask {
     }
 
     fn text(&self) -> String {
-        if let Some(p) = &self.patch {
-            if let Some(name) = &p.name {
-                return name.to_string();
-            }
+        if let Some(p) = &self.patch
+            && let Some(name) = &p.name
+        {
+            return name.to_string();
         }
 
         self.task.text()
