@@ -329,10 +329,10 @@ impl App {
 
         let mut screen_size = dh.read().await.screen_size();
         while !self.should_exit {
-            if let Some(d) = &self.dialog {
-                if d.should_be_closed() {
-                    self.close_dialog().await;
-                }
+            if let Some(d) = &self.dialog
+                && d.should_be_closed()
+            {
+                self.close_dialog().await;
             }
 
             {
@@ -896,12 +896,11 @@ impl App {
 
     async fn restore_state(&mut self, name: Option<&str>) {
         for (block_name, st) in self.settings.read().await.load(name) {
-            if let Ok(n) = AppBlock::from_str(block_name.as_str()) {
-                if let Some(b) = self.stateful_widgets.get_mut(&n) {
-                    if let Ok(st) = state_from_str(&st) {
-                        b.write().await.restore(st);
-                    }
-                }
+            if let Ok(n) = AppBlock::from_str(block_name.as_str())
+                && let Some(b) = self.stateful_widgets.get_mut(&n)
+                && let Ok(st) = state_from_str(&st)
+            {
+                b.write().await.restore(st);
             }
         }
 

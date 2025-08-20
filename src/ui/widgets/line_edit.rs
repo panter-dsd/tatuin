@@ -93,14 +93,14 @@ impl WidgetTrait for LineEdit {
 
         Paragraph::new(text.as_str()).block(b).render(area, buf);
 
-        if let Some(dh) = &self.draw_helper {
-            if self.is_active() {
-                let pos = Position::new(area.x + text_width + 1, area.y + 1);
+        if let Some(dh) = &self.draw_helper
+            && self.is_active()
+        {
+            let pos = Position::new(area.x + text_width + 1, area.y + 1);
 
-                if pos != self.last_cursor_pos {
-                    dh.write().await.set_cursor_pos(pos);
-                    self.last_cursor_pos = pos;
-                }
+            if pos != self.last_cursor_pos {
+                dh.write().await.set_cursor_pos(pos);
+                self.last_cursor_pos = pos;
             }
         }
     }

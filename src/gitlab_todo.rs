@@ -194,15 +194,15 @@ impl Provider {
     async fn load_todos_issues(&mut self, todos: &[structs::Todo]) -> Result<Vec<structs::Issue>, Box<dyn Error>> {
         let mut project_iids: HashMap<i64, Vec<i64>> = HashMap::new();
         for t in todos {
-            if t.target_type == "Issue" || t.target_type == "MergeRequest" {
-                if let Some(target) = &t.target {
-                    match project_iids.get_mut(&target.project_id) {
-                        Some(iids) => {
-                            iids.push(target.iid);
-                        }
-                        None => {
-                            project_iids.insert(target.project_id, vec![target.iid]);
-                        }
+            if (t.target_type == "Issue" || t.target_type == "MergeRequest")
+                && let Some(target) = &t.target
+            {
+                match project_iids.get_mut(&target.project_id) {
+                    Some(iids) => {
+                        iids.push(target.iid);
+                    }
+                    None => {
+                        project_iids.insert(target.project_id, vec![target.iid]);
                     }
                 }
             }
@@ -337,15 +337,15 @@ impl ProviderTrait for Provider {
                 Some(t) => t,
                 None => panic!("Wrong casting!"),
             };
-            if let Some(state) = &p.state {
-                if let Err(e) = self.patch_task_state(task, state).await {
-                    errors.push(e);
-                }
+            if let Some(state) = &p.state
+                && let Err(e) = self.patch_task_state(task, state).await
+            {
+                errors.push(e);
             }
-            if let Some(due) = &p.due {
-                if let Err(e) = self.patch_task_due(task, due).await {
-                    errors.push(e);
-                }
+            if let Some(due) = &p.due
+                && let Err(e) = self.patch_task_due(task, due).await
+            {
+                errors.push(e);
             }
         }
 

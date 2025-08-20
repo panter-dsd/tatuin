@@ -102,10 +102,10 @@ fn dt_from_property(p: &Property) -> Option<DateTimeUtc> {
 }
 
 fn duration_from_property(p: &Property) -> Option<Duration> {
-    if let Some(v) = &p.value {
-        if let Ok(d) = v.parse::<iso8601_duration::Duration>() {
-            return d.to_chrono();
-        }
+    if let Some(v) = &p.value
+        && let Ok(d) = v.parse::<iso8601_duration::Duration>()
+    {
+        return d.to_chrono();
     }
 
     None

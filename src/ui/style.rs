@@ -64,10 +64,10 @@ enum ColorElement {
 static THEME_MAP: RwLock<Option<HashMap<ColorElement, Color>>> = RwLock::new(None);
 
 fn element_color(element: ColorElement) -> Color {
-    if let Some(m) = &*THEME_MAP.read().unwrap() {
-        if let Some(c) = m.get(&element) {
-            return *c;
-        }
+    if let Some(m) = &*THEME_MAP.read().unwrap()
+        && let Some(c) = m.get(&element)
+    {
+        return *c;
     }
 
     use ColorElement::*;

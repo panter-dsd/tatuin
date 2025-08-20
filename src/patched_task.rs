@@ -39,33 +39,34 @@ impl TaskTrait for PatchedTask {
     }
 
     fn description(&self) -> Option<String> {
-        if let Some(p) = &self.patch {
-            if p.description.is_some() {
-                return p.description.clone();
-            }
+        if let Some(p) = &self.patch
+            && p.description.is_some()
+        {
+            return p.description.clone();
         }
 
         self.task.description()
     }
 
     fn priority(&self) -> Priority {
-        if let Some(p) = &self.patch {
-            if let Some(v) = &p.priority {
-                return *v;
-            }
+        if let Some(p) = &self.patch
+            && let Some(v) = &p.priority
+        {
+            return *v;
         }
 
         self.task.priority()
     }
     fn state(&self) -> State {
-        if let Some(p) = &self.patch {
-            if let Some(v) = &p.state {
-                return *v;
-            }
+        if let Some(p) = &self.patch
+            && let Some(v) = &p.state
+        {
+            return *v;
         }
 
         self.task.state()
     }
+
     fn created_at(&self) -> Option<DateTimeUtc> {
         self.task.created_at()
     }
@@ -76,10 +77,10 @@ impl TaskTrait for PatchedTask {
         self.task.completed_at()
     }
     fn due(&self) -> Option<DateTimeUtc> {
-        if let Some(p) = &self.patch {
-            if let Some(v) = p.due {
-                return v.into();
-            }
+        if let Some(p) = &self.patch
+            && let Some(v) = p.due
+        {
+            return v.into();
         }
 
         self.task.due()

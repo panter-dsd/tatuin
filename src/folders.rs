@@ -24,10 +24,10 @@ pub fn config_folder() -> PathBuf {
 
 pub fn provider_cache_folder(p: &dyn ProviderTrait) -> Result<PathBuf, std::io::Error> {
     let path = cache_folder().join(p.name());
-    if let Err(e) = std::fs::create_dir(&path) {
-        if e.kind() != ErrorKind::AlreadyExists {
-            return Err(e);
-        }
+    if let Err(e) = std::fs::create_dir(&path)
+        && e.kind() != ErrorKind::AlreadyExists
+    {
+        return Err(e);
     }
 
     Ok(path)

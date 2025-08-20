@@ -98,18 +98,19 @@ impl MouseHandler for HyperlinkWidget {
         let position = Position::new(ev.column, ev.row);
         self.is_under_mouse = self.area.contains(position);
 
-        if let MouseEventKind::Up(button) = ev.kind {
-            if button == MouseButton::Left && self.is_under_mouse {
-                // Call the `open` command
-                let status = Command::new("open")
-                    .arg(&self.url)
-                    .status()
-                    .expect("Failed to execute command");
+        if let MouseEventKind::Up(button) = ev.kind
+            && button == MouseButton::Left
+            && self.is_under_mouse
+        {
+            // Call the `open` command
+            let status = Command::new("open")
+                .arg(&self.url)
+                .status()
+                .expect("Failed to execute command");
 
-                // Check if the command was successful
-                if !status.success() {
-                    eprintln!("Failed to open {}", self.url);
-                }
+            // Check if the command was successful
+            if !status.success() {
+                eprintln!("Failed to open {}", self.url);
             }
         }
     }

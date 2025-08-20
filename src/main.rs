@@ -190,10 +190,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     for (name, config) in &cfg.providers {
-        if let Some(v) = config.get("disabled") {
-            if v.parse::<bool>() == Ok(true) {
-                continue;
-            }
+        if let Some(v) = config.get("disabled")
+            && v.parse::<bool>() == Ok(true)
+        {
+            continue;
         }
 
         let p: Option<Box<dyn ProviderTrait>> = match config.get("type").unwrap().as_str() {
@@ -272,10 +272,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             let mut tasks = Vec::new();
             for p in providers {
-                if let Some(provider_name) = provider {
-                    if p.name != *provider_name {
-                        continue;
-                    }
+                if let Some(provider_name) = provider
+                    && p.name != *provider_name
+                {
+                    continue;
                 }
 
                 tasks.append(&mut p.provider.write().await.tasks(None, &f).await?);
@@ -286,10 +286,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let mut projects = Vec::new();
 
             for p in providers {
-                if let Some(provider_name) = provider {
-                    if p.name != *provider_name {
-                        continue;
-                    }
+                if let Some(provider_name) = provider
+                    && p.name != *provider_name
+                {
+                    continue;
                 }
 
                 projects.append(&mut p.provider.write().await.projects().await?);
