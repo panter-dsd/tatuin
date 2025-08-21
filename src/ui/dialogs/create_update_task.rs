@@ -157,6 +157,9 @@ impl Dialog {
             }
         }
         self.task_name_editor.set_text(task.text().as_str());
+        if let Some(d) = task.description() {
+            self.task_description_editor.set_text(&d);
+        }
         self.priority_selector
             .set_current_item(&ComboBoxItem::new(
                 task.priority().to_string().as_str(),
@@ -214,12 +217,10 @@ impl Dialog {
             return None;
         }
 
-        let description = self.task_description_editor.text();
-
         Some(TaskPatch {
             task: self.task.as_ref().map(|t| t.clone_boxed()),
             name: Some(self.task_name_editor.text()),
-            description: (!description.is_empty()).then_some(description),
+            description: Some(self.task_description_editor.text()),
             due: self.due_date_selector.value().await.map(|item| *item.data()),
             priority: self.priority_selector.value().await.map(|item| *item.data()),
             state: None,
