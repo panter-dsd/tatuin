@@ -23,6 +23,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use clap::{Parser, Subcommand};
 use color_eyre::owo_colors::OwoColorize;
+use crossterm::{event::DisableMouseCapture, execute};
 use itertools::Itertools;
 use ratatui::style::Color;
 use settings::Settings;
@@ -293,10 +294,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => {
             tracing::info!("Start tui");
             color_eyre::install()?;
+            let _guard = scopeguard::guard((), |_| {
+                let _ = execute!(std::io::stdout(), DisableMouseCapture);
+                ratatui::restore();
+                tracing::info!("End tui");
+            });
             let terminal = ratatui::init();
             let _app_result = ui::App::new(providers, Box::new(cfg)).await.run(terminal).await;
-            ratatui::restore();
-            tracing::info!("End tui");
         }
     };
 
