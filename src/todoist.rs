@@ -185,11 +185,12 @@ impl ProviderTrait for Provider {
                 }
             }
 
-            if p.due.is_some() || p.priority.is_some() {
+            if p.due.is_some() || p.priority.is_some() || p.description.is_some() || p.name.is_some() {
                 let mut due_custom_dt = String::new();
+
                 let r = client::UpdateTaskRequest {
-                    content: None,
-                    description: None,
+                    content: p.name.as_deref(),
+                    description: p.description.as_deref(),
                     due_string: p.due.as_ref().map(|due| match due {
                         DuePatchItem::NoDate => "no date",
                         DuePatchItem::Today => "today",
