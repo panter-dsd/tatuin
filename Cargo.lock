@@ -2427,6 +2427,7 @@ dependencies = [
  "ratatui",
  "regex",
  "reqwest",
+ "scopeguard",
  "serde",
  "serde_json",
  "sha256",
