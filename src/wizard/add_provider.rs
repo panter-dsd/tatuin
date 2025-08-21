@@ -2,6 +2,7 @@
 
 use crate::github_issues;
 use crate::gitlab_todo;
+use crate::ical;
 use crate::obsidian;
 use crate::settings;
 use crate::todoist;
@@ -14,6 +15,7 @@ pub const AVAILABLE_PROVIDERS: &[&str] = &[
     todoist::PROVIDER_NAME,
     gitlab_todo::PROVIDER_NAME,
     github_issues::PROVIDER_NAME,
+    ical::PROVIDER_NAME,
 ];
 
 pub struct AddProvider {}
@@ -52,6 +54,7 @@ impl AddProvider {
                     todoist::PROVIDER_NAME => self.add_todoist()?,
                     gitlab_todo::PROVIDER_NAME => self.add_gitlab_todo()?,
                     github_issues::PROVIDER_NAME => self.add_github_issues()?,
+                    ical::PROVIDER_NAME => self.add_ical()?,
                     _ => panic!("Unknown provider {provider}"),
                 };
                 provider_cfg.insert("type".to_string(), provider.to_string());
@@ -139,6 +142,18 @@ impl AddProvider {
             ("repository".to_string(), repository),
             ("api_key".to_string(), api_key),
         ]))
+    }
+
+    fn add_ical(&self) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+        print!("Please, provide a url (aka https://domain/file.ics)> ");
+        let _ = io::stdout().flush();
+
+        let mut input_line = String::new();
+
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
+        let url = input_line.trim().to_string();
+
+        Ok(HashMap::from([("url".to_string(), url)]))
     }
 
     fn get_provider_name(&self) -> Result<String, Box<dyn std::error::Error>> {

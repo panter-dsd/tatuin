@@ -2,10 +2,12 @@
 
 mod async_jobs;
 mod filter;
+mod folders;
 mod github;
 mod github_issues;
 mod gitlab;
 mod gitlab_todo;
+mod ical;
 mod obsidian;
 mod patched_task;
 mod project;
@@ -119,10 +121,7 @@ fn clear_old_logs(path: &PathBuf, file_name_pattern: &str) -> Result<(), Box<dyn
 }
 
 fn init_logging() {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME);
-    let log_path = xdg_dirs
-        .create_state_directory("")
-        .expect("cannot create state directory");
+    let log_path = folders::log_folder();
     let log_file_pattern = format!("{APP_NAME}.log");
 
     let file_appender = tracing_appender::rolling::daily(&log_path, &log_file_pattern);
@@ -143,11 +142,7 @@ fn add_provider(cfg: &mut settings::Settings) -> Result<(), Box<dyn std::error::
 
 fn load_theme(theme: &Option<String>) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(theme) = theme {
-        let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME);
-        let file_name = xdg_dirs
-            .get_config_home()
-            .unwrap_or_default()
-            .join(format!("{theme}.theme"));
+        let file_name = folders::config_folder().join(format!("{theme}.theme"));
         println!("Try to load theme from the file: {file_name:?}");
         return style::load_theme(&file_name);
     }
@@ -225,6 +220,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 name,
                 config.get("api_key").unwrap().as_str(),
                 config.get("repository").unwrap().as_str(),
+                color(),
+            ))),
+            ical::PROVIDER_NAME => Some(Box::new(ical::Provider::new(
+                name,
+                config.get("url").unwrap().as_str(),
                 color(),
             ))),
             _ => {
