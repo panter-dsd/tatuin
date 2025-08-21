@@ -2527,6 +2527,7 @@ dependencies = [
  "regex",
  "reqwest",
  "reqwest_dav",
+ "scopeguard",
  "serde",
  "serde_json",
  "sha256",
