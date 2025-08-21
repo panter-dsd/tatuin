@@ -7,7 +7,8 @@ Currently, the project supports the next providers:
 - **Obsidian**
 - **Todoist**
 - **GitLab TODO**
-- **GitHub Issues**
+- **GitHub Issues** (read only)
+- **iCal** - any provider that provides Calendar Subscription URL (read only)
 
 Tatuin provides users with an easy-to-use Text User Interface (TUI) for viewing and managing their tasks.
 

@@ -126,10 +126,12 @@ impl TaskInfoWidget {
                 });
             }
 
-            entries.push(Entry {
-                title: "Url".to_string(),
-                widget: Box::new(HyperlinkWidget::new("Link", t.url().as_str())),
-            });
+            if !t.url().is_empty() {
+                entries.push(Entry {
+                    title: "Url".to_string(),
+                    widget: Box::new(HyperlinkWidget::new("Link", t.url().as_str())),
+                });
+            }
 
             if let Some(d) = t.created_at() {
                 entries.push(Entry {

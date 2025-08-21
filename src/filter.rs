@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use super::task::{State, Task as TaskTrait, due_group};
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 
@@ -14,6 +15,17 @@ pub enum FilterState {
 impl std::fmt::Display for FilterState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
+    }
+}
+
+impl From<State> for FilterState {
+    fn from(s: State) -> Self {
+        match s {
+            State::Completed => FilterState::Completed,
+            State::Uncompleted => FilterState::Uncompleted,
+            State::InProgress => FilterState::InProgress,
+            State::Unknown(_) => FilterState::Unknown,
+        }
     }
 }
 
@@ -35,4 +47,18 @@ impl std::fmt::Display for Due {
 pub struct Filter {
     pub states: Vec<FilterState>,
     pub due: Vec<Due>,
+}
+
+impl Filter {
+    pub fn accept(&self, t: &dyn TaskTrait) -> bool {
+        if !self.states.contains(&t.state().into()) {
+            return false;
+        }
+
+        if !self.due.contains(&due_group(t)) {
+            return false;
+        }
+
+        true
+    }
 }
