@@ -50,7 +50,7 @@ This command will guide you through setting up the integration for the specified
 
 Currently, only the Todoist and Obsidian providers support task creation and editing. The Todoist provider is out of the box, but for Obsidian,
 you must use the [obsidian-local-rest-api](https://github.com/coddingtonbear/obsidian-local-rest-api) plugin.
-You can install it by the [link](obsidian://show-plugin?id=obsidian-local-rest-api).
+You can install it by the link: [open obsidian and install plugin](obsidian://show-plugin?id=obsidian-local-rest-api).
 The full information about the installation and configuration process can be found within Obsidian's UI.
 Tatuin works seamlessly with both secure and insecure configurations, but note that you must install a certificate for the secure setup (refer to the [wiki](https://github.com/coddingtonbear/obsidian-web/wiki/How-do-I-get-my-browser-trust-my-Obsidian-Local-REST-API-certificate%3F) for details).
 
