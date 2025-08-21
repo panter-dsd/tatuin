@@ -54,7 +54,7 @@ You can find it under 'Local REST API' in Obsidian's community plugins.
 The full information about the installation and configuration process can be found within Obsidian's UI.
 Tatuin works seamlessly with both secure and insecure configurations, but note that you must install a certificate for the secure setup (refer to the [wiki](https://github.com/coddingtonbear/obsidian-web/wiki/How-do-I-get-my-browser-trust-my-Obsidian-Local-REST-API-certificate%3F) for details).
 
-#### Shortcuts
+#### Shortcuts (they work only when the tasks list panel is active)
 
 - a: Create a task
 - e: Edit the task under cursor
