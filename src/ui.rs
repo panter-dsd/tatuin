@@ -162,6 +162,7 @@ pub struct App {
     tasks_widget: ArcRwLock<tasks_widget::TasksWidget>,
     task_info_widget: ArcRwLock<task_info_widget::TaskInfoWidget>,
     home_link: HyperlinkWidget,
+    tg_link: HyperlinkWidget,
 
     error_logger: ArcRwLock<ErrorLogger>,
     app_blocks: HashMap<AppBlock, ArcRwLock<dyn AppBlockWidget>>,
@@ -240,6 +241,7 @@ impl App {
             .await,
             task_info_widget,
             home_link: HyperlinkWidget::new("[Homepage]", "https://github.com/panter-dsd/tatuin"),
+            tg_link: HyperlinkWidget::new("[Telegram]", "https://t.me/tatuin_project"),
             error_logger: error_logger.clone(),
             app_blocks: HashMap::new(),
             stateful_widgets: HashMap::new(),
@@ -387,6 +389,7 @@ impl App {
             b.write().await.handle_mouse(&ev).await;
         }
         self.home_link.handle_mouse(&ev).await;
+        self.tg_link.handle_mouse(&ev).await;
     }
 
     async fn draw(&mut self, terminal: &mut DefaultTerminal) {
@@ -802,7 +805,18 @@ impl App {
         }
 
         Paragraph::new(Line::from(lines)).centered().render(area, buf);
+        self.render_tg_link(area, buf).await;
         self.render_home_link(area, buf).await;
+    }
+
+    async fn render_tg_link(&mut self, area: Rect, buf: &mut Buffer) {
+        let s = self.tg_link.size();
+        let pos = Position::new(
+            area.x + area.width - self.home_link.size().width - s.width - 1,
+            area.y + area.height - s.height,
+        );
+        self.tg_link.set_pos(pos);
+        self.tg_link.render(area, buf).await;
     }
 
     async fn render_home_link(&mut self, area: Rect, buf: &mut Buffer) {
