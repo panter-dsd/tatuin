@@ -215,7 +215,7 @@ repository = "https://github.com/marshallpierce/rust-base64"
 
 [[dependencies]]
 name = "bitflags"
-version = "2.9.1"
+version = "2.9.3"
 description = """
 A macro to generate structures which behave like bitflags.
 """
@@ -288,7 +288,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.32"
+version = "1.2.34"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -301,7 +301,7 @@ repository = "https://github.com/rust-lang/cc-rs"
 
 [[dependencies]]
 name = "cfg-if"
-version = "1.0.1"
+version = "1.0.3"
 description = """
 A macro to ergonomically define an item depending on a large number of #[cfg]
 parameters. Structured like an if-else chain, the first matching branch is the
@@ -809,7 +809,7 @@ repository = "https://github.com/sfackler/foreign-types"
 
 [[dependencies]]
 name = "form_urlencoded"
-version = "1.2.1"
+version = "1.2.2"
 description = "Parser and serializer for the application/x-www-form-urlencoded syntax, as used by HTML forms."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2013-2016 The rust-url developers"]
@@ -1093,7 +1093,7 @@ repository = "https://github.com/chronotope/humantime"
 
 [[dependencies]]
 name = "hyper"
-version = "1.6.0"
+version = "1.7.0"
 description = "A protective and efficient HTTP library for all."
 license = "MIT"
 notices = ["Copyright (c) 2014-2025 Sean McArthur"]
@@ -1250,10 +1250,10 @@ repository = "https://github.com/TedDriggs/ident_case"
 
 [[dependencies]]
 name = "idna"
-version = "1.0.3"
+version = "1.1.0"
 description = "IDNA (Internationalizing Domain Names in Applications) and Punycode."
 license = "MIT OR Apache-2.0"
-notices = ["Copyright (c) 2013-2022 The rust-url developers"]
+notices = ["Copyright (c) 2013-2025 The rust-url developers"]
 authors = ["The rust-url developers"]
 repository = "https://github.com/servo/rust-url/"
 
@@ -1287,7 +1287,7 @@ repository = "https://github.com/bluss/indexmap"
 
 [[dependencies]]
 name = "indexmap"
-version = "2.10.0"
+version = "2.11.0"
 description = "A hash table with consistent order and fast iteration."
 license = "Apache-2.0 OR MIT"
 notices = ["Copyright (c) 2016--2017"]
@@ -1318,7 +1318,7 @@ repository = "https://github.com/ratatui/instability"
 
 [[dependencies]]
 name = "io-uring"
-version = "0.7.9"
+version = "0.7.10"
 description = "The low-level `io_uring` userspace interface for Rust"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -1769,10 +1769,10 @@ repository = "https://github.com/Manishearth/pathdiff"
 
 [[dependencies]]
 name = "percent-encoding"
-version = "2.3.1"
+version = "2.3.2"
 description = "Percent encoding and decoding"
 license = "MIT OR Apache-2.0"
-notices = ["Copyright (c) 2013-2022 The rust-url developers"]
+notices = ["Copyright (c) 2013-2025 The rust-url developers"]
 authors = ["The rust-url developers"]
 repository = "https://github.com/servo/rust-url/"
 
@@ -1905,7 +1905,7 @@ repository = "https://github.com/cryptocorrosion/cryptocorrosion"
 
 [[dependencies]]
 name = "proc-macro2"
-version = "1.0.97"
+version = "1.0.101"
 description = "A substitute implementation of the compiler's `proc_macro` API to decouple token-based libraries from the procedural macro use case."
 license = "MIT OR Apache-2.0"
 authors = [
@@ -2128,7 +2128,7 @@ repository = "https://github.com/ron-rs/ron"
 
 [[dependencies]]
 name = "rust-ini"
-version = "0.21.2"
+version = "0.21.1"
 description = "An Ini configuration file parsing library in Rust"
 license = "MIT"
 notices = ["Copyright (c) 2014 Y. T. CHUNG"]
@@ -2303,7 +2303,7 @@ homepage = "https://serde.rs"
 
 [[dependencies]]
 name = "serde_json"
-version = "1.0.142"
+version = "1.0.143"
 description = "A JSON serialization file format"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -2605,7 +2605,7 @@ repository = "https://github.com/mullvad/system-configuration-rs"
 
 [[dependencies]]
 name = "tempfile"
-version = "3.20.0"
+version = "3.21.0"
 description = "A library for managing temporary files and directories."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015 Steven Allen"]
@@ -2628,7 +2628,7 @@ repository = "https://github.com/dtolnay/thiserror"
 
 [[dependencies]]
 name = "thiserror"
-version = "2.0.14"
+version = "2.0.16"
 description = "derive(Error)"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2644,7 +2644,7 @@ repository = "https://github.com/dtolnay/thiserror"
 
 [[dependencies]]
 name = "thiserror-impl"
-version = "2.0.14"
+version = "2.0.16"
 description = "Implementation detail of the `thiserror` crate"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2987,6 +2987,16 @@ repository = "https://github.com/tokio-rs/tracing"
 homepage = "https://tokio.rs"
 
 [[dependencies]]
+name = "trim-in-place"
+version = "0.1.7"
+description = "In-place trimming strings."
+license = "MIT"
+notices = ["Copyright (c) 2020 magiclen.org (Ron Li)"]
+authors = ["Magic Len <len@magiclen.org>"]
+repository = "https://github.com/magiclen/trim-in-place"
+homepage = "https://magiclen.org/trim-in-place"
+
+[[dependencies]]
 name = "try-lock"
 version = "0.2.5"
 description = "A lightweight atomic lock."
@@ -3130,10 +3140,10 @@ repository = "https://github.com/briansmith/untrusted"
 
 [[dependencies]]
 name = "url"
-version = "2.5.4"
+version = "2.5.6"
 description = "URL library for Rust, based on the WHATWG URL Standard"
 license = "MIT OR Apache-2.0"
-notices = ["Copyright (c) 2013-2022 The rust-url developers"]
+notices = ["Copyright (c) 2013-2025 The rust-url developers"]
 authors = ["The rust-url developers"]
 repository = "https://github.com/servo/rust-url"
 
@@ -3610,7 +3620,7 @@ repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "winnow"
-version = "0.7.12"
+version = "0.7.13"
 description = "A byte-oriented, zero-copy, parser combinators library"
 license = "MIT"
 repository = "https://github.com/winnow-rs/winnow"
