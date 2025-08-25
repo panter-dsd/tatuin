@@ -543,7 +543,12 @@ impl TasksWidget {
 
         span.record("selected", selected);
 
-        let patched_task = self.selected_task().unwrap();
+        let patched_task = self.selected_task();
+        if patched_task.is_none() {
+            return;
+        }
+
+        let patched_task = patched_task.unwrap();
         let t = self.tasks[selected.unwrap()].task();
 
         let mut current_state = t.state();
