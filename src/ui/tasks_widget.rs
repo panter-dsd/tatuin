@@ -870,7 +870,7 @@ impl WidgetTrait for TasksWidget {
 
         Block::new()
             .style(style::default_style())
-            .render(Rect::new(area.x, y, area.width, area.height - y + 2), buf);
+            .render(Rect::new(area.x, y, area.width, area.height + 2 - y), buf);
 
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
             .begin_symbol(Some("↑"))
