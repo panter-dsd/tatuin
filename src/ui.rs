@@ -799,10 +799,6 @@ impl App {
                 chrono::Local::now().format("%Y-%m-%d %H:%M").to_string(),
                 style::footer_datetime_fg(),
             ),
-            Span::styled(
-                format!("{}x{}", buf.area.width, buf.area.height),
-                style::footer_keys_fg(),
-            ),
         ];
 
         if !self.key_buffer.is_empty() {
