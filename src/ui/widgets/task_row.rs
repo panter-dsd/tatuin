@@ -7,7 +7,7 @@ use crate::{
     ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style},
 };
 use async_trait::async_trait;
-use chrono::Local;
+use chrono::{Local, NaiveTime};
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
@@ -32,10 +32,20 @@ impl TaskRow {
         let fg_color = {
             match t.due() {
                 Some(d) => {
-                    let now = chrono::Utc::now().date_naive();
-                    match d.date_naive().cmp(&now) {
+                    let now = chrono::Utc::now();
+                    match d.date_naive().cmp(&now.date_naive()) {
                         Ordering::Less => style::overdue_task_fg(),
-                        Ordering::Equal => style::today_task_fg(),
+                        Ordering::Equal => {
+                            if d.time() == NaiveTime::default() {
+                                style::today_task_fg()
+                            } else {
+                                match d.cmp(&now) {
+                                    Ordering::Less => style::overdue_task_fg(),
+                                    Ordering::Equal => style::today_task_fg(),
+                                    Ordering::Greater => style::future_task_fg(),
+                                }
+                            }
+                        }
                         Ordering::Greater => style::future_task_fg(),
                     }
                 }
