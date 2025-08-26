@@ -105,7 +105,7 @@ impl WidgetTrait for TextEdit {
             scrollbar.render(
                 Rect {
                     x: area.x,
-                    y: area.y, // header
+                    y: area.y,
                     width: area.width,
                     height: area.height,
                 },
