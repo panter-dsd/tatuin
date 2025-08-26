@@ -67,6 +67,10 @@ impl WidgetTrait for Text {
         Size::new(self.width, 1)
     }
 
+    fn set_size(&mut self, size: Size) {
+        self.width = self.width.max(size.width)
+    }
+
     fn set_style(&mut self, style: Style) {
         self.style = style
     }

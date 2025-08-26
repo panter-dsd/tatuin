@@ -10,7 +10,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
     text::Text,
-    widgets::{Block, Borders, Paragraph, Widget},
+    widgets::{Block, Paragraph, Widget},
 };
 use regex::Regex;
 
@@ -78,9 +78,7 @@ impl LineEdit {
 #[async_trait]
 impl WidgetTrait for LineEdit {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let b = Block::default()
-            .borders(Borders::ALL)
-            .border_style(style::border_color());
+        let b = Block::bordered().border_style(style::border_color());
 
         let inner_area = b.inner(area);
         let mut text = self.text.clone();
