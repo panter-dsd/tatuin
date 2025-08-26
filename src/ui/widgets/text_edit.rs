@@ -82,9 +82,15 @@ impl WidgetTrait for TextEdit {
 
         let inner_area = b.inner(area);
 
+        const BORDERS_HEIGHT: u16 = 2;
+
+        if inner_area.height <= BORDERS_HEIGHT {
+            return; // there is no place for lines
+        }
+
         let mut lines = self.text.split('\n').collect::<Vec<&str>>();
         let lines_count = lines.len();
-        let possible_line_count = inner_area.height - 2;
+        let possible_line_count = inner_area.height - BORDERS_HEIGHT;
 
         let not_all_fit = lines_count > possible_line_count as usize;
         if not_all_fit {
