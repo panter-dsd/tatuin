@@ -406,10 +406,7 @@ impl TasksWidget {
             let screen_size = dh.read().await.screen_size();
             let d = self.dialog.as_mut().unwrap();
             let min_size = d.min_size();
-            let size = Size::new(
-                min_size.width.max(screen_size.width / 2),
-                min_size.height.max(screen_size.height / 2),
-            );
+            let size = Size::new(min_size.width.max(screen_size.width / 2), min_size.height);
             d.set_size(size);
         }
         let size = self.dialog.as_ref().unwrap().size();
