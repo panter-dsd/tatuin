@@ -24,7 +24,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Flex, Layout, Position, Rect, Size},
     style::{Color, Stylize},
-    text::{Line, Span},
+    text::{Line, Span, Text},
     widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wrap},
 };
 use regex::Regex;
@@ -720,6 +720,11 @@ impl App {
     }
 
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        if buf.area.height < 25 || buf.area.width < 150 {
+            let [area] = Layout::vertical([Constraint::Length(1)]).flex(Flex::Center).areas(area);
+            Text::raw("Please, increase a window size").centered().render(area, buf);
+            return;
+        }
         let [header_area, main_area, footer_area] =
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
 
@@ -793,6 +798,10 @@ impl App {
             Span::styled(
                 chrono::Local::now().format("%Y-%m-%d %H:%M").to_string(),
                 style::footer_datetime_fg(),
+            ),
+            Span::styled(
+                format!("{}x{}", buf.area.width, buf.area.height),
+                style::footer_keys_fg(),
             ),
         ];
 
