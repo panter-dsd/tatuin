@@ -351,10 +351,6 @@ impl DialogTrait for Dialog {
     }
 }
 
-fn max_width(widgets: &[&dyn WidgetTrait]) -> u16 {
-    widgets.iter().map(|w| w.size().width).max().unwrap()
-}
-
 #[async_trait]
 impl WidgetTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
@@ -367,18 +363,24 @@ impl WidgetTrait for Dialog {
         let inner_area = b.inner(area);
         b.render(area, buf);
 
-        let left_captions_width = max_width(&[&self.task_name_caption, &self.task_description_caption]);
+        self.task_name_caption.set_size(inner_area.as_size());
+        self.task_description_caption.set_size(inner_area.as_size());
+        self.task_description_editor.set_size(Size::new(inner_area.width, 5));
 
         let [
             provider_and_project_area,
-            task_name_area,
-            task_description_area,
+            task_name_caption_area,
+            task_name_editor_area,
+            task_description_caption_area,
+            task_description_editor_area,
             priority_and_due_area,
             _,
             buttons_area,
         ] = Layout::vertical([
             Constraint::Length(self.provider_selector.size().height),
+            Constraint::Length(self.task_name_caption.size().height),
             Constraint::Length(self.task_name_editor.size().height),
+            Constraint::Length(self.task_description_caption.size().height),
             Constraint::Length(self.task_description_editor.size().height),
             Constraint::Length(self.priority_selector.size().height),
             Constraint::Fill(1),
@@ -386,20 +388,13 @@ impl WidgetTrait for Dialog {
         ])
         .areas(inner_area);
 
-        let [provider_area, project_area] =
-            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(provider_and_project_area);
+        let [provider_area, _, project_area] =
+            Layout::horizontal([Constraint::Fill(1), Constraint::Length(1), Constraint::Fill(1)])
+                .areas(provider_and_project_area);
 
-        let [mut task_name_caption_area, task_name_editor_area] =
-            Layout::horizontal([Constraint::Length(left_captions_width), Constraint::Fill(1)]).areas(task_name_area);
-        task_name_caption_area.y += 1;
-
-        let [mut task_description_caption_area, task_description_editor_area] =
-            Layout::horizontal([Constraint::Length(left_captions_width), Constraint::Fill(1)])
-                .areas(task_description_area);
-        task_description_caption_area.y += self.task_description_editor.size().height / 2;
-
-        let [priority_area, due_date_area] =
-            Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)]).areas(priority_and_due_area);
+        let [priority_area, _, due_date_area] =
+            Layout::horizontal([Constraint::Fill(1), Constraint::Length(1), Constraint::Fill(1)])
+                .areas(priority_and_due_area);
 
         let [
             _,
@@ -470,6 +465,10 @@ impl WidgetTrait for Dialog {
 
     fn set_size(&mut self, size: Size) {
         self.size = size;
+    }
+
+    fn min_size(&self) -> Size {
+        Size::new(90, 23)
     }
 
     fn size(&self) -> Size {

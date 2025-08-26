@@ -24,7 +24,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Flex, Layout, Position, Rect, Size},
     style::{Color, Stylize},
-    text::{Line, Span},
+    text::{Line, Span, Text},
     widgets::{Block, Clear, ListItem, ListState, Paragraph, Widget, Wrap},
 };
 use regex::Regex;
@@ -71,6 +71,9 @@ const BLOCK_ORDER: [AppBlock; 5] = [
     AppBlock::TaskList,
     AppBlock::TaskInfo,
 ];
+
+const MIN_WINDOW_WIDTH: u16 = 150;
+const MIN_WINDOW_HEIGHT: u16 = 25;
 
 #[async_trait]
 trait AppBlockWidget: WidgetTrait {
@@ -723,6 +726,13 @@ impl App {
     }
 
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        if buf.area.height < MIN_WINDOW_HEIGHT || buf.area.width < MIN_WINDOW_WIDTH {
+            let [area] = Layout::vertical([Constraint::Length(1)]).flex(Flex::Center).areas(area);
+            Text::raw("Please increase the window size")
+                .centered()
+                .render(area, buf);
+            return;
+        }
         let [header_area, main_area, footer_area] =
             Layout::vertical([Constraint::Length(2), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
 

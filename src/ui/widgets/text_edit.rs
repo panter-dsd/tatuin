@@ -10,7 +10,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
     text::Text,
-    widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
+    widgets::{Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
 
 pub struct TextEdit {
@@ -18,6 +18,7 @@ pub struct TextEdit {
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
     widget_state: WidgetState,
+    size: Size,
 }
 
 impl WidgetStateTrait for TextEdit {
@@ -57,6 +58,7 @@ impl TextEdit {
             draw_helper: None,
             last_cursor_pos: Position::default(),
             widget_state: WidgetState::default(),
+            size: Size::default(),
         }
     }
 
@@ -76,15 +78,13 @@ impl TextEdit {
 #[async_trait]
 impl WidgetTrait for TextEdit {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let b = Block::default()
-            .borders(Borders::ALL)
-            .border_style(style::border_color());
+        let b = Block::bordered().border_style(style::border_color());
 
         let inner_area = b.inner(area);
 
         let mut lines = self.text.split('\n').collect::<Vec<&str>>();
         let lines_count = lines.len();
-        let possible_line_count = inner_area.height - 2;
+        let possible_line_count = inner_area.height;
 
         let not_all_fit = lines_count > possible_line_count as usize;
         if not_all_fit {
@@ -95,7 +95,7 @@ impl WidgetTrait for TextEdit {
                 .collect::<Vec<&str>>();
         }
 
-        Paragraph::new(lines.join("\n")).block(b).render(inner_area, buf);
+        Paragraph::new(lines.join("\n")).block(b).render(area, buf);
 
         if not_all_fit {
             let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
@@ -104,10 +104,10 @@ impl WidgetTrait for TextEdit {
             let mut scrollbar_state = ScrollbarState::new(lines_count).position(lines_count);
             scrollbar.render(
                 Rect {
-                    x: inner_area.x,
-                    y: inner_area.y + 1, // header
-                    width: inner_area.width,
-                    height: inner_area.height - 1,
+                    x: area.x,
+                    y: area.y,
+                    width: area.width,
+                    height: area.height,
                 },
                 buf,
                 &mut scrollbar_state,
@@ -119,10 +119,9 @@ impl WidgetTrait for TextEdit {
         {
             let last_line_width = Text::raw(lines[lines.len() - 1]).width() as u16;
             let pos = Position::new(
-                std::cmp::min(inner_area.x + last_line_width + 1, inner_area.x + inner_area.width - 2),
-                std::cmp::min(inner_area.y + lines.len() as u16, inner_area.y + inner_area.height - 2),
+                std::cmp::min(inner_area.x + last_line_width, inner_area.x + inner_area.width - 1),
+                std::cmp::min(inner_area.y + lines.len() as u16 - 1, inner_area.y + inner_area.height),
             );
-
             if pos != self.last_cursor_pos {
                 dh.write().await.set_cursor_pos(pos);
                 self.last_cursor_pos = pos;
@@ -130,8 +129,18 @@ impl WidgetTrait for TextEdit {
         }
     }
 
+    fn min_size(&self) -> Size {
+        Size::new(5, 1)
+    }
+
     fn size(&self) -> Size {
-        Size::new(30, 10)
+        self.size
+    }
+
+    fn set_size(&mut self, size: Size) {
+        let min_size = self.min_size();
+        self.size.width = min_size.width.max(size.width);
+        self.size.height = min_size.height.max(size.height);
     }
 
     fn set_draw_helper(&mut self, dh: DrawHelper) {

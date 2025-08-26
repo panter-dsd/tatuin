@@ -405,10 +405,10 @@ impl TasksWidget {
     async fn render_dialog(&mut self, area: Rect, buf: &mut Buffer) {
         if let Some(dh) = &self.draw_helper {
             let screen_size = dh.read().await.screen_size();
-            self.dialog
-                .as_mut()
-                .unwrap()
-                .set_size(Size::new(screen_size.width / 2, screen_size.height / 2));
+            let d = self.dialog.as_mut().unwrap();
+            let min_size = d.min_size();
+            let size = Size::new(min_size.width.max(screen_size.width / 2), min_size.height);
+            d.set_size(size);
         }
         let size = self.dialog.as_ref().unwrap().size();
         let area = if self.is_global_dialog {
@@ -544,7 +544,12 @@ impl TasksWidget {
 
         span.record("selected", selected);
 
-        let patched_task = self.selected_task().unwrap();
+        let patched_task = self.selected_task();
+        if patched_task.is_none() {
+            return;
+        }
+
+        let patched_task = patched_task.unwrap();
         let t = self.tasks[selected.unwrap()].task();
 
         let mut current_state = t.state();
