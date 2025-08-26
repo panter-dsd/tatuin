@@ -72,6 +72,9 @@ const BLOCK_ORDER: [AppBlock; 5] = [
     AppBlock::TaskInfo,
 ];
 
+const MIN_WINDOW_WIDTH: u16 = 150;
+const MIN_WINDOW_HEIGHT: u16 = 25;
+
 #[async_trait]
 trait AppBlockWidget: WidgetTrait {
     fn activate_shortcuts(&mut self) -> Vec<&mut Shortcut>;
@@ -720,9 +723,11 @@ impl App {
     }
 
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        if buf.area.height < 25 || buf.area.width < 150 {
+        if buf.area.height < MIN_WINDOW_HEIGHT || buf.area.width < MIN_WINDOW_WIDTH {
             let [area] = Layout::vertical([Constraint::Length(1)]).flex(Flex::Center).areas(area);
-            Text::raw("Please, increase a window size").centered().render(area, buf);
+            Text::raw("Please increase the window size")
+                .centered()
+                .render(area, buf);
             return;
         }
         let [header_area, main_area, footer_area] =
