@@ -149,7 +149,7 @@ fn widgets(node: &Node) -> Vec<Box<dyn WidgetTrait>> {
             Node::Link(l) => {
                 result.push(Box::new(HyperlinkWidget::new(generate_node_text(n).as_str(), &l.url)));
             }
-            Node::Strong(_) => {
+            Node::Strong(_) | Node::Heading(_) => {
                 result.push(Box::new(
                     Text::new(generate_node_text(n).as_str()).modifier(Modifier::BOLD),
                 ));
