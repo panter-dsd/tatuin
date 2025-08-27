@@ -29,9 +29,19 @@ pub struct MarkdownLine {
 }
 crate::impl_widget_state_trait!(MarkdownLine);
 
+fn first_not_empty_string(s: &str) -> String {
+    if s.contains('\n') {
+        if let Some(ss) = s.split('\n').find(|s| !s.trim().is_empty()) {
+            return ss.trim().to_string() + "...";
+        }
+    }
+
+    s.to_string()
+}
+
 impl MarkdownLine {
     pub fn new(text: &str) -> Self {
-        let widgets = match markdown::to_mdast(text, &markdown::ParseOptions::default()) {
+        let widgets = match markdown::to_mdast(&first_not_empty_string(text), &markdown::ParseOptions::default()) {
             Ok(root) => widgets(&root),
             Err(_) => Vec::new(),
         };
@@ -145,7 +155,7 @@ fn widgets(node: &Node) -> Vec<Box<dyn WidgetTrait>> {
             Node::Link(l) => {
                 result.push(Box::new(HyperlinkWidget::new(generate_node_text(n).as_str(), &l.url)));
             }
-            Node::Strong(_) => {
+            Node::Strong(_) | Node::Heading(_) => {
                 result.push(Box::new(
                     Text::new(generate_node_text(n).as_str()).modifier(Modifier::BOLD),
                 ));
