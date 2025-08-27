@@ -29,13 +29,19 @@ pub struct MarkdownLine {
 }
 crate::impl_widget_state_trait!(MarkdownLine);
 
-fn single_string(s: &str) -> &str {
-    if let Some(idx) = s.find('\n') { &s[..idx] } else { s }
+fn first_not_empty_string(s: &str) -> &str {
+    for ss in s.split('\n') {
+        if !ss.trim().is_empty() {
+            return ss;
+        }
+    }
+
+    s
 }
 
 impl MarkdownLine {
     pub fn new(text: &str) -> Self {
-        let widgets = match markdown::to_mdast(single_string(text), &markdown::ParseOptions::default()) {
+        let widgets = match markdown::to_mdast(first_not_empty_string(text), &markdown::ParseOptions::default()) {
             Ok(root) => widgets(&root),
             Err(_) => Vec::new(),
         };
