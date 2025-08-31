@@ -89,10 +89,11 @@ where
 fn tz_offset_from_property_params(params: &Option<Vec<(String, Vec<String>)>>) -> Option<chrono_tz::Tz> {
     if let Some(params) = params {
         for (n, p) in params {
-            if n == "TZID" && p.len() == 1 {
-                if let Ok(t) = p[0].parse::<chrono_tz::Tz>() {
-                    return Some(t);
-                }
+            if n == "TZID"
+                && p.len() == 1
+                && let Ok(t) = p[0].parse::<chrono_tz::Tz>()
+            {
+                return Some(t);
             }
         }
     }
@@ -109,11 +110,11 @@ fn dt_from_property(p: &Property) -> Option<DateTimeUtc> {
     }
 
     // with timezone in params
-    if let Some(tz) = tz_offset_from_property_params(&p.params) {
-        if let Ok(dt) = NaiveDateTime::parse_from_str(s, "%Y%m%dT%H%M%S") {
-            let dt = dt.and_local_timezone(tz).unwrap();
-            return Some(dt.to_utc());
-        }
+    if let Some(tz) = tz_offset_from_property_params(&p.params)
+        && let Ok(dt) = NaiveDateTime::parse_from_str(s, "%Y%m%dT%H%M%S")
+    {
+        let dt = dt.and_local_timezone(tz).unwrap();
+        return Some(dt.to_utc());
     }
 
     // with timezone inside
