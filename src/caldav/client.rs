@@ -20,6 +20,7 @@ pub struct Config {
 struct CachedFile {
     href: String,
     last_modified: DateTimeUtc,
+    etag: Option<String>,
     file_name: String,
 }
 
@@ -61,7 +62,7 @@ impl Client {
             if let ListEntity::File(f) = f {
                 if let Some(pos) = current_cached_files.files.iter().position(|cf| cf.href == f.href) {
                     let cached_file = current_cached_files.files.remove(pos);
-                    if cached_file.last_modified == f.last_modified {
+                    if cached_file.etag == f.tag && cached_file.last_modified == f.last_modified {
                         tracing::debug!(href = f.href, "The file wasn't changed");
                         new_cached_files.files.push(cached_file);
                         continue;
@@ -74,6 +75,7 @@ impl Client {
                     file_name: self.download_and_save_file(f.href.as_str()).await?,
                     href: f.href.to_string(),
                     last_modified: f.last_modified,
+                    etag: f.tag,
                 });
             }
         }
