@@ -5,9 +5,10 @@ use chrono::Duration;
 use crate::project::Project as ProjectTrait;
 use crate::task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait};
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Clone)]
 pub struct Task {
     pub provider: String,
+    pub properties: Vec<ical::property::Property>,
 
     pub uid: String,
     pub name: String,
@@ -20,6 +21,27 @@ pub struct Task {
     pub created: Option<DateTimeUtc>,
     pub duration: Option<Duration>,
     pub categories: Vec<String>,
+}
+
+impl std::fmt::Debug for Task {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Task uuid={} name={} description={:?} priority={} start={:?} end={:?} due={:?} completed={:?} created={:?} duration={:?} categories={:?} properties={:?}",
+            self.uid,
+            self.name,
+            self.description,
+            self.priority,
+            self.start,
+            self.end,
+            self.due,
+            self.completed,
+            self.created,
+            self.duration,
+            self.categories,
+            self.properties
+        )
+    }
 }
 
 impl Task {
