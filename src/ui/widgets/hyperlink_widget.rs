@@ -100,15 +100,23 @@ impl MouseHandler for HyperlinkWidget {
 
         if let MouseEventKind::Up(button) = ev.kind {
             if button == MouseButton::Left && self.is_under_mouse {
-                // Call the `open` command
-                let status = Command::new("open")
-                    .arg(&self.url)
-                    .status()
-                    .expect("Failed to execute command");
+                let error = if cfg!(target_os = "macos") {
+                    match Command::new("open").arg(&self.url).status() {
+                        Ok(_) => String::new(),
+                        Err(e) => e.to_string(),
+                    }
+                } else if cfg!(target_os = "linux") {
+                    match Command::new("xdg-open").arg(&self.url).status() {
+                        Ok(_) => String::new(),
+                        Err(e) => e.to_string(),
+                    }
+                } else {
+                    "can't open url in target os".to_string()
+                };
 
                 // Check if the command was successful
-                if !status.success() {
-                    eprintln!("Failed to open {}", self.url);
+                if !error.is_empty() {
+                    eprintln!("Failed to open {}: {error:?}", self.url);
                 }
             }
         }
