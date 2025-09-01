@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 mod client;
+mod fake_project;
 use async_trait::async_trait;
 use ratatui::style::Color;
 
@@ -86,7 +87,7 @@ impl ProviderTrait for Provider {
     }
 
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
-        Err(StringError::new("not implemented"))
+        Ok(vec![Box::new(fake_project::Project::default())])
     }
 
     async fn patch_tasks(&mut self, _patches: &[TaskPatch]) -> Vec<PatchError> {
@@ -102,7 +103,7 @@ impl ProviderTrait for Provider {
     }
 
     fn capabilities(&self) -> Capabilities {
-        Capabilities { create_task: false }
+        Capabilities { create_task: true }
     }
 
     async fn create_task(&mut self, _project_id: &str, _tp: &TaskPatch) -> Result<(), StringError> {
