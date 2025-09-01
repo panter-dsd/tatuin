@@ -30,10 +30,10 @@ pub struct MarkdownLine {
 crate::impl_widget_state_trait!(MarkdownLine);
 
 fn first_not_empty_string(s: &str) -> String {
-    if s.contains('\n') {
-        if let Some(ss) = s.split('\n').find(|s| !s.trim().is_empty()) {
-            return ss.trim().to_string() + "...";
-        }
+    if s.contains('\n')
+        && let Some(ss) = s.split('\n').find(|s| !s.trim().is_empty())
+    {
+        return ss.trim().to_string() + "...";
     }
 
     s.to_string()
