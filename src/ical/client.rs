@@ -54,10 +54,11 @@ pub async fn parse_calendar(file_path: &PathBuf) -> Result<Vec<Task>, Box<dyn Er
     let buf = BufReader::new(File::open(file_path)?);
     let reader = IcalParser::new(buf);
 
-    read_tasks_from_calendar(reader)
+    let job = tokio::spawn(async move { read_tasks_from_calendar(reader) });
+    job.await.unwrap().map_err(|e| Box::new(e) as Box<dyn Error>)
 }
 
-fn read_tasks_from_calendar<B>(reader: IcalParser<B>) -> Result<Vec<Task>, Box<dyn Error>>
+fn read_tasks_from_calendar<B>(reader: IcalParser<B>) -> Result<Vec<Task>, ical::parser::ParserError>
 where
     B: std::io::BufRead,
 {
