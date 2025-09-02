@@ -10,8 +10,8 @@ use crate::{
     ical::Task,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait, StringError},
-    task::Task as TaskTrait,
-    task_patch::{PatchError, TaskPatch},
+    task::{Priority, Task as TaskTrait},
+    task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
 use client::{Client, Config};
 
@@ -106,7 +106,19 @@ impl ProviderTrait for Provider {
         Capabilities { create_task: true }
     }
 
-    async fn create_task(&mut self, _project_id: &str, _tp: &TaskPatch) -> Result<(), StringError> {
-        panic!("Not implemented")
+    async fn create_task(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
+        let t = Task {
+            provider: PROVIDER_NAME.to_string(),
+            properties: Vec::new(),
+            name: tp.name.clone().unwrap(),
+            description: tp.description.clone(),
+            due: tp.due.unwrap_or(DuePatchItem::NoDate).into(),
+            priority: tp.priority.unwrap_or(Priority::Normal).into(),
+            ..Task::default()
+        };
+        self.c.create_or_update(t).await.map_err(|e| {
+            tracing::error!(target:"caldav_provider",  error=?e, "Create a task");
+            StringError::new(e.to_string().as_str())
+        })
     }
 }

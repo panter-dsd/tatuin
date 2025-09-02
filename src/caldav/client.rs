@@ -1,3 +1,9 @@
+use ical::property::Property;
+use itertools::Itertools;
+use reqwest::{
+    Method,
+    header::{HeaderMap, HeaderValue},
+};
 use reqwest_dav::{Auth, Client as WebDavClient, ClientBuilder, Depth, list_cmd::ListEntity};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -6,7 +12,11 @@ use std::{
 };
 use tokio::io::AsyncWriteExt;
 
-use crate::{ical::Task, provider::StringError, task::DateTimeUtc};
+use crate::{
+    ical::{Task, property_to_str},
+    provider::StringError,
+    task::DateTimeUtc,
+};
 
 const INDEX_FILE_NAME: &str = "index.toml";
 
@@ -95,6 +105,30 @@ impl Client {
         }
 
         Ok(result)
+    }
+
+    pub async fn create_or_update(&mut self, t: Task) -> Result<(), Box<dyn Error>> {
+        let properties: Vec<Property> = t.into();
+        let body = format!(
+            r#"BEGIN:VCALENDAR
+{}
+END:VCALENDAR"#,
+            properties.iter().map(property_to_str).join("\n")
+        );
+        let c = self.client()?;
+        let r = c
+            .start_request(Method::from_bytes(b"PUT").unwrap(), "/some/file/name")
+            .await?
+            .headers({
+                let mut map = HeaderMap::new();
+                map.insert("Content-Type", HeaderValue::from_str("text/calendar; charset=utf-8")?);
+                map
+            })
+            .body(body)
+            .send()
+            .await?;
+        println!("{r:?}");
+        Ok(())
     }
 }
 

@@ -15,8 +15,7 @@ use crate::{
 };
 use client::Client;
 pub use client::parse_calendar;
-pub use priority::TaskPriority;
-pub use task::Task;
+pub use task::{Task, property_to_str};
 
 pub const PROVIDER_NAME: &str = "iCal";
 

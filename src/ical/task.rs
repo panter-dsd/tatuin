@@ -164,6 +164,30 @@ impl From<&Vec<Property>> for Task {
     }
 }
 
+pub fn property_to_str(value: &Property) -> String {
+    format!("{}:{}", value.name, value.value.as_ref().unwrap_or(&String::new()))
+}
+
+impl From<Task> for Vec<Property> {
+    fn from(t: Task) -> Self {
+        let mut result = t.properties.clone();
+        replace_or_add(
+            &mut result,
+            Property {
+                name: "SUMMARY".to_string(),
+                params: None,
+                value: Some(t.name),
+            },
+        );
+        result
+    }
+}
+
+fn replace_or_add(properties: &mut Vec<Property>, p: Property) {
+    properties.retain(|prop| prop.name != p.name);
+    properties.push(p);
+}
+
 fn tz_offset_from_property_params(params: &Option<Vec<(String, Vec<String>)>>) -> Option<chrono_tz::Tz> {
     if let Some(params) = params {
         for (n, p) in params {
