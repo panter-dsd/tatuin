@@ -168,24 +168,36 @@ pub fn property_to_str(value: &Property) -> String {
     format!("{}:{}", value.name, value.value.as_ref().unwrap_or(&String::new()))
 }
 
-impl From<Task> for Vec<Property> {
-    fn from(t: Task) -> Self {
-        let mut result = t.properties.clone();
-        replace_or_add(
-            &mut result,
-            Property {
-                name: "SUMMARY".to_string(),
-                params: None,
-                value: Some(t.name),
-            },
-        );
-        result
+fn make_property(name: &str, value: Option<String>) -> Property {
+    Property {
+        name: name.to_string(),
+        params: None,
+        value,
     }
 }
 
 fn replace_or_add(properties: &mut Vec<Property>, p: Property) {
     properties.retain(|prop| prop.name != p.name);
     properties.push(p);
+}
+
+impl From<&Task> for Vec<Property> {
+    fn from(t: &Task) -> Self {
+        const DT_FORMAT: &str = "%Y%m%dT%H%M%SZ";
+        let mut result = t.properties.clone();
+        replace_or_add(&mut result, make_property("SUMMARY", Some(t.name.clone())));
+        replace_or_add(&mut result, make_property("DESCRIPTION", t.description.clone()));
+        replace_or_add(&mut result, make_property("PRIORITY", Some(t.priority.to_string())));
+        replace_or_add(
+            &mut result,
+            make_property("DUE", t.due.map(|d| d.format(DT_FORMAT).to_string())),
+        );
+        replace_or_add(
+            &mut result,
+            make_property("CREATED", Some(chrono::Utc::now().format(DT_FORMAT).to_string())),
+        );
+        result
+    }
 }
 
 fn tz_offset_from_property_params(params: &Option<Vec<(String, Vec<String>)>>) -> Option<chrono_tz::Tz> {

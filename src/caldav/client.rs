@@ -107,17 +107,27 @@ impl Client {
         Ok(result)
     }
 
-    pub async fn create_or_update(&mut self, t: Task) -> Result<(), Box<dyn Error>> {
+    pub async fn create_or_update(&mut self, t: &Task) -> Result<(), Box<dyn Error>> {
         let properties: Vec<Property> = t.into();
         let body = format!(
             r#"BEGIN:VCALENDAR
+BEGIN:VTODO
 {}
+END:VTODO
 END:VCALENDAR"#,
             properties.iter().map(property_to_str).join("\n")
         );
+
+        let url = url::Url::parse(&self.cfg.url)?;
+        let href = url
+            .join(format!("{}.ics", uuid::Uuid::new_v4()).as_str())?
+            .path()
+            .to_string();
+
+        tracing::debug!(body=?body, task=?&t, href=href, "Create or update a task");
+
         let c = self.client()?;
-        let r = c
-            .start_request(Method::from_bytes(b"PUT").unwrap(), "/some/file/name")
+        c.start_request(Method::from_bytes(b"PUT").unwrap(), &href)
             .await?
             .headers({
                 let mut map = HeaderMap::new();
@@ -126,9 +136,9 @@ END:VCALENDAR"#,
             })
             .body(body)
             .send()
-            .await?;
-        println!("{r:?}");
-        Ok(())
+            .await
+            .map(|_| ())
+            .map_err(|e| Box::new(e) as Box<dyn Error>)
     }
 }
 

@@ -116,7 +116,7 @@ impl ProviderTrait for Provider {
             priority: tp.priority.unwrap_or(Priority::Normal).into(),
             ..Task::default()
         };
-        self.c.create_or_update(t).await.map_err(|e| {
+        self.c.create_or_update(&t).await.map_err(|e| {
             tracing::error!(target:"caldav_provider",  error=?e, "Create a task");
             StringError::new(e.to_string().as_str())
         })
