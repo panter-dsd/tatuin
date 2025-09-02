@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-use chrono::Duration;
+use chrono::{Duration, NaiveDate, NaiveDateTime};
+use ical::property::Property;
 
-use crate::project::Project as ProjectTrait;
-use crate::task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait};
+use super::priority::TaskPriority;
+use crate::{
+    project::Project as ProjectTrait,
+    task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
+};
 
 #[derive(Default, Clone)]
 pub struct Task {
@@ -13,7 +17,7 @@ pub struct Task {
     pub uid: String,
     pub name: String,
     pub description: Option<String>,
-    pub priority: u8,
+    pub priority: TaskPriority,
     pub start: Option<DateTimeUtc>,
     pub end: Option<DateTimeUtc>,
     pub due: Option<DateTimeUtc>,
@@ -88,14 +92,7 @@ impl TaskTrait for Task {
     }
 
     fn priority(&self) -> Priority {
-        match self.priority {
-            0 | 5 => Priority::Normal,
-            1 => Priority::Highest,
-            2 | 3 => Priority::High,
-            4 => Priority::Medium,
-            6 | 7 => Priority::Low,
-            8.. => Priority::Lowest,
-        }
+        self.priority.into()
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
@@ -129,4 +126,89 @@ impl TaskTrait for Task {
     fn labels(&self) -> Vec<String> {
         self.categories.clone()
     }
+}
+
+impl From<&Vec<Property>> for Task {
+    fn from(properties: &Vec<Property>) -> Self {
+        let mut t = Task {
+            properties: properties.to_vec(),
+            ..Task::default()
+        };
+
+        for p in properties {
+            match p.name.as_str() {
+                "UID" => t.uid = p.value.clone().unwrap_or_default(),
+                "SUMMARY" => t.name = p.value.clone().unwrap_or_default(),
+                "DESCRIPTION" => t.description = p.value.clone(),
+                "PRIORITY" => t.priority = p.value.as_ref().map(|s| s.parse::<u8>().unwrap_or(0)).unwrap_or(0),
+                "DUE" => t.due = dt_from_property(p),
+                "DTSTART" => t.start = dt_from_property(p),
+                "DTEND" => t.end = dt_from_property(p),
+                "COMPLETED" => t.completed = dt_from_property(p),
+                "CREATED" => t.created = dt_from_property(p),
+                "DURATION" => t.duration = duration_from_property(p),
+                "CATEGORIES" if p.value.is_some() => {
+                    t.categories = p
+                        .value
+                        .as_ref()
+                        .unwrap()
+                        .split(",")
+                        .map(|s| s.to_string())
+                        .collect::<Vec<String>>()
+                }
+                _ => {}
+            }
+        }
+        tracing::debug!(task=?t, "New task");
+        t
+    }
+}
+
+fn tz_offset_from_property_params(params: &Option<Vec<(String, Vec<String>)>>) -> Option<chrono_tz::Tz> {
+    if let Some(params) = params {
+        for (n, p) in params {
+            if n == "TZID"
+                && p.len() == 1
+                && let Ok(t) = p[0].parse::<chrono_tz::Tz>()
+            {
+                return Some(t);
+            }
+        }
+    }
+
+    None
+}
+
+fn dt_from_property(p: &Property) -> Option<DateTimeUtc> {
+    let s = p.value.as_ref()?;
+
+    if let Ok(d) = NaiveDate::parse_from_str(s, "%Y%m%d") {
+        let dt = d.and_hms_opt(0, 0, 0)?;
+        return Some(DateTimeUtc::from_naive_utc_and_offset(dt, chrono::Utc));
+    }
+
+    // with timezone in params
+    if let Some(tz) = tz_offset_from_property_params(&p.params)
+        && let Ok(dt) = NaiveDateTime::parse_from_str(s, "%Y%m%dT%H%M%S")
+    {
+        let dt = dt.and_local_timezone(tz).unwrap();
+        return Some(dt.to_utc());
+    }
+
+    // with timezone inside
+    if let Ok(dt) = NaiveDateTime::parse_from_str(s, "%Y%m%dT%H%M%SZ") {
+        return Some(DateTimeUtc::from_naive_utc_and_offset(dt, chrono::Utc));
+    }
+
+    None
+}
+
+fn duration_from_property(p: &Property) -> Option<Duration> {
+    if let Some(v) = &p.value
+        && let Ok(d) = v.parse::<iso8601_duration::Duration>()
+    {
+        return d.to_chrono();
+    }
+
+    None
 }
