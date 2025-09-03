@@ -136,7 +136,8 @@ END:VCALENDAR"#,
             })
             .body(body)
             .send()
-            .await
+            .await?
+            .error_for_status()
             .map(|_| ())
             .map_err(|e| Box::new(e) as Box<dyn Error>)
     }
