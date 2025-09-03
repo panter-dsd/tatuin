@@ -101,6 +101,7 @@ impl Client {
 
         for f in self.load_cached_files().await.files {
             let mut tasks = self.parse_calendar(&f.file_name).await?;
+            tasks.iter_mut().for_each(|t| t.href = f.href.clone());
             result.append(&mut tasks);
         }
 
@@ -118,11 +119,14 @@ END:VCALENDAR"#,
             properties.iter().map(property_to_str).join("\n")
         );
 
-        let url = url::Url::parse(&self.cfg.url)?;
-        let href = url
-            .join(format!("{}.ics", uuid::Uuid::new_v4()).as_str())?
-            .path()
-            .to_string();
+        let href = if t.href.is_empty() {
+            let url = url::Url::parse(&self.cfg.url)?;
+            url.join(format!("{}.ics", uuid::Uuid::new_v4()).as_str())?
+                .path()
+                .to_string()
+        } else {
+            t.href.clone()
+        };
 
         tracing::debug!(body=?body, task=?&t, href=href, "Create or update a task");
 

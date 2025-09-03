@@ -13,6 +13,7 @@ use crate::{
 pub struct Task {
     pub provider: String,
     pub properties: Vec<ical::property::Property>,
+    pub href: String,
 
     pub uid: String,
     pub name: String,
@@ -31,7 +32,7 @@ impl std::fmt::Debug for Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Task uuid={} name={} description={:?} priority={} start={:?} end={:?} due={:?} completed={:?} created={:?} duration={:?} categories={:?} properties={:?}",
+            "Task uuid={} name={} description={:?} priority={} start={:?} end={:?} due={:?} completed={:?} created={:?} duration={:?} categories={:?} properties={:?} href={}",
             self.uid,
             self.name,
             self.description,
@@ -43,7 +44,8 @@ impl std::fmt::Debug for Task {
             self.created,
             self.duration,
             self.categories,
-            self.properties
+            self.properties,
+            self.href,
         )
     }
 }
