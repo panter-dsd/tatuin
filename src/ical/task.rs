@@ -9,11 +9,19 @@ use crate::{
     task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
 };
 
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub enum TaskType {
+    Event,
+    #[default]
+    Todo,
+}
+
 #[derive(Default, Clone)]
 pub struct Task {
     pub provider: String,
     pub properties: Vec<ical::property::Property>,
     pub href: String,
+    pub task_type: TaskType,
 
     pub uid: String,
     pub name: String,
@@ -32,7 +40,7 @@ impl std::fmt::Debug for Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Task uuid={} name={} description={:?} priority={} start={:?} end={:?} due={:?} completed={:?} created={:?} duration={:?} categories={:?} properties={:?} href={}",
+            "Task uuid={} name={} description={:?} priority={} start={:?} end={:?} due={:?} completed={:?} created={:?} duration={:?} categories={:?} properties={:?} href={} type={:?}",
             self.uid,
             self.name,
             self.description,
@@ -46,6 +54,7 @@ impl std::fmt::Debug for Task {
             self.categories,
             self.properties,
             self.href,
+            self.task_type,
         )
     }
 }
@@ -197,6 +206,14 @@ impl From<&Task> for Vec<Property> {
         replace_or_add(
             &mut result,
             make_property("CREATED", Some(chrono::Utc::now().format(DT_FORMAT).to_string())),
+        );
+        replace_or_add(
+            &mut result,
+            make_property("DTSTART", t.start.map(|d| d.format(DT_FORMAT).to_string())),
+        );
+        replace_or_add(
+            &mut result,
+            make_property("DTEND", t.end.map(|d| d.format(DT_FORMAT).to_string())),
         );
         result
     }

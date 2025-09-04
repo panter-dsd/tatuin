@@ -12,6 +12,8 @@ use ical::{
     parser::ical::component::{IcalEvent, IcalTodo},
 };
 
+use crate::ical::task::TaskType;
+
 use super::task::Task;
 
 const FILE_NAME: &str = "calendar.ics";
@@ -84,11 +86,15 @@ where
 }
 
 fn event_to_task(ev: &IcalEvent) -> Task {
-    Task::from(&ev.properties)
+    let mut t = Task::from(&ev.properties);
+    t.task_type = TaskType::Event;
+    t
 }
 
 fn todo_to_task(todo: &IcalTodo) -> Task {
-    Task::from(&todo.properties)
+    let mut t = Task::from(&todo.properties);
+    t.task_type = TaskType::Todo;
+    t
 }
 
 #[cfg(test)]

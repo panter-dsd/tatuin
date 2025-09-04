@@ -1,7 +1,7 @@
 use ical::property::Property;
 use itertools::Itertools;
 use reqwest::{
-    Method,
+    Method, StatusCode,
     header::{HeaderMap, HeaderValue},
 };
 use reqwest_dav::{Auth, Client as WebDavClient, ClientBuilder, Depth, list_cmd::ListEntity};
@@ -39,8 +39,15 @@ struct CachedFiles {
     files: Vec<CachedFile>,
 }
 
+#[derive(PartialEq, Eq, Clone, Debug)]
+enum StorageType {
+    Calendar,
+    Todo,
+}
+
 pub struct Client {
     cfg: Config,
+    storage_type: Option<StorageType>,
     c: Option<WebDavClient>,
     cache_folder: PathBuf,
 }
@@ -49,6 +56,7 @@ impl Client {
     pub fn new(cfg: Config) -> Self {
         Self {
             cfg,
+            storage_type: None,
             c: None,
             cache_folder: crate::folders::temp_folder(),
         }
@@ -96,7 +104,7 @@ impl Client {
         Ok(())
     }
 
-    pub async fn parse_calendars(&self) -> Result<Vec<Task>, Box<dyn Error>> {
+    pub async fn parse_calendars(&mut self) -> Result<Vec<Task>, Box<dyn Error>> {
         let mut result = Vec::new();
 
         for f in self.load_cached_files().await.files {
@@ -105,45 +113,52 @@ impl Client {
             result.append(&mut tasks);
         }
 
+        if !result.is_empty() {
+            self.storage_type = Some(if result[0].task_type == crate::ical::TaskType::Event {
+                StorageType::Calendar
+            } else {
+                StorageType::Todo
+            });
+        }
+
         Ok(result)
     }
 
     pub async fn create_or_update(&mut self, t: &Task) -> Result<(), Box<dyn Error>> {
-        let properties: Vec<Property> = t.into();
-        let body = format!(
-            r#"BEGIN:VCALENDAR
-BEGIN:VTODO
-{}
-END:VTODO
-END:VCALENDAR"#,
-            properties.iter().map(property_to_str).join("\n")
-        );
+        if let Some(st) = self.storage_type.clone() {
+            let r = self.send_create_or_update_request(&st, t).await?;
+            let st = r.status();
+            if st != StatusCode::CREATED {
+                let response_text = r.text().await?;
+                tracing::error!(target:"caldav_client", response_text=?response_text, "Send create or update request");
+                return Err(StringError::new(format!("Wrong response status {st}").as_str()).into());
+            } else {
+                return r
+                    .error_for_status()
+                    .map(|_| ())
+                    .map_err(|e| Box::new(e) as Box<dyn Error>);
+            }
+        }
 
-        let href = if t.href.is_empty() {
-            let url = url::Url::parse(&self.cfg.url)?;
-            url.join(format!("{}.ics", uuid::Uuid::new_v4()).as_str())?
-                .path()
-                .to_string()
+        tracing::info!(target:"caldav_client", "Try to detect storage type");
+
+        // try to detect storage type
+        let mut r = self.send_create_or_update_request(&StorageType::Calendar, t).await?;
+
+        if r.status() == StatusCode::FORBIDDEN {
+            let response_text = r.text().await;
+            tracing::error!(target:"caldav_client", text=?response_text, "Wrong storage type");
+            // wrong storage type
+            r = self.send_create_or_update_request(&StorageType::Calendar, t).await?;
+            self.storage_type = Some(StorageType::Todo);
         } else {
-            t.href.clone()
-        };
+            self.storage_type = Some(StorageType::Calendar);
+        }
 
-        tracing::debug!(body=?body, task=?&t, href=href, "Create or update a task");
+        tracing::info!(target:"caldav_client", storage_type=?self.storage_type.as_ref().unwrap(), "The storage type has been detected");
 
-        let c = self.client()?;
-        c.start_request(Method::from_bytes(b"PUT").unwrap(), &href)
-            .await?
-            .headers({
-                let mut map = HeaderMap::new();
-                map.insert("Content-Type", HeaderValue::from_str("text/calendar; charset=utf-8")?);
-                map
-            })
-            .body(body)
-            .send()
-            .await?
-            .error_for_status()
-            .map(|_| ())
-            .map_err(|e| Box::new(e) as Box<dyn Error>)
+        let r = r.error_for_status();
+        r.map(|_| ()).map_err(|e| Box::new(e) as Box<dyn Error>)
     }
 }
 
@@ -212,6 +227,67 @@ impl Client {
 
     async fn parse_calendar(&self, file_name: &str) -> Result<Vec<Task>, Box<dyn Error>> {
         crate::ical::parse_calendar(&self.cache_folder.join(file_name)).await
+    }
+
+    fn create_or_update_request_body(&self, storage_type: &StorageType, t: &Task) -> String {
+        let mut task = t.clone();
+
+        let task_type = if *storage_type == StorageType::Calendar {
+            task.start = task.start.or(task.due);
+            task.end = task
+                .start
+                // TODO: 1 hour should be configurable
+                .map(|d| d.checked_add_signed(chrono::TimeDelta::hours(1)).unwrap_or_default());
+
+            "VEVENT"
+        } else {
+            "VTODO"
+        };
+
+        let properties: Vec<Property> = (&task).into();
+        format!(
+            r#"BEGIN:VCALENDAR
+BEGIN:{task_type}
+{}
+END:{task_type}
+END:VCALENDAR"#,
+            properties.iter().map(property_to_str).join("\n")
+        )
+    }
+
+    fn task_href(&self, t: &Task) -> Result<String, Box<dyn Error>> {
+        Ok(if t.href.is_empty() {
+            let url = url::Url::parse(&self.cfg.url)?;
+            url.join(format!("{}.ics", uuid::Uuid::new_v4()).as_str())?
+                .path()
+                .to_string()
+        } else {
+            t.href.clone()
+        })
+    }
+
+    async fn send_create_or_update_request(
+        &mut self,
+        storage_type: &StorageType,
+        t: &Task,
+    ) -> Result<reqwest::Response, Box<dyn Error>> {
+        let body = self.create_or_update_request_body(storage_type, t);
+        let href = self.task_href(t)?;
+
+        tracing::debug!(body=?body, task=?&t, href=href, "Create or update a task");
+
+        let c = self.client()?;
+        c.start_request(Method::from_bytes(b"PUT").unwrap(), &href)
+            .await?
+            .headers({
+                let mut map = HeaderMap::new();
+                map.insert("Content-Type", HeaderValue::from_str("text/calendar; charset=utf-8")?);
+                map
+            })
+            .body(body)
+            .send()
+            .await
+            .map_err(|e| Box::new(e) as Box<dyn Error>)
     }
 }
 
