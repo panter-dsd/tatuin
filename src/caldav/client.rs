@@ -1,3 +1,4 @@
+use chrono::TimeDelta;
 use ical::property::Property;
 use itertools::Itertools;
 use reqwest::{
@@ -19,6 +20,7 @@ use crate::{
 };
 
 const INDEX_FILE_NAME: &str = "index.toml";
+const DEFAULT_EVENT_DURATION: TimeDelta = TimeDelta::hours(1);
 
 pub struct Config {
     pub url: String,
@@ -236,8 +238,7 @@ impl Client {
             task.start = task.start.or(task.due);
             task.end = task
                 .start
-                // TODO: 1 hour should be configurable
-                .map(|d| d.checked_add_signed(chrono::TimeDelta::hours(1)).unwrap_or_default());
+                .map(|d| d.checked_add_signed(DEFAULT_EVENT_DURATION).unwrap_or_default());
 
             "VEVENT"
         } else {
