@@ -9,6 +9,7 @@ Currently, the project supports the next providers:
 - **GitLab TODO**
 - **GitHub Issues** (read only)
 - **iCal** - any provider that provides Calendar Subscription URL (read only)
+- **CalDav** - any provider that implements CalDav protocol (NextCloud for instance)
 
 Tatuin provides users with an easy-to-use Text User Interface (TUI) for viewing and managing their tasks.
 
