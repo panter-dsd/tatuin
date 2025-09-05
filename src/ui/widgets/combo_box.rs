@@ -309,15 +309,21 @@ where
 
         if let Some(d) = &mut self.internal_data.write().await.dialog {
             let size = d.size();
-            let area = Rect {
+            let mut rect = Rect {
                 x: area.x + area.width - size.width,
                 y: area.y + self.size().height,
                 width: size.width,
                 height: size.height,
             };
 
-            Clear {}.render(area, buf);
-            d.render(area, buf).await;
+            if rect.y + rect.height > buf.area().height {
+                rect.y -= (rect.y + rect.height) - buf.area().height;
+            }
+
+            tracing::debug!(area=?area, rect=?rect, size=?size, buf_area=?buf.area(), "HERE");
+
+            Clear {}.render(rect, buf);
+            d.render(rect, buf).await;
         }
     }
 
