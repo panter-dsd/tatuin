@@ -320,8 +320,6 @@ where
                 rect.y -= (rect.y + rect.height) - buf.area().height;
             }
 
-            tracing::debug!(area=?area, rect=?rect, size=?size, buf_area=?buf.area(), "HERE");
-
             Clear {}.render(rect, buf);
             d.render(rect, buf).await;
         }
