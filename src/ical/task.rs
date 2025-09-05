@@ -9,6 +9,7 @@ use super::priority::TaskPriority;
 use crate::{
     project::Project as ProjectTrait,
     task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
+    task_patch::DuePatchItem,
 };
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -37,6 +38,28 @@ pub enum TaskStatus {
     Draft,
     #[strum(serialize = "FINAL")]
     Final,
+}
+
+impl From<TaskStatus> for State {
+    fn from(value: TaskStatus) -> Self {
+        match value {
+            TaskStatus::Tenative | TaskStatus::Confirmed | TaskStatus::NeedsAction | TaskStatus::Draft => {
+                State::Uncompleted
+            }
+            TaskStatus::Completed | TaskStatus::Final | TaskStatus::Cancelled => State::Completed,
+            TaskStatus::InProcess => State::InProgress,
+        }
+    }
+}
+
+impl From<State> for TaskStatus {
+    fn from(value: State) -> Self {
+        match value {
+            State::Unknown(_) | State::Uncompleted => TaskStatus::Confirmed,
+            State::Completed => TaskStatus::Completed,
+            State::InProgress => TaskStatus::InProcess,
+        }
+    }
 }
 
 #[derive(Default, Clone)]
@@ -143,9 +166,9 @@ impl TaskTrait for Task {
 
     fn const_patch_policy(&self) -> PatchPolicy {
         PatchPolicy {
-            available_states: Vec::new(),
-            available_priorities: Vec::new(),
-            available_due_items: Vec::new(),
+            available_states: vec![State::Uncompleted, State::InProgress, State::Completed],
+            available_priorities: Priority::values(),
+            available_due_items: DuePatchItem::values(),
         }
     }
 

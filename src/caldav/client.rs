@@ -130,7 +130,7 @@ impl Client {
         if let Some(st) = self.storage_type.clone() {
             let r = self.send_create_or_update_request(&st, t).await?;
             let st = r.status();
-            if st != StatusCode::CREATED {
+            if st != StatusCode::CREATED && st != StatusCode::NO_CONTENT {
                 let response_text = r.text().await?;
                 tracing::error!(target:"caldav_client", response_text=?response_text, "Send create or update request");
                 return Err(StringError::new(format!("Wrong response status {st}").as_str()).into());

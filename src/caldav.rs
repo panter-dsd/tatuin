@@ -2,6 +2,7 @@
 
 mod client;
 mod fake_project;
+
 use async_trait::async_trait;
 use ratatui::style::Color;
 
@@ -10,7 +11,7 @@ use crate::{
     ical::Task,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait, StringError},
-    task::{Priority, Task as TaskTrait},
+    task::{Priority, State, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
 use client::{Client, Config};
@@ -90,8 +91,52 @@ impl ProviderTrait for Provider {
         Ok(vec![Box::new(fake_project::Project::default())])
     }
 
-    async fn patch_tasks(&mut self, _patches: &[TaskPatch]) -> Vec<PatchError> {
-        panic!("Not implemented")
+    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+        let mut errors = Vec::new();
+        for p in patches.iter() {
+            let task = p.task.as_ref().unwrap();
+
+            match task.as_any().downcast_ref::<Task>() {
+                Some(t) => {
+                    let mut t = t.clone();
+                    t.name = p.name.clone().unwrap_or(t.name);
+                    if p.description.is_some() {
+                        t.description = p.description.clone();
+                    }
+                    if let Some(due) = p.due {
+                        t.due = due.into();
+                    }
+                    if let Some(p) = p.priority {
+                        t.priority = p.into();
+                    }
+                    if let Some(s) = p.state {
+                        t.status = s.into();
+                        if s == State::Completed {
+                            t.completed = Some(chrono::Utc::now());
+                        } else {
+                            t.completed = None;
+                        }
+                    }
+                    let r = self.c.create_or_update(&t).await.map_err(|e| {
+                        tracing::error!(target:"caldav_provider",  error=?e, "Patch the task");
+                        PatchError {
+                            task: t.clone_boxed(),
+                            error: e.to_string(),
+                        }
+                    });
+                    if let Err(e) = r {
+                        errors.push(e);
+                    }
+                }
+                None => panic!(
+                    "Wrong casting the task id=`{}` name=`{}` to obsidian!",
+                    task.id(),
+                    task.text(),
+                ),
+            };
+        }
+
+        errors
     }
 
     async fn reload(&mut self) {
