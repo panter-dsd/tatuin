@@ -4,7 +4,6 @@ use std::str::FromStr;
 
 use chrono::{Duration, NaiveDate, NaiveDateTime};
 use ical::property::Property;
-use strum::EnumString;
 
 use super::priority::TaskPriority;
 use crate::{
@@ -19,7 +18,7 @@ pub enum TaskType {
     Todo,
 }
 
-#[derive(EnumString, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(strum::EnumString, strum::Display, Clone, Debug, Default, PartialEq, Eq)]
 pub enum TaskStatus {
     #[strum(serialize = "TENATIVE")]
     Tenative,
@@ -224,7 +223,9 @@ fn make_property(name: &str, value: Option<String>) -> Property {
 
 fn replace_or_add(properties: &mut Vec<Property>, p: Property) {
     properties.retain(|prop| prop.name != p.name);
-    properties.push(p);
+    if p.value.as_ref().is_some_and(|s| !s.is_empty()) {
+        properties.push(p);
+    }
 }
 
 impl From<&Task> for Vec<Property> {
@@ -233,6 +234,7 @@ impl From<&Task> for Vec<Property> {
         let mut result = t.properties.clone();
         replace_or_add(&mut result, make_property("SUMMARY", Some(t.name.clone())));
         replace_or_add(&mut result, make_property("DESCRIPTION", t.description.clone()));
+        replace_or_add(&mut result, make_property("STATUS", Some(t.status.to_string())));
         replace_or_add(&mut result, make_property("PRIORITY", Some(t.priority.to_string())));
         replace_or_add(
             &mut result,
