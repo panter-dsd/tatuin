@@ -21,8 +21,8 @@ pub enum TaskType {
 
 #[derive(strum::EnumString, strum::Display, Clone, Debug, Default, PartialEq, Eq)]
 pub enum TaskStatus {
-    #[strum(serialize = "TENATIVE")]
-    Tenative,
+    #[strum(serialize = "TENTATIVE")]
+    Tentative,
     #[strum(serialize = "CONFIRMED")]
     #[default]
     Confirmed,
@@ -43,7 +43,7 @@ pub enum TaskStatus {
 impl From<TaskStatus> for State {
     fn from(value: TaskStatus) -> Self {
         match value {
-            TaskStatus::Tenative | TaskStatus::Confirmed | TaskStatus::NeedsAction | TaskStatus::Draft => {
+            TaskStatus::Tentative | TaskStatus::Confirmed | TaskStatus::NeedsAction | TaskStatus::Draft => {
                 State::Uncompleted
             }
             TaskStatus::Completed | TaskStatus::Final | TaskStatus::Cancelled => State::Completed,
@@ -128,7 +128,7 @@ impl TaskTrait for Task {
 
     fn state(&self) -> State {
         match self.status {
-            TaskStatus::Tenative | TaskStatus::Confirmed | TaskStatus::NeedsAction | TaskStatus::Draft => {
+            TaskStatus::Tentative | TaskStatus::Confirmed | TaskStatus::NeedsAction | TaskStatus::Draft => {
                 State::Uncompleted
             }
             TaskStatus::Completed | TaskStatus::Final | TaskStatus::Cancelled => State::Completed,
