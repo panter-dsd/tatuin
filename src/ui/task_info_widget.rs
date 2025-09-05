@@ -197,9 +197,6 @@ impl WidgetTrait for TaskInfoWidget {
                 break;
             }
         }
-        Block::new()
-            .style(style::default_style())
-            .render(Rect::new(area.x, row_area.y, area.width, area.height), buf);
     }
 
     fn size(&self) -> Size {
