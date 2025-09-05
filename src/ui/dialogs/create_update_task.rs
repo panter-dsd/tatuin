@@ -425,6 +425,11 @@ impl WidgetTrait for Dialog {
         };
 
         let mut to_render: Vec<(&mut dyn WidgetTrait, Rect)> = vec![
+            (&mut self.create_task_button, create_task_button_area),
+            (
+                &mut self.create_task_and_another_one,
+                create_task_and_another_one_button_area,
+            ),
             (&mut self.provider_selector, provider_area),
             (&mut self.project_selector, project_area),
             (&mut self.task_name_caption, task_name_caption_area),
@@ -433,11 +438,6 @@ impl WidgetTrait for Dialog {
             (&mut self.task_description_editor, task_description_editor_area),
             (&mut self.priority_selector, priority_area),
             (&mut self.due_date_selector, due_date_area),
-            (&mut self.create_task_button, create_task_button_area),
-            (
-                &mut self.create_task_and_another_one,
-                create_task_and_another_one_button_area,
-            ),
         ];
 
         // the active should render last

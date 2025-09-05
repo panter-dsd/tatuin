@@ -753,6 +753,7 @@ impl App {
             Layout::vertical([Constraint::Fill(1), Constraint::Percentage(20)]).areas(right_area);
 
         App::render_header(header_area, buf);
+        self.render_footer(footer_area, buf).await;
         self.render_providers(providers_area, buf).await;
         self.render_projects(projects_area, buf).await;
         self.async_jobs.write().await.render(
@@ -764,7 +765,6 @@ impl App {
         self.render_filters(filter_area, buf).await;
         self.render_task_description(task_description_area, buf).await;
         self.render_tasks(list_area, buf).await;
-        self.render_footer(footer_area, buf).await;
 
         if !self.error_logger.read().await.is_empty() {
             let block = Block::bordered()
@@ -799,10 +799,7 @@ impl App {
                 "Use ↓↑ to move up/down, Tab/BackTab to move between blocks, ? for help. ",
                 style::footer_keys_help_color(),
             ),
-            Span::styled(
-                "Current date/time: ",
-                style::default_style().fg(style::footer_datetime_label_fg()),
-            ),
+            Span::styled("Current date/time: ", style::footer_datetime_label_fg()),
             Span::styled(
                 chrono::Local::now().format("%Y-%m-%d %H:%M").to_string(),
                 style::footer_datetime_fg(),
