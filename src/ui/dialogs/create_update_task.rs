@@ -155,6 +155,8 @@ impl Dialog {
                 self.project_selector.add_item(item.clone()).await;
                 self.project_selector.set_current_item(&item).await;
             }
+        } else {
+            self.project_selector.set_current_item_index(&Some(0)).await;
         }
         self.task_name_editor.set_text(task.text().as_str());
         if let Some(d) = task.description() {

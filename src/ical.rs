@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 mod client;
+mod priority;
 mod task;
 use async_trait::async_trait;
 use ratatui::style::Color;
@@ -13,7 +14,8 @@ use crate::{
     task_patch::{PatchError, TaskPatch},
 };
 use client::Client;
-use task::Task;
+pub use client::parse_calendar;
+pub use task::{Task, TaskType, property_to_str};
 
 pub const PROVIDER_NAME: &str = "iCal";
 

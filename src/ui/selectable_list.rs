@@ -246,10 +246,10 @@ impl<T> StatefulObject for SelectableList<T> {
     }
 
     fn restore(&mut self, state: State) {
-        if let Some(idx) = state.get(STATE_KEY) {
-            if let Ok(idx) = idx.parse::<usize>() {
-                self.state.select(Some(idx));
-            }
+        if let Some(idx) = state.get(STATE_KEY)
+            && let Ok(idx) = idx.parse::<usize>()
+        {
+            self.state.select(Some(idx));
         }
     }
 }

@@ -64,10 +64,10 @@ enum ColorElement {
 static THEME_MAP: RwLock<Option<HashMap<ColorElement, Color>>> = RwLock::new(None);
 
 fn element_color(element: ColorElement) -> Color {
-    if let Some(m) = &*THEME_MAP.read().unwrap() {
-        if let Some(c) = m.get(&element) {
-            return *c;
-        }
+    if let Some(m) = &*THEME_MAP.read().unwrap()
+        && let Some(c) = m.get(&element)
+    {
+        return *c;
     }
 
     use ColorElement::*;
@@ -134,10 +134,10 @@ pub fn load_theme(file_path: &std::path::PathBuf) -> Result<(), Box<dyn std::err
             if v.is_err() || v.is_err() {
                 println!("Can't parse line `{line}`: {k:?} {v:?}");
             }
-            if let Ok(k) = k {
-                if let Ok(v) = v {
-                    theme_map.insert(k, v);
-                }
+            if let Ok(k) = k
+                && let Ok(v) = v
+            {
+                theme_map.insert(k, v);
             }
         }
     }

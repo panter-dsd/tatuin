@@ -282,10 +282,10 @@ impl StatefulObject for FilterWidget {
     }
 
     fn restore(&mut self, state: crate::state::State) {
-        if let Some(s) = state.get(STATE_KEY) {
-            if let Ok(f) = serde_json::from_str(s) {
-                self.filter = f;
-            }
+        if let Some(s) = state.get(STATE_KEY)
+            && let Ok(f) = serde_json::from_str(s)
+        {
+            self.filter = f;
         }
     }
 }

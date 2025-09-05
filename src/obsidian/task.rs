@@ -159,10 +159,10 @@ impl TaskTrait for Task {
         let path_buf: PathBuf = self.root_path.clone().into();
 
         let mut vault_name = String::new();
-        if let Some(n) = path_buf.file_name() {
-            if let Some(s) = n.to_str() {
-                vault_name = s.to_string();
-            }
+        if let Some(n) = path_buf.file_name()
+            && let Some(s) = n.to_str()
+        {
+            vault_name = s.to_string();
         }
 
         if vault_name.is_empty() {

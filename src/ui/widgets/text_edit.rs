@@ -114,17 +114,17 @@ impl WidgetTrait for TextEdit {
             );
         }
 
-        if let Some(dh) = &self.draw_helper {
-            if self.is_active() {
-                let last_line_width = Text::raw(lines[lines.len() - 1]).width() as u16;
-                let pos = Position::new(
-                    std::cmp::min(inner_area.x + last_line_width, inner_area.x + inner_area.width - 1),
-                    std::cmp::min(inner_area.y + lines.len() as u16 - 1, inner_area.y + inner_area.height),
-                );
-                if pos != self.last_cursor_pos {
-                    dh.write().await.set_cursor_pos(pos);
-                    self.last_cursor_pos = pos;
-                }
+        if let Some(dh) = &self.draw_helper
+            && self.is_active()
+        {
+            let last_line_width = Text::raw(lines[lines.len() - 1]).width() as u16;
+            let pos = Position::new(
+                std::cmp::min(inner_area.x + last_line_width, inner_area.x + inner_area.width - 1),
+                std::cmp::min(inner_area.y + lines.len() as u16 - 1, inner_area.y + inner_area.height),
+            );
+            if pos != self.last_cursor_pos {
+                dh.write().await.set_cursor_pos(pos);
+                self.last_cursor_pos = pos;
             }
         }
     }

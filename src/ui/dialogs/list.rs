@@ -147,11 +147,12 @@ where
     }
 
     fn current_custom_widget_index(&self) -> Option<usize> {
-        if let Some(idx) = self.items.selected_index() {
-            if idx < self.items.len() && idx >= self.items.len() - self.custom_widgets.len() {
-                let widgets_count = self.custom_widgets.len();
-                return Some(idx - (self.items.len() - widgets_count));
-            }
+        if let Some(idx) = self.items.selected_index()
+            && idx < self.items.len()
+            && idx >= self.items.len() - self.custom_widgets.len()
+        {
+            let widgets_count = self.custom_widgets.len();
+            return Some(idx - (self.items.len() - widgets_count));
         }
 
         None

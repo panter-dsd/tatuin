@@ -277,10 +277,11 @@ impl TasksWidget {
                 if !self.providers_filter.is_empty() && !self.providers_filter.contains(&t.provider()) {
                     result = false;
                 }
-                if let Some(tp) = t.project() {
-                    if !self.projects_filter.is_empty() && !self.projects_filter.contains(&tp.name()) {
-                        result = false;
-                    }
+                if let Some(tp) = t.project()
+                    && !self.projects_filter.is_empty()
+                    && !self.projects_filter.contains(&tp.name())
+                {
+                    result = false;
                 }
                 result
             })

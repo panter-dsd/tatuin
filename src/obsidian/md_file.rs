@@ -181,17 +181,17 @@ fn extract_date_after_emoji(text: &str, emoji: char) -> (String, Option<DateTime
 
     let date_str = &text[idx + start.len()..idx + start.len() + DATE_PATTERN.len()];
 
-    if let Ok(d) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-        if let Some(dt) = d.and_hms_opt(0, 0, 0) {
-            return (
-                [
-                    text[..idx].to_string(),
-                    text[idx + start.len() + DATE_PATTERN.len()..].to_string(),
-                ]
-                .join(""),
-                Some(DateTimeUtc::from_naive_utc_and_offset(dt, Utc)),
-            );
-        }
+    if let Ok(d) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
+        && let Some(dt) = d.and_hms_opt(0, 0, 0)
+    {
+        return (
+            [
+                text[..idx].to_string(),
+                text[idx + start.len() + DATE_PATTERN.len()..].to_string(),
+            ]
+            .join(""),
+            Some(DateTimeUtc::from_naive_utc_and_offset(dt, Utc)),
+        );
     }
 
     (text.to_string(), None)
@@ -222,14 +222,13 @@ const fn priority_to_str(p: &Priority) -> &str {
 fn extract_priority(text: &str) -> (String, Priority) {
     let mut symbol_indexes = Vec::new();
     for s in PRIORITY_CHARS {
-        if let Some(idx) = text.chars().position(|c| c == s) {
-            if idx != 0
-                && text.chars().nth(idx - 1).unwrap_or(' ') == ' '
-                && idx != text.len() - 1
-                && text.chars().nth(idx + 1).unwrap_or(' ') == ' '
-            {
-                symbol_indexes.push((char_to_priority(s), idx));
-            }
+        if let Some(idx) = text.chars().position(|c| c == s)
+            && idx != 0
+            && text.chars().nth(idx - 1).unwrap_or(' ') == ' '
+            && idx != text.len() - 1
+            && text.chars().nth(idx + 1).unwrap_or(' ') == ' '
+        {
+            symbol_indexes.push((char_to_priority(s), idx));
         }
     }
 

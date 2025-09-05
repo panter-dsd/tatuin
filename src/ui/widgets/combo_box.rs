@@ -260,6 +260,19 @@ where
         false
     }
 
+    pub async fn set_current_item_index(&self, index: &Option<usize>) -> bool {
+        let mut data = self.internal_data.write().await;
+        if let Some(idx) = index
+            && let Some(item) = data.items.get(*idx)
+        {
+            data.selected = Some(item.clone());
+            true
+        } else {
+            data.selected = None;
+            false
+        }
+    }
+
     pub async fn value(&self) -> Option<Item<T>> {
         self.internal_data.read().await.selected.clone()
     }

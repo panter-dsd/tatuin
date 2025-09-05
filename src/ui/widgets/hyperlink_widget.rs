@@ -98,26 +98,27 @@ impl MouseHandler for HyperlinkWidget {
         let position = Position::new(ev.column, ev.row);
         self.is_under_mouse = self.area.contains(position);
 
-        if let MouseEventKind::Up(button) = ev.kind {
-            if button == MouseButton::Left && self.is_under_mouse {
-                let error = if cfg!(target_os = "macos") {
-                    match Command::new("open").arg(&self.url).status() {
-                        Ok(_) => String::new(),
-                        Err(e) => e.to_string(),
-                    }
-                } else if cfg!(target_os = "linux") {
-                    match Command::new("xdg-open").arg(&self.url).status() {
-                        Ok(_) => String::new(),
-                        Err(e) => e.to_string(),
-                    }
-                } else {
-                    "can't open url in target os".to_string()
-                };
-
-                // Check if the command was successful
-                if !error.is_empty() {
-                    eprintln!("Failed to open {}: {error:?}", self.url);
+        if let MouseEventKind::Up(button) = ev.kind
+            && button == MouseButton::Left
+            && self.is_under_mouse
+        {
+            let error = if cfg!(target_os = "macos") {
+                match Command::new("open").arg(&self.url).status() {
+                    Ok(_) => String::new(),
+                    Err(e) => e.to_string(),
                 }
+            } else if cfg!(target_os = "linux") {
+                match Command::new("xdg-open").arg(&self.url).status() {
+                    Ok(_) => String::new(),
+                    Err(e) => e.to_string(),
+                }
+            } else {
+                "can't open url in target os".to_string()
+            };
+
+            // Check if the command was successful
+            if !error.is_empty() {
+                eprintln!("Failed to open {}: {error:?}", self.url);
             }
         }
     }
