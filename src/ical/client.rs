@@ -100,7 +100,10 @@ fn todo_to_task(todo: &IcalTodo) -> Task {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::task::{Priority, State, Task};
+    use crate::{
+        ical::task::TaskStatus,
+        task::{Priority, State, Task},
+    };
 
     #[test]
     fn event_to_task_test() {
@@ -148,6 +151,7 @@ END:VCALENDAR
         let task = &tasks[0];
         assert_eq!(task.id(), "12657849-3238754386-000000");
         assert_eq!(task.text(), "Task name");
+        assert_eq!(task.status, TaskStatus::Confirmed);
         assert_eq!(task.state(), State::Uncompleted);
         assert_eq!(task.priority(), Priority::High);
 
@@ -166,6 +170,7 @@ END:VCALENDAR
         let task = &tasks[1];
         assert_eq!(task.id(), "20070313T123432Z-456553@example.com");
         assert_eq!(task.text(), "Submit Quebec Income Tax Return for 2006");
+        assert_eq!(task.status, TaskStatus::NeedsAction);
         assert_eq!(task.state(), State::Uncompleted);
         assert_eq!(task.priority(), Priority::Normal);
         assert_eq!(task.labels(), vec!["FAMILY", "FINANCE"]);

@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 
+use std::str::FromStr;
+
 use chrono::{Duration, NaiveDate, NaiveDateTime};
 use ical::property::Property;
+use strum::EnumString;
 
 use super::priority::TaskPriority;
 use crate::{
@@ -16,6 +19,27 @@ pub enum TaskType {
     Todo,
 }
 
+#[derive(EnumString, Clone, Debug, Default, PartialEq, Eq)]
+pub enum TaskStatus {
+    #[strum(serialize = "TENATIVE")]
+    Tenative,
+    #[strum(serialize = "CONFIRMED")]
+    #[default]
+    Confirmed,
+    #[strum(serialize = "CANCELLED")]
+    Cancelled,
+    #[strum(serialize = "NEEDS-ACTION")]
+    NeedsAction,
+    #[strum(serialize = "COMPLETED")]
+    Completed,
+    #[strum(serialize = "IN-PROCESS")]
+    InProcess,
+    #[strum(serialize = "DRAFT")]
+    Draft,
+    #[strum(serialize = "FINAL")]
+    Final,
+}
+
 #[derive(Default, Clone)]
 pub struct Task {
     pub provider: String,
@@ -27,6 +51,7 @@ pub struct Task {
     pub name: String,
     pub description: Option<String>,
     pub priority: TaskPriority,
+    pub status: TaskStatus,
     pub start: Option<DateTimeUtc>,
     pub end: Option<DateTimeUtc>,
     pub due: Option<DateTimeUtc>,
@@ -40,10 +65,11 @@ impl std::fmt::Debug for Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Task uuid={} name={} description={:?} priority={} start={:?} end={:?} due={:?} completed={:?} created={:?} duration={:?} categories={:?} properties={:?} href={} type={:?}",
+            "Task uuid={} name={} description={:?} status={:?} priority={} start={:?} end={:?} due={:?} completed={:?} created={:?} duration={:?} categories={:?} properties={:?} href={} type={:?}",
             self.uid,
             self.name,
             self.description,
+            self.status,
             self.priority,
             self.start,
             self.end,
@@ -79,10 +105,12 @@ impl TaskTrait for Task {
     }
 
     fn state(&self) -> State {
-        if self.completed.is_some() {
-            State::Completed
-        } else {
-            State::Uncompleted
+        match self.status {
+            TaskStatus::Tenative | TaskStatus::Confirmed | TaskStatus::NeedsAction | TaskStatus::Draft => {
+                State::Uncompleted
+            }
+            TaskStatus::Completed | TaskStatus::Final | TaskStatus::Cancelled => State::Completed,
+            TaskStatus::InProcess => State::InProgress,
         }
     }
 
@@ -152,6 +180,13 @@ impl From<&Vec<Property>> for Task {
                 "SUMMARY" => t.name = p.value.clone().unwrap_or_default(),
                 "DESCRIPTION" => t.description = p.value.clone(),
                 "PRIORITY" => t.priority = p.value.as_ref().map(|s| s.parse::<u8>().unwrap_or(0)).unwrap_or(0),
+                "STATUS" => {
+                    t.status = p
+                        .value
+                        .as_ref()
+                        .map(|s| TaskStatus::from_str(s).unwrap_or_default())
+                        .unwrap_or_default()
+                }
                 "DUE" => t.due = dt_from_property(p),
                 "DTSTART" => t.start = dt_from_property(p),
                 "DTEND" => t.end = dt_from_property(p),
