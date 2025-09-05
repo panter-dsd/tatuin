@@ -24,7 +24,7 @@ use ratatui::{
     layout::{Position, Rect, Size},
     style::{Modifier, Stylize},
     text::{Line, Text as RatatuiText},
-    widgets::{Block, Paragraph, Widget, Wrap},
+    widgets::{Paragraph, Widget, Wrap},
 };
 use tokio::sync::RwLock;
 
