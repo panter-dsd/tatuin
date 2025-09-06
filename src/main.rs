@@ -21,6 +21,7 @@ mod time;
 mod todoist;
 mod types;
 mod ui;
+mod utils;
 mod wizard;
 use std::{path::PathBuf, sync::Arc};
 
