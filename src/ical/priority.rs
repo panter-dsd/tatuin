@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::task::Priority;
 
 pub type TaskPriority = u8;

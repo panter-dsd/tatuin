@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use chrono::TimeDelta;
 use ical::property::Property;
 use itertools::Itertools;
