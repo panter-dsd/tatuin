@@ -101,10 +101,9 @@ impl MouseHandler for HyperlinkWidget {
         if let MouseEventKind::Up(button) = ev.kind
             && button == MouseButton::Left
             && self.is_under_mouse
+            && let Err(e) = crate::utils::open_url(&self.url)
         {
-            if let Err(e) = crate::utils::open_url(&self.url) {
-                tracing::error!(target:"hyperlink_widget", error=?e, url=&self.url, "Open url");
-            }
+            tracing::error!(target:"hyperlink_widget", error=?e, url=&self.url, "Open url");
         }
     }
 }
