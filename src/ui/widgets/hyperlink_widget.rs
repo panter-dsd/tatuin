@@ -11,7 +11,7 @@ use ratatui::{
     text::Text,
     widgets::{Paragraph, Widget, Wrap},
 };
-use std::{any::Any, process::Command};
+use std::any::Any;
 
 pub struct HyperlinkWidget {
     pos: Position,
@@ -102,23 +102,8 @@ impl MouseHandler for HyperlinkWidget {
             && button == MouseButton::Left
             && self.is_under_mouse
         {
-            let error = if cfg!(target_os = "macos") {
-                match Command::new("open").arg(&self.url).status() {
-                    Ok(_) => String::new(),
-                    Err(e) => e.to_string(),
-                }
-            } else if cfg!(target_os = "linux") {
-                match Command::new("xdg-open").arg(&self.url).status() {
-                    Ok(_) => String::new(),
-                    Err(e) => e.to_string(),
-                }
-            } else {
-                "can't open url in target os".to_string()
-            };
-
-            // Check if the command was successful
-            if !error.is_empty() {
-                eprintln!("Failed to open {}: {error:?}", self.url);
+            if let Err(e) = crate::utils::open_url(&self.url) {
+                tracing::error!(target:"hyperlink_widget", error=?e, url=&self.url, "Open url");
             }
         }
     }

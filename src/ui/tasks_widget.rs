@@ -110,6 +110,7 @@ pub struct TasksWidget {
     undo_changes_shortcut: Shortcut,
     add_task_shortcut: Shortcut,
     edit_task_shortcut: Shortcut,
+    open_task_link_shortcut: Shortcut,
 
     last_filter: Filter,
 
@@ -135,6 +136,7 @@ impl AppBlockWidget for TasksWidget {
             &mut self.undo_changes_shortcut,
             &mut self.add_task_shortcut,
             &mut self.edit_task_shortcut,
+            &mut self.open_task_link_shortcut,
         ]
     }
 
@@ -199,6 +201,7 @@ impl TasksWidget {
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
             add_task_shortcut: Shortcut::new("Create a task", &['a']),
             edit_task_shortcut: Shortcut::new("Edit the task", &['e']),
+            open_task_link_shortcut: Shortcut::new("Open the task's link", &['o']),
             last_filter: Filter::default(),
             dialog: None,
             is_global_dialog: true,
@@ -217,6 +220,7 @@ impl TasksWidget {
                 let mut undo_changes_rx = s_guard.undo_changes_shortcut.subscribe_to_accepted();
                 let mut add_task_rx = s_guard.add_task_shortcut.subscribe_to_accepted();
                 let mut edit_task_rx = s_guard.edit_task_shortcut.subscribe_to_accepted();
+                let mut open_task_link_rx = s_guard.open_task_link_shortcut.subscribe_to_accepted();
                 drop(s_guard);
                 loop {
                     tokio::select! {
@@ -242,6 +246,13 @@ impl TasksWidget {
                             let t = s.selected_task();
                             s.show_add_task_dialog(t).await;
                         },
+                        _ = open_task_link_rx.recv() => {
+                            if let Some(t) = s.read().await.selected_task()
+                                && !t.url().is_empty()
+                                && let Err(e) = crate::utils::open_url(t.url().as_str()){
+                                s.write().await.error_logger.write().await.add_error(e.to_string().as_str());
+                            }
+                        }
                     }
 
                     s.write().await.update_task_info_view().await;
