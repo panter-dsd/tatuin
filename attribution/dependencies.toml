@@ -215,7 +215,7 @@ repository = "https://github.com/marshallpierce/rust-base64"
 
 [[dependencies]]
 name = "bitflags"
-version = "2.9.3"
+version = "2.9.4"
 description = """
 A macro to generate structures which behave like bitflags.
 """
@@ -288,7 +288,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.34"
+version = "1.2.36"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -324,8 +324,19 @@ notices = [
 repository = "https://github.com/chronotope/chrono"
 
 [[dependencies]]
+name = "chrono-tz"
+version = "0.10.4"
+description = "TimeZone implementations for chrono from the IANA database"
+license = "MIT OR Apache-2.0"
+notices = [
+  "Copyright (c) 2016-2024 Benjamin Sago & the chronotope maintainers",
+  "Copyright 2016 Djzin",
+]
+repository = "https://github.com/chronotope/chrono-tz"
+
+[[dependencies]]
 name = "clap"
-version = "4.5.46"
+version = "4.5.47"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -333,7 +344,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_builder"
-version = "4.5.46"
+version = "4.5.47"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -341,7 +352,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_derive"
-version = "4.5.45"
+version = "4.5.47"
 description = "Parse command line argument by defining a struct, derive crate."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -618,7 +629,7 @@ repository = "https://github.com/TedDriggs/darling"
 
 [[dependencies]]
 name = "deranged"
-version = "0.4.0"
+version = "0.5.3"
 description = "Ranged integers"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -654,6 +665,15 @@ license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2017 Artyom Pavlov"]
 authors = ["RustCrypto Developers"]
 repository = "https://github.com/RustCrypto/traits"
+
+[[dependencies]]
+name = "digest_auth"
+version = "0.3.1"
+description = "Implementation of the Digest Auth algorithm as defined in IETF RFC 2069, 2617, and 7616, intended for HTTP clients"
+license = "MIT"
+notices = ["Copyright (c) 2019 Ondřej Hruška"]
+authors = ["Ondřej Hruška <ondra@ondrovo.com>"]
+repository = "https://git.ondrovo.com/packages/digest_auth_rs"
 
 [[dependencies]]
 name = "displaydoc"
@@ -754,6 +774,14 @@ description = "A simple and fast random number generator"
 license = "Apache-2.0 OR MIT"
 authors = ["Stjepan Glavina <stjepang@gmail.com>"]
 repository = "https://github.com/smol-rs/fastrand"
+
+[[dependencies]]
+name = "find-msvc-tools"
+version = "0.1.1"
+description = "Find windows-specific tools, read MSVC versions from the registry and from COM interfaces"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2014 Alex Crichton"]
+repository = "https://github.com/rust-lang/cc-rs"
 
 [[dependencies]]
 name = "flate2"
@@ -1390,7 +1418,7 @@ repository = "https://github.com/dtolnay/itoa"
 
 [[dependencies]]
 name = "js-sys"
-version = "0.3.77"
+version = "0.3.78"
 description = """
 Bindings for all JS global objects and functions in all JS environments like
 Node.js and browsers, built on `#[wasm_bindgen]` using the `wasm-bindgen` crate.
@@ -1398,8 +1426,8 @@ Node.js and browsers, built on `#[wasm_bindgen]` using the `wasm-bindgen` crate.
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
 authors = ["The wasm-bindgen Developers"]
-repository = "https://github.com/rustwasm/wasm-bindgen/tree/master/crates/js-sys"
-homepage = "https://rustwasm.github.io/wasm-bindgen/"
+repository = "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys"
+homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "json5"
@@ -1476,7 +1504,7 @@ repository = "https://github.com/Amanieu/parking_lot"
 
 [[dependencies]]
 name = "log"
-version = "0.4.27"
+version = "0.4.28"
 description = """
 A lightweight logging facade for Rust
 """
@@ -1526,6 +1554,19 @@ notices = [
 ]
 authors = ["Ibraheem Ahmed <ibraheem@ibraheem.ca>"]
 repository = "https://github.com/ibraheemdev/matchit"
+
+[[dependencies]]
+name = "md-5"
+version = "0.10.6"
+description = "MD5 hash function"
+license = "MIT OR Apache-2.0"
+notices = [
+  "Copyright (c) 2006-2009 Graydon Hoare",
+  "Copyright (c) 2009-2013 Mozilla Foundation",
+  "Copyright (c) 2016 Artyom Pavlov",
+]
+authors = ["RustCrypto Developers"]
+repository = "https://github.com/RustCrypto/hashes"
 
 [[dependencies]]
 name = "memchr"
@@ -1808,6 +1849,24 @@ repository = "https://github.com/pest-parser/pest"
 homepage = "https://pest.rs/"
 
 [[dependencies]]
+name = "phf"
+version = "0.12.1"
+description = "Runtime support for perfect hash function data structures"
+license = "MIT"
+notices = ["Copyright (c) 2014-2022 Steven Fackler, Yuki Okushi"]
+authors = ["Steven Fackler <sfackler@gmail.com>"]
+repository = "https://github.com/rust-phf/rust-phf"
+
+[[dependencies]]
+name = "phf_shared"
+version = "0.12.1"
+description = "Support code shared by PHF libraries"
+license = "MIT"
+notices = ["Copyright (c) 2014-2022 Steven Fackler, Yuki Okushi"]
+authors = ["Steven Fackler <sfackler@gmail.com>"]
+repository = "https://github.com/rust-phf/rust-phf"
+
+[[dependencies]]
 name = "pin-project"
 version = "1.1.10"
 description = """
@@ -2080,6 +2139,14 @@ authors = ["Sean McArthur <sean@seanmonstar.com>"]
 repository = "https://github.com/seanmonstar/reqwest"
 
 [[dependencies]]
+name = "reqwest_dav"
+version = "0.2.2"
+description = "An async webdav client with tokio and reqwest"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2016 Sean McArthur", "Copyright 2016 Sean McArthur"]
+repository = "https://github.com/niuhuan/reqwest_dav"
+
+[[dependencies]]
 name = "ring"
 version = "0.17.14"
 description = "An experiment."
@@ -2107,7 +2174,7 @@ repository = "https://github.com/ron-rs/ron"
 
 [[dependencies]]
 name = "rust-ini"
-version = "0.21.1"
+version = "0.21.3"
 description = "An Ini configuration file parsing library in Rust"
 license = "MIT"
 notices = ["Copyright (c) 2014 Y. T. CHUNG"]
@@ -2269,6 +2336,15 @@ authors = ["David Tolnay <dtolnay@gmail.com>"]
 repository = "https://github.com/dtolnay/serde-untagged"
 
 [[dependencies]]
+name = "serde-xml-rs"
+version = "0.6.0"
+description = "xml-rs based deserializer for Serde (compatible with 0.9+)"
+license = "MIT"
+notices = ["Copyright (c) 2017 Ingvar Stepanyan"]
+authors = ["Ingvar Stepanyan <me@rreverser.com>"]
+repository = "https://github.com/RReverser/serde-xml-rs"
+
+[[dependencies]]
 name = "serde_derive"
 version = "1.0.219"
 description = "Macros 1.1 implementation of #[derive(Serialize, Deserialize)]"
@@ -2401,6 +2477,19 @@ authors = [
   "Masaki Hara <ackie.h.gmai@gmail.com>",
 ]
 repository = "https://github.com/vorner/signal-hook"
+
+[[dependencies]]
+name = "siphasher"
+version = "1.0.1"
+description = "SipHash-2-4, SipHash-1-3 and 128-bit variants in pure Rust"
+license = "MIT/Apache-2.0"
+notices = [
+  "Copyright 2012-2016 The Rust Project Developers.",
+  "Copyright 2016-2024 Frank Denis.",
+]
+authors = ["Frank Denis <github@pureftpd.org>"]
+repository = "https://github.com/jedisct1/rust-siphash"
+homepage = "https://docs.rs/siphasher"
 
 [[dependencies]]
 name = "slab"
@@ -2640,7 +2729,7 @@ repository = "https://github.com/Amanieu/thread_local-rs"
 
 [[dependencies]]
 name = "time"
-version = "0.3.41"
+version = "0.3.43"
 description = "Date and time library. Fully interoperable with the standard library. Mostly compatible with #![no_std]."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Jacob Pratt et al."]
@@ -2650,7 +2739,7 @@ homepage = "https://time-rs.github.io"
 
 [[dependencies]]
 name = "time-core"
-version = "0.1.4"
+version = "0.1.6"
 description = "This crate is an implementation detail and should not be relied upon directly."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Jacob Pratt et al."]
@@ -2659,7 +2748,7 @@ repository = "https://github.com/time-rs/time"
 
 [[dependencies]]
 name = "time-macros"
-version = "0.2.22"
+version = "0.2.24"
 description = """
     Procedural macros for the time crate.
     This crate is an implementation detail and should not be relied upon directly.
@@ -2966,16 +3055,6 @@ repository = "https://github.com/tokio-rs/tracing"
 homepage = "https://tokio.rs"
 
 [[dependencies]]
-name = "trim-in-place"
-version = "0.1.7"
-description = "In-place trimming strings."
-license = "MIT"
-notices = ["Copyright (c) 2020 magiclen.org (Ron Li)"]
-authors = ["Magic Len <len@magiclen.org>"]
-repository = "https://github.com/magiclen/trim-in-place"
-homepage = "https://magiclen.org/trim-in-place"
-
-[[dependencies]]
 name = "try-lock"
 version = "0.2.5"
 description = "A lightweight atomic lock."
@@ -3168,7 +3247,7 @@ repository = "https://github.com/alacritty/vte"
 
 [[dependencies]]
 name = "uuid"
-version = "1.18.0"
+version = "1.18.1"
 description = "A library to generate and parse UUIDs."
 license = "Apache-2.0 OR MIT"
 notices = [
@@ -3231,7 +3310,7 @@ repository = "https://github.com/bytecodealliance/wasi"
 
 [[dependencies]]
 name = "wasi"
-version = "0.14.3+wasi-0.2.4"
+version = "0.14.4+wasi-0.2.4"
 description = "WASI API bindings for Rust"
 license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
 authors = ["The Cranelift Project Developers"]
@@ -3239,65 +3318,65 @@ repository = "https://github.com/bytecodealliance/wasi-rs"
 
 [[dependencies]]
 name = "wasm-bindgen"
-version = "0.2.100"
+version = "0.2.101"
 description = """
 Easy support for interacting between JS and Rust.
 """
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
 authors = ["The wasm-bindgen Developers"]
-repository = "https://github.com/rustwasm/wasm-bindgen"
-homepage = "https://rustwasm.github.io/"
+repository = "https://github.com/wasm-bindgen/wasm-bindgen"
+homepage = "https://wasm-bindgen.github.io/wasm-bindgen"
 
 [[dependencies]]
 name = "wasm-bindgen-backend"
-version = "0.2.100"
+version = "0.2.101"
 description = """
 Backend code generation of the wasm-bindgen tool
 """
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
 authors = ["The wasm-bindgen Developers"]
-repository = "https://github.com/rustwasm/wasm-bindgen/tree/master/crates/backend"
-homepage = "https://rustwasm.github.io/wasm-bindgen/"
+repository = "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/backend"
+homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-futures"
-version = "0.4.50"
+version = "0.4.51"
 description = "Bridging the gap between Rust Futures and JavaScript Promises"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
 authors = ["The wasm-bindgen Developers"]
-repository = "https://github.com/rustwasm/wasm-bindgen/tree/master/crates/futures"
-homepage = "https://rustwasm.github.io/wasm-bindgen/"
+repository = "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/futures"
+homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro"
-version = "0.2.100"
+version = "0.2.101"
 description = """
 Definition of the `#[wasm_bindgen]` attribute, an internal dependency
 """
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
 authors = ["The wasm-bindgen Developers"]
-repository = "https://github.com/rustwasm/wasm-bindgen/tree/master/crates/macro"
-homepage = "https://rustwasm.github.io/wasm-bindgen/"
+repository = "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/macro"
+homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.100"
+version = "0.2.101"
 description = """
 The part of the implementation of the `#[wasm_bindgen]` attribute that is not in the shared backend crate
 """
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
 authors = ["The wasm-bindgen Developers"]
-repository = "https://github.com/rustwasm/wasm-bindgen/tree/master/crates/macro-support"
-homepage = "https://rustwasm.github.io/wasm-bindgen/"
+repository = "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/macro-support"
+homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-shared"
-version = "0.2.100"
+version = "0.2.101"
 description = """
 Shared support between wasm-bindgen and wasm-bindgen cli, an internal
 dependency.
@@ -3305,20 +3384,20 @@ dependency.
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
 authors = ["The wasm-bindgen Developers"]
-repository = "https://github.com/rustwasm/wasm-bindgen/tree/master/crates/shared"
-homepage = "https://rustwasm.github.io/wasm-bindgen/"
+repository = "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/shared"
+homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "web-sys"
-version = "0.3.77"
+version = "0.3.78"
 description = """
 Bindings for all Web APIs, a procedurally generated crate from WebIDL
 """
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
 authors = ["The wasm-bindgen Developers"]
-repository = "https://github.com/rustwasm/wasm-bindgen/tree/master/crates/web-sys"
-homepage = "https://rustwasm.github.io/wasm-bindgen/web-sys/index.html"
+repository = "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/web-sys"
+homepage = "https://wasm-bindgen.github.io/wasm-bindgen/web-sys/index.html"
 
 [[dependencies]]
 name = "winapi"
@@ -3606,7 +3685,7 @@ repository = "https://github.com/winnow-rs/winnow"
 
 [[dependencies]]
 name = "wit-bindgen"
-version = "0.45.0"
+version = "0.45.1"
 description = """
 Rust bindings generator and runtime support for WIT and the component model.
 Used when compiling Rust programs to the component model.
@@ -3635,6 +3714,16 @@ authors = [
   "whitequark <whitequark@whitequark.org>",
 ]
 repository = "https://github.com/whitequark/rust-xdg"
+
+[[dependencies]]
+name = "xml-rs"
+version = "0.8.27"
+description = "An XML library in pure Rust"
+license = "MIT"
+notices = ["Copyright (c) 2014 Vladimir Matveev"]
+authors = ["Vladimir Matveev <vmatveev@citrine.cc>"]
+repository = "https://github.com/kornelski/xml-rs"
+homepage = "https://lib.rs/crates/xml-rs"
 
 [[dependencies]]
 name = "yaml-rust2"
