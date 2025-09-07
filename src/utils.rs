@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::process::Command;
 
 use crate::provider::StringError;
