@@ -1,6 +1,6 @@
 [self]
 name = "tatuin"
-version = "0.22.4"
+version = "0.23.0"
 description = "Task Aggregator TUI for N providers"
 notices = ["Copyright © 2025 <copyright holders>"]
 repository = "https://github.com/panter-dsd/tatuin"
