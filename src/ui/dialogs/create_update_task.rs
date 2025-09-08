@@ -144,7 +144,8 @@ impl Dialog {
     pub async fn set_task(&mut self, task: &dyn TaskTrait) {
         self.task = Some(task.clone_boxed());
         self.create_task_and_another_one.set_visible(false);
-        self.create_task_button.set_title("Update a task and close\nCtrl+Enter");
+        self.create_task_button
+            .set_title("Update the task and close\nCtrl+Enter");
         self.provider_selector.set_current_item(&task.provider().into()).await;
         self.fill_project_selector_items().await;
         self.fill_priority_selector_items().await;
