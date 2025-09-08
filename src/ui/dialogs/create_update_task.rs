@@ -398,6 +398,11 @@ impl WidgetTrait for Dialog {
             Layout::horizontal([Constraint::Fill(1), Constraint::Length(1), Constraint::Fill(1)])
                 .areas(priority_and_due_area);
 
+        let max_buttons_width = self
+            .create_task_button
+            .size()
+            .width
+            .max(self.create_task_and_another_one.size().width);
         let [
             _,
             create_task_button_area,
@@ -407,9 +412,9 @@ impl WidgetTrait for Dialog {
         ] = if self.is_task_creation() {
             Layout::horizontal([
                 Constraint::Fill(1),
-                Constraint::Length(self.create_task_button.size().width),
+                Constraint::Length(max_buttons_width),
                 Constraint::Length(5),
-                Constraint::Length(self.create_task_and_another_one.size().width),
+                Constraint::Length(max_buttons_width),
                 Constraint::Fill(1),
             ])
             .areas(buttons_area)
