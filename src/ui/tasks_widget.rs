@@ -673,7 +673,13 @@ impl TasksWidget {
     }
 
     async fn show_add_task_dialog(&mut self, task: Option<Box<dyn TaskTrait>>) {
-        let mut d = CreateUpdateTaskDialog::new("Create a task", self.providers_storage.clone()).await;
+        let title = if task.is_some() {
+            "Update the task"
+        } else {
+            "Create a task"
+        };
+
+        let mut d = CreateUpdateTaskDialog::new(title, self.providers_storage.clone()).await;
         if let Some(t) = task {
             d.set_task(t.as_ref()).await;
         }
