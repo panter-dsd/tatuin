@@ -407,9 +407,9 @@ impl WidgetTrait for Dialog {
         ] = if self.is_task_creation() {
             Layout::horizontal([
                 Constraint::Fill(1),
-                Constraint::Fill(1),
+                Constraint::Length(self.create_task_button.size().width),
                 Constraint::Length(5),
-                Constraint::Fill(1),
+                Constraint::Length(self.create_task_and_another_one.size().width),
                 Constraint::Fill(1),
             ])
             .areas(buttons_area)
