@@ -62,8 +62,9 @@ impl fmt::Display for Priority {
     }
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct PatchPolicy {
+    pub is_editable: bool,
     pub available_states: Vec<State>,
     pub available_priorities: Vec<Priority>,
     pub available_due_items: Vec<DuePatchItem>,
@@ -117,6 +118,7 @@ pub trait Task: Send + Sync {
 
     fn const_patch_policy(&self) -> PatchPolicy {
         PatchPolicy {
+            is_editable: false,
             available_states: vec![State::Uncompleted, State::Completed, State::InProgress],
             available_priorities: Priority::values(),
             available_due_items: DuePatchItem::values(),
