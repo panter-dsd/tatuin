@@ -175,6 +175,7 @@ impl TaskTrait for Task {
 
     fn const_patch_policy(&self) -> PatchPolicy {
         PatchPolicy {
+            is_editable: true,
             available_states: vec![TaskState::Uncompleted, TaskState::Completed],
             available_priorities: SUPPORTED_PRIORITIES.into(),
             available_due_items: DuePatchItem::values(),

@@ -2,7 +2,8 @@
 
 use super::project::Project;
 use crate::project::Project as ProjectTrait;
-use crate::task::{DateTimeUtc, Priority, State as TaskState, Task as TaskTrait};
+use crate::task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait};
+use crate::task_patch::DuePatchItem;
 use sha256::digest;
 use std::any::Any;
 use std::fmt::{self, Write};
@@ -178,6 +179,15 @@ impl TaskTrait for Task {
 
     fn labels(&self) -> Vec<String> {
         self.tags.clone()
+    }
+
+    fn const_patch_policy(&self) -> PatchPolicy {
+        PatchPolicy {
+            is_editable: true,
+            available_states: vec![TaskState::Uncompleted, TaskState::Completed, TaskState::InProgress],
+            available_priorities: Priority::values(),
+            available_due_items: DuePatchItem::values(),
+        }
     }
 
     fn as_any(&self) -> &dyn Any {

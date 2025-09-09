@@ -243,8 +243,10 @@ impl TasksWidget {
                         _ = add_task_rx.recv() => s.write().await.show_add_task_dialog(None).await,
                         _ = edit_task_rx.recv() => {
                             let mut s = s.write().await;
-                            let t = s.selected_task();
-                            s.show_add_task_dialog(t).await;
+                            if let Some(t) = s.selected_task()
+                                && t.patch_policy().is_editable {
+                                s.show_add_task_dialog(Some(t)).await;
+                            }
                         },
                         _ = open_task_link_rx.recv() => {
                             if let Some(t) = s.read().await.selected_task()

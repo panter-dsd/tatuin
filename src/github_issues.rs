@@ -95,6 +95,7 @@ impl TaskTrait for Task {
     }
     fn const_patch_policy(&self) -> PatchPolicy {
         PatchPolicy {
+            is_editable: false,
             available_states: Vec::new(),
             available_priorities: Vec::new(),
             available_due_items: Vec::new(),

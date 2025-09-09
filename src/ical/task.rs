@@ -9,7 +9,6 @@ use super::priority::TaskPriority;
 use crate::{
     project::Project as ProjectTrait,
     task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
-    task_patch::DuePatchItem,
 };
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -68,6 +67,7 @@ pub struct Task {
     pub properties: Vec<ical::property::Property>,
     pub href: String,
     pub task_type: TaskType,
+    pub patch_policy: PatchPolicy,
 
     pub uid: String,
     pub name: String,
@@ -165,11 +165,7 @@ impl TaskTrait for Task {
     }
 
     fn const_patch_policy(&self) -> PatchPolicy {
-        PatchPolicy {
-            available_states: vec![State::Uncompleted, State::InProgress, State::Completed],
-            available_priorities: Priority::values(),
-            available_due_items: DuePatchItem::values(),
-        }
+        self.patch_policy.clone()
     }
 
     fn description(&self) -> Option<String> {

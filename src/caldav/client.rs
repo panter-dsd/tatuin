@@ -18,7 +18,8 @@ use tokio::io::AsyncWriteExt;
 use crate::{
     ical::{Task, property_to_str},
     provider::StringError,
-    task::DateTimeUtc,
+    task::{DateTimeUtc, PatchPolicy, Priority, State},
+    task_patch::DuePatchItem,
 };
 
 const INDEX_FILE_NAME: &str = "index.toml";
@@ -113,7 +114,15 @@ impl Client {
 
         for f in self.load_cached_files().await.files {
             let mut tasks = self.parse_calendar(&f.file_name).await?;
-            tasks.iter_mut().for_each(|t| t.href = f.href.clone());
+            tasks.iter_mut().for_each(|t| {
+                t.href = f.href.clone();
+                t.patch_policy = PatchPolicy {
+                    is_editable: true,
+                    available_states: vec![State::Uncompleted, State::Completed, State::InProgress],
+                    available_priorities: Priority::values(),
+                    available_due_items: DuePatchItem::values(),
+                };
+            });
             result.append(&mut tasks);
         }
 
