@@ -17,6 +17,7 @@ use regex::Regex;
 pub struct LineEdit {
     text: String,
     validator: Option<Regex>,
+    cursor_pos: u16,
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
     widget_state: WidgetState,
@@ -57,6 +58,7 @@ impl LineEdit {
             text: String::new(),
             validator,
             draw_helper: None,
+            cursor_pos: 0,
             last_cursor_pos: Position::default(),
             widget_state: WidgetState::default(),
         }
@@ -67,7 +69,8 @@ impl LineEdit {
     }
 
     pub fn set_text(&mut self, text: &str) {
-        self.text = text.to_string()
+        self.text = text.to_string();
+        self.cursor_pos = text.chars().count() as u16;
     }
 
     pub fn clear(&mut self) {
@@ -82,11 +85,17 @@ impl WidgetTrait for LineEdit {
 
         let inner_area = b.inner(area);
         let mut text = self.text.clone();
-        let mut text_width = Text::from(text.as_str()).width() as u16;
-        if text_width >= inner_area.width - 1 {
+        let text_width = Text::from(text.as_str()).width() as u16;
+
+        if text_width >= inner_area.width {
             let count_to_drop = (text_width + 1 - inner_area.width) as usize;
             text.drain(..count_to_drop);
-            text_width = Text::from(text.as_str()).width() as u16;
+        }
+
+        let mut cursor_pos = self.cursor_pos;
+
+        if cursor_pos >= inner_area.width {
+            cursor_pos = inner_area.width - 1;
         }
 
         Paragraph::new(text.as_str()).block(b).render(area, buf);
@@ -94,7 +103,7 @@ impl WidgetTrait for LineEdit {
         if let Some(dh) = &self.draw_helper
             && self.is_active()
         {
-            let pos = Position::new(area.x + text_width + 1, area.y + 1);
+            let pos = Position::new(inner_area.x + cursor_pos, inner_area.y);
 
             if pos != self.last_cursor_pos {
                 dh.write().await.set_cursor_pos(pos);
@@ -127,10 +136,14 @@ impl KeyboardHandler for LineEdit {
                     .is_none_or(|v| v.is_match(format!("{}{ch}", self.text).as_str()));
                 if validated {
                     self.text.push(ch);
+                    self.cursor_pos += 1;
                 }
             }
             KeyCode::Backspace => {
-                self.text.pop();
+                if !self.text.is_empty() {
+                    self.text.pop();
+                    self.cursor_pos -= 1;
+                }
             }
             _ => {
                 return false;
