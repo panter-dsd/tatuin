@@ -2529,7 +2529,7 @@ dependencies = [
 
 [[package]]
 name = "tatuin"
-version = "0.23.1"
+version = "0.23.2"
 dependencies = [
  "async-recursion",
  "async-trait",
