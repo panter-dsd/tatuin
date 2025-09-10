@@ -128,6 +128,8 @@ impl WidgetTrait for LineEdit {
 #[async_trait]
 impl KeyboardHandler for LineEdit {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        let cursort_at_end = self.cursor_pos == self.text.chars().count() as u16;
+
         match key.code {
             KeyCode::Char(ch) => {
                 let validated = self
@@ -135,14 +137,35 @@ impl KeyboardHandler for LineEdit {
                     .as_ref()
                     .is_none_or(|v| v.is_match(format!("{}{ch}", self.text).as_str()));
                 if validated {
-                    self.text.push(ch);
+                    if cursort_at_end {
+                        self.text.push(ch);
+                    } else {
+                        self.text
+                            .insert(self.text.char_indices().nth(self.cursor_pos as usize).unwrap().0, ch);
+                    }
                     self.cursor_pos += 1;
                 }
             }
             KeyCode::Backspace => {
-                if !self.text.is_empty() {
-                    self.text.pop();
+                if cursort_at_end {
+                    if !self.text.is_empty() {
+                        self.text.pop();
+                        self.cursor_pos -= 1;
+                    }
+                } else if self.cursor_pos != 0 {
+                    self.text
+                        .remove(self.text.char_indices().nth(self.cursor_pos as usize - 1).unwrap().0);
                     self.cursor_pos -= 1;
+                }
+            }
+            KeyCode::Left => {
+                if self.cursor_pos != 0 {
+                    self.cursor_pos -= 1;
+                }
+            }
+            KeyCode::Right => {
+                if self.cursor_pos != self.text.chars().count() as u16 {
+                    self.cursor_pos += 1;
                 }
             }
             _ => {
