@@ -9,7 +9,7 @@ use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
-    text::Text,
+    text::{Span, Text},
     widgets::{Block, Paragraph, Widget},
 };
 use regex::Regex;
@@ -84,18 +84,19 @@ impl WidgetTrait for LineEdit {
         let b = Block::bordered().border_style(style::border_color());
 
         let inner_area = b.inner(area);
+
         let mut text = self.text.clone();
-        let text_width = Text::from(text.as_str()).width() as u16;
+        let mut cursor_pos = self.cursor_pos as usize;
 
-        if text_width >= inner_area.width {
-            let count_to_drop = (text_width + 1 - inner_area.width) as usize;
-            text.drain(..count_to_drop);
-        }
-
-        let mut cursor_pos = self.cursor_pos;
-
-        if cursor_pos >= inner_area.width {
-            cursor_pos = inner_area.width - 1;
+        let mut s = Span::raw(text.clone());
+        while s.width() >= inner_area.width as usize {
+            if cursor_pos > 0 {
+                text = text.chars().skip(1).collect();
+                cursor_pos -= 1;
+            } else {
+                text.pop();
+            }
+            s.content = text.clone().into();
         }
 
         Paragraph::new(text.as_str()).block(b).render(area, buf);
@@ -103,7 +104,7 @@ impl WidgetTrait for LineEdit {
         if let Some(dh) = &self.draw_helper
             && self.is_active()
         {
-            let pos = Position::new(inner_area.x + cursor_pos, inner_area.y);
+            let pos = Position::new(inner_area.x + cursor_pos as u16, inner_area.y);
 
             if pos != self.last_cursor_pos {
                 dh.write().await.set_cursor_pos(pos);
