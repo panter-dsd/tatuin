@@ -9,7 +9,7 @@ use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
-    text::{Span, Text},
+    text::Span,
     widgets::{Block, Paragraph, Widget},
 };
 use regex::Regex;
@@ -91,7 +91,7 @@ impl WidgetTrait for LineEdit {
         let mut s = Span::raw(text.clone());
         while s.width() >= inner_area.width as usize {
             if cursor_pos > 0 {
-                text = text.chars().skip(1).collect();
+                text.remove(0);
                 cursor_pos -= 1;
             } else {
                 text.pop();
