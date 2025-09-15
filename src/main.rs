@@ -2,26 +2,15 @@
 
 mod async_jobs;
 mod caldav;
-mod filter;
-mod folders;
 mod github;
 mod github_issues;
 mod gitlab;
 mod gitlab_todo;
 mod ical;
 mod obsidian;
-mod patched_task;
-mod project;
-mod provider;
 mod settings;
-mod state;
-mod task;
-mod task_patch;
-mod time;
 mod todoist;
-mod types;
 mod ui;
-mod utils;
 mod wizard;
 use std::{path::PathBuf, sync::Arc};
 
