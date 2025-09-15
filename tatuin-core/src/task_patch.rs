@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-use chrono::Datelike;
+use chrono::{Datelike, Local};
 
-use crate::task::{DateTimeUtc, Priority, State, Task as TaskTrait};
+use crate::task::{DateTimeUtc, Priority, State, Task as TaskTrait, datetime_to_str};
 use crate::time::{add_days, clear_time};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -13,6 +13,26 @@ pub enum DuePatchItem {
     NextWeek,
     NoDate,
     Custom(DateTimeUtc),
+}
+
+impl std::fmt::Display for DuePatchItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DuePatchItem::Today => write!(f, "Today"),
+            DuePatchItem::Tomorrow => write!(f, "Tomorrow"),
+            DuePatchItem::ThisWeekend => write!(f, "This weekend"),
+            DuePatchItem::NextWeek => write!(f, "Next week (Monday)"),
+            DuePatchItem::NoDate => write!(f, "No date"),
+            DuePatchItem::Custom(d) => {
+                if d == &DateTimeUtc::default() {
+                    write!(f, "Custom")
+                } else {
+                    let tz = Local::now().timezone();
+                    write!(f, "Custom ({})", datetime_to_str(Some(*d), &tz))
+                }
+            }
+        }
+    }
 }
 
 impl DuePatchItem {
