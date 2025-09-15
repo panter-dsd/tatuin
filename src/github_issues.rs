@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-use crate::{
+use super::github::{client::Client, structs};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
+use ratatui::style::Color;
+use std::any::Any;
+use tatuin_core::{
     filter,
-    github::{client::Client, structs},
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait, StringError},
     task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
     task_patch::{PatchError, TaskPatch},
 };
-use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
-use ratatui::style::Color;
-use std::any::Any;
 
 use async_trait::async_trait;
 

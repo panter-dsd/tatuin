@@ -1,12 +1,25 @@
 // SPDX-License-Identifier: MIT
 
-use crate::task::Priority;
+use tatuin_core::task::Priority;
 
-pub type TaskPriority = u8;
+#[derive(Debug, Clone, Copy, Default)]
+pub struct TaskPriority(u8);
+
+impl TaskPriority {
+    pub fn new(v: u8) -> Self {
+        TaskPriority(v)
+    }
+}
+
+impl std::fmt::Display for TaskPriority {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TaskPriority{}", self.0)
+    }
+}
 
 impl From<TaskPriority> for Priority {
     fn from(value: TaskPriority) -> Self {
-        match value {
+        match value.0 {
             0 | 5 => Priority::Normal,
             1 => Priority::Highest,
             2 | 3 => Priority::High,
@@ -20,12 +33,12 @@ impl From<TaskPriority> for Priority {
 impl From<Priority> for TaskPriority {
     fn from(value: Priority) -> Self {
         match value {
-            Priority::Lowest => 8,
-            Priority::Low => 6,
-            Priority::Normal => 0,
-            Priority::Medium => 4,
-            Priority::High => 3,
-            Priority::Highest => 1,
+            Priority::Lowest => TaskPriority::new(8),
+            Priority::Low => TaskPriority::new(6),
+            Priority::Normal => TaskPriority::new(0),
+            Priority::Medium => TaskPriority::new(4),
+            Priority::High => TaskPriority::new(3),
+            Priority::Highest => TaskPriority::new(1),
         }
     }
 }

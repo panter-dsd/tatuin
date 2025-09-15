@@ -3,15 +3,12 @@
 use std::any::Any;
 
 use super::DialogTrait;
-use crate::{
-    types::ArcRwLockBlocked,
-    ui::{
-        keyboard_handler::KeyboardHandler,
-        mouse_handler::MouseHandler,
-        shortcut::SharedData,
-        style,
-        widgets::{WidgetState, WidgetStateTrait, WidgetTrait},
-    },
+use crate::ui::{
+    keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler,
+    shortcut::SharedData,
+    style,
+    widgets::{WidgetState, WidgetStateTrait, WidgetTrait},
 };
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
@@ -21,6 +18,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, List, Paragraph, Widget},
 };
+use tatuin_core::types::ArcRwLockBlocked;
 
 use async_trait::async_trait;
 

@@ -9,22 +9,22 @@ use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect, Size},
     widgets::{Block, Borders, Widget},
 };
-
-use crate::{
+use tatuin_core::{
     task::{DateTimeUtc, Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, TaskPatch},
     types::ArcRwLock,
-    ui::{
-        draw_helper::DrawHelper,
-        keyboard_handler::KeyboardHandler,
-        mouse_handler::MouseHandler,
-        order_changer::OrderChanger,
-        style,
-        tasks_widget::ProvidersStorage,
-        widgets::{
-            Button, ComboBox, ComboBoxItem, CustomWidgetItemUpdater, DateEditor, LineEdit, Text, TextEdit, WidgetState,
-            WidgetStateTrait, WidgetTrait,
-        },
+};
+
+use crate::ui::{
+    draw_helper::DrawHelper,
+    keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler,
+    order_changer::OrderChanger,
+    style,
+    tasks_widget::ProvidersStorage,
+    widgets::{
+        Button, ComboBox, ComboBoxItem, CustomWidgetItemUpdater, DateEditor, LineEdit, Text, TextEdit, WidgetState,
+        WidgetStateTrait, WidgetTrait,
     },
 };
 

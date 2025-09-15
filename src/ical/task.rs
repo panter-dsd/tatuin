@@ -197,7 +197,13 @@ impl From<&Vec<Property>> for Task {
                 "UID" => t.uid = p.value.clone().unwrap_or_default(),
                 "SUMMARY" => t.name = p.value.clone().unwrap_or_default(),
                 "DESCRIPTION" => t.description = p.value.clone(),
-                "PRIORITY" => t.priority = p.value.as_ref().map(|s| s.parse::<u8>().unwrap_or(0)).unwrap_or(0),
+                "PRIORITY" => {
+                    t.priority = p
+                        .value
+                        .as_ref()
+                        .map(|s| TaskPriority::new(s.parse::<u8>().unwrap_or(0)))
+                        .unwrap_or_default()
+                }
                 "STATUS" => {
                     t.status = p
                         .value

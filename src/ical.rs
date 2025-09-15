@@ -6,16 +6,17 @@ mod task;
 use async_trait::async_trait;
 use ratatui::style::Color;
 
-use crate::{
+use crate::APP_NAME;
+use client::Client;
+pub use client::parse_calendar;
+pub use task::{Task, TaskType, property_to_str};
+use tatuin_core::{
     filter, folders,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait, StringError},
     task::Task as TaskTrait,
     task_patch::{PatchError, TaskPatch},
 };
-use client::Client;
-pub use client::parse_calendar;
-pub use task::{Task, TaskType, property_to_str};
 
 pub const PROVIDER_NAME: &str = "iCal";
 
@@ -36,7 +37,7 @@ impl Provider {
             tasks: Vec::new(),
         };
 
-        if let Ok(f) = folders::provider_cache_folder(&s) {
+        if let Ok(f) = folders::provider_cache_folder(APP_NAME, &s) {
             s.c.set_cache_folder(&f);
         }
         s

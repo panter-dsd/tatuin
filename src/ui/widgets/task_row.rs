@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use super::{MarkdownLine, Text, WidgetState, WidgetStateTrait, WidgetTrait};
-use crate::{
-    task::{self, Task as TaskTrait},
-    task_patch::TaskPatch,
-    ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style},
-};
+use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 use async_trait::async_trait;
 use chrono::{Local, NaiveTime};
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -15,6 +11,10 @@ use ratatui::{
     style::Style,
 };
 use std::{any::Any, cmp::Ordering};
+use tatuin_core::{
+    task::{self, Task as TaskTrait},
+    task_patch::TaskPatch,
+};
 
 pub struct TaskRow {
     task: Box<dyn TaskTrait>,

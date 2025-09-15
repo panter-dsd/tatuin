@@ -4,7 +4,6 @@ use super::{
     AppBlockWidget, keyboard_handler::KeyboardHandler, list, mouse_handler::MouseHandler, shortcut::Shortcut,
     widgets::WidgetState, widgets::WidgetStateTrait, widgets::WidgetTrait,
 };
-use crate::state::{State, StatefulObject};
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
@@ -16,6 +15,7 @@ use std::{
     any::Any,
     slice::{Iter, IterMut},
 };
+use tatuin_core::state::{State, StatefulObject};
 
 const DEFAULT_WIDTH: u16 = 10;
 

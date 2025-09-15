@@ -7,16 +7,16 @@ mod project;
 mod rest;
 mod task;
 
-use crate::{
+use async_trait::async_trait;
+use md_file::task_to_string;
+use ratatui::style::Color;
+use tatuin_core::{
     filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait, StringError},
     task::{Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
-use async_trait::async_trait;
-use md_file::task_to_string;
-use ratatui::style::Color;
 
 pub const PROVIDER_NAME: &str = "Obsidian";
 

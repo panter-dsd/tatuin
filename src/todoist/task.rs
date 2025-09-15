@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-use crate::{
+use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
+use serde::Deserialize;
+use std::any::Any;
+use tatuin_core::{
     project::Project as ProjectTrait,
     task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait},
     task_patch::DuePatchItem,
 };
-use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
-use serde::Deserialize;
-use std::any::Any;
 
 use super::project::Project;
 

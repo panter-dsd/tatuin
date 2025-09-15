@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 
 use super::project::Project;
-use crate::project::Project as ProjectTrait;
-use crate::task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait};
-use crate::task_patch::DuePatchItem;
 use sha256::digest;
-use std::any::Any;
-use std::fmt::{self, Write};
-use std::path::PathBuf;
+use std::{any::Any, fmt::Write, path::PathBuf};
+use tatuin_core::{
+    project::Project as ProjectTrait,
+    task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait},
+    task_patch::DuePatchItem,
+};
 use urlencoding::encode;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -46,8 +46,8 @@ impl From<State> for char {
     }
 }
 
-impl fmt::Display for State {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             State::Completed => write!(f, "✅"),
             State::Uncompleted => write!(f, " "),

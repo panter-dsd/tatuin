@@ -6,15 +6,15 @@ mod fake_project;
 use async_trait::async_trait;
 use ratatui::style::Color;
 
-use crate::{
+use crate::{APP_NAME, ical::Task};
+use client::{Client, Config};
+use tatuin_core::{
     filter, folders,
-    ical::Task,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait, StringError},
     task::{Priority, State, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
-use client::{Client, Config};
 
 pub const PROVIDER_NAME: &str = "CalDav";
 
@@ -39,7 +39,7 @@ impl Provider {
             tasks: Vec::new(),
         };
 
-        if let Ok(f) = folders::provider_cache_folder(&s) {
+        if let Ok(f) = folders::provider_cache_folder(APP_NAME, &s) {
             s.c.set_cache_folder(&f);
         }
         s

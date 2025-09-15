@@ -4,15 +4,15 @@ pub mod client;
 mod project;
 mod task;
 
-use crate::{
+use ratatui::style::Color;
+use std::{cmp::Ordering, error::Error, fmt::Debug};
+use tatuin_core::{
     filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait, StringError},
     task::{Priority, State, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
-use ratatui::style::Color;
-use std::{cmp::Ordering, error::Error, fmt::Debug};
 
 use async_trait::async_trait;
 

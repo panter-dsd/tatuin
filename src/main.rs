@@ -12,6 +12,7 @@ mod settings;
 mod todoist;
 mod ui;
 mod wizard;
+
 use std::{path::PathBuf, sync::Arc};
 
 use clap::{Parser, Subcommand};
@@ -25,7 +26,11 @@ use tracing::Level;
 use tracing_subscriber::fmt::format::FmtSpan;
 use ui::style;
 
-use crate::provider::ProviderTrait;
+use tatuin_core::{
+    filter, folders, project,
+    provider::{self, ProviderTrait},
+    task,
+};
 
 const APP_NAME: &str = "tatuin";
 const KEEP_LOG_FILES_COUNT: usize = 5;
@@ -112,7 +117,7 @@ fn clear_old_logs(path: &PathBuf, file_name_pattern: &str) -> Result<(), Box<dyn
 }
 
 fn init_logging() {
-    let log_path = folders::log_folder();
+    let log_path = folders::log_folder(APP_NAME);
     let log_file_pattern = format!("{APP_NAME}.log");
 
     let file_appender = tracing_appender::rolling::daily(&log_path, &log_file_pattern);
@@ -133,7 +138,7 @@ fn add_provider(cfg: &mut settings::Settings) -> Result<(), Box<dyn std::error::
 
 fn load_theme(theme: &Option<String>) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(theme) = theme {
-        let file_name = folders::config_folder().join(format!("{theme}.theme"));
+        let file_name = folders::config_folder(APP_NAME).join(format!("{theme}.theme"));
         println!("Try to load theme from the file: {file_name:?}");
         return style::load_theme(&file_name);
     }

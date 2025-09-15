@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: MIT
 
-use crate::filter;
-use crate::gitlab::client::{Client, UpdateIssueRequest};
-use crate::gitlab::structs;
-use crate::project::Project as ProjectTrait;
-use crate::provider::{Capabilities, ProviderTrait, StringError};
-use crate::task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group};
-use crate::task_patch::{DuePatchItem, PatchError, TaskPatch};
+use crate::gitlab::{
+    client::{Client, UpdateIssueRequest},
+    structs,
+};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use ratatui::style::Color;
-use std::any::Any;
-use std::collections::HashMap;
-use std::error::Error;
+use std::{any::Any, collections::HashMap, error::Error};
+use tatuin_core::{
+    filter,
+    project::Project as ProjectTrait,
+    provider::{Capabilities, ProviderTrait, StringError},
+    task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
+    task_patch::{DuePatchItem, PatchError, TaskPatch},
+};
 
 use async_trait::async_trait;
 

@@ -14,13 +14,10 @@ use super::{
 use crate::{
     async_jobs::{AsyncJob, AsyncJobStorage},
     filter::Filter,
-    patched_task::PatchedTask,
     project::Project as ProjectTrait,
     provider::Provider,
     style,
     task::{self, DateTimeUtc, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
-    task_patch::{DuePatchItem, PatchError, TaskPatch},
-    types::ArcRwLock,
 };
 use async_trait::async_trait;
 use chrono::Local;
@@ -32,28 +29,13 @@ use ratatui::{
     widgets::{Block, Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
 use std::{any::Any, slice::Iter, slice::IterMut, sync::Arc};
+use tatuin_core::{
+    patched_task::PatchedTask,
+    task_patch::{DuePatchItem, PatchError, TaskPatch},
+    types::ArcRwLock,
+};
 use tokio::sync::{RwLock, broadcast};
 use tracing::{Instrument, Level};
-
-impl std::fmt::Display for DuePatchItem {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DuePatchItem::Today => write!(f, "Today"),
-            DuePatchItem::Tomorrow => write!(f, "Tomorrow"),
-            DuePatchItem::ThisWeekend => write!(f, "This weekend"),
-            DuePatchItem::NextWeek => write!(f, "Next week (Monday)"),
-            DuePatchItem::NoDate => write!(f, "No date"),
-            DuePatchItem::Custom(d) => {
-                if d == &DateTimeUtc::default() {
-                    write!(f, "Custom")
-                } else {
-                    let tz = Local::now().timezone();
-                    write!(f, "Custom ({})", datetime_to_str(Some(*d), &tz))
-                }
-            }
-        }
-    }
-}
 
 #[derive(Debug, Default)]
 struct Patch {
@@ -251,7 +233,7 @@ impl TasksWidget {
                         _ = open_task_link_rx.recv() => {
                             if let Some(t) = s.read().await.selected_task()
                                 && !t.url().is_empty()
-                                && let Err(e) = crate::utils::open_url(t.url().as_str()){
+                                && let Err(e) = tatuin_core::utils::open_url(t.url().as_str()){
                                 s.write().await.error_logger.write().await.add_error(e.to_string().as_str());
                             }
                         }

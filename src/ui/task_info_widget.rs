@@ -11,11 +11,7 @@ use super::{
     widgets::HyperlinkWidget,
     widgets::{Text, WidgetState, WidgetStateTrait, WidgetTrait},
 };
-use crate::{
-    task::{self, Task as TaskTrait},
-    types::ArcRwLock,
-    ui::{style, widgets::MarkdownLine},
-};
+use crate::ui::{style, widgets::MarkdownLine};
 use async_trait::async_trait;
 use chrono::Local;
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -25,6 +21,10 @@ use ratatui::{
     style::{Modifier, Stylize},
     text::{Line, Text as RatatuiText},
     widgets::{Paragraph, Widget, Wrap},
+};
+use tatuin_core::{
+    task::{self, Task as TaskTrait},
+    types::ArcRwLock,
 };
 use tokio::sync::RwLock;
 

@@ -2547,6 +2547,7 @@ dependencies = [
  "serde_json",
  "sha256",
  "strum 0.27.2",
+ "tatuin-core",
  "time",
  "tokio",
  "tokio-stream",
@@ -2558,6 +2559,23 @@ dependencies = [
  "url-builder",
  "urlencoding",
  "uuid",
+ "xdg",
+]
+
+[[package]]
+name = "tatuin-core"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b122f796ff434ed8386cf4eb3e7c6e8e43af2d1a66606062ec9c16b9002c671a"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "clap",
+ "colored",
+ "ratatui",
+ "serde",
+ "serde_json",
+ "tokio",
  "xdg",
 ]
 

@@ -13,14 +13,14 @@ use std::{
     error::Error,
     path::{Path, PathBuf},
 };
-use tokio::io::AsyncWriteExt;
-
-use crate::{
-    ical::{Task, property_to_str},
+use tatuin_core::{
     provider::StringError,
     task::{DateTimeUtc, PatchPolicy, Priority, State},
     task_patch::DuePatchItem,
 };
+use tokio::io::AsyncWriteExt;
+
+use crate::ical::{Task, property_to_str};
 
 const INDEX_FILE_NAME: &str = "index.toml";
 const DEFAULT_EVENT_DURATION: TimeDelta = TimeDelta::hours(1);
