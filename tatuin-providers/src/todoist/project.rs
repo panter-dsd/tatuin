@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-use crate::project::Project as ProjectTrait;
 use serde::Deserialize;
+use tatuin_core::project::Project as ProjectTrait;
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug, Clone, Default)]

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 
 use super::structs::{Issue, Todo};
-use crate::filter::FilterState;
 use reqwest::header::HeaderMap;
 use serde::Serialize;
 use std::error::Error;
+use tatuin_core::filter::FilterState;
 
 #[derive(Serialize, Debug)]
 pub struct UpdateIssueRequest<'a> {

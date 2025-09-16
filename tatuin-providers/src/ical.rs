@@ -6,7 +6,6 @@ mod task;
 use async_trait::async_trait;
 use ratatui::style::Color;
 
-use crate::APP_NAME;
 use client::Client;
 pub use client::parse_calendar;
 pub use task::{Task, TaskType, property_to_str};
@@ -29,7 +28,7 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(name: &str, url: &str, color: &Color) -> Self {
+    pub fn new(name: &str, url: &str, color: &Color, app_name: &str) -> Self {
         let mut s = Self {
             name: name.to_string(),
             color: *color,
@@ -37,7 +36,7 @@ impl Provider {
             tasks: Vec::new(),
         };
 
-        if let Ok(f) = folders::provider_cache_folder(APP_NAME, &s) {
+        if let Ok(f) = folders::provider_cache_folder(app_name, &s) {
             s.c.set_cache_folder(&f);
         }
         s

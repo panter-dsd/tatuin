@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::project::Project as ProjectTrait;
+use tatuin_core::project::Project as ProjectTrait;
 
 #[derive(Clone)]
 pub struct Project {

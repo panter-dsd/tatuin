@@ -6,7 +6,7 @@ mod fake_project;
 use async_trait::async_trait;
 use ratatui::style::Color;
 
-use crate::{APP_NAME, ical::Task};
+use super::ical::Task;
 use client::{Client, Config};
 use tatuin_core::{
     StringError, filter, folders,
@@ -27,7 +27,7 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(name: &str, url: &str, login: &str, password: &str, color: &Color) -> Self {
+    pub fn new(name: &str, url: &str, login: &str, password: &str, color: &Color, app_name: &str) -> Self {
         let mut s = Self {
             name: name.to_string(),
             color: *color,
@@ -39,7 +39,7 @@ impl Provider {
             tasks: Vec::new(),
         };
 
-        if let Ok(f) = folders::provider_cache_folder(APP_NAME, &s) {
+        if let Ok(f) = folders::provider_cache_folder(app_name, &s) {
             s.c.set_cache_folder(&f);
         }
         s

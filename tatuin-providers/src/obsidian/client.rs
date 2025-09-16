@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 use super::patch::{PatchError, TaskPatch};
-use crate::filter;
 use crate::obsidian::md_file;
 use crate::obsidian::task::Task;
 use itertools::Itertools;
@@ -10,6 +9,7 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
+use tatuin_core::filter;
 use tokio::sync::Semaphore;
 use tracing::Level;
 

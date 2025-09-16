@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-use crate::filter;
-use crate::project::Project as ProjectTrait;
-use crate::todoist::project::Project;
-use crate::todoist::task::Task;
+use super::{project::Project, task::Task};
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
+use tatuin_core::{filter, project::Project as ProjectTrait};
 use url::Url;
 use url_builder::URLBuilder;
 use urlencoding::encode;

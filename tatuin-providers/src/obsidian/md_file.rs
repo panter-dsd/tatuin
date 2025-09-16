@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 
 use crate::obsidian::task::{State, Task};
-use crate::task::{DateTimeUtc, Priority};
 use chrono::{NaiveDate, Utc};
 use regex::Regex;
 use std::error::Error;
 use std::fs;
 use std::sync::LazyLock;
+use tatuin_core::task::{DateTimeUtc, Priority};
 
 use super::patch::TaskPatch;
 

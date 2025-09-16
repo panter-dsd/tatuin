@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::task::{DateTimeUtc, Priority};
+use tatuin_core::task::{DateTimeUtc, Priority};
 
 use super::task::{State, Task};
 

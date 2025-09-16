@@ -27,7 +27,7 @@ impl Client {
     pub fn new(url: &str) -> Self {
         Self {
             url: url.to_string(),
-            file_name: crate::folders::temp_folder().join(FILE_NAME),
+            file_name: tatuin_core::folders::temp_folder().join(FILE_NAME),
         }
     }
 
@@ -100,10 +100,8 @@ fn todo_to_task(todo: &IcalTodo) -> Task {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        ical::task::TaskStatus,
-        task::{Priority, State, Task},
-    };
+    use crate::ical::task::TaskStatus;
+    use tatuin_core::task::{Priority, State, Task};
 
     #[test]
     fn event_to_task_test() {

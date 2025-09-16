@@ -63,7 +63,7 @@ impl Client {
             cfg,
             storage_type: None,
             c: None,
-            cache_folder: crate::folders::temp_folder(),
+            cache_folder: tatuin_core::folders::temp_folder(),
         }
     }
 

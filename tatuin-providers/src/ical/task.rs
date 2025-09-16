@@ -6,7 +6,7 @@ use chrono::{Duration, NaiveDate, NaiveDateTime};
 use ical::property::Property;
 
 use super::priority::TaskPriority;
-use crate::{
+use tatuin_core::{
     project::Project as ProjectTrait,
     task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
 };

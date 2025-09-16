@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::filter::FilterState;
+use tatuin_core::filter::FilterState;
 
 use super::structs::Issue;
 use itertools::Itertools;
