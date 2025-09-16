@@ -2,7 +2,6 @@
 
 use super::github::{client::Client, structs};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
-use ratatui::style::Color;
 use std::any::Any;
 use tatuin_core::{
     StringError, filter,
@@ -105,7 +104,6 @@ impl TaskTrait for Task {
 
 pub struct Provider {
     name: String,
-    color: Color,
     repo: String,
     client: Client,
     tasks: Vec<Task>,
@@ -113,10 +111,9 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(name: &str, api_key: &str, repo: &str, color: &Color) -> Self {
+    pub fn new(name: &str, api_key: &str, repo: &str) -> Self {
         Self {
             name: name.to_string(),
-            color: *color,
             repo: repo.to_string(),
             client: Client::new(api_key),
             tasks: Vec::new(),
@@ -187,10 +184,6 @@ impl ProviderTrait for Provider {
 
     async fn reload(&mut self) {
         self.tasks.clear();
-    }
-
-    fn color(&self) -> Color {
-        self.color
     }
 
     fn capabilities(&self) -> Capabilities {

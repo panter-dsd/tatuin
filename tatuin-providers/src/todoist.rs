@@ -4,7 +4,6 @@ pub mod client;
 mod project;
 mod task;
 
-use ratatui::style::Color;
 use std::{cmp::Ordering, error::Error, fmt::Debug};
 use tatuin_core::{
     StringError, filter,
@@ -21,7 +20,6 @@ pub const PROVIDER_NAME: &str = "Todoist";
 pub struct Provider {
     name: String,
     c: client::Client,
-    color: Color,
     projects: Vec<project::Project>,
     tasks: Vec<task::Task>,
     last_filter: Option<filter::Filter>,
@@ -29,11 +27,10 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(name: &str, api_key: &str, color: &Color) -> Self {
+    pub fn new(name: &str, api_key: &str) -> Self {
         Self {
             name: name.to_string(),
             c: client::Client::new(api_key),
-            color: *color,
             projects: Vec::new(),
             tasks: Vec::new(),
             last_filter: None,
@@ -220,10 +217,6 @@ impl ProviderTrait for Provider {
     async fn reload(&mut self) {
         self.projects.clear();
         self.tasks.clear();
-    }
-
-    fn color(&self) -> Color {
-        self.color
     }
 
     fn capabilities(&self) -> Capabilities {

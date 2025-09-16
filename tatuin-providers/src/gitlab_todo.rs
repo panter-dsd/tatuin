@@ -5,7 +5,6 @@ use crate::gitlab::{
     structs,
 };
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
-use ratatui::style::Color;
 use std::{any::Any, collections::HashMap, error::Error};
 use tatuin_core::{
     StringError, filter,
@@ -177,17 +176,15 @@ impl TaskTrait for Task {
 
 pub struct Provider {
     name: String,
-    color: Color,
     client: Client,
     tasks: Vec<Task>,
     last_filter: Option<filter::Filter>,
 }
 
 impl Provider {
-    pub fn new(name: &str, base_url: &str, api_key: &str, color: &Color) -> Self {
+    pub fn new(name: &str, base_url: &str, api_key: &str) -> Self {
         Self {
             name: name.to_string(),
-            color: *color,
             client: Client::new(base_url, api_key),
             tasks: Vec::new(),
             last_filter: None,
@@ -359,10 +356,6 @@ impl ProviderTrait for Provider {
 
     async fn reload(&mut self) {
         self.tasks.clear();
-    }
-
-    fn color(&self) -> Color {
-        self.color
     }
 
     fn capabilities(&self) -> Capabilities {
