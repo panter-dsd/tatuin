@@ -1889,8 +1889,6 @@ dependencies = [
  "async-trait",
  "chrono",
  "chrono-tz",
- "clap",
- "colored",
  "ical",
  "iso8601-duration",
  "itertools 0.14.0",
@@ -1910,7 +1908,6 @@ dependencies = [
  "url-builder",
  "urlencoding",
  "uuid",
- "xdg",
 ]
 
 [[package]]
