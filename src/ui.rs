@@ -3,6 +3,7 @@
 mod widgets;
 use crate::async_jobs::AsyncJobStorage;
 
+use super::provider::Provider;
 use super::ui::{
     dialogs::{DialogTrait, KeyBindingsHelpDialog, StatesDialog, TextInputDialog},
     widgets::{WidgetStateTrait, WidgetTrait},
@@ -29,7 +30,6 @@ use std::{
 use tasks_widget::ErrorLoggerTrait;
 use tatuin_core::{
     filter, project,
-    provider::Provider,
     state::{State, StateSettings, StatefulObject, state_from_str, state_to_str},
     types::ArcRwLock,
 };

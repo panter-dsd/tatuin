@@ -2278,15 +2278,14 @@ dependencies = [
 
 [[package]]
 name = "tatuin-core"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "691e685c70e539331cf57b13d29cc5a499c32c7b9bd23114bb2f5c552337be86"
+checksum = "9289674a8b96568ae676807b13dac2dfa2196b6de2628d0556d5bb1c65b34ef0"
 dependencies = [
  "async-trait",
  "chrono",
  "clap",
  "colored",
- "ratatui",
  "serde",
  "serde_json",
  "tokio",
@@ -2295,9 +2294,9 @@ dependencies = [
 
 [[package]]
 name = "tatuin-providers"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "beaf9330b10c17617f2a4c54c8b48175941259834278c8c5a64b965ec834cc2d"
+checksum = "bd9434a9033ea9b506c15710849dee3eee5a0bfe378684dbc2373ed3d711aa0c"
 dependencies = [
  "async-trait",
  "chrono",
@@ -2305,7 +2304,6 @@ dependencies = [
  "ical",
  "iso8601-duration",
  "itertools 0.14.0",
- "ratatui",
  "regex",
  "reqwest",
  "reqwest_dav",
