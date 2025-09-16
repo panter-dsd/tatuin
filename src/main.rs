@@ -1,19 +1,12 @@
 // SPDX-License-Identifier: MIT
 
 mod async_jobs;
-mod caldav;
-mod github;
-mod github_issues;
-mod gitlab;
-mod gitlab_todo;
-mod ical;
-mod obsidian;
 mod settings;
-mod todoist;
 mod ui;
 mod wizard;
 
 use std::{path::PathBuf, sync::Arc};
+use tatuin_providers::{caldav, github_issues, gitlab_todo, ical, obsidian, todoist};
 
 use clap::{Parser, Subcommand};
 use color_eyre::owo_colors::OwoColorize;
@@ -222,6 +215,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 name,
                 config.get("url").unwrap().as_str(),
                 color(),
+                APP_NAME,
             ))),
             caldav::PROVIDER_NAME => Some(Box::new(caldav::Provider::new(
                 name,
@@ -229,6 +223,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 config.get("login").unwrap().as_str(),
                 config.get("password").unwrap().as_str(),
                 color(),
+                APP_NAME,
             ))),
             _ => {
                 println!("Unknown provider configuration for section: {name}");
