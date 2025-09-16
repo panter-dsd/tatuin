@@ -3,9 +3,11 @@
 use ratatui::layout::{Constraint, Flex, Layout, Position, Rect, Size};
 use tatuin_core::types::ArcRwLock;
 
+pub type CursorStyle = crossterm::cursor::SetCursorStyle;
+
 pub trait DrawHelperTrait: Send + Sync {
     fn redraw(&mut self);
-    fn set_cursor_pos(&mut self, pos: Position);
+    fn set_cursor_pos(&mut self, pos: Position, style: Option<CursorStyle>);
     fn hide_cursor(&mut self);
     fn set_screen_size(&mut self, s: Size);
     fn screen_size(&self) -> Size;

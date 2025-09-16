@@ -3,7 +3,12 @@
 use std::any::Any;
 
 use super::{WidgetState, WidgetStateTrait, WidgetTrait};
-use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
+use crate::ui::{
+    draw_helper::{CursorStyle, DrawHelper},
+    keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler,
+    style,
+};
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
@@ -107,7 +112,7 @@ impl WidgetTrait for LineEdit {
             let pos = Position::new(inner_area.x + cursor_pos as u16, inner_area.y);
 
             if pos != self.last_cursor_pos {
-                dh.write().await.set_cursor_pos(pos);
+                dh.write().await.set_cursor_pos(pos, Some(CursorStyle::BlinkingBar));
                 self.last_cursor_pos = pos;
             }
         }
