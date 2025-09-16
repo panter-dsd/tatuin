@@ -2278,9 +2278,9 @@ dependencies = [
 
 [[package]]
 name = "tatuin-core"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85f2c1c9ff4960ce1155834d5e47ed30449c4b970d8eb10423d32923bf3c3fdf"
+checksum = "691e685c70e539331cf57b13d29cc5a499c32c7b9bd23114bb2f5c552337be86"
 dependencies = [
  "async-trait",
  "chrono",
@@ -2295,15 +2295,13 @@ dependencies = [
 
 [[package]]
 name = "tatuin-providers"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb0510ed801a3831608fcb9921234166ff8599d2f32b7600b5b6adf10cd1ec84"
+checksum = "beaf9330b10c17617f2a4c54c8b48175941259834278c8c5a64b965ec834cc2d"
 dependencies = [
  "async-trait",
  "chrono",
  "chrono-tz",
- "clap",
- "colored",
  "ical",
  "iso8601-duration",
  "itertools 0.14.0",
@@ -2323,7 +2321,6 @@ dependencies = [
  "url-builder",
  "urlencoding",
  "uuid",
- "xdg",
 ]
 
 [[package]]

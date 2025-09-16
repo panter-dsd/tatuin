@@ -6,7 +6,6 @@ description = "Providers lib of the Tatuin project"
 repository = "https://github.com/panter-dsd/tatuin"
 readme = "README.md"
 license = "MIT"
-license-file = "LICENSE.txt"
 rust-version = "1.88"
 
 [dependencies]
