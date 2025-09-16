@@ -4,7 +4,7 @@ use serde::Deserialize;
 use std::fs;
 use std::path;
 
-use crate::provider::StringError;
+use tatuin_core::StringError;
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]

@@ -7,9 +7,9 @@ mod task;
 use ratatui::style::Color;
 use std::{cmp::Ordering, error::Error, fmt::Debug};
 use tatuin_core::{
-    filter,
+    StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, StringError},
+    provider::{Capabilities, ProviderTrait},
     task::{Priority, State, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };

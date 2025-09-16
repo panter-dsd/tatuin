@@ -11,9 +11,9 @@ use async_trait::async_trait;
 use md_file::task_to_string;
 use ratatui::style::Color;
 use tatuin_core::{
-    filter,
+    StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, StringError},
+    provider::{Capabilities, ProviderTrait},
     task::{Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };

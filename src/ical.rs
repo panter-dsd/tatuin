@@ -11,9 +11,9 @@ use client::Client;
 pub use client::parse_calendar;
 pub use task::{Task, TaskType, property_to_str};
 use tatuin_core::{
-    filter, folders,
+    StringError, filter, folders,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, StringError},
+    provider::{Capabilities, ProviderTrait},
     task::Task as TaskTrait,
     task_patch::{PatchError, TaskPatch},
 };

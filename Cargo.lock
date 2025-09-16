@@ -2564,9 +2564,9 @@ dependencies = [
 
 [[package]]
 name = "tatuin-core"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b122f796ff434ed8386cf4eb3e7c6e8e43af2d1a66606062ec9c16b9002c671a"
+checksum = "85f2c1c9ff4960ce1155834d5e47ed30449c4b970d8eb10423d32923bf3c3fdf"
 dependencies = [
  "async-trait",
  "chrono",

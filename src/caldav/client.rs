@@ -14,7 +14,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use tatuin_core::{
-    provider::StringError,
+    StringError,
     task::{DateTimeUtc, PatchPolicy, Priority, State},
     task_patch::DuePatchItem,
 };

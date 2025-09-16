@@ -8,9 +8,9 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use ratatui::style::Color;
 use std::{any::Any, collections::HashMap, error::Error};
 use tatuin_core::{
-    filter,
+    StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, StringError},
+    provider::{Capabilities, ProviderTrait},
     task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };

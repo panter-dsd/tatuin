@@ -9,9 +9,9 @@ use ratatui::style::Color;
 use crate::{APP_NAME, ical::Task};
 use client::{Client, Config};
 use tatuin_core::{
-    filter, folders,
+    StringError, filter, folders,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, StringError},
+    provider::{Capabilities, ProviderTrait},
     task::{Priority, State, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
