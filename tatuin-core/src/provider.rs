@@ -1,45 +1,15 @@
 // SPDX-License-Identifier: MIT
 
-use crate::filter;
-use crate::project::Project as ProjectTrait;
-use crate::task::{Priority, Task as TaskTrait};
-use crate::task_patch::{PatchError, TaskPatch};
-use crate::types::ArcRwLock;
+use super::{
+    StringError, filter,
+    project::Project as ProjectTrait,
+    task::{Priority, Task as TaskTrait},
+    task_patch::{PatchError, TaskPatch},
+    types::ArcRwLock,
+};
 use async_trait::async_trait;
 use ratatui::style::Color;
-use std::error::Error;
 use std::fmt::Debug;
-
-#[derive(Debug, Clone)]
-pub struct StringError {
-    message: String,
-}
-
-impl StringError {
-    pub fn new(message: &str) -> Self {
-        Self {
-            message: message.to_string(),
-        }
-    }
-}
-
-impl From<Box<dyn Error>> for StringError {
-    fn from(e: Box<dyn Error>) -> Self {
-        Self { message: e.to_string() }
-    }
-}
-
-impl From<StringError> for Box<dyn Error> {
-    fn from(e: StringError) -> Self {
-        Box::<dyn Error>::from(e.message)
-    }
-}
-
-impl std::fmt::Display for StringError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message)
-    }
-}
 
 #[derive(Debug, Copy, Clone)]
 pub struct Capabilities {

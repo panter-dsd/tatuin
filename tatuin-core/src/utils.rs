@@ -2,7 +2,7 @@
 
 use std::process::Command;
 
-use crate::provider::StringError;
+use super::StringError;
 
 impl From<std::io::Error> for StringError {
     fn from(e: std::io::Error) -> Self {
