@@ -11,17 +11,14 @@ use ratatui::{
     text::Text,
     widgets::Widget,
 };
+use tatuin_core::{task::DateTimeUtc, time::clear_time};
 
 use super::WidgetTrait;
-use crate::{
-    task::DateTimeUtc,
-    time::clear_time,
-    ui::{
-        keyboard_handler::KeyboardHandler,
-        mouse_handler::MouseHandler,
-        style,
-        widgets::{WidgetState, WidgetStateTrait},
-    },
+use crate::ui::{
+    keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler,
+    style,
+    widgets::{WidgetState, WidgetStateTrait},
 };
 
 #[derive(PartialEq, Eq)]

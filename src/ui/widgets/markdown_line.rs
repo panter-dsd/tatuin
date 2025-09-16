@@ -14,10 +14,8 @@ use ratatui::{
 use markdown::mdast::Node;
 use tokio::sync::RwLock;
 
-use crate::{
-    types::ArcRwLock,
-    ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style},
-};
+use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
+use tatuin_core::types::ArcRwLock;
 
 pub struct MarkdownLine {
     pos: Position,

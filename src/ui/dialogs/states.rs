@@ -2,7 +2,7 @@
 
 use std::any::Any;
 
-use crate::{state::StateSettings, types::ArcRwLock};
+use tatuin_core::{state::StateSettings, types::ArcRwLock};
 
 use super::DialogTrait;
 use crate::ui::{

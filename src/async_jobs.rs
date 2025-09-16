@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use tokio::sync::broadcast;
 use uuid::Uuid;
 
-use crate::types::ArcRwLock;
+use tatuin_core::types::ArcRwLock;
 
 pub struct AsyncJobStorage {
     jobs: HashMap<Uuid, AsyncJob>,

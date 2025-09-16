@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: MIT
+
+use super::{
+    StringError, filter,
+    project::Project as ProjectTrait,
+    task::{Priority, Task as TaskTrait},
+    task_patch::{PatchError, TaskPatch},
+    types::ArcRwLock,
+};
+use async_trait::async_trait;
+use ratatui::style::Color;
+use std::fmt::Debug;
+
+#[derive(Debug, Copy, Clone)]
+pub struct Capabilities {
+    pub create_task: bool,
+}
+
+#[async_trait]
+pub trait ProviderTrait: Send + Sync + Debug {
+    fn name(&self) -> String;
+    fn type_name(&self) -> String;
+    async fn tasks(
+        &mut self,
+        project: Option<Box<dyn ProjectTrait>>,
+        f: &filter::Filter,
+    ) -> Result<Vec<Box<dyn TaskTrait>>, StringError>;
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError>;
+    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError>;
+    async fn reload(&mut self);
+    fn color(&self) -> Color;
+    fn capabilities(&self) -> Capabilities;
+    async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError>;
+    fn supported_priorities(&self) -> Vec<Priority> {
+        Priority::values()
+    }
+}
+
+#[derive(Clone)]
+pub struct Provider {
+    pub name: String,
+    pub type_name: String,
+    pub color: Color,
+    pub capabilities: Capabilities,
+    pub supported_priorities: Vec<Priority>,
+    pub provider: ArcRwLock<Box<dyn ProviderTrait>>,
+}
