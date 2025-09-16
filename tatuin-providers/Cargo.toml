@@ -1,9 +1,10 @@
 [package]
 name = "tatuin-providers"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Providers lib of the Tatuin project"
 repository = "https://github.com/panter-dsd/tatuin"
+readme = "README.md"
 license = "MIT"
 license-file = "LICENSE.txt"
 rust-version = "1.88"
