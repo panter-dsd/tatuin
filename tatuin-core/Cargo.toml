@@ -4,8 +4,7 @@ version = "0.1.3"
 edition = "2024"
 description = "Core lib of the Tatuin project"
 repository = "https://github.com/panter-dsd/tatuin"
-license-file = "../LICENSE.txt"
-readme = "../README.md"
+license-file = "LICENSE.txt"
 rust-version = "1.88"
 
 [dependencies]
