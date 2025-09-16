@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-use super::state::{State, StateSettings};
 use config::{Config, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::error::Error;
+use tatuin_core::state::{State, StateSettings};
 
 const DEFAULT_STATE_NAME: &str = "default";
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-use crate::types::ArcRwLockBlocked;
 use std::sync::{Arc, RwLock};
+use tatuin_core::types::ArcRwLockBlocked;
 use tokio::sync::broadcast;
 
 #[derive(Clone)]

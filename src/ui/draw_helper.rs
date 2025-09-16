@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-use crate::types::ArcRwLock;
 use ratatui::layout::{Constraint, Flex, Layout, Position, Rect, Size};
+use tatuin_core::types::ArcRwLock;
 
 pub trait DrawHelperTrait: Send + Sync {
     fn redraw(&mut self);

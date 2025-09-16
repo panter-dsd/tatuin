@@ -1,29 +1,12 @@
 // SPDX-License-Identifier: MIT
 
 mod async_jobs;
-mod caldav;
-mod filter;
-mod folders;
-mod github;
-mod github_issues;
-mod gitlab;
-mod gitlab_todo;
-mod ical;
-mod obsidian;
-mod patched_task;
-mod project;
-mod provider;
 mod settings;
-mod state;
-mod task;
-mod task_patch;
-mod time;
-mod todoist;
-mod types;
 mod ui;
-mod utils;
 mod wizard;
+
 use std::{path::PathBuf, sync::Arc};
+use tatuin_providers::{caldav, github_issues, gitlab_todo, ical, obsidian, todoist};
 
 use clap::{Parser, Subcommand};
 use color_eyre::owo_colors::OwoColorize;
@@ -36,7 +19,11 @@ use tracing::Level;
 use tracing_subscriber::fmt::format::FmtSpan;
 use ui::style;
 
-use crate::provider::ProviderTrait;
+use tatuin_core::{
+    filter, folders, project,
+    provider::{self, ProviderTrait},
+    task,
+};
 
 const APP_NAME: &str = "tatuin";
 const KEEP_LOG_FILES_COUNT: usize = 5;
@@ -123,7 +110,7 @@ fn clear_old_logs(path: &PathBuf, file_name_pattern: &str) -> Result<(), Box<dyn
 }
 
 fn init_logging() {
-    let log_path = folders::log_folder();
+    let log_path = folders::log_folder(APP_NAME);
     let log_file_pattern = format!("{APP_NAME}.log");
 
     let file_appender = tracing_appender::rolling::daily(&log_path, &log_file_pattern);
@@ -144,7 +131,7 @@ fn add_provider(cfg: &mut settings::Settings) -> Result<(), Box<dyn std::error::
 
 fn load_theme(theme: &Option<String>) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(theme) = theme {
-        let file_name = folders::config_folder().join(format!("{theme}.theme"));
+        let file_name = folders::config_folder(APP_NAME).join(format!("{theme}.theme"));
         println!("Try to load theme from the file: {file_name:?}");
         return style::load_theme(&file_name);
     }
@@ -228,6 +215,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 name,
                 config.get("url").unwrap().as_str(),
                 color(),
+                APP_NAME,
             ))),
             caldav::PROVIDER_NAME => Some(Box::new(caldav::Provider::new(
                 name,
@@ -235,6 +223,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 config.get("login").unwrap().as_str(),
                 config.get("password").unwrap().as_str(),
                 color(),
+                APP_NAME,
             ))),
             _ => {
                 println!("Unknown provider configuration for section: {name}");

@@ -3,15 +3,9 @@
 mod widgets;
 use crate::async_jobs::AsyncJobStorage;
 
-use super::{
-    filter, project,
-    provider::Provider,
-    state::{State, StateSettings, StatefulObject, state_from_str, state_to_str},
-    types::ArcRwLock,
-    ui::{
-        dialogs::{DialogTrait, KeyBindingsHelpDialog, StatesDialog, TextInputDialog},
-        widgets::{WidgetStateTrait, WidgetTrait},
-    },
+use super::ui::{
+    dialogs::{DialogTrait, KeyBindingsHelpDialog, StatesDialog, TextInputDialog},
+    widgets::{WidgetStateTrait, WidgetTrait},
 };
 use async_trait::async_trait;
 use color_eyre::Result;
@@ -33,6 +27,12 @@ use std::{
     collections::HashMap, hash::Hash, io::Write, slice::Iter, slice::IterMut, str::FromStr, sync::Arc, time::Duration,
 };
 use tasks_widget::ErrorLoggerTrait;
+use tatuin_core::{
+    filter, project,
+    provider::Provider,
+    state::{State, StateSettings, StatefulObject, state_from_str, state_to_str},
+    types::ArcRwLock,
+};
 use tokio::sync::{OnceCell, RwLock, mpsc};
 mod dialogs;
 mod filter_widget;

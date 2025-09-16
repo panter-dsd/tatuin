@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-use crate::{
+use async_trait::async_trait;
+use crossterm::event::{KeyEvent, MouseEvent};
+use std::{any::Any, sync::Arc};
+use tatuin_core::{
     filter::{Due, Filter, FilterState},
     state::StatefulObject,
     types::ArcRwLock,
 };
-use async_trait::async_trait;
-use crossterm::event::{KeyEvent, MouseEvent};
-use std::{any::Any, sync::Arc};
 use tokio::sync::RwLock;
 
 use ratatui::{
@@ -271,8 +271,8 @@ impl WidgetTrait for FilterWidget {
 const STATE_KEY: &str = "filter";
 
 impl StatefulObject for FilterWidget {
-    fn save(&self) -> crate::state::State {
-        let mut state = crate::state::State::new();
+    fn save(&self) -> tatuin_core::state::State {
+        let mut state = tatuin_core::state::State::new();
 
         if let Ok(s) = serde_json::to_string(&self.filter) {
             state.insert(STATE_KEY.to_string(), s);
@@ -281,7 +281,7 @@ impl StatefulObject for FilterWidget {
         state
     }
 
-    fn restore(&mut self, state: crate::state::State) {
+    fn restore(&mut self, state: tatuin_core::state::State) {
         if let Some(s) = state.get(STATE_KEY)
             && let Ok(f) = serde_json::from_str(s)
         {

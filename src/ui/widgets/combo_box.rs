@@ -12,15 +12,13 @@ use ratatui::{
 use tokio::sync::RwLock;
 
 use super::{Button, LineEdit, Text, WidgetState, WidgetStateTrait, WidgetTrait};
-use crate::{
-    types::ArcRwLock,
-    ui::{
-        dialogs::{DialogTrait, ListDialog},
-        keyboard_handler::KeyboardHandler,
-        mouse_handler::MouseHandler,
-        style,
-    },
+use crate::ui::{
+    dialogs::{DialogTrait, ListDialog},
+    keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler,
+    style,
 };
+use tatuin_core::types::ArcRwLock;
 
 #[derive(Clone)]
 #[allow(dead_code)]
