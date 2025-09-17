@@ -4,7 +4,6 @@ mod client;
 mod fake_project;
 
 use async_trait::async_trait;
-use ratatui::style::Color;
 
 use super::ical::Task;
 use client::{Client, Config};
@@ -20,17 +19,15 @@ pub const PROVIDER_NAME: &str = "CalDav";
 
 pub struct Provider {
     name: String,
-    color: Color,
 
     c: Client,
     tasks: Vec<Task>,
 }
 
 impl Provider {
-    pub fn new(name: &str, url: &str, login: &str, password: &str, color: &Color, app_name: &str) -> Self {
+    pub fn new(name: &str, url: &str, login: &str, password: &str, app_name: &str) -> Self {
         let mut s = Self {
             name: name.to_string(),
-            color: *color,
             c: Client::new(Config {
                 url: url.to_string(),
                 login: login.to_string(),
@@ -141,10 +138,6 @@ impl ProviderTrait for Provider {
 
     async fn reload(&mut self) {
         self.tasks.clear();
-    }
-
-    fn color(&self) -> Color {
-        self.color
     }
 
     fn capabilities(&self) -> Capabilities {

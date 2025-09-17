@@ -1,15 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-use crate::caldav;
-use crate::github_issues;
-use crate::gitlab_todo;
-use crate::ical;
-use crate::obsidian;
 use crate::settings;
-use crate::todoist;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::path;
+use tatuin_providers::{caldav, github_issues, gitlab_todo, ical, obsidian, todoist};
 
 pub const AVAILABLE_PROVIDERS: &[&str] = &[
     obsidian::PROVIDER_NAME,

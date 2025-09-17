@@ -2,7 +2,9 @@
 
 mod widgets;
 use crate::async_jobs::AsyncJobStorage;
+use crate::ui::draw_helper::CursorStyle;
 
+use super::provider::Provider;
 use super::ui::{
     dialogs::{DialogTrait, KeyBindingsHelpDialog, StatesDialog, TextInputDialog},
     widgets::{WidgetStateTrait, WidgetTrait},
@@ -24,12 +26,17 @@ use ratatui::{
 use regex::Regex;
 use shortcut::{AcceptResult, Shortcut};
 use std::{
-    collections::HashMap, hash::Hash, io::Write, slice::Iter, slice::IterMut, str::FromStr, sync::Arc, time::Duration,
+    collections::HashMap,
+    hash::Hash,
+    io::{Write, stdout},
+    slice::{Iter, IterMut},
+    str::FromStr,
+    sync::Arc,
+    time::Duration,
 };
 use tasks_widget::ErrorLoggerTrait;
 use tatuin_core::{
     filter, project,
-    provider::Provider,
     state::{State, StateSettings, StatefulObject, state_from_str, state_to_str},
     types::ArcRwLock,
 };
@@ -88,14 +95,20 @@ trait AppBlockWidget: WidgetTrait {
     async fn select_last(&mut self);
 }
 
+#[derive(Default)]
+struct SetCursorPosCmd {
+    pos: Option<Position>,
+    style: Option<CursorStyle>,
+}
+
 struct DrawHelper {
     tx: mpsc::UnboundedSender<()>,
-    set_pos_tx: mpsc::UnboundedSender<Option<Position>>,
+    set_pos_tx: mpsc::UnboundedSender<SetCursorPosCmd>,
     screen_size: Size,
 }
 
 impl DrawHelper {
-    fn new(tx: mpsc::UnboundedSender<()>, set_pos_tx: mpsc::UnboundedSender<Option<Position>>) -> Self {
+    fn new(tx: mpsc::UnboundedSender<()>, set_pos_tx: mpsc::UnboundedSender<SetCursorPosCmd>) -> Self {
         Self {
             tx,
             set_pos_tx,
@@ -108,11 +121,11 @@ impl draw_helper::DrawHelperTrait for DrawHelper {
     fn redraw(&mut self) {
         let _ = self.tx.send(());
     }
-    fn set_cursor_pos(&mut self, pos: Position) {
-        let _ = self.set_pos_tx.send(Some(pos));
+    fn set_cursor_pos(&mut self, pos: Position, style: Option<CursorStyle>) {
+        let _ = self.set_pos_tx.send(SetCursorPosCmd { pos: Some(pos), style });
     }
     fn hide_cursor(&mut self) {
-        let _ = self.set_pos_tx.send(None);
+        let _ = self.set_pos_tx.send(SetCursorPosCmd::default());
     }
 
     fn screen_size(&self) -> Size {
@@ -183,7 +196,7 @@ pub struct App {
     dialog: Option<Box<dyn DialogTrait>>,
 
     settings: ArcRwLock<Box<dyn StateSettings>>,
-    cursor_pos: Option<Position>,
+    set_cursor_pos_cmd: SetCursorPosCmd,
 }
 
 impl tasks_widget::ProvidersStorage for SelectableList<Provider> {
@@ -257,7 +270,7 @@ impl App {
             all_shortcuts: Vec::new(),
             dialog: None,
             settings: Arc::new(RwLock::new(settings)),
-            cursor_pos: None,
+            set_cursor_pos_cmd: SetCursorPosCmd::default(),
         };
 
         s.app_blocks.insert(AppBlock::Providers, s.providers.clone());
@@ -307,7 +320,7 @@ impl App {
         self.tasks_widget.write().await.set_active(true);
 
         let (redraw_tx, mut redraw_rx) = mpsc::unbounded_channel::<()>();
-        let (set_cursor_pos_tx, mut set_cursor_pos_rx) = mpsc::unbounded_channel::<Option<Position>>();
+        let (set_cursor_pos_tx, mut set_cursor_pos_rx) = mpsc::unbounded_channel::<SetCursorPosCmd>();
         let dh = {
             let mut d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, set_cursor_pos_tx));
             d.set_screen_size(terminal.get_frame().area().as_size());
@@ -353,8 +366,8 @@ impl App {
             tokio::select! {
                 _ = redraw_rx.recv() => {},
                 _ = redraw_interval.tick() => {},
-                Some(pos) = set_cursor_pos_rx.recv() => {
-                    self.cursor_pos = pos;
+                Some(cmd) = set_cursor_pos_rx.recv() => {
+                    self.set_cursor_pos_cmd = cmd;
                 },
                 Some(Ok(event)) = events.next() => {
                     match event {
@@ -403,9 +416,13 @@ impl App {
         self.render(area, buf).await;
         let _ = terminal.flush();
 
-        match self.cursor_pos {
+        match self.set_cursor_pos_cmd.pos {
             Some(pos) => {
                 let _ = terminal.show_cursor();
+                let _ = crossterm::execute!(
+                    stdout(),
+                    self.set_cursor_pos_cmd.style.unwrap_or(CursorStyle::DefaultUserShape)
+                );
                 let _ = terminal.set_cursor_position(pos);
             }
             None => {

@@ -3,13 +3,18 @@
 use std::any::Any;
 
 use super::{WidgetState, WidgetStateTrait, WidgetTrait};
-use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
+use crate::ui::{
+    draw_helper::{CursorStyle, DrawHelper},
+    keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler,
+    style,
+};
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
-    text::Text,
+    text::Span,
     widgets::{Block, Paragraph, Widget},
 };
 use regex::Regex;
@@ -17,6 +22,7 @@ use regex::Regex;
 pub struct LineEdit {
     text: String,
     validator: Option<Regex>,
+    cursor_pos: u16,
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
     widget_state: WidgetState,
@@ -57,6 +63,7 @@ impl LineEdit {
             text: String::new(),
             validator,
             draw_helper: None,
+            cursor_pos: 0,
             last_cursor_pos: Position::default(),
             widget_state: WidgetState::default(),
         }
@@ -67,7 +74,8 @@ impl LineEdit {
     }
 
     pub fn set_text(&mut self, text: &str) {
-        self.text = text.to_string()
+        self.text = text.to_string();
+        self.cursor_pos = text.chars().count() as u16;
     }
 
     pub fn clear(&mut self) {
@@ -81,12 +89,19 @@ impl WidgetTrait for LineEdit {
         let b = Block::bordered().border_style(style::border_color());
 
         let inner_area = b.inner(area);
+
         let mut text = self.text.clone();
-        let mut text_width = Text::from(text.as_str()).width() as u16;
-        if text_width >= inner_area.width - 1 {
-            let count_to_drop = (text_width + 1 - inner_area.width) as usize;
-            text.drain(..count_to_drop);
-            text_width = Text::from(text.as_str()).width() as u16;
+        let mut cursor_pos = self.cursor_pos as usize;
+
+        let mut s = Span::raw(text.clone());
+        while s.width() >= inner_area.width as usize {
+            if cursor_pos > 1 {
+                text.remove(0);
+                cursor_pos -= 1;
+            } else {
+                text.pop();
+            }
+            s.content = text.clone().into();
         }
 
         Paragraph::new(text.as_str()).block(b).render(area, buf);
@@ -94,10 +109,10 @@ impl WidgetTrait for LineEdit {
         if let Some(dh) = &self.draw_helper
             && self.is_active()
         {
-            let pos = Position::new(area.x + text_width + 1, area.y + 1);
+            let pos = Position::new(inner_area.x + cursor_pos as u16, inner_area.y);
 
             if pos != self.last_cursor_pos {
-                dh.write().await.set_cursor_pos(pos);
+                dh.write().await.set_cursor_pos(pos, Some(CursorStyle::BlinkingBar));
                 self.last_cursor_pos = pos;
             }
         }
@@ -119,6 +134,8 @@ impl WidgetTrait for LineEdit {
 #[async_trait]
 impl KeyboardHandler for LineEdit {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        let cursort_at_end = self.cursor_pos == self.text.chars().count() as u16;
+
         match key.code {
             KeyCode::Char(ch) => {
                 let validated = self
@@ -126,11 +143,36 @@ impl KeyboardHandler for LineEdit {
                     .as_ref()
                     .is_none_or(|v| v.is_match(format!("{}{ch}", self.text).as_str()));
                 if validated {
-                    self.text.push(ch);
+                    if cursort_at_end {
+                        self.text.push(ch);
+                    } else {
+                        self.text
+                            .insert(self.text.char_indices().nth(self.cursor_pos as usize).unwrap().0, ch);
+                    }
+                    self.cursor_pos += 1;
                 }
             }
             KeyCode::Backspace => {
-                self.text.pop();
+                if cursort_at_end {
+                    if !self.text.is_empty() {
+                        self.text.pop();
+                        self.cursor_pos -= 1;
+                    }
+                } else if self.cursor_pos != 0 {
+                    self.text
+                        .remove(self.text.char_indices().nth(self.cursor_pos as usize - 1).unwrap().0);
+                    self.cursor_pos -= 1;
+                }
+            }
+            KeyCode::Left => {
+                if self.cursor_pos != 0 {
+                    self.cursor_pos -= 1;
+                }
+            }
+            KeyCode::Right => {
+                if self.cursor_pos != self.text.chars().count() as u16 {
+                    self.cursor_pos += 1;
+                }
             }
             _ => {
                 return false;

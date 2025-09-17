@@ -123,7 +123,7 @@ impl WidgetTrait for TextEdit {
                 std::cmp::min(inner_area.y + lines.len() as u16 - 1, inner_area.y + inner_area.height),
             );
             if pos != self.last_cursor_pos {
-                dh.write().await.set_cursor_pos(pos);
+                dh.write().await.set_cursor_pos(pos, None);
                 self.last_cursor_pos = pos;
             }
         }

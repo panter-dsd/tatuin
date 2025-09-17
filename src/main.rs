@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 mod async_jobs;
+mod provider;
 mod settings;
 mod ui;
 mod wizard;
@@ -12,6 +13,7 @@ use clap::{Parser, Subcommand};
 use color_eyre::owo_colors::OwoColorize;
 use crossterm::{event::DisableMouseCapture, execute};
 use itertools::Itertools;
+use provider::Provider;
 use ratatui::style::Color;
 use settings::Settings;
 use tokio::sync::RwLock;
@@ -19,11 +21,7 @@ use tracing::Level;
 use tracing_subscriber::fmt::format::FmtSpan;
 use ui::style;
 
-use tatuin_core::{
-    filter, folders, project,
-    provider::{self, ProviderTrait},
-    task,
-};
+use tatuin_core::{filter, folders, project, provider::ProviderTrait, task};
 
 const APP_NAME: &str = "tatuin";
 const KEEP_LOG_FILES_COUNT: usize = 5;
@@ -163,7 +161,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Load theme error: {e}")
     }
 
-    let mut providers: Vec<provider::Provider> = Vec::new();
+    let mut providers: Vec<Provider> = Vec::new();
 
     let providers_colors = style::provider_colors();
     let mut it = providers_colors.iter();
@@ -192,29 +190,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     path.push('/');
                 }
 
-                Some(Box::new(obsidian::Provider::new(name, path.as_str(), color())))
+                Some(Box::new(obsidian::Provider::new(name, path.as_str())))
             }
             todoist::PROVIDER_NAME => Some(Box::new(todoist::Provider::new(
                 name,
                 config.get("api_key").unwrap().as_str(),
-                color(),
             ))),
             gitlab_todo::PROVIDER_NAME => Some(Box::new(gitlab_todo::Provider::new(
                 name,
                 config.get("base_url").unwrap().as_str(),
                 config.get("api_key").unwrap().as_str(),
-                color(),
             ))),
             github_issues::PROVIDER_NAME => Some(Box::new(github_issues::Provider::new(
                 name,
                 config.get("api_key").unwrap().as_str(),
                 config.get("repository").unwrap().as_str(),
-                color(),
             ))),
             ical::PROVIDER_NAME => Some(Box::new(ical::Provider::new(
                 name,
                 config.get("url").unwrap().as_str(),
-                color(),
                 APP_NAME,
             ))),
             caldav::PROVIDER_NAME => Some(Box::new(caldav::Provider::new(
@@ -222,7 +216,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 config.get("url").unwrap().as_str(),
                 config.get("login").unwrap().as_str(),
                 config.get("password").unwrap().as_str(),
-                color(),
                 APP_NAME,
             ))),
             _ => {
@@ -234,7 +227,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             providers.push(provider::Provider {
                 name: name.to_string(),
                 type_name: p.type_name(),
-                color: ProviderTrait::color(p.as_ref()),
+                color: *color(),
                 capabilities: p.capabilities(),
                 supported_priorities: p.supported_priorities(),
                 provider: Arc::new(RwLock::new(p)),

@@ -4,7 +4,6 @@ mod client;
 mod priority;
 mod task;
 use async_trait::async_trait;
-use ratatui::style::Color;
 
 use client::Client;
 pub use client::parse_calendar;
@@ -21,17 +20,15 @@ pub const PROVIDER_NAME: &str = "iCal";
 
 pub struct Provider {
     name: String,
-    color: Color,
 
     c: Client,
     tasks: Vec<Task>,
 }
 
 impl Provider {
-    pub fn new(name: &str, url: &str, color: &Color, app_name: &str) -> Self {
+    pub fn new(name: &str, url: &str, app_name: &str) -> Self {
         let mut s = Self {
             name: name.to_string(),
-            color: *color,
             c: Client::new(url),
             tasks: Vec::new(),
         };
@@ -94,10 +91,6 @@ impl ProviderTrait for Provider {
 
     async fn reload(&mut self) {
         self.tasks.clear();
-    }
-
-    fn color(&self) -> Color {
-        self.color
     }
 
     fn capabilities(&self) -> Capabilities {

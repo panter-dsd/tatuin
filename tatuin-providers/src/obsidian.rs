@@ -9,7 +9,6 @@ mod task;
 
 use async_trait::async_trait;
 use md_file::task_to_string;
-use ratatui::style::Color;
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
@@ -24,16 +23,14 @@ pub struct Provider {
     name: String,
     c: client::Client,
     rest: rest::Client,
-    color: Color,
 }
 
 impl Provider {
-    pub fn new(name: &str, path: &str, color: &Color) -> Self {
+    pub fn new(name: &str, path: &str) -> Self {
         Self {
             name: name.to_string(),
             c: client::Client::new(path),
             rest: rest::Client::new(path),
-            color: *color,
         }
     }
 }
@@ -104,10 +101,6 @@ impl ProviderTrait for Provider {
 
     async fn reload(&mut self) {
         // do nothing for now
-    }
-
-    fn color(&self) -> Color {
-        self.color
     }
 
     fn capabilities(&self) -> Capabilities {
