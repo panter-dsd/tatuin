@@ -95,7 +95,7 @@ impl WidgetTrait for LineEdit {
 
         let mut s = Span::raw(text.clone());
         while s.width() >= inner_area.width as usize {
-            if cursor_pos > 0 {
+            if cursor_pos > 1 {
                 text.remove(0);
                 cursor_pos -= 1;
             } else {
