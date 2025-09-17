@@ -96,19 +96,19 @@ trait AppBlockWidget: WidgetTrait {
 }
 
 #[derive(Default)]
-struct CursorPos {
+struct SetCursorPosCmd {
     pos: Option<Position>,
     style: Option<CursorStyle>,
 }
 
 struct DrawHelper {
     tx: mpsc::UnboundedSender<()>,
-    set_pos_tx: mpsc::UnboundedSender<CursorPos>,
+    set_pos_tx: mpsc::UnboundedSender<SetCursorPosCmd>,
     screen_size: Size,
 }
 
 impl DrawHelper {
-    fn new(tx: mpsc::UnboundedSender<()>, set_pos_tx: mpsc::UnboundedSender<CursorPos>) -> Self {
+    fn new(tx: mpsc::UnboundedSender<()>, set_pos_tx: mpsc::UnboundedSender<SetCursorPosCmd>) -> Self {
         Self {
             tx,
             set_pos_tx,
@@ -122,10 +122,10 @@ impl draw_helper::DrawHelperTrait for DrawHelper {
         let _ = self.tx.send(());
     }
     fn set_cursor_pos(&mut self, pos: Position, style: Option<CursorStyle>) {
-        let _ = self.set_pos_tx.send(CursorPos { pos: Some(pos), style });
+        let _ = self.set_pos_tx.send(SetCursorPosCmd { pos: Some(pos), style });
     }
     fn hide_cursor(&mut self) {
-        let _ = self.set_pos_tx.send(CursorPos::default());
+        let _ = self.set_pos_tx.send(SetCursorPosCmd::default());
     }
 
     fn screen_size(&self) -> Size {
@@ -196,7 +196,7 @@ pub struct App {
     dialog: Option<Box<dyn DialogTrait>>,
 
     settings: ArcRwLock<Box<dyn StateSettings>>,
-    cursor_pos: CursorPos,
+    set_cursor_pos_cmd: SetCursorPosCmd,
 }
 
 impl tasks_widget::ProvidersStorage for SelectableList<Provider> {
@@ -270,7 +270,7 @@ impl App {
             all_shortcuts: Vec::new(),
             dialog: None,
             settings: Arc::new(RwLock::new(settings)),
-            cursor_pos: CursorPos::default(),
+            set_cursor_pos_cmd: SetCursorPosCmd::default(),
         };
 
         s.app_blocks.insert(AppBlock::Providers, s.providers.clone());
@@ -320,7 +320,7 @@ impl App {
         self.tasks_widget.write().await.set_active(true);
 
         let (redraw_tx, mut redraw_rx) = mpsc::unbounded_channel::<()>();
-        let (set_cursor_pos_tx, mut set_cursor_pos_rx) = mpsc::unbounded_channel::<CursorPos>();
+        let (set_cursor_pos_tx, mut set_cursor_pos_rx) = mpsc::unbounded_channel::<SetCursorPosCmd>();
         let dh = {
             let mut d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, set_cursor_pos_tx));
             d.set_screen_size(terminal.get_frame().area().as_size());
@@ -366,8 +366,8 @@ impl App {
             tokio::select! {
                 _ = redraw_rx.recv() => {},
                 _ = redraw_interval.tick() => {},
-                Some(cursor_pos) = set_cursor_pos_rx.recv() => {
-                    self.cursor_pos = cursor_pos;
+                Some(cmd) = set_cursor_pos_rx.recv() => {
+                    self.set_cursor_pos_cmd = cmd;
                 },
                 Some(Ok(event)) = events.next() => {
                     match event {
@@ -416,12 +416,13 @@ impl App {
         self.render(area, buf).await;
         let _ = terminal.flush();
 
-        match self.cursor_pos.pos {
+        match self.set_cursor_pos_cmd.pos {
             Some(pos) => {
                 let _ = terminal.show_cursor();
-                if let Some(style) = self.cursor_pos.style {
-                    let _ = crossterm::execute!(stdout(), style);
-                }
+                let _ = crossterm::execute!(
+                    stdout(),
+                    self.set_cursor_pos_cmd.style.unwrap_or(CursorStyle::DefaultUserShape)
+                );
                 let _ = terminal.set_cursor_position(pos);
             }
             None => {
