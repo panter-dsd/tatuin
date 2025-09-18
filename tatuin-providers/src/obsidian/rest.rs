@@ -69,23 +69,9 @@ impl Client {
 
     #[tracing::instrument(level = "info", target = "obsidian_rest_client")]
     pub async fn add_text_to_daily_note(&self, data: &str) -> Result<(), StringError> {
-        // Sometimes, if the daily note doesn't exist, it is created but without any sent data.
-        // I think, it might be because of temlates applying.
-        // So, we send the empty request first to create the note.
         let url = self.url("/periodic/daily")?;
         let token = self.token()?;
 
-        let _ = self
-            .client
-            .post(&url)
-            .bearer_auth(&token)
-            .header(reqwest::header::CONTENT_TYPE, "text/markdown")
-            .send()
-            .await
-            .map_err(|e| {
-                tracing::error!(target:"obsidian_rest_client", data=?data, cfg=?self.cfg, error=?e, "Create the daily note");
-                StringError::new(e.to_string().as_str())
-            })?;
         self.client
             .post(&url)
             .bearer_auth(&token)
