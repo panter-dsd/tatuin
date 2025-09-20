@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pub mod caldav;
 pub mod github;
 pub mod github_issues;

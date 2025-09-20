@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use ratatui::style::Color;
 use tatuin_core::{
     provider::{Capabilities, ProviderTrait},
