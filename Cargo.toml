@@ -8,6 +8,10 @@ license = "MIT"
 readme = "README.md"
 rust-version = "1.88"
 
+[workspace]
+resolver = "3"
+members = ["tatuin-core", "tatuin-providers"]
+
 [dependencies]
 async-trait = "0.1.89"
 chrono = "0.4.42"
