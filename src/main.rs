@@ -60,7 +60,6 @@ enum Commands {
 }
 
 fn print_boxed_tasks(tasks: &[Box<dyn task::Task>]) {
-    // Rewrite the loop with map/filter AI!
     for t in tasks {
         println!("{}", task::format(t.as_ref()));
     }
