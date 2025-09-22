@@ -3,12 +3,15 @@
 mod client;
 mod fake_project;
 
+use std::error::Error;
+
 use async_trait::async_trait;
 
 use super::ical::Task;
+use crate::config::Config as ProviderConfig;
 use client::{Client, Config};
 use tatuin_core::{
-    StringError, filter, folders,
+    StringError, filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait},
     task::{Priority, State, Task as TaskTrait},
@@ -18,28 +21,25 @@ use tatuin_core::{
 pub const PROVIDER_NAME: &str = "CalDav";
 
 pub struct Provider {
-    name: String,
+    cfg: ProviderConfig,
 
     c: Client,
     tasks: Vec<Task>,
 }
 
 impl Provider {
-    pub fn new(name: &str, url: &str, login: &str, password: &str, app_name: &str) -> Self {
-        let mut s = Self {
-            name: name.to_string(),
-            c: Client::new(Config {
-                url: url.to_string(),
-                login: login.to_string(),
-                password: password.to_string(),
-            }),
+    pub fn new(cfg: ProviderConfig, url: &str, login: &str, password: &str) -> Result<Self, Box<dyn Error>> {
+        let mut c = Client::new(Config {
+            url: url.to_string(),
+            login: login.to_string(),
+            password: password.to_string(),
+        });
+        c.set_cache_folder(&cfg.cache_path(PROVIDER_NAME)?);
+        Ok(Self {
+            cfg,
+            c,
             tasks: Vec::new(),
-        };
-
-        if let Ok(f) = folders::provider_cache_folder(app_name, &s) {
-            s.c.set_cache_folder(&f);
-        }
-        s
+        })
     }
 }
 
@@ -52,7 +52,7 @@ impl std::fmt::Debug for Provider {
 #[async_trait]
 impl ProviderTrait for Provider {
     fn name(&self) -> String {
-        self.name.to_string()
+        self.cfg.name()
     }
 
     fn type_name(&self) -> String {
@@ -75,7 +75,7 @@ impl ProviderTrait for Provider {
                 .filter(|t| f.accept(*t))
                 .map(|t| {
                     let mut task = t.clone();
-                    task.set_provider(self.name.as_str());
+                    task.set_provider(self.cfg.name().as_str());
                     task
                 })
                 .collect();

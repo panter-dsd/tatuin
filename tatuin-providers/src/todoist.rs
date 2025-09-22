@@ -15,10 +15,12 @@ use tatuin_core::{
 
 use async_trait::async_trait;
 
+use crate::config::Config;
+
 pub const PROVIDER_NAME: &str = "Todoist";
 
 pub struct Provider {
-    name: String,
+    cfg: Config,
     c: client::Client,
     projects: Vec<project::Project>,
     tasks: Vec<task::Task>,
@@ -27,9 +29,9 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(name: &str, api_key: &str) -> Self {
+    pub fn new(cfg: Config, api_key: &str) -> Self {
         Self {
-            name: name.to_string(),
+            cfg,
             c: client::Client::new(api_key),
             projects: Vec::new(),
             tasks: Vec::new(),
@@ -42,7 +44,7 @@ impl Provider {
         if self.projects.is_empty() {
             self.projects = self.c.projects().await?;
             for p in &mut self.projects {
-                p.provider = Some(self.name.to_string());
+                p.provider = Some(self.cfg.name());
             }
         }
         Ok(())
@@ -70,7 +72,7 @@ impl Debug for Provider {
 #[async_trait]
 impl ProviderTrait for Provider {
     fn name(&self) -> String {
-        self.name.to_string()
+        self.cfg.name()
     }
 
     fn type_name(&self) -> String {

@@ -17,18 +17,20 @@ use tatuin_core::{
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
 
+use crate::config::Config;
+
 pub const PROVIDER_NAME: &str = "Obsidian";
 
 pub struct Provider {
-    name: String,
+    cfg: Config,
     c: client::Client,
     rest: rest::Client,
 }
 
 impl Provider {
-    pub fn new(name: &str, path: &str) -> Self {
+    pub fn new(cfg: Config, path: &str) -> Self {
         Self {
-            name: name.to_string(),
+            cfg,
             c: client::Client::new(path),
             rest: rest::Client::new(path),
         }
@@ -44,7 +46,7 @@ impl std::fmt::Debug for Provider {
 #[async_trait]
 impl ProviderTrait for Provider {
     fn name(&self) -> String {
-        self.name.to_string()
+        self.cfg.name()
     }
 
     fn type_name(&self) -> String {
@@ -67,7 +69,7 @@ impl ProviderTrait for Provider {
 
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
         Ok(vec![Box::new(project::Project::new(
-            self.name.as_str(),
+            self.cfg.name().as_str(),
             self.c.root_path().as_str(),
             format!("{}/daily.md", self.c.root_path()).as_str(),
         ))])
