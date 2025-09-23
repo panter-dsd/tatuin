@@ -3,7 +3,7 @@ use tatuin_core::project::Project as ProjectTrait;
 
 use super::PROVIDER_NAME;
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Project {
     id: uuid::Uuid,
     name: String,

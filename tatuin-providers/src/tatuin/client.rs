@@ -90,3 +90,54 @@ fn init_projects_table(db: &Database) -> Result<(), Box<dyn Error + Send + Sync>
     tx.commit()?;
     Ok(())
 }
+
+#[cfg(test)]
+mod test {
+    use tatuin_core::project::Project;
+
+    use super::Client;
+
+    #[tokio::test]
+    async fn database_file_exists() {
+        let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
+        assert_eq!(std::fs::read_dir(temp_dir.path()).unwrap().count(), 0);
+
+        let _ = Client::new(temp_dir.path()).unwrap();
+
+        assert_eq!(std::fs::read_dir(temp_dir.path()).unwrap().count(), 1);
+    }
+
+    #[tokio::test]
+    async fn check_inbox_creates_once() {
+        let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
+
+        let c = Client::new(temp_dir.path()).unwrap();
+
+        let projects = c.projects().await.unwrap();
+        let project1 = projects[0].clone();
+
+        let projects = c.projects().await.unwrap();
+        let project2 = projects[0].clone();
+
+        assert_eq!(project2, project1);
+    }
+
+    #[tokio::test]
+    async fn db_stores_to_disk_and_doesnt_recreate() {
+        let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
+
+        let project1 = {
+            let c = Client::new(temp_dir.path()).unwrap();
+            let projects = c.projects().await.unwrap();
+            projects[0].clone()
+        };
+
+        let project2 = {
+            let c = Client::new(temp_dir.path()).unwrap();
+            let projects = c.projects().await.unwrap();
+            projects[0].clone()
+        };
+
+        assert_eq!(project2.id(), project1.id());
+    }
+}

@@ -100,7 +100,7 @@ mod test {
     }
 
     #[tokio::test]
-    async fn create_provider() {
+    async fn get_projects_on_empty_provider() {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
 
         let p = Provider::new(config(temp_dir.path().to_path_buf()));
