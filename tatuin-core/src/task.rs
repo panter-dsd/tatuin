@@ -6,6 +6,8 @@ use crate::project::Project as ProjectTrait;
 use chrono::DateTime;
 use chrono::prelude::*;
 use colored::Colorize;
+use serde::Deserialize;
+use serde::Serialize;
 use std::any::Any;
 use std::cmp::Ordering;
 use std::fmt;
@@ -13,9 +15,10 @@ use std::fmt::Write;
 
 pub type DateTimeUtc = DateTime<Utc>;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum State {
     Unknown(char),
+    #[default]
     Uncompleted,
     Completed,
     InProgress,
@@ -32,7 +35,7 @@ impl fmt::Display for State {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize)]
 pub enum Priority {
     Lowest,
     Low,
@@ -161,8 +164,8 @@ pub fn format(t: &dyn Task) -> String {
     )
 }
 
-pub fn due_group(t: &dyn Task) -> filter::Due {
-    match t.due() {
+pub fn due_group(due: &Option<DateTimeUtc>) -> filter::Due {
+    match due {
         Some(d) => {
             let now = chrono::Utc::now().date_naive();
             match d.date_naive().cmp(&now) {

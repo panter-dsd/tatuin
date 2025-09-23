@@ -1,3 +1,4 @@
+use redb::Value;
 use serde::{Deserialize, Serialize};
 use tatuin_core::project::Project as ProjectTrait;
 
@@ -5,11 +6,11 @@ use super::PROVIDER_NAME;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Project {
-    id: uuid::Uuid,
-    name: String,
-    description: String,
-    parent: Option<uuid::Uuid>,
-    is_inbox: bool,
+    pub id: uuid::Uuid,
+    pub name: String,
+    pub description: String,
+    pub parent: Option<uuid::Uuid>,
+    pub is_inbox: bool,
 }
 
 pub fn inbox_project() -> Project {
@@ -53,5 +54,39 @@ impl ProjectTrait for Project {
 
     fn clone_boxed(&self) -> Box<dyn ProjectTrait> {
         Box::new(self.clone())
+    }
+}
+
+impl Value for Project {
+    type SelfType<'a>
+        = Project
+    where
+        Self: 'a;
+
+    type AsBytes<'a>
+        = Vec<u8>
+    where
+        Self: 'a;
+
+    fn fixed_width() -> Option<usize> {
+        None
+    }
+
+    fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
+    where
+        Self: 'a,
+    {
+        serde_json::from_slice(data).unwrap_or_default()
+    }
+
+    fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Vec<u8>
+    where
+        Self: 'b,
+    {
+        serde_json::to_vec(value).unwrap_or_default()
+    }
+
+    fn type_name() -> redb::TypeName {
+        redb::TypeName::new("Project")
     }
 }

@@ -166,7 +166,7 @@ impl ProviderTrait for Provider {
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
 
         for t in &self.tasks {
-            if f.due.contains(&due_group(t)) {
+            if f.due.contains(&due_group(&t.due())) {
                 result.push(Box::new(t.clone()));
             }
         }

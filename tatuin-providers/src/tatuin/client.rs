@@ -1,46 +1,20 @@
-use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition, Value};
+use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition};
 use std::{error::Error, path::Path, sync::Arc};
-use tatuin_core::project::Project as ProjectTrait;
+use tatuin_core::{
+    filter::{Filter, FilterState},
+    project::Project as ProjectTrait,
+    task::due_group,
+};
 
-use super::project::{Project, inbox_project};
+use super::{
+    project::{Project, inbox_project},
+    task::Task,
+};
 
 const DB_FILE_NAME: &str = "tatuin.db";
 const PROJECTS_TABLE: TableDefinition<&str, Project> = TableDefinition::new("projects");
-const TASKS_TABLE: TableDefinition<&str, u64> = TableDefinition::new("tasks");
-
-impl Value for Project {
-    type SelfType<'a>
-        = Project
-    where
-        Self: 'a;
-
-    type AsBytes<'a>
-        = Vec<u8>
-    where
-        Self: 'a;
-
-    fn fixed_width() -> Option<usize> {
-        None
-    }
-
-    fn from_bytes<'a>(data: &'a [u8]) -> Self::SelfType<'a>
-    where
-        Self: 'a,
-    {
-        serde_json::from_slice(data).unwrap_or_default()
-    }
-
-    fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Vec<u8>
-    where
-        Self: 'b,
-    {
-        serde_json::to_vec(value).unwrap_or_default()
-    }
-
-    fn type_name() -> redb::TypeName {
-        redb::TypeName::new("Project")
-    }
-}
+const TASKS_TABLE: TableDefinition<&str, Task> = TableDefinition::new("tasks");
+const COMPLETED_TASKS_TABLE: TableDefinition<&str, Task> = TableDefinition::new("completed_tasks");
 
 pub struct Client {
     db: Arc<Database>,
@@ -56,6 +30,14 @@ impl Client {
     pub async fn projects(&self) -> Result<Vec<Project>, Box<dyn Error>> {
         let db = Arc::clone(&self.db);
         tokio::task::spawn_blocking(move || projects(&db))
+            .await?
+            .map_err(|e| e as Box<dyn Error>)
+    }
+
+    pub async fn tasks(&self, project_id: Option<uuid::Uuid>, f: &Filter) -> Result<Vec<Task>, Box<dyn Error>> {
+        let db = Arc::clone(&self.db);
+        let f = f.clone();
+        tokio::task::spawn_blocking(move || tasks(&db, project_id, f))
             .await?
             .map_err(|e| e as Box<dyn Error>)
     }
@@ -89,6 +71,42 @@ fn init_projects_table(db: &Database) -> Result<(), Box<dyn Error + Send + Sync>
     }
     tx.commit()?;
     Ok(())
+}
+
+fn tasks(db: &Database, project_id: Option<uuid::Uuid>, f: Filter) -> Result<Vec<Task>, Box<dyn Error + Send + Sync>> {
+    let tx = db.begin_read()?;
+    let mut result = Vec::new();
+    let accept_filter = |t: &Task| -> bool {
+        project_id.is_none_or(|id| t.project_id == id)
+            && f.states.contains(&t.state.into())
+            && f.due.contains(&due_group(&t.due))
+    };
+
+    if f.states.contains(&FilterState::Completed) {
+        let table = tx.open_table(COMPLETED_TASKS_TABLE);
+        if let Ok(table) = table {
+            for v in table.iter()? {
+                let t = v?.1.value();
+                if accept_filter(&t) {
+                    result.push(t);
+                }
+            }
+        }
+    }
+
+    if !f.states.iter().any(|s| s != &FilterState::Completed) {
+        let table = tx.open_table(TASKS_TABLE);
+        if let Ok(table) = table {
+            for v in table.iter()? {
+                let t = v?.1.value();
+                if accept_filter(&t) {
+                    result.push(t);
+                }
+            }
+        }
+    }
+
+    Ok(result)
 }
 
 #[cfg(test)]

@@ -2,6 +2,7 @@
 
 mod client;
 mod project;
+mod task;
 
 use std::error::Error;
 
@@ -49,10 +50,34 @@ impl ProviderTrait for Provider {
 
     async fn tasks(
         &mut self,
-        _project: Option<Box<dyn ProjectTrait>>,
+        project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
-        todo!("Implement me")
+        let project_id = if let Some(p) = project {
+            Some(uuid::Uuid::parse_str(p.id().as_str()).map_err(|e| {
+                tracing::error!(error=?e, id=p.id(), "Parse project id as uuid");
+                StringError::new(e.to_string().as_str())
+            })?)
+        } else {
+            None
+        };
+
+        let projects = self.c.projects().await?;
+
+        let provider_name = self.name();
+        Ok(self
+            .c
+            .tasks(project_id, f)
+            .await?
+            .iter_mut()
+            .map(|t| {
+                t.set_provider(&provider_name);
+                if let Some(p) = projects.iter().find(|p| p.id == t.project_id) {
+                    t.set_project(p.clone());
+                }
+                t.clone_boxed()
+            })
+            .collect::<Vec<Box<dyn TaskTrait>>>())
     }
 
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
@@ -87,7 +112,7 @@ impl ProviderTrait for Provider {
 mod test {
     use std::path::PathBuf;
 
-    use tatuin_core::{project::Project, provider::ProviderTrait};
+    use tatuin_core::{filter::Filter, project::Project, provider::ProviderTrait};
 
     use crate::{config::Config, tatuin::project::inbox_project};
 
@@ -122,5 +147,21 @@ mod test {
         assert_eq!(project.parent_id(), inbox.parent_id());
         assert_eq!(project.is_inbox(), inbox.is_inbox());
         assert_eq!(project.is_favorite(), inbox.is_favorite());
+    }
+
+    #[tokio::test]
+    async fn get_tasks_on_empty_provider() {
+        let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
+
+        let p = Provider::new(config(temp_dir.path().to_path_buf()));
+        assert!(p.is_ok());
+
+        let p: &mut dyn ProviderTrait = &mut p.unwrap();
+
+        let tasks = p.tasks(None, &Filter::full_filter()).await;
+        assert!(tasks.is_ok());
+
+        let tasks = tasks.unwrap();
+        assert_eq!(tasks.len(), 0);
     }
 }
