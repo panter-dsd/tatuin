@@ -12,13 +12,20 @@ use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait},
-    task::Task as TaskTrait,
-    task_patch::{PatchError, TaskPatch},
+    task::{Priority, Task as TaskTrait},
+    task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
 
 use crate::config::Config;
 
 pub const PROVIDER_NAME: &str = "Tatuin";
+
+fn parse_uuid(s: &str) -> Result<uuid::Uuid, Box<dyn Error>> {
+    uuid::Uuid::parse_str(s).map_err(|e| {
+        tracing::error!(error=?e, string=s, "Parse uuid from string");
+        StringError::new(e.to_string().as_str()).into()
+    })
+}
 
 pub struct Provider {
     cfg: Config,
@@ -54,10 +61,7 @@ impl ProviderTrait for Provider {
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, StringError> {
         let project_id = if let Some(p) = project {
-            Some(uuid::Uuid::parse_str(p.id().as_str()).map_err(|e| {
-                tracing::error!(error=?e, id=p.id(), "Parse project id as uuid");
-                StringError::new(e.to_string().as_str())
-            })?)
+            Some(parse_uuid(p.id().as_str())?)
         } else {
             None
         };
@@ -91,7 +95,7 @@ impl ProviderTrait for Provider {
             })
     }
 
-    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+    async fn patch_tasks(&mut self, _patches: &[TaskPatch]) -> Vec<PatchError> {
         todo!("Implement me")
     }
 
@@ -103,8 +107,18 @@ impl ProviderTrait for Provider {
         Capabilities { create_task: true }
     }
 
-    async fn create_task(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
-        todo!("Implement me")
+    async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
+        let mut t = task::Task::default();
+        t.id = uuid::Uuid::new_v4();
+        t.name = tp.name.clone().unwrap();
+        t.description = tp.description.clone();
+        t.due = tp.due.unwrap_or(DuePatchItem::NoDate).into();
+        t.priority = tp.priority.unwrap_or(Priority::Normal);
+        t.project_id = parse_uuid(project_id)?;
+        self.c.create_task(t).await.map_err(|e| {
+            tracing::error!(error=?e, "Insert task into database");
+            e.into()
+        })
     }
 }
 
@@ -112,7 +126,7 @@ impl ProviderTrait for Provider {
 mod test {
     use std::path::PathBuf;
 
-    use tatuin_core::{filter::Filter, project::Project, provider::ProviderTrait};
+    use tatuin_core::{filter::Filter, project::Project, provider::ProviderTrait, task_patch::TaskPatch};
 
     use crate::{config::Config, tatuin::project::inbox_project};
 
@@ -163,5 +177,35 @@ mod test {
 
         let tasks = tasks.unwrap();
         assert_eq!(tasks.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn create_tasks() {
+        let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
+
+        let p: &mut dyn ProviderTrait = &mut Provider::new(config(temp_dir.path().to_path_buf())).unwrap();
+
+        let project = &p.projects().await.unwrap()[0];
+
+        let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
+        assert_eq!(tasks.len(), 0);
+
+        let mut patches = Vec::new();
+        for i in 0..100 {
+            let tp = TaskPatch {
+                task: None,
+                name: Some(format!("Name {i}")),
+                description: Some(format!("Description {i}")),
+                due: Some(tatuin_core::task_patch::DuePatchItem::Today),
+                priority: Some(tatuin_core::task::Priority::Low),
+                state: None,
+            };
+            let r = p.create_task(project.id().as_str(), &tp).await;
+            patches.push(tp);
+            assert!(r.is_ok())
+        }
+
+        let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
+        assert_eq!(tasks.len(), patches.len());
     }
 }

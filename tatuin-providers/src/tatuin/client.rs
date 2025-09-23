@@ -41,6 +41,13 @@ impl Client {
             .await?
             .map_err(|e| e as Box<dyn Error>)
     }
+
+    pub async fn create_task(&self, t: Task) -> Result<(), Box<dyn Error>> {
+        let db = Arc::clone(&self.db);
+        tokio::task::spawn_blocking(move || create_task(&db, t))
+            .await?
+            .map_err(|e| e as Box<dyn Error>)
+    }
 }
 
 fn projects(db: &Database) -> Result<Vec<Project>, Box<dyn Error + Send + Sync>> {
@@ -94,7 +101,7 @@ fn tasks(db: &Database, project_id: Option<uuid::Uuid>, f: Filter) -> Result<Vec
         }
     }
 
-    if !f.states.iter().any(|s| s != &FilterState::Completed) {
+    if f.states.iter().any(|s| s != &FilterState::Completed) {
         let table = tx.open_table(TASKS_TABLE);
         if let Ok(table) = table {
             for v in table.iter()? {
@@ -107,6 +114,16 @@ fn tasks(db: &Database, project_id: Option<uuid::Uuid>, f: Filter) -> Result<Vec
     }
 
     Ok(result)
+}
+
+fn create_task(db: &Database, t: Task) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let tx = db.begin_write()?;
+    {
+        let mut table = tx.open_table(TASKS_TABLE)?;
+        table.insert(t.id.to_string().as_str(), t)?;
+    }
+    tx.commit()?;
+    Ok(())
 }
 
 #[cfg(test)]
