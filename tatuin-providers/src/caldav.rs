@@ -96,17 +96,17 @@ impl ProviderTrait for Provider {
             match task.as_any().downcast_ref::<Task>() {
                 Some(t) => {
                     let mut t = t.clone();
-                    t.name = p.name.clone().unwrap_or(t.name);
-                    if p.description.is_some() {
-                        t.description = p.description.clone();
+                    t.name = p.name.value().unwrap_or(t.name);
+                    if p.description.is_set() {
+                        t.description = p.description.value();
                     }
-                    if let Some(due) = p.due {
+                    if let Some(due) = p.due.value() {
                         t.due = due.into();
                     }
-                    if let Some(p) = p.priority {
+                    if let Some(p) = p.priority.value() {
                         t.priority = p.into();
                     }
-                    if let Some(s) = p.state {
+                    if let Some(s) = p.state.value() {
                         t.status = s.into();
                         if s == State::Completed {
                             t.completed = Some(chrono::Utc::now());
@@ -148,10 +148,10 @@ impl ProviderTrait for Provider {
         let t = Task {
             provider: PROVIDER_NAME.to_string(),
             properties: Vec::new(),
-            name: tp.name.clone().unwrap(),
-            description: tp.description.clone(),
-            due: tp.due.unwrap_or(DuePatchItem::NoDate).into(),
-            priority: tp.priority.unwrap_or(Priority::Normal).into(),
+            name: tp.name.value().unwrap(),
+            description: tp.description.value(),
+            due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
+            priority: tp.priority.value().unwrap_or(Priority::Normal).into(),
             ..Task::default()
         };
         self.c.create_or_update(&t).await.map_err(|e| {

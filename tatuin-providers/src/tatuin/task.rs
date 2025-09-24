@@ -18,9 +18,9 @@ pub struct Task {
     pub due: Option<DateTimeUtc>,
     pub project_id: uuid::Uuid,
 
-    #[serde(skip_serializing)]
+    #[serde(skip_serializing, skip_deserializing)]
     provider: String,
-    #[serde(skip_serializing)]
+    #[serde(skip_serializing, skip_deserializing)]
     project: Option<Project>,
 }
 
@@ -115,14 +115,14 @@ impl Value for Task {
     where
         Self: 'a,
     {
-        serde_json::from_slice(data).unwrap_or_default()
+        serde_json::from_slice(data).unwrap()
     }
 
     fn as_bytes<'a, 'b: 'a>(value: &'a Self::SelfType<'b>) -> Vec<u8>
     where
         Self: 'b,
     {
-        serde_json::to_vec(value).unwrap_or_default()
+        serde_json::to_vec(value).unwrap()
     }
 
     fn type_name() -> redb::TypeName {

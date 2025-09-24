@@ -3,7 +3,8 @@ use std::{error::Error, path::Path, sync::Arc};
 use tatuin_core::{
     filter::{Filter, FilterState},
     project::Project as ProjectTrait,
-    task::due_group,
+    task::{State, Task as TaskTrait, due_group},
+    task_patch::PatchError,
 };
 
 use super::{
@@ -47,6 +48,15 @@ impl Client {
         tokio::task::spawn_blocking(move || create_task(&db, t))
             .await?
             .map_err(|e| e as Box<dyn Error>)
+    }
+
+    pub async fn patch_tasks(&self, tasks: &[Task]) -> Vec<PatchError> {
+        let db = Arc::clone(&self.db);
+        let tasks_copy = tasks.to_vec();
+        match tokio::task::spawn_blocking(move || patch_tasks(&db, &tasks_copy)).await {
+            Ok(v) => v,
+            Err(e) => fill_global_error(Vec::new(), tasks, e.to_string().as_str()),
+        }
     }
 }
 
@@ -124,6 +134,72 @@ fn create_task(db: &Database, t: Task) -> Result<(), Box<dyn Error + Send + Sync
     }
     tx.commit()?;
     Ok(())
+}
+
+fn fill_global_error(errors: Vec<PatchError>, tasks: &[Task], error: &str) -> Vec<PatchError> {
+    [
+        errors,
+        tasks
+            .iter()
+            .map(|t| PatchError {
+                task: t.clone_boxed(),
+                error: error.to_string(),
+            })
+            .collect::<Vec<PatchError>>(),
+    ]
+    .concat()
+}
+
+fn patch_tasks(db: &Database, tasks: &[Task]) -> Vec<PatchError> {
+    let mut errors = Vec::new();
+
+    let tx = db.begin_write();
+    if let Err(e) = &tx {
+        return fill_global_error(errors, tasks, e.to_string().as_str());
+    }
+
+    let tx = tx.unwrap();
+
+    {
+        let tasks_table = tx.open_table(TASKS_TABLE);
+        if let Err(e) = &tasks_table {
+            return fill_global_error(errors, tasks, e.to_string().as_str());
+        }
+        let mut tasks_table = tasks_table.unwrap();
+
+        let completed_tasks_table = tx.open_table(COMPLETED_TASKS_TABLE);
+        if let Err(e) = &completed_tasks_table {
+            return fill_global_error(errors, tasks, e.to_string().as_str());
+        }
+        let mut completed_tasks_table = completed_tasks_table.unwrap();
+
+        for t in tasks {
+            let id = t.id().to_string();
+            if let Err(e) = tasks_table.remove(id.as_str()) {
+                tracing::error!(error=?e, id=id, "Remove task from tasks table");
+            }
+            if let Err(e) = completed_tasks_table.remove(id.as_str()) {
+                tracing::error!(error=?e, id=id, "Remove task from completed tasks table");
+            }
+            let result = if t.state == State::Completed {
+                completed_tasks_table.insert(id.as_str(), t)
+            } else {
+                tasks_table.insert(id.as_str(), t)
+            };
+            if let Err(e) = result {
+                tracing::error!(error=?e, id=id, "Add the task to database");
+                errors.push(PatchError {
+                    task: t.clone_boxed(),
+                    error: e.to_string(),
+                });
+            }
+        }
+    }
+    if let Err(e) = tx.commit() {
+        return fill_global_error(errors, tasks, e.to_string().as_str());
+    }
+
+    errors
 }
 
 #[cfg(test)]

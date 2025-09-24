@@ -340,12 +340,12 @@ impl ProviderTrait for Provider {
                 Some(t) => t,
                 None => panic!("Wrong casting!"),
             };
-            if let Some(state) = &p.state
+            if let Some(state) = &p.state.value()
                 && let Err(e) = self.patch_task_state(task, state).await
             {
                 errors.push(e);
             }
-            if let Some(due) = &p.due
+            if let Some(due) = &p.due.value()
                 && let Err(e) = self.patch_task_due(task, due).await
             {
                 errors.push(e);

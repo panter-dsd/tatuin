@@ -7,7 +7,9 @@ mod task;
 use std::error::Error;
 
 use async_trait::async_trait;
+use chrono::Utc;
 use client::Client;
+use task::Task;
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
@@ -95,8 +97,46 @@ impl ProviderTrait for Provider {
             })
     }
 
-    async fn patch_tasks(&mut self, _patches: &[TaskPatch]) -> Vec<PatchError> {
-        todo!("Implement me")
+    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+        let tasks = patches
+            .iter()
+            .map(|tp| {
+                let mut t = tp
+                    .task
+                    .as_ref()
+                    .expect("Task in patch should be exist")
+                    .as_any()
+                    .downcast_ref::<Task>()
+                    .expect("The task should have right type")
+                    .clone();
+
+                if let Some(n) = &tp.name.value() {
+                    t.name = n.clone();
+                }
+
+                if tp.description.is_set() {
+                    t.description = tp.description.value();
+                }
+
+                if let Some(p) = &tp.priority.value() {
+                    t.priority = *p;
+                }
+
+                if let Some(s) = &tp.state.value() {
+                    t.state = *s;
+                }
+
+                if tp.due.is_set() {
+                    t.due = match tp.due.value() {
+                        Some(d) => d.into(),
+                        None => None,
+                    }
+                }
+
+                t
+            })
+            .collect::<Vec<Task>>();
+        self.c.patch_tasks(&tasks).await
     }
 
     async fn reload(&mut self) {
@@ -110,11 +150,13 @@ impl ProviderTrait for Provider {
     async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
         let mut t = task::Task::default();
         t.id = uuid::Uuid::new_v4();
-        t.name = tp.name.clone().unwrap();
-        t.description = tp.description.clone();
-        t.due = tp.due.unwrap_or(DuePatchItem::NoDate).into();
-        t.priority = tp.priority.unwrap_or(Priority::Normal);
+        t.name = tp.name.value().unwrap();
+        t.description = tp.description.value();
+        t.due = tp.due.value().unwrap_or(DuePatchItem::NoDate).into();
+        t.priority = tp.priority.value().unwrap_or(Priority::Normal);
         t.project_id = parse_uuid(project_id)?;
+        t.created_at = Utc::now();
+        t.updated_at = Utc::now();
         self.c.create_task(t).await.map_err(|e| {
             tracing::error!(error=?e, "Insert task into database");
             e.into()
@@ -124,9 +166,16 @@ impl ProviderTrait for Provider {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
+    use std::{error::Error, path::PathBuf};
 
-    use tatuin_core::{filter::Filter, project::Project, provider::ProviderTrait, task_patch::TaskPatch};
+    use super::task;
+    use tatuin_core::{
+        filter::Filter,
+        project::Project,
+        provider::ProviderTrait,
+        task::{Priority, State},
+        task_patch::{DuePatchItem, TaskPatch, ValuePatch},
+    };
 
     use crate::{config::Config, tatuin::project::inbox_project};
 
@@ -179,6 +228,48 @@ mod test {
         assert_eq!(tasks.len(), 0);
     }
 
+    fn generate_task_patch(i: u16) -> TaskPatch {
+        TaskPatch {
+            task: None,
+            name: ValuePatch::Value(format!("Name {i}")),
+            description: if i % 2 == 0 {
+                ValuePatch::Value(format!("Description {i}"))
+            } else {
+                ValuePatch::NotSet
+            },
+            due: if i % 3 == 0 {
+                ValuePatch::Value(DuePatchItem::Today)
+            } else {
+                ValuePatch::NotSet
+            },
+            priority: if i % 5 == 0 {
+                ValuePatch::Value(Priority::Low)
+            } else {
+                ValuePatch::NotSet
+            },
+            state: if i % 2 == 0 {
+                ValuePatch::Value(State::Completed)
+            } else {
+                ValuePatch::NotSet
+            },
+        }
+    }
+
+    async fn generate_items(
+        p: &mut dyn ProviderTrait,
+        count: u16,
+        project_id: &str,
+    ) -> Result<Vec<TaskPatch>, Box<dyn Error>> {
+        let mut patches = Vec::new();
+        for i in 0..count {
+            let tp = generate_task_patch(i);
+            p.create_task(project_id, &tp).await?;
+            patches.push(tp);
+        }
+
+        Ok(patches)
+    }
+
     #[tokio::test]
     async fn create_tasks() {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
@@ -190,22 +281,77 @@ mod test {
         let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
         assert_eq!(tasks.len(), 0);
 
-        let mut patches = Vec::new();
-        for i in 0..100 {
-            let tp = TaskPatch {
-                task: None,
-                name: Some(format!("Name {i}")),
-                description: Some(format!("Description {i}")),
-                due: Some(tatuin_core::task_patch::DuePatchItem::Today),
-                priority: Some(tatuin_core::task::Priority::Low),
-                state: None,
-            };
-            let r = p.create_task(project.id().as_str(), &tp).await;
-            patches.push(tp);
-            assert!(r.is_ok())
-        }
+        let patches = generate_items(p, 100, project.id().as_str()).await;
+        assert!(patches.is_ok());
+        let patches = patches.unwrap();
 
         let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
         assert_eq!(tasks.len(), patches.len());
+
+        for t in tasks {
+            let found = patches.iter().any(|tp| {
+                *tp.name.value().unwrap() == t.text()
+                    && tp.description.value() == t.description()
+                    && tp.due.value() == t.due().map(|d| d.into())
+                    && tp.priority.value().unwrap_or(Priority::Normal) == t.priority()
+                    && t.state() == State::Uncompleted
+            });
+            assert!(
+                found,
+                "Task {:?} was not found",
+                t.as_any().downcast_ref::<task::Task>()
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn mark_task_as_completed() {
+        let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
+
+        let p: &mut dyn ProviderTrait = &mut Provider::new(config(temp_dir.path().to_path_buf())).unwrap();
+
+        let project = &p.projects().await.unwrap()[0];
+
+        let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
+        assert_eq!(tasks.len(), 0);
+
+        let patches = generate_items(p, 100, project.id().as_str()).await;
+        assert!(patches.is_ok());
+        let patches = patches.unwrap();
+
+        let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
+        assert_eq!(tasks.len(), patches.len());
+
+        let complete_patches = tasks
+            .iter()
+            .map(|t| TaskPatch {
+                task: Some(t.clone_boxed()),
+                name: ValuePatch::NotSet,
+                description: ValuePatch::NotSet,
+                due: ValuePatch::NotSet,
+                priority: ValuePatch::NotSet,
+                state: ValuePatch::Value(State::Completed),
+            })
+            .collect::<Vec<TaskPatch>>();
+        let patch_errors = p.patch_tasks(&complete_patches).await;
+        assert!(patch_errors.is_empty());
+
+        let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
+        assert_eq!(tasks.len(), patches.len());
+
+        for t in tasks {
+            let found = patches.iter().any(|tp| {
+                *tp.name.value().unwrap() == t.text()
+                    && tp.description.value() == t.description()
+                    && tp.due.value() == t.due().map(|d| d.into())
+                    && tp.priority.value().unwrap_or(Priority::Normal) == t.priority()
+                    && t.state() == State::Completed
+            });
+            assert!(
+                found,
+                "Task {:?} was not found",
+                t.as_any().downcast_ref::<task::Task>()
+            );
+        }
     }
 }

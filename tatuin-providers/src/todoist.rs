@@ -161,7 +161,7 @@ impl ProviderTrait for Provider {
         for p in patches {
             let task = p.task.as_ref().unwrap();
 
-            if let Some(state) = &p.state {
+            if let Some(state) = &p.state.value() {
                 match state {
                     State::Completed => match self.c.close_task(task.id().as_str()).await {
                         Ok(_) => self.tasks.clear(),
@@ -184,13 +184,15 @@ impl ProviderTrait for Provider {
                 }
             }
 
-            if p.due.is_some() || p.priority.is_some() || p.description.is_some() || p.name.is_some() {
+            if p.due.is_set() || p.priority.is_set() || p.description.is_set() || p.name.is_set() {
                 let mut due_custom_dt = String::new();
 
+                let name = p.name.value();
+                let description = p.description.value();
                 let r = client::UpdateTaskRequest {
-                    content: p.name.as_deref(),
-                    description: p.description.as_deref(),
-                    due_string: p.due.as_ref().map(|due| match due {
+                    content: name.as_deref(),
+                    description: description.as_deref(),
+                    due_string: p.due.value().map(|due| match due {
                         DuePatchItem::NoDate => "no date",
                         DuePatchItem::Today => "today",
                         DuePatchItem::Tomorrow => "tomorrow",
@@ -201,7 +203,7 @@ impl ProviderTrait for Provider {
                             &due_custom_dt
                         }
                     }),
-                    priority: p.priority.as_ref().map(task::priority_to_int),
+                    priority: p.priority.value().map(|p| task::priority_to_int(&p)),
                 };
                 match self.c.update_task(task.id().as_str(), &r).await {
                     Ok(_) => self.tasks.clear(),
@@ -228,11 +230,13 @@ impl ProviderTrait for Provider {
     async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
         let mut due_custom_dt = String::new();
 
+        let name = tp.name.value().unwrap();
+        let description = tp.description.value();
         let r = client::CreateTaskRequest {
-            content: tp.name.as_ref().unwrap(),
-            description: tp.description.as_deref(),
+            content: name.as_str(),
+            description: description.as_deref(),
             project_id: Some(project_id),
-            due_string: tp.due.as_ref().map(|due| match due {
+            due_string: tp.due.value().map(|due| match due {
                 DuePatchItem::NoDate => "no date",
                 DuePatchItem::Today => "today",
                 DuePatchItem::Tomorrow => "tomorrow",
@@ -243,7 +247,7 @@ impl ProviderTrait for Provider {
                     &due_custom_dt
                 }
             }),
-            priority: tp.priority.as_ref().map(task::priority_to_int),
+            priority: tp.priority.value().map(|p| task::priority_to_int(&p)),
         };
         self.c.create_task(&r).await.map_err(|e| e.into())
     }

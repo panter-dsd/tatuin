@@ -30,7 +30,7 @@ impl TaskTrait for PatchedTask {
 
     fn text(&self) -> String {
         if let Some(p) = &self.patch
-            && let Some(name) = &p.name
+            && let Some(name) = &p.name.value()
         {
             return name.to_string();
         }
@@ -40,9 +40,9 @@ impl TaskTrait for PatchedTask {
 
     fn description(&self) -> Option<String> {
         if let Some(p) = &self.patch
-            && p.description.is_some()
+            && p.description.is_set()
         {
-            return p.description.clone();
+            return p.description.value();
         }
 
         self.task.description()
@@ -50,7 +50,7 @@ impl TaskTrait for PatchedTask {
 
     fn priority(&self) -> Priority {
         if let Some(p) = &self.patch
-            && let Some(v) = &p.priority
+            && let Some(v) = &p.priority.value()
         {
             return *v;
         }
@@ -59,7 +59,7 @@ impl TaskTrait for PatchedTask {
     }
     fn state(&self) -> State {
         if let Some(p) = &self.patch
-            && let Some(v) = &p.state
+            && let Some(v) = &p.state.value()
         {
             return *v;
         }
@@ -78,9 +78,12 @@ impl TaskTrait for PatchedTask {
     }
     fn due(&self) -> Option<DateTimeUtc> {
         if let Some(p) = &self.patch
-            && let Some(v) = p.due
+            && p.due.is_set()
         {
-            return v.into();
+            return match p.due.value() {
+                Some(d) => d.into(),
+                None => None,
+            };
         }
 
         self.task.due()
