@@ -232,22 +232,22 @@ mod test {
         TaskPatch {
             task: None,
             name: ValuePatch::Value(format!("Name {i}")),
-            description: if i % 2 == 0 {
+            description: if i.is_multiple_of(2) {
                 ValuePatch::Value(format!("Description {i}"))
             } else {
                 ValuePatch::NotSet
             },
-            due: if i % 3 == 0 {
+            due: if i.is_multiple_of(3) {
                 ValuePatch::Value(DuePatchItem::Today)
             } else {
                 ValuePatch::NotSet
             },
-            priority: if i % 5 == 0 {
+            priority: if i.is_multiple_of(5) {
                 ValuePatch::Value(Priority::Low)
             } else {
                 ValuePatch::NotSet
             },
-            state: if i % 2 == 0 {
+            state: if i.is_multiple_of(2) {
                 ValuePatch::Value(State::Completed)
             } else {
                 ValuePatch::NotSet
