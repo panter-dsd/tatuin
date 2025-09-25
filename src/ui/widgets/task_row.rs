@@ -59,16 +59,16 @@ impl TaskRow {
         let mut uncommitted = false;
         if let Some(patch) = changed_tasks.iter().find(|c| c.is_task(t)) {
             uncommitted = !patch.is_empty();
-            if let Some(n) = &patch.name {
+            if let Some(n) = &patch.name.value() {
                 name = n.to_string();
             }
-            if let Some(s) = &patch.state {
+            if let Some(s) = &patch.state.value() {
                 state = *s;
             }
-            if let Some(d) = &patch.due {
+            if let Some(d) = &patch.due.value() {
                 due = d.to_string();
             }
-            if let Some(p) = &patch.priority {
+            if let Some(p) = &patch.priority.value() {
                 priority = *p;
             }
         }

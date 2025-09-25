@@ -2291,8 +2291,8 @@ dependencies = [
  "serde",
  "serde_json",
  "strum 0.27.2",
- "tatuin-core 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "tatuin-providers 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tatuin-core",
+ "tatuin-providers",
  "time",
  "tokio",
  "tokio-stream",
@@ -2307,22 +2307,6 @@ dependencies = [
 [[package]]
 name = "tatuin-core"
 version = "0.1.5"
-dependencies = [
- "async-trait",
- "chrono",
- "clap",
- "colored",
- "serde",
- "serde_json",
- "tokio",
- "xdg",
-]
-
-[[package]]
-name = "tatuin-core"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9289674a8b96568ae676807b13dac2dfa2196b6de2628d0556d5bb1c65b34ef0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -2352,37 +2336,8 @@ dependencies = [
  "serde_json",
  "sha256",
  "strum 0.27.2",
- "tatuin-core 0.1.5",
+ "tatuin-core",
  "tempfile",
- "tokio",
- "toml",
- "tracing",
- "url",
- "url-builder",
- "urlencoding",
- "uuid",
-]
-
-[[package]]
-name = "tatuin-providers"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd9434a9033ea9b506c15710849dee3eee5a0bfe378684dbc2373ed3d711aa0c"
-dependencies = [
- "async-trait",
- "chrono",
- "chrono-tz",
- "ical",
- "iso8601-duration",
- "itertools 0.14.0",
- "regex",
- "reqwest",
- "reqwest_dav",
- "serde",
- "serde_json",
- "sha256",
- "strum 0.27.2",
- "tatuin-core 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio",
  "toml",
  "tracing",

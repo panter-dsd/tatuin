@@ -80,11 +80,21 @@ impl From<DateTimeUtc> for DuePatchItem {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum ValuePatch<T> {
+    #[default]
     NotSet,
     Empty,
     Value(T),
+}
+
+impl<T> From<Option<T>> for ValuePatch<T> {
+    fn from(v: Option<T>) -> Self {
+        match v {
+            Some(v) => Self::Value(v),
+            None => Self::NotSet,
+        }
+    }
 }
 
 impl<T> ValuePatch<T>
@@ -123,6 +133,7 @@ mod test {
     }
 }
 
+#[derive(Default)]
 pub struct TaskPatch {
     pub task: Option<Box<dyn TaskTrait>>,
     pub name: ValuePatch<String>,

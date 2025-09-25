@@ -7,7 +7,7 @@ mod ui;
 mod wizard;
 
 use std::{path::PathBuf, sync::Arc};
-use tatuin_providers::{caldav, github_issues, gitlab_todo, ical, obsidian, todoist};
+use tatuin_providers::{caldav, config::Config, github_issues, gitlab_todo, ical, obsidian, todoist};
 
 use clap::{Parser, Subcommand};
 use color_eyre::owo_colors::OwoColorize;
@@ -182,6 +182,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
+        let cfg = Config::new(APP_NAME, name);
+
         let p: Option<Box<dyn ProviderTrait>> = match config.get("type").unwrap().as_str() {
             obsidian::PROVIDER_NAME => {
                 let mut path = config.get("path").unwrap().to_string();
@@ -189,34 +191,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     path.push('/');
                 }
 
-                Some(Box::new(obsidian::Provider::new(name, path.as_str())))
+                Some(Box::new(obsidian::Provider::new(cfg, path.as_str())))
             }
             todoist::PROVIDER_NAME => Some(Box::new(todoist::Provider::new(
-                name,
+                cfg,
                 config.get("api_key").unwrap().as_str(),
             ))),
             gitlab_todo::PROVIDER_NAME => Some(Box::new(gitlab_todo::Provider::new(
-                name,
+                cfg,
                 config.get("base_url").unwrap().as_str(),
                 config.get("api_key").unwrap().as_str(),
             ))),
             github_issues::PROVIDER_NAME => Some(Box::new(github_issues::Provider::new(
-                name,
+                cfg,
                 config.get("api_key").unwrap().as_str(),
                 config.get("repository").unwrap().as_str(),
             ))),
-            ical::PROVIDER_NAME => Some(Box::new(ical::Provider::new(
-                name,
-                config.get("url").unwrap().as_str(),
-                APP_NAME,
-            ))),
+            ical::PROVIDER_NAME => Some(Box::new(ical::Provider::new(cfg, config.get("url").unwrap().as_str())?)),
             caldav::PROVIDER_NAME => Some(Box::new(caldav::Provider::new(
-                name,
+                cfg,
                 config.get("url").unwrap().as_str(),
                 config.get("login").unwrap().as_str(),
                 config.get("password").unwrap().as_str(),
-                APP_NAME,
-            ))),
+            )?)),
             _ => {
                 println!("Unknown provider configuration for section: {name}");
                 None
