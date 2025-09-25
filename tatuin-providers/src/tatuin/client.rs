@@ -12,6 +12,8 @@ use super::{
     task::Task,
 };
 
+type SyncedError = Box<dyn Error + Send + Sync>;
+
 const DB_FILE_NAME: &str = "tatuin.db";
 const PROJECTS_TABLE: TableDefinition<&str, Project> = TableDefinition::new("projects");
 const TASKS_TABLE: TableDefinition<&str, Task> = TableDefinition::new("tasks");
@@ -61,7 +63,7 @@ impl Client {
     }
 }
 
-fn projects(db: &Database, provider_name: &str) -> Result<Vec<Project>, Box<dyn Error + Send + Sync>> {
+fn projects(db: &Database, provider_name: &str) -> Result<Vec<Project>, SyncedError> {
     {
         let tx = db.begin_read()?;
         let table = tx.open_table(PROJECTS_TABLE);
@@ -81,7 +83,7 @@ fn projects(db: &Database, provider_name: &str) -> Result<Vec<Project>, Box<dyn 
     projects(db, provider_name)
 }
 
-fn init_projects_table(db: &Database, provider_name: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
+fn init_projects_table(db: &Database, provider_name: &str) -> Result<(), SyncedError> {
     let tx = db.begin_write()?;
     {
         let mut table = tx.open_table(PROJECTS_TABLE)?;
@@ -93,17 +95,18 @@ fn init_projects_table(db: &Database, provider_name: &str) -> Result<(), Box<dyn
     Ok(())
 }
 
-fn tasks(db: &Database, project_id: Option<uuid::Uuid>, f: Filter) -> Result<Vec<Task>, Box<dyn Error + Send + Sync>> {
+fn tasks(db: &Database, project_id: Option<uuid::Uuid>, f: Filter) -> Result<Vec<Task>, SyncedError> {
     let tx = db.begin_read()?;
     let mut result = Vec::new();
+
     let accept_filter = |t: &Task| -> bool {
         project_id.is_none_or(|id| t.project_id == id)
             && f.states.contains(&t.state.into())
             && f.due.contains(&due_group(&t.due))
     };
 
-    if f.states.contains(&FilterState::Completed) {
-        let table = tx.open_table(COMPLETED_TASKS_TABLE);
+    let mut load_tasks = |td: TableDefinition<&str, Task>| -> Result<(), SyncedError> {
+        let table = tx.open_table(td);
         if let Ok(table) = table {
             for v in table.iter()? {
                 let t = v?.1.value();
@@ -112,24 +115,22 @@ fn tasks(db: &Database, project_id: Option<uuid::Uuid>, f: Filter) -> Result<Vec
                 }
             }
         }
+
+        Ok(())
+    };
+
+    if f.states.contains(&FilterState::Completed) {
+        load_tasks(COMPLETED_TASKS_TABLE)?;
     }
 
     if f.states.iter().any(|s| s != &FilterState::Completed) {
-        let table = tx.open_table(TASKS_TABLE);
-        if let Ok(table) = table {
-            for v in table.iter()? {
-                let t = v?.1.value();
-                if accept_filter(&t) {
-                    result.push(t);
-                }
-            }
-        }
+        load_tasks(TASKS_TABLE)?;
     }
 
     Ok(result)
 }
 
-fn create_task(db: &Database, t: Task) -> Result<(), Box<dyn Error + Send + Sync>> {
+fn create_task(db: &Database, t: Task) -> Result<(), SyncedError> {
     let tx = db.begin_write()?;
     {
         let mut table = tx.open_table(TASKS_TABLE)?;
