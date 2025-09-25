@@ -31,7 +31,7 @@ use ratatui::{
 use std::{any::Any, slice::Iter, slice::IterMut, sync::Arc};
 use tatuin_core::{
     patched_task::PatchedTask,
-    task_patch::{DuePatchItem, PatchError, TaskPatch},
+    task_patch::{DuePatchItem, PatchError, TaskPatch, ValuePatch},
     types::ArcRwLock,
 };
 use tokio::sync::{RwLock, broadcast};
@@ -454,8 +454,8 @@ impl TasksWidget {
                             s.all_tasks
                                 .append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>());
                             s.all_tasks.sort_by(|l, r| {
-                                due_group(l.as_ref())
-                                    .cmp(&due_group(r.as_ref()))
+                                due_group(&l.due())
+                                    .cmp(&due_group(&r.due()))
                                     .then_with(|| r.priority().cmp(&l.priority()))
                                     .then_with(|| l.due().cmp(&r.due()))
                                     .then_with(|| project_name(l.as_ref()).cmp(&project_name(r.as_ref())))
@@ -552,10 +552,10 @@ impl TasksWidget {
 
         if let Some(p) = self.changed_tasks.iter_mut().find(|c| c.is_task(t)) {
             span.record("existed_patch", p.to_string());
-            if let Some(s) = &p.state {
+            if let Some(s) = &p.state.value() {
                 current_state = *s;
                 span.record("current_state", current_state.to_string());
-                p.state = None;
+                p.state = ValuePatch::NotSet;
                 if p.is_empty() {
                     self.changed_tasks.retain(|c| !c.is_task(t));
                 }
@@ -570,14 +570,11 @@ impl TasksWidget {
 
         if patched_task.patch_policy().available_states.contains(&new_state) && (new_state != t.state()) {
             match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
-                Some(p) => p.state = Some(new_state),
+                Some(p) => p.state = ValuePatch::Value(new_state),
                 None => self.changed_tasks.push(TaskPatch {
                     task: Some(t.clone_boxed()),
-                    name: None,
-                    description: None,
-                    due: None,
-                    priority: None,
-                    state: Some(new_state),
+                    state: ValuePatch::Value(new_state),
+                    ..TaskPatch::default()
                 }),
             }
         }
@@ -593,14 +590,11 @@ impl TasksWidget {
 
         let t = self.tasks[selected.unwrap()].task();
         match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
-            Some(p) => p.due = Some(*due),
+            Some(p) => p.due = ValuePatch::Value(*due),
             None => self.changed_tasks.push(TaskPatch {
                 task: Some(t.clone_boxed()),
-                name: None,
-                description: None,
-                due: Some(*due),
-                priority: None,
-                state: None,
+                due: ValuePatch::Value(*due),
+                ..TaskPatch::default()
             }),
         }
         self.recreate_current_task_row().await;
@@ -616,9 +610,9 @@ impl TasksWidget {
         match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
             Some(p) => {
                 p.priority = if *priority == t.priority() {
-                    None
+                    ValuePatch::NotSet
                 } else {
-                    Some(*priority)
+                    ValuePatch::Value(*priority)
                 };
                 if p.is_empty() {
                     self.changed_tasks.retain(|c| !c.is_task(t));
@@ -626,11 +620,8 @@ impl TasksWidget {
             }
             None => self.changed_tasks.push(TaskPatch {
                 task: Some(t.clone_boxed()),
-                name: None,
-                description: None,
-                due: None,
-                priority: Some(*priority),
-                state: None,
+                priority: ValuePatch::Value(*priority),
+                ..TaskPatch::default()
             }),
         }
         self.recreate_current_task_row().await;
@@ -917,11 +908,11 @@ fn project_name(t: &dyn TaskTrait) -> String {
     t.project().map(|p| p.name()).unwrap_or_default()
 }
 
-fn replace_if<T>(op: &mut Option<T>, other: &Option<T>)
+fn replace_if<T>(op: &mut ValuePatch<T>, other: &ValuePatch<T>)
 where
     T: Clone,
 {
-    if let Some(t) = other {
-        op.replace(t.clone());
+    if other.is_set() {
+        *op = other.clone();
     }
 }

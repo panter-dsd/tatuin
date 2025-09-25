@@ -17,18 +17,20 @@ use tatuin_core::{
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
 
+use crate::config::Config;
+
 pub const PROVIDER_NAME: &str = "Obsidian";
 
 pub struct Provider {
-    name: String,
+    cfg: Config,
     c: client::Client,
     rest: rest::Client,
 }
 
 impl Provider {
-    pub fn new(name: &str, path: &str) -> Self {
+    pub fn new(cfg: Config, path: &str) -> Self {
         Self {
-            name: name.to_string(),
+            cfg,
             c: client::Client::new(path),
             rest: rest::Client::new(path),
         }
@@ -44,7 +46,7 @@ impl std::fmt::Debug for Provider {
 #[async_trait]
 impl ProviderTrait for Provider {
     fn name(&self) -> String {
-        self.name.to_string()
+        self.cfg.name()
     }
 
     fn type_name(&self) -> String {
@@ -67,7 +69,7 @@ impl ProviderTrait for Provider {
 
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
         Ok(vec![Box::new(project::Project::new(
-            self.name.as_str(),
+            self.cfg.name().as_str(),
             self.c.root_path().as_str(),
             format!("{}/daily.md", self.c.root_path()).as_str(),
         ))])
@@ -111,10 +113,10 @@ impl ProviderTrait for Provider {
 
     async fn create_task(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
         let t = task::Task {
-            text: tp.name.clone().unwrap(),
+            text: tp.name.value().unwrap(),
             state: task::State::Uncompleted,
-            due: tp.due.unwrap_or(DuePatchItem::NoDate).into(),
-            priority: tp.priority.unwrap_or(Priority::Normal),
+            due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
+            priority: tp.priority.value().unwrap_or(Priority::Normal),
             ..task::Task::default()
         };
         self.rest.add_text_to_daily_note(task_to_string(&t).as_str()).await
@@ -124,12 +126,12 @@ impl ProviderTrait for Provider {
 fn patch_to_internal<'a>(t: &'a task::Task, tp: &TaskPatch) -> patch::TaskPatch<'a> {
     patch::TaskPatch {
         task: t,
-        name: tp.name.clone(),
-        state: tp.state.map(|s| s.into()),
-        due: match tp.due {
+        name: tp.name.value(),
+        state: tp.state.value().map(|s| s.into()),
+        due: match tp.due.value() {
             Some(due) => due.into(),
             None => None,
         },
-        priority: tp.priority,
+        priority: tp.priority.value(),
     }
 }

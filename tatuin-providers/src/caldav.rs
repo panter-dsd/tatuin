@@ -3,12 +3,15 @@
 mod client;
 mod fake_project;
 
+use std::error::Error;
+
 use async_trait::async_trait;
 
 use super::ical::Task;
+use crate::config::Config as ProviderConfig;
 use client::{Client, Config};
 use tatuin_core::{
-    StringError, filter, folders,
+    StringError, filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProviderTrait},
     task::{Priority, State, Task as TaskTrait},
@@ -18,28 +21,25 @@ use tatuin_core::{
 pub const PROVIDER_NAME: &str = "CalDav";
 
 pub struct Provider {
-    name: String,
+    cfg: ProviderConfig,
 
     c: Client,
     tasks: Vec<Task>,
 }
 
 impl Provider {
-    pub fn new(name: &str, url: &str, login: &str, password: &str, app_name: &str) -> Self {
-        let mut s = Self {
-            name: name.to_string(),
-            c: Client::new(Config {
-                url: url.to_string(),
-                login: login.to_string(),
-                password: password.to_string(),
-            }),
+    pub fn new(cfg: ProviderConfig, url: &str, login: &str, password: &str) -> Result<Self, Box<dyn Error>> {
+        let mut c = Client::new(Config {
+            url: url.to_string(),
+            login: login.to_string(),
+            password: password.to_string(),
+        });
+        c.set_cache_folder(&cfg.cache_path()?);
+        Ok(Self {
+            cfg,
+            c,
             tasks: Vec::new(),
-        };
-
-        if let Ok(f) = folders::provider_cache_folder(app_name, &s) {
-            s.c.set_cache_folder(&f);
-        }
-        s
+        })
     }
 }
 
@@ -52,7 +52,7 @@ impl std::fmt::Debug for Provider {
 #[async_trait]
 impl ProviderTrait for Provider {
     fn name(&self) -> String {
-        self.name.to_string()
+        self.cfg.name()
     }
 
     fn type_name(&self) -> String {
@@ -75,7 +75,7 @@ impl ProviderTrait for Provider {
                 .filter(|t| f.accept(*t))
                 .map(|t| {
                     let mut task = t.clone();
-                    task.set_provider(self.name.as_str());
+                    task.set_provider(self.cfg.name().as_str());
                     task
                 })
                 .collect();
@@ -96,17 +96,17 @@ impl ProviderTrait for Provider {
             match task.as_any().downcast_ref::<Task>() {
                 Some(t) => {
                     let mut t = t.clone();
-                    t.name = p.name.clone().unwrap_or(t.name);
-                    if p.description.is_some() {
-                        t.description = p.description.clone();
+                    t.name = p.name.value().unwrap_or(t.name);
+                    if p.description.is_set() {
+                        t.description = p.description.value();
                     }
-                    if let Some(due) = p.due {
+                    if let Some(due) = p.due.value() {
                         t.due = due.into();
                     }
-                    if let Some(p) = p.priority {
+                    if let Some(p) = p.priority.value() {
                         t.priority = p.into();
                     }
-                    if let Some(s) = p.state {
+                    if let Some(s) = p.state.value() {
                         t.status = s.into();
                         if s == State::Completed {
                             t.completed = Some(chrono::Utc::now());
@@ -148,10 +148,10 @@ impl ProviderTrait for Provider {
         let t = Task {
             provider: PROVIDER_NAME.to_string(),
             properties: Vec::new(),
-            name: tp.name.clone().unwrap(),
-            description: tp.description.clone(),
-            due: tp.due.unwrap_or(DuePatchItem::NoDate).into(),
-            priority: tp.priority.unwrap_or(Priority::Normal).into(),
+            name: tp.name.value().unwrap(),
+            description: tp.description.value(),
+            due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
+            priority: tp.priority.value().unwrap_or(Priority::Normal).into(),
             ..Task::default()
         };
         self.c.create_or_update(&t).await.map_err(|e| {

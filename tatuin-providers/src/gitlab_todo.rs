@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 
-use crate::gitlab::{
-    client::{Client, UpdateIssueRequest},
-    structs,
+use crate::{
+    config::Config,
+    gitlab::{
+        client::{Client, UpdateIssueRequest},
+        structs,
+    },
 };
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use std::{any::Any, collections::HashMap, error::Error};
@@ -175,16 +178,16 @@ impl TaskTrait for Task {
 }
 
 pub struct Provider {
-    name: String,
+    cfg: Config,
     client: Client,
     tasks: Vec<Task>,
     last_filter: Option<filter::Filter>,
 }
 
 impl Provider {
-    pub fn new(name: &str, base_url: &str, api_key: &str) -> Self {
+    pub fn new(cfg: Config, base_url: &str, api_key: &str) -> Self {
         Self {
-            name: name.to_string(),
+            cfg,
             client: Client::new(base_url, api_key),
             tasks: Vec::new(),
             last_filter: None,
@@ -267,7 +270,7 @@ impl std::fmt::Debug for Provider {
 #[async_trait]
 impl ProviderTrait for Provider {
     fn name(&self) -> String {
-        self.name.to_string()
+        self.cfg.name()
     }
 
     fn type_name(&self) -> String {
@@ -312,7 +315,7 @@ impl ProviderTrait for Provider {
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
 
         for t in &self.tasks {
-            if f.due.contains(&due_group(t)) {
+            if f.due.contains(&due_group(&t.due())) {
                 result.push(Box::new(t.clone()));
             }
         }
@@ -337,12 +340,12 @@ impl ProviderTrait for Provider {
                 Some(t) => t,
                 None => panic!("Wrong casting!"),
             };
-            if let Some(state) = &p.state
+            if let Some(state) = &p.state.value()
                 && let Err(e) = self.patch_task_state(task, state).await
             {
                 errors.push(e);
             }
-            if let Some(due) = &p.due
+            if let Some(due) = &p.due.value()
                 && let Err(e) = self.patch_task_due(task, due).await
             {
                 errors.push(e);

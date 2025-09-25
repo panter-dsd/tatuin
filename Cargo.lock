@@ -1711,6 +1711,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "redb"
+version = "2.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8eca1e9d98d5a7e9002d0013e18d5a9b000aee942eb134883a82f06ebffb6c01"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "redox_syscall"
 version = "0.5.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2282,8 +2291,8 @@ dependencies = [
  "serde",
  "serde_json",
  "strum 0.27.2",
- "tatuin-core 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "tatuin-providers 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tatuin-core",
+ "tatuin-providers",
  "time",
  "tokio",
  "tokio-stream",
@@ -2310,22 +2319,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tatuin-core"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9289674a8b96568ae676807b13dac2dfa2196b6de2628d0556d5bb1c65b34ef0"
-dependencies = [
- "async-trait",
- "chrono",
- "clap",
- "colored",
- "serde",
- "serde_json",
- "tokio",
- "xdg",
-]
-
-[[package]]
 name = "tatuin-providers"
 version = "0.1.2"
 dependencies = [
@@ -2335,6 +2328,7 @@ dependencies = [
  "ical",
  "iso8601-duration",
  "itertools 0.14.0",
+ "redb",
  "regex",
  "reqwest",
  "reqwest_dav",
@@ -2342,36 +2336,8 @@ dependencies = [
  "serde_json",
  "sha256",
  "strum 0.27.2",
- "tatuin-core 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "tokio",
- "toml",
- "tracing",
- "url",
- "url-builder",
- "urlencoding",
- "uuid",
-]
-
-[[package]]
-name = "tatuin-providers"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd9434a9033ea9b506c15710849dee3eee5a0bfe378684dbc2373ed3d711aa0c"
-dependencies = [
- "async-trait",
- "chrono",
- "chrono-tz",
- "ical",
- "iso8601-duration",
- "itertools 0.14.0",
- "regex",
- "reqwest",
- "reqwest_dav",
- "serde",
- "serde_json",
- "sha256",
- "strum 0.27.2",
- "tatuin-core 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tatuin-core",
+ "tempfile",
  "tokio",
  "toml",
  "tracing",
@@ -2847,6 +2813,7 @@ checksum = "2f87b8aa10b915a06587d0dec516c282ff295b475d94abf425d62b57710070a2"
 dependencies = [
  "getrandom 0.3.3",
  "js-sys",
+ "serde",
  "wasm-bindgen",
 ]
 

@@ -11,7 +11,7 @@ use ratatui::{
 };
 use tatuin_core::{
     task::{DateTimeUtc, Priority, Task as TaskTrait},
-    task_patch::{DuePatchItem, TaskPatch},
+    task_patch::{DuePatchItem, TaskPatch, ValuePatch},
     types::ArcRwLock,
 };
 
@@ -220,13 +220,19 @@ impl Dialog {
             return None;
         }
 
+        let description = self.task_description_editor.text();
+
         Some(TaskPatch {
             task: self.task.as_ref().map(|t| t.clone_boxed()),
-            name: Some(self.task_name_editor.text()),
-            description: Some(self.task_description_editor.text()),
-            due: self.due_date_selector.value().await.map(|item| *item.data()),
-            priority: self.priority_selector.value().await.map(|item| *item.data()),
-            state: None,
+            name: ValuePatch::Value(self.task_name_editor.text()),
+            description: if description.is_empty() {
+                ValuePatch::Empty
+            } else {
+                ValuePatch::Value(description)
+            },
+            due: self.due_date_selector.value().await.map(|item| *item.data()).into(),
+            priority: self.priority_selector.value().await.map(|item| *item.data()).into(),
+            state: ValuePatch::NotSet,
         })
     }
 

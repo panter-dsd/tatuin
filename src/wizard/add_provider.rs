@@ -5,9 +5,10 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::io::{self, Write};
 use std::path;
-use tatuin_providers::{caldav, github_issues, gitlab_todo, ical, obsidian, todoist};
+use tatuin_providers::{caldav, github_issues, gitlab_todo, ical, obsidian, tatuin, todoist};
 
 pub const AVAILABLE_PROVIDERS: &[&str] = &[
+    tatuin::PROVIDER_NAME,
     obsidian::PROVIDER_NAME,
     todoist::PROVIDER_NAME,
     gitlab_todo::PROVIDER_NAME,
@@ -60,7 +61,7 @@ impl AddProvider {
         let provider_idx = num_choice(
             "Please, choose a provider",
             (0, (AVAILABLE_PROVIDERS.len() - 1) as u8),
-            None,
+            Some(0),
         );
         if provider_idx.is_none() {
             return Ok(());
@@ -70,6 +71,7 @@ impl AddProvider {
         println!("Add provider {provider}");
 
         let mut provider_cfg = match provider {
+            tatuin::PROVIDER_NAME => self.add_tatuin()?,
             obsidian::PROVIDER_NAME => self.add_obsidian()?,
             todoist::PROVIDER_NAME => self.add_todoist()?,
             gitlab_todo::PROVIDER_NAME => self.add_gitlab_todo()?,
@@ -84,6 +86,10 @@ impl AddProvider {
         cfg.add_provider(&provider_name, &provider_cfg)?;
 
         Ok(())
+    }
+
+    fn add_tatuin(&self) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+        Ok(HashMap::new())
     }
 
     fn add_obsidian(&self) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {

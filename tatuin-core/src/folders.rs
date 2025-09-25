@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
 
-use crate::provider::ProviderTrait;
 use std::{io::ErrorKind, path::PathBuf};
 
 pub fn cache_folder(app_name: &str) -> PathBuf {
@@ -22,8 +21,8 @@ pub fn config_folder(app_name: &str) -> PathBuf {
     xdg_dirs.get_config_home().expect("cannot create config folder")
 }
 
-pub fn provider_cache_folder(app_name: &str, p: &dyn ProviderTrait) -> Result<PathBuf, std::io::Error> {
-    let path = cache_folder(app_name).join(p.name());
+pub fn provider_cache_folder(app_name: &str, provider_name: &str) -> Result<PathBuf, std::io::Error> {
+    let path = cache_folder(app_name).join(provider_name);
     if let Err(e) = std::fs::create_dir(&path)
         && e.kind() != ErrorKind::AlreadyExists
     {

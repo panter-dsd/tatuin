@@ -80,13 +80,60 @@ impl From<DateTimeUtc> for DuePatchItem {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub enum ValuePatch<T> {
+    #[default]
+    NotSet,
+    Empty,
+    Value(T),
+}
+
+impl<T> From<Option<T>> for ValuePatch<T> {
+    fn from(v: Option<T>) -> Self {
+        match v {
+            Some(v) => Self::Value(v),
+            None => Self::NotSet,
+        }
+    }
+}
+
+impl<T> ValuePatch<T>
+where
+    T: Clone,
+{
+    pub fn value(&self) -> Option<T> {
+        match self {
+            ValuePatch::NotSet | ValuePatch::Empty => None,
+            ValuePatch::Value(v) => Some(v.clone()),
+        }
+    }
+
+    pub fn is_set(&self) -> bool {
+        !matches!(self, ValuePatch::NotSet)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::ValuePatch;
+
+    #[test]
+    fn value_patch_is_set() {
+        type VP = ValuePatch<String>;
+        assert!(!VP::NotSet.is_set());
+        assert!(VP::Empty.is_set());
+        assert!(VP::Value("some".to_string()).is_set());
+    }
+}
+
+#[derive(Default)]
 pub struct TaskPatch {
     pub task: Option<Box<dyn TaskTrait>>,
-    pub name: Option<String>,
-    pub description: Option<String>,
-    pub due: Option<DuePatchItem>,
-    pub priority: Option<Priority>,
-    pub state: Option<State>,
+    pub name: ValuePatch<String>,
+    pub description: ValuePatch<String>,
+    pub due: ValuePatch<DuePatchItem>,
+    pub priority: ValuePatch<Priority>,
+    pub state: ValuePatch<State>,
 }
 
 impl std::fmt::Display for TaskPatch {
@@ -112,7 +159,11 @@ impl std::fmt::Debug for TaskPatch {
 
 impl TaskPatch {
     pub fn is_empty(&self) -> bool {
-        self.state.is_none() && self.due.is_none() && self.priority.is_none()
+        !(self.name.is_set()
+            || self.description.is_set()
+            || self.due.is_set()
+            || self.priority.is_set()
+            || self.state.is_set())
     }
 
     pub fn is_task(&self, task: &dyn TaskTrait) -> bool {
@@ -132,9 +183,9 @@ impl Clone for TaskPatch {
             },
             name: self.name.clone(),
             description: self.description.clone(),
-            due: self.due,
-            priority: self.priority,
-            state: self.state,
+            due: self.due.clone(),
+            priority: self.priority.clone(),
+            state: self.state.clone(),
         }
     }
 }
@@ -153,6 +204,15 @@ impl PatchError {
 impl std::fmt::Display for PatchError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "Error patching task with id {}: {}", self.task.id(), self.error)
+    }
+}
+
+impl Clone for PatchError {
+    fn clone(&self) -> Self {
+        Self {
+            task: self.task.clone_boxed(),
+            error: self.error.clone(),
+        }
     }
 }
 
