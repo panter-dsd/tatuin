@@ -56,6 +56,7 @@ impl TaskRow {
         let mut state = t.state();
         let mut due = task::datetime_to_str(t.due(), &tz);
         let mut priority = t.priority();
+        let mut description = t.description();
         let mut uncommitted = false;
         if let Some(patch) = changed_tasks.iter().find(|c| c.is_task(t)) {
             uncommitted = !patch.is_empty();
@@ -70,6 +71,9 @@ impl TaskRow {
             }
             if let Some(p) = &patch.priority.value() {
                 priority = *p;
+            }
+            if patch.description.is_set() {
+                description = patch.description.value();
             }
         }
 
@@ -93,7 +97,7 @@ impl TaskRow {
             ));
         }
 
-        if !t.description().unwrap_or_default().is_empty() {
+        if !description.unwrap_or_default().is_empty() {
             children.push(Box::new(Text::new(" 💬")));
         }
 

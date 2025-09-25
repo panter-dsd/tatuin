@@ -68,7 +68,7 @@ impl ProviderTrait for Provider {
             None
         };
 
-        let projects = self.c.projects().await?;
+        let projects = self.c.projects(self.cfg.name().as_str()).await?;
 
         let provider_name = self.name();
         Ok(self
@@ -88,7 +88,7 @@ impl ProviderTrait for Provider {
 
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
         self.c
-            .projects()
+            .projects(self.cfg.name().as_str())
             .await
             .map(|v| v.iter().map(|p| p.clone_boxed()).collect())
             .map_err(|e| {
@@ -204,7 +204,7 @@ mod test {
         assert_eq!(projects.len(), 1);
 
         let project = &projects[0];
-        let inbox = inbox_project();
+        let inbox = inbox_project("test_name");
         assert_eq!(project.name(), inbox.name());
         assert_eq!(project.description(), inbox.description());
         assert_eq!(project.provider(), inbox.provider());

@@ -7,7 +7,7 @@ mod ui;
 mod wizard;
 
 use std::{path::PathBuf, sync::Arc};
-use tatuin_providers::{caldav, config::Config, github_issues, gitlab_todo, ical, obsidian, todoist};
+use tatuin_providers::{caldav, config::Config, github_issues, gitlab_todo, ical, obsidian, tatuin, todoist};
 
 use clap::{Parser, Subcommand};
 use color_eyre::owo_colors::OwoColorize;
@@ -185,6 +185,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let cfg = Config::new(APP_NAME, name);
 
         let p: Option<Box<dyn ProviderTrait>> = match config.get("type").unwrap().as_str() {
+            tatuin::PROVIDER_NAME => Some(Box::new(tatuin::Provider::new(cfg)?)),
             obsidian::PROVIDER_NAME => {
                 let mut path = config.get("path").unwrap().to_string();
                 if !path.ends_with('/') {

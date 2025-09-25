@@ -2,7 +2,8 @@ use super::project::Project;
 use redb::Value;
 use serde::{Deserialize, Serialize};
 use tatuin_core::project::Project as ProjectTrait;
-use tatuin_core::task::{DateTimeUtc, Priority, State, Task as TaskTrait};
+use tatuin_core::task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait};
+use tatuin_core::task_patch::DuePatchItem;
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Task {
@@ -85,6 +86,15 @@ impl TaskTrait for Task {
 
     fn project(&self) -> Option<Box<dyn ProjectTrait>> {
         self.project.as_ref().map(|p| p.clone_boxed())
+    }
+
+    fn const_patch_policy(&self) -> PatchPolicy {
+        PatchPolicy {
+            is_editable: true,
+            available_states: vec![State::Uncompleted, State::Completed, State::InProgress],
+            available_priorities: Priority::values(),
+            available_due_items: DuePatchItem::values(),
+        }
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

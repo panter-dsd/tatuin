@@ -28,9 +28,10 @@ impl Client {
         })
     }
 
-    pub async fn projects(&self) -> Result<Vec<Project>, Box<dyn Error>> {
+    pub async fn projects(&self, provider_name: &str) -> Result<Vec<Project>, Box<dyn Error>> {
         let db = Arc::clone(&self.db);
-        tokio::task::spawn_blocking(move || projects(&db))
+        let provider_name = provider_name.to_string();
+        tokio::task::spawn_blocking(move || projects(&db, &provider_name))
             .await?
             .map_err(|e| e as Box<dyn Error>)
     }
@@ -60,7 +61,7 @@ impl Client {
     }
 }
 
-fn projects(db: &Database) -> Result<Vec<Project>, Box<dyn Error + Send + Sync>> {
+fn projects(db: &Database, provider_name: &str) -> Result<Vec<Project>, Box<dyn Error + Send + Sync>> {
     {
         let tx = db.begin_read()?;
         let table = tx.open_table(PROJECTS_TABLE);
@@ -69,21 +70,23 @@ fn projects(db: &Database) -> Result<Vec<Project>, Box<dyn Error + Send + Sync>>
         {
             let mut result = Vec::new();
             for v in table.iter()? {
-                result.push(v?.1.value());
+                let mut p = v?.1.value();
+                p.set_provider_name(provider_name);
+                result.push(p);
             }
             return Ok(result);
         }
     }
-    init_projects_table(db)?;
-    projects(db)
+    init_projects_table(db, provider_name)?;
+    projects(db, provider_name)
 }
 
-fn init_projects_table(db: &Database) -> Result<(), Box<dyn Error + Send + Sync>> {
+fn init_projects_table(db: &Database, provider_name: &str) -> Result<(), Box<dyn Error + Send + Sync>> {
     let tx = db.begin_write()?;
     {
         let mut table = tx.open_table(PROJECTS_TABLE)?;
 
-        let p = inbox_project();
+        let p = inbox_project(provider_name);
         table.insert(p.id().as_str(), p)?;
     }
     tx.commit()?;
@@ -226,10 +229,10 @@ mod test {
 
         let c = Client::new(temp_dir.path()).unwrap();
 
-        let projects = c.projects().await.unwrap();
+        let projects = c.projects("test_name").await.unwrap();
         let project1 = projects[0].clone();
 
-        let projects = c.projects().await.unwrap();
+        let projects = c.projects("test_name").await.unwrap();
         let project2 = projects[0].clone();
 
         assert_eq!(project2, project1);
@@ -242,13 +245,13 @@ mod test {
 
         let project1 = {
             let c = Client::new(temp_dir.path()).unwrap();
-            let projects = c.projects().await.unwrap();
+            let projects = c.projects("test_name").await.unwrap();
             projects[0].clone()
         };
 
         let project2 = {
             let c = Client::new(temp_dir.path()).unwrap();
-            let projects = c.projects().await.unwrap();
+            let projects = c.projects("test_name").await.unwrap();
             projects[0].clone()
         };
 

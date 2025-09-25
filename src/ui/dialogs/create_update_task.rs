@@ -226,7 +226,7 @@ impl Dialog {
             task: self.task.as_ref().map(|t| t.clone_boxed()),
             name: ValuePatch::Value(self.task_name_editor.text()),
             description: if description.is_empty() {
-                ValuePatch::NotSet
+                ValuePatch::Empty
             } else {
                 ValuePatch::Value(description)
             },

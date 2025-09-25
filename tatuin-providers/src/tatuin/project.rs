@@ -2,8 +2,6 @@ use redb::Value;
 use serde::{Deserialize, Serialize};
 use tatuin_core::project::Project as ProjectTrait;
 
-use super::PROVIDER_NAME;
-
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Project {
     pub id: uuid::Uuid,
@@ -11,15 +9,25 @@ pub struct Project {
     pub description: String,
     pub parent: Option<uuid::Uuid>,
     pub is_inbox: bool,
+
+    #[serde(skip_serializing, skip_deserializing)]
+    provider_name: String,
 }
 
-pub fn inbox_project() -> Project {
+pub fn inbox_project(provider_name: &str) -> Project {
     Project {
         id: uuid::Uuid::new_v4(),
         name: "Inbox".to_string(),
         description: "Inbox project".to_string(),
         parent: None,
         is_inbox: true,
+        provider_name: provider_name.to_string(),
+    }
+}
+
+impl Project {
+    pub fn set_provider_name(&mut self, name: &str) {
+        self.provider_name = name.to_string()
     }
 }
 
@@ -33,7 +41,7 @@ impl ProjectTrait for Project {
     }
 
     fn provider(&self) -> String {
-        PROVIDER_NAME.to_string()
+        self.provider_name.clone()
     }
 
     fn description(&self) -> String {
