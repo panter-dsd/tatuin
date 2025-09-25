@@ -98,44 +98,7 @@ impl ProviderTrait for Provider {
     }
 
     async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
-        let tasks = patches
-            .iter()
-            .map(|tp| {
-                let mut t = tp
-                    .task
-                    .as_ref()
-                    .expect("Task in patch should be exist")
-                    .as_any()
-                    .downcast_ref::<Task>()
-                    .expect("The task should have right type")
-                    .clone();
-
-                if let Some(n) = &tp.name.value() {
-                    t.name = n.clone();
-                }
-
-                if tp.description.is_set() {
-                    t.description = tp.description.value();
-                }
-
-                if let Some(p) = &tp.priority.value() {
-                    t.priority = *p;
-                }
-
-                if let Some(s) = &tp.state.value() {
-                    t.state = *s;
-                }
-
-                if tp.due.is_set() {
-                    t.due = match tp.due.value() {
-                        Some(d) => d.into(),
-                        None => None,
-                    }
-                }
-
-                t
-            })
-            .collect::<Vec<Task>>();
+        let tasks = patches.iter().map(task_patch_to_task).collect::<Vec<Task>>();
         self.c.patch_tasks(&tasks).await
     }
 
@@ -162,6 +125,42 @@ impl ProviderTrait for Provider {
             e.into()
         })
     }
+}
+
+fn task_patch_to_task(tp: &TaskPatch) -> Task {
+    let mut t = tp
+        .task
+        .as_ref()
+        .expect("Task in patch should be exist")
+        .as_any()
+        .downcast_ref::<Task>()
+        .expect("The task should have right type")
+        .clone();
+
+    if let Some(n) = &tp.name.value() {
+        t.name = n.clone();
+    }
+
+    if tp.description.is_set() {
+        t.description = tp.description.value();
+    }
+
+    if let Some(p) = &tp.priority.value() {
+        t.priority = *p;
+    }
+
+    if let Some(s) = &tp.state.value() {
+        t.state = *s;
+    }
+
+    if tp.due.is_set() {
+        t.due = match tp.due.value() {
+            Some(d) => d.into(),
+            None => None,
+        }
+    }
+
+    t
 }
 
 #[cfg(test)]
