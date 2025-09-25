@@ -25,14 +25,13 @@ impl Config {
         self.name.to_string()
     }
 
-    pub fn cache_path(&self, provider_name: &str) -> Result<PathBuf, std::io::Error> {
+    pub fn cache_path(&self) -> Result<PathBuf, std::io::Error> {
         #[cfg(test)]
         {
-            let _ = provider_name;
             return Ok(self.cache_path.clone());
         }
 
         #[allow(unreachable_code)]
-        folders::provider_cache_folder(self.app_name.as_str(), provider_name)
+        folders::provider_cache_folder(self.app_name.as_str(), self.name.as_str())
     }
 }

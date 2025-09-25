@@ -32,7 +32,7 @@ pub struct Provider {
 impl Provider {
     pub fn new(cfg: Config, url: &str) -> Result<Self, Box<dyn Error>> {
         let mut c = Client::new(url);
-        c.set_cache_folder(&cfg.cache_path(PROVIDER_NAME)?);
+        c.set_cache_folder(&cfg.cache_path()?);
         Ok(Self {
             cfg,
             c,

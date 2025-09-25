@@ -34,7 +34,7 @@ impl Provider {
             login: login.to_string(),
             password: password.to_string(),
         });
-        c.set_cache_folder(&cfg.cache_path(PROVIDER_NAME)?);
+        c.set_cache_folder(&cfg.cache_path()?);
         Ok(Self {
             cfg,
             c,
