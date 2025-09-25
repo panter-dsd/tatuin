@@ -1,17 +1,14 @@
 // SPDX-License-Identifier: MIT
 
-use super::task_patch::DuePatchItem;
-use crate::filter;
-use crate::project::Project as ProjectTrait;
-use chrono::DateTime;
-use chrono::prelude::*;
+use super::{filter, project::Project as ProjectTrait, task_patch::DuePatchItem};
+use chrono::{DateTime, prelude::*};
 use colored::Colorize;
-use serde::Deserialize;
-use serde::Serialize;
-use std::any::Any;
-use std::cmp::Ordering;
-use std::fmt;
-use std::fmt::Write;
+use serde::{Deserialize, Serialize};
+use std::{
+    any::Any,
+    cmp::Ordering,
+    fmt::{self, Write},
+};
 
 pub type DateTimeUtc = DateTime<Utc>;
 
