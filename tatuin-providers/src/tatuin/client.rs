@@ -209,6 +209,7 @@ mod test {
     use super::Client;
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn database_file_exists() {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
         assert_eq!(std::fs::read_dir(temp_dir.path()).unwrap().count(), 0);
@@ -219,6 +220,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn check_inbox_creates_once() {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
 
@@ -234,6 +236,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn db_stores_to_disk_and_doesnt_recreate() {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
 
