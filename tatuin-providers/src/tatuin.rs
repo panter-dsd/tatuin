@@ -188,6 +188,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn get_projects_on_empty_provider() {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
 
@@ -213,6 +214,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn get_tasks_on_empty_provider() {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
 
@@ -271,6 +273,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn create_tasks() {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
 
@@ -305,6 +308,7 @@ mod test {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn mark_task_as_completed() {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
 
