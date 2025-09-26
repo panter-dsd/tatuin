@@ -13,7 +13,7 @@ use client::{Client, Config};
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait},
+    provider::{Capabilities, ProviderTrait, TaskProvider},
     task::{Priority, State, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
@@ -50,17 +50,9 @@ impl std::fmt::Debug for Provider {
 }
 
 #[async_trait]
-impl ProviderTrait for Provider {
-    fn name(&self) -> String {
-        self.cfg.name()
-    }
-
-    fn type_name(&self) -> String {
-        PROVIDER_NAME.to_string()
-    }
-
+impl TaskProvider for Provider {
     #[tracing::instrument(level = "info", target = "caldav_tasks")]
-    async fn tasks(
+    async fn list(
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
@@ -84,11 +76,23 @@ impl ProviderTrait for Provider {
         return Ok(self.tasks.iter().map(|t| t.clone_boxed()).collect());
     }
 
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
-        Ok(vec![Box::new(fake_project::Project::default())])
+    async fn create(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
+        let t = Task {
+            provider: PROVIDER_NAME.to_string(),
+            properties: Vec::new(),
+            name: tp.name.value().unwrap(),
+            description: tp.description.value(),
+            due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
+            priority: tp.priority.value().unwrap_or(Priority::Normal).into(),
+            ..Task::default()
+        };
+        self.c.create_or_update(&t).await.map_err(|e| {
+            tracing::error!(target:"caldav_provider",  error=?e, "Create a task");
+            StringError::new(e.to_string().as_str())
+        })
     }
 
-    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+    async fn update(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
         let mut errors = Vec::new();
         for p in patches.iter() {
             let task = p.task.as_ref().unwrap();
@@ -135,6 +139,21 @@ impl ProviderTrait for Provider {
 
         errors
     }
+}
+
+#[async_trait]
+impl ProviderTrait for Provider {
+    fn name(&self) -> String {
+        self.cfg.name()
+    }
+
+    fn type_name(&self) -> String {
+        PROVIDER_NAME.to_string()
+    }
+
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
+        Ok(vec![Box::new(fake_project::Project::default())])
+    }
 
     async fn reload(&mut self) {
         self.tasks.clear();
@@ -142,21 +161,5 @@ impl ProviderTrait for Provider {
 
     fn capabilities(&self) -> Capabilities {
         Capabilities { create_task: true }
-    }
-
-    async fn create_task(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
-        let t = Task {
-            provider: PROVIDER_NAME.to_string(),
-            properties: Vec::new(),
-            name: tp.name.value().unwrap(),
-            description: tp.description.value(),
-            due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
-            priority: tp.priority.value().unwrap_or(Priority::Normal).into(),
-            ..Task::default()
-        };
-        self.c.create_or_update(&t).await.map_err(|e| {
-            tracing::error!(target:"caldav_provider",  error=?e, "Create a task");
-            StringError::new(e.to_string().as_str())
-        })
     }
 }

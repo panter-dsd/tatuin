@@ -349,7 +349,7 @@ impl TasksWidget {
                 continue;
             }
 
-            let errors = p.provider.write().await.patch_tasks(&patches).await;
+            let errors = p.provider.write().await.update(&patches).await;
             self.process_patch_errors(name, &errors).await;
 
             self.changed_tasks.retain(|c| {
@@ -444,7 +444,7 @@ impl TasksWidget {
                 let span = tracing::span!(Level::INFO, "load_provider_tasks", name = name, "Load provider's tasks");
                 async move {
                     let _job = AsyncJob::new(format!("Load tasks from provider {name}").as_str(), async_jobs).await;
-                    let tasks = p.write().await.tasks(None, &f).await;
+                    let tasks = p.write().await.list(None, &f).await;
 
                     let mut s = s.write().await;
                     s.all_tasks.retain(|t| t.provider() != name);
@@ -703,7 +703,7 @@ impl TasksWidget {
             self.recreate_current_task_row().await;
         } else {
             let mut provider = provider.provider.write().await;
-            match provider.create_task(project_id, tp).await {
+            match provider.create(project_id, tp).await {
                 Ok(()) => {
                     provider.reload().await;
                 }

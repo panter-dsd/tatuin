@@ -8,7 +8,7 @@ use std::{cmp::Ordering, error::Error, fmt::Debug};
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait},
+    provider::{Capabilities, ProviderTrait, TaskProvider},
     task::{Priority, State, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
@@ -70,17 +70,9 @@ impl Debug for Provider {
 }
 
 #[async_trait]
-impl ProviderTrait for Provider {
-    fn name(&self) -> String {
-        self.cfg.name()
-    }
-
-    fn type_name(&self) -> String {
-        PROVIDER_NAME.to_string()
-    }
-
+impl TaskProvider for Provider {
     #[tracing::instrument(level = "info", target = "todoist_tasks")]
-    async fn tasks(
+    async fn list(
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
@@ -145,17 +137,32 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
-        self.load_projects().await?;
-        let mut result: Vec<Box<dyn ProjectTrait>> = Vec::new();
-        for p in &self.projects {
-            result.push(Box::new(p.clone()));
-        }
+    async fn create(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
+        let mut due_custom_dt = String::new();
 
-        Ok(result)
+        let name = tp.name.value().unwrap();
+        let description = tp.description.value();
+        let r = client::CreateTaskRequest {
+            content: name.as_str(),
+            description: description.as_deref(),
+            project_id: Some(project_id),
+            due_string: tp.due.value().map(|due| match due {
+                DuePatchItem::NoDate => "no date",
+                DuePatchItem::Today => "today",
+                DuePatchItem::Tomorrow => "tomorrow",
+                DuePatchItem::ThisWeekend => "weekend",
+                DuePatchItem::NextWeek => "next week",
+                DuePatchItem::Custom(dt) => {
+                    due_custom_dt = dt.format("%Y-%m-%d").to_string();
+                    &due_custom_dt
+                }
+            }),
+            priority: tp.priority.value().map(|p| task::priority_to_int(&p)),
+        };
+        self.c.create_task(&r).await.map_err(|e| e.into())
     }
 
-    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+    async fn update(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
         let mut errors = Vec::new();
 
         for p in patches {
@@ -217,6 +224,27 @@ impl ProviderTrait for Provider {
 
         errors
     }
+}
+
+#[async_trait]
+impl ProviderTrait for Provider {
+    fn name(&self) -> String {
+        self.cfg.name()
+    }
+
+    fn type_name(&self) -> String {
+        PROVIDER_NAME.to_string()
+    }
+
+    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
+        self.load_projects().await?;
+        let mut result: Vec<Box<dyn ProjectTrait>> = Vec::new();
+        for p in &self.projects {
+            result.push(Box::new(p.clone()));
+        }
+
+        Ok(result)
+    }
 
     async fn reload(&mut self) {
         self.projects.clear();
@@ -225,31 +253,6 @@ impl ProviderTrait for Provider {
 
     fn capabilities(&self) -> Capabilities {
         Capabilities { create_task: true }
-    }
-
-    async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
-        let mut due_custom_dt = String::new();
-
-        let name = tp.name.value().unwrap();
-        let description = tp.description.value();
-        let r = client::CreateTaskRequest {
-            content: name.as_str(),
-            description: description.as_deref(),
-            project_id: Some(project_id),
-            due_string: tp.due.value().map(|due| match due {
-                DuePatchItem::NoDate => "no date",
-                DuePatchItem::Today => "today",
-                DuePatchItem::Tomorrow => "tomorrow",
-                DuePatchItem::ThisWeekend => "weekend",
-                DuePatchItem::NextWeek => "next week",
-                DuePatchItem::Custom(dt) => {
-                    due_custom_dt = dt.format("%Y-%m-%d").to_string();
-                    &due_custom_dt
-                }
-            }),
-            priority: tp.priority.value().map(|p| task::priority_to_int(&p)),
-        };
-        self.c.create_task(&r).await.map_err(|e| e.into())
     }
 
     fn supported_priorities(&self) -> Vec<Priority> {

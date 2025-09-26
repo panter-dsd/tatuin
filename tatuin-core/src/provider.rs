@@ -15,19 +15,23 @@ pub struct Capabilities {
 }
 
 #[async_trait]
-pub trait ProviderTrait: Send + Sync + Debug {
-    fn name(&self) -> String;
-    fn type_name(&self) -> String;
-    async fn tasks(
+pub trait TaskProvider {
+    async fn list(
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
     ) -> Result<Vec<Box<dyn TaskTrait>>, StringError>;
+    async fn create(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError>;
+    async fn update(&mut self, patches: &[TaskPatch]) -> Vec<PatchError>;
+}
+
+#[async_trait]
+pub trait ProviderTrait: TaskProvider + Send + Sync + Debug {
+    fn name(&self) -> String;
+    fn type_name(&self) -> String;
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError>;
-    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError>;
     async fn reload(&mut self);
     fn capabilities(&self) -> Capabilities;
-    async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError>;
     fn supported_priorities(&self) -> Vec<Priority> {
         Priority::values()
     }

@@ -259,7 +259,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     continue;
                 }
 
-                tasks.append(&mut p.provider.write().await.tasks(None, &f).await?);
+                tasks.append(&mut p.provider.write().await.list(None, &f).await?);
             }
             print_boxed_tasks(&tasks);
         }
