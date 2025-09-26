@@ -15,7 +15,7 @@ pub struct Capabilities {
 }
 
 #[async_trait]
-pub trait TaskProvider {
+pub trait TaskProviderTrait {
     async fn list(
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,
@@ -26,7 +26,7 @@ pub trait TaskProvider {
 }
 
 #[async_trait]
-pub trait ProviderTrait: TaskProvider + Send + Sync + Debug {
+pub trait ProviderTrait: TaskProviderTrait + Send + Sync + Debug {
     fn name(&self) -> String;
     fn type_name(&self) -> String;
     async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError>;

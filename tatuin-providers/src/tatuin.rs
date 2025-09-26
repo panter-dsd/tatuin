@@ -13,7 +13,7 @@ use task::Task;
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, TaskProvider},
+    provider::{Capabilities, ProviderTrait, TaskProviderTrait},
     task::{Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
@@ -48,7 +48,7 @@ impl std::fmt::Debug for Provider {
 }
 
 #[async_trait]
-impl TaskProvider for Provider {
+impl TaskProviderTrait for Provider {
     async fn list(
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,

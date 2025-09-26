@@ -13,7 +13,7 @@ use client::{Client, Config};
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, TaskProvider},
+    provider::{Capabilities, ProviderTrait, TaskProviderTrait},
     task::{Priority, State, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
@@ -50,7 +50,7 @@ impl std::fmt::Debug for Provider {
 }
 
 #[async_trait]
-impl TaskProvider for Provider {
+impl TaskProviderTrait for Provider {
     #[tracing::instrument(level = "info", target = "caldav_tasks")]
     async fn list(
         &mut self,

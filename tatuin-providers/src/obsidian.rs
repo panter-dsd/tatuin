@@ -12,7 +12,7 @@ use md_file::task_to_string;
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, TaskProvider},
+    provider::{Capabilities, ProviderTrait, TaskProviderTrait},
     task::{Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
@@ -44,7 +44,7 @@ impl std::fmt::Debug for Provider {
 }
 
 #[async_trait]
-impl TaskProvider for Provider {
+impl TaskProviderTrait for Provider {
     async fn list(
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,

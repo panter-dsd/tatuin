@@ -13,7 +13,7 @@ pub use task::{Task, TaskType, property_to_str};
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, TaskProvider},
+    provider::{Capabilities, ProviderTrait, TaskProviderTrait},
     task::Task as TaskTrait,
     task_patch::{PatchError, TaskPatch},
 };
@@ -48,7 +48,7 @@ impl std::fmt::Debug for Provider {
 }
 
 #[async_trait]
-impl TaskProvider for Provider {
+impl TaskProviderTrait for Provider {
     #[tracing::instrument(level = "info", target = "ical_tasks")]
     async fn list(
         &mut self,
