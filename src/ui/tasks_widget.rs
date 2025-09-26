@@ -2,7 +2,7 @@
 
 use super::{
     AppBlockWidget,
-    dialogs::{CreateUpdateTaskDialog, DialogTrait, ListDialog},
+    dialogs::{ConfirmationDialog, CreateUpdateTaskDialog, DialogTrait, ListDialog, StandardButton},
     draw_helper::{DrawHelper, global_dialog_area},
     header::Header,
     keyboard_handler::KeyboardHandler,
@@ -93,6 +93,7 @@ pub struct TasksWidget {
     undo_changes_shortcut: Shortcut,
     add_task_shortcut: Shortcut,
     edit_task_shortcut: Shortcut,
+    delete_task_shortcut: Shortcut,
     open_task_link_shortcut: Shortcut,
 
     last_filter: Filter,
@@ -119,6 +120,7 @@ impl AppBlockWidget for TasksWidget {
             &mut self.undo_changes_shortcut,
             &mut self.add_task_shortcut,
             &mut self.edit_task_shortcut,
+            &mut self.delete_task_shortcut,
             &mut self.open_task_link_shortcut,
         ]
     }
@@ -184,6 +186,7 @@ impl TasksWidget {
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
             add_task_shortcut: Shortcut::new("Create a task", &['a']),
             edit_task_shortcut: Shortcut::new("Edit the task", &['e']),
+            delete_task_shortcut: Shortcut::new("Delete the task", &['d']),
             open_task_link_shortcut: Shortcut::new("Open the task's link", &['o']),
             last_filter: Filter::default(),
             dialog: None,
@@ -203,6 +206,7 @@ impl TasksWidget {
                 let mut undo_changes_rx = s_guard.undo_changes_shortcut.subscribe_to_accepted();
                 let mut add_task_rx = s_guard.add_task_shortcut.subscribe_to_accepted();
                 let mut edit_task_rx = s_guard.edit_task_shortcut.subscribe_to_accepted();
+                let mut delete_task_rx = s_guard.delete_task_shortcut.subscribe_to_accepted();
                 let mut open_task_link_rx = s_guard.open_task_link_shortcut.subscribe_to_accepted();
                 drop(s_guard);
                 loop {
@@ -229,6 +233,13 @@ impl TasksWidget {
                             if let Some(t) = s.selected_task()
                                 && t.patch_policy().is_editable {
                                 s.show_add_task_dialog(Some(t)).await;
+                            }
+                        },
+                        _ = delete_task_rx.recv() => {
+                            let mut s = s.write().await;
+                            if let Some(t) = s.selected_task()
+                                && t.patch_policy().is_removable {
+                                s.show_delete_task_dialog(t).await;
                             }
                         },
                         _ = open_task_link_rx.recv() => {
@@ -664,6 +675,24 @@ impl TasksWidget {
         }
         self.dialog = Some(Box::new(d));
         self.is_global_dialog = true;
+    }
+
+    async fn show_delete_task_dialog(&mut self, task: Box<dyn TaskTrait>) {
+        let mut d = ConfirmationDialog::new(
+            "Delete the task",
+            format!(
+                "Are you sure to delete the task?\nID=\"{}\"\nName=\"{}\"",
+                task.id(),
+                task.text()
+            )
+            .as_str(),
+            &[StandardButton::Yes, StandardButton::No],
+            StandardButton::Yes,
+        );
+        if let Some(dh) = &self.draw_helper {
+            d.set_draw_helper(dh.clone());
+        }
+        self.dialog = Some(Box::new(d));
     }
 
     #[tracing::instrument(level = "info", target = "tasks_widget")]
