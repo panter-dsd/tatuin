@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pub mod filter;
 pub mod folders;
 pub mod patched_task;

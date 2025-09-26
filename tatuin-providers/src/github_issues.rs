@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+use crate::config::Config;
+
 use super::github::{client::Client, structs};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use std::any::Any;
@@ -103,7 +105,7 @@ impl TaskTrait for Task {
 }
 
 pub struct Provider {
-    name: String,
+    cfg: Config,
     repo: String,
     client: Client,
     tasks: Vec<Task>,
@@ -111,9 +113,9 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(name: &str, api_key: &str, repo: &str) -> Self {
+    pub fn new(cfg: Config, api_key: &str, repo: &str) -> Self {
         Self {
-            name: name.to_string(),
+            cfg,
             repo: repo.to_string(),
             client: Client::new(api_key),
             tasks: Vec::new(),
@@ -131,7 +133,7 @@ impl std::fmt::Debug for Provider {
 #[async_trait]
 impl ProviderTrait for Provider {
     fn name(&self) -> String {
-        self.name.to_string()
+        self.cfg.name()
     }
 
     fn type_name(&self) -> String {
@@ -164,7 +166,7 @@ impl ProviderTrait for Provider {
         let mut result: Vec<Box<dyn TaskTrait>> = Vec::new();
 
         for t in &self.tasks {
-            if f.due.contains(&due_group(t)) {
+            if f.due.contains(&due_group(&t.due())) {
                 result.push(Box::new(t.clone()));
             }
         }

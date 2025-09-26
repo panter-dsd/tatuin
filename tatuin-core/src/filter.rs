@@ -12,6 +12,17 @@ pub enum FilterState {
     Unknown,
 }
 
+impl FilterState {
+    pub fn values() -> Vec<Self> {
+        vec![
+            FilterState::Completed,
+            FilterState::Uncompleted,
+            FilterState::InProgress,
+            FilterState::Unknown,
+        ]
+    }
+}
+
 impl std::fmt::Display for FilterState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
@@ -37,6 +48,12 @@ pub enum Due {
     NoDate,
 }
 
+impl Due {
+    pub fn values() -> Vec<Self> {
+        vec![Due::Overdue, Due::Today, Due::Future, Due::NoDate]
+    }
+}
+
 impl std::fmt::Display for Due {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
@@ -55,10 +72,17 @@ impl Filter {
             return false;
         }
 
-        if !self.due.contains(&due_group(t)) {
+        if !self.due.contains(&due_group(&t.due())) {
             return false;
         }
 
         true
+    }
+
+    pub fn full_filter() -> Self {
+        Self {
+            states: FilterState::values(),
+            due: Due::values(),
+        }
     }
 }

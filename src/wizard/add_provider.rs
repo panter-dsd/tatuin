@@ -2,11 +2,13 @@
 
 use crate::settings;
 use std::collections::HashMap;
+use std::error::Error;
 use std::io::{self, Write};
 use std::path;
-use tatuin_providers::{caldav, github_issues, gitlab_todo, ical, obsidian, todoist};
+use tatuin_providers::{caldav, github_issues, gitlab_todo, ical, obsidian, tatuin, todoist};
 
 pub const AVAILABLE_PROVIDERS: &[&str] = &[
+    tatuin::PROVIDER_NAME,
     obsidian::PROVIDER_NAME,
     todoist::PROVIDER_NAME,
     gitlab_todo::PROVIDER_NAME,
@@ -17,16 +19,16 @@ pub const AVAILABLE_PROVIDERS: &[&str] = &[
 
 pub struct AddProvider {}
 
-impl AddProvider {
-    pub fn run(&self, cfg: &mut settings::Settings) -> Result<(), Box<dyn std::error::Error>> {
-        println!("Available providers:");
-        for (i, p) in AVAILABLE_PROVIDERS.iter().enumerate() {
-            println!("\t{i}) {p}")
-        }
-        print!(
-            "Please, choose a provider (0..{} or q for quit)> ",
-            AVAILABLE_PROVIDERS.len() - 1
-        );
+fn num_choice(question: &str, range: (u8, u8), default: Option<u8>) -> Option<u8> {
+    let default_section = if let Some(v) = default {
+        format!(" enter for default value ({v}) ")
+    } else {
+        " ".to_string()
+    };
+
+    loop {
+        print!("{question} ({}..{},{default_section}or q for quit)> ", range.0, range.1);
+
         let _ = io::stdout().flush();
 
         let mut input_line = String::new();
@@ -34,36 +36,60 @@ impl AddProvider {
         io::stdin().read_line(&mut input_line).expect("Failed to read line");
         input_line = input_line.trim().to_string();
         if input_line == "q" {
+            return None;
+        }
+        if input_line.is_empty() && default.is_some() {
+            return default;
+        }
+        if let Ok(choice) = input_line.parse::<u8>()
+            && range.0 <= choice
+            && choice <= range.1
+        {
+            return Some(choice);
+        }
+        println!("Wrong choice. Write one more time");
+    }
+}
+
+impl AddProvider {
+    pub fn run(&self, cfg: &mut settings::Settings) -> Result<(), Box<dyn Error>> {
+        println!("Available providers:");
+        for (i, p) in AVAILABLE_PROVIDERS.iter().enumerate() {
+            println!("\t{i}) {p}")
+        }
+
+        let provider_idx = num_choice(
+            "Please, choose a provider",
+            (0, (AVAILABLE_PROVIDERS.len() - 1) as u8),
+            Some(0),
+        );
+        if provider_idx.is_none() {
             return Ok(());
         }
 
-        match input_line.parse::<usize>() {
-            Ok(idx) => {
-                if idx >= AVAILABLE_PROVIDERS.len() {
-                    return Err(Box::<dyn std::error::Error>::from("Wrong input"));
-                }
+        let provider = AVAILABLE_PROVIDERS[provider_idx.unwrap() as usize];
+        println!("Add provider {provider}");
 
-                let provider = AVAILABLE_PROVIDERS[idx];
-                println!("Add provider {provider}");
+        let mut provider_cfg = match provider {
+            tatuin::PROVIDER_NAME => self.add_tatuin()?,
+            obsidian::PROVIDER_NAME => self.add_obsidian()?,
+            todoist::PROVIDER_NAME => self.add_todoist()?,
+            gitlab_todo::PROVIDER_NAME => self.add_gitlab_todo()?,
+            github_issues::PROVIDER_NAME => self.add_github_issues()?,
+            ical::PROVIDER_NAME => self.add_ical()?,
+            caldav::PROVIDER_NAME => self.add_caldav()?,
+            _ => panic!("Unknown provider {provider}"),
+        };
+        provider_cfg.insert("type".to_string(), provider.to_string());
 
-                let mut provider_cfg = match provider {
-                    obsidian::PROVIDER_NAME => self.add_obsidian()?,
-                    todoist::PROVIDER_NAME => self.add_todoist()?,
-                    gitlab_todo::PROVIDER_NAME => self.add_gitlab_todo()?,
-                    github_issues::PROVIDER_NAME => self.add_github_issues()?,
-                    ical::PROVIDER_NAME => self.add_ical()?,
-                    caldav::PROVIDER_NAME => self.add_caldav()?,
-                    _ => panic!("Unknown provider {provider}"),
-                };
-                provider_cfg.insert("type".to_string(), provider.to_string());
-
-                let provider_name = self.get_provider_name()?;
-                cfg.add_provider(&provider_name, &provider_cfg)?;
-            }
-            Err(e) => return Err(Box::<dyn std::error::Error>::from(e)),
-        }
+        let provider_name = self.get_provider_name()?;
+        cfg.add_provider(&provider_name, &provider_cfg)?;
 
         Ok(())
+    }
+
+    fn add_tatuin(&self) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+        Ok(HashMap::new())
     }
 
     fn add_obsidian(&self) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::error::Error;
 
 #[derive(Debug, Clone)]
