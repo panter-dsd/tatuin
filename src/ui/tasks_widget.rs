@@ -31,6 +31,7 @@ use ratatui::{
 use std::{any::Any, slice::Iter, slice::IterMut, sync::Arc};
 use tatuin_core::{
     patched_task::PatchedTask,
+    provider::TaskProviderTrait,
     task_patch::{DuePatchItem, PatchError, TaskPatch, ValuePatch},
     types::ArcRwLock,
 };
@@ -444,7 +445,7 @@ impl TasksWidget {
                 let span = tracing::span!(Level::INFO, "load_provider_tasks", name = name, "Load provider's tasks");
                 async move {
                     let _job = AsyncJob::new(format!("Load tasks from provider {name}").as_str(), async_jobs).await;
-                    let tasks = p.write().await.list(None, &f).await;
+                    let tasks = TaskProviderTrait::list(p.write().await.as_mut(), None, &f).await;
 
                     let mut s = s.write().await;
                     s.all_tasks.retain(|t| t.provider() != name);

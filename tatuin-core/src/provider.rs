@@ -26,10 +26,14 @@ pub trait TaskProviderTrait {
 }
 
 #[async_trait]
-pub trait ProviderTrait: TaskProviderTrait + Send + Sync + Debug {
+pub trait ProjectProviderTrait {
+    async fn list(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError>;
+}
+
+#[async_trait]
+pub trait ProviderTrait: TaskProviderTrait + ProjectProviderTrait + Send + Sync + Debug {
     fn name(&self) -> String;
     fn type_name(&self) -> String;
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError>;
     async fn reload(&mut self);
     fn capabilities(&self) -> Capabilities;
     fn supported_priorities(&self) -> Vec<Priority> {

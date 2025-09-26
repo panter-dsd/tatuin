@@ -13,7 +13,7 @@ use client::{Client, Config};
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, TaskProviderTrait},
+    provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{Priority, State, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
@@ -46,6 +46,13 @@ impl Provider {
 impl std::fmt::Debug for Provider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Provider name={}", ProviderTrait::name(self))
+    }
+}
+
+#[async_trait]
+impl ProjectProviderTrait for Provider {
+    async fn list(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
+        Ok(vec![Box::new(fake_project::Project::default())])
     }
 }
 
@@ -149,10 +156,6 @@ impl ProviderTrait for Provider {
 
     fn type_name(&self) -> String {
         PROVIDER_NAME.to_string()
-    }
-
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
-        Ok(vec![Box::new(fake_project::Project::default())])
     }
 
     async fn reload(&mut self) {

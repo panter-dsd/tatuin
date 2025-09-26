@@ -13,7 +13,7 @@ pub use task::{Task, TaskType, property_to_str};
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, TaskProviderTrait},
+    provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::Task as TaskTrait,
     task_patch::{PatchError, TaskPatch},
 };
@@ -44,6 +44,13 @@ impl Provider {
 impl std::fmt::Debug for Provider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Provider name={}", ProviderTrait::name(self))
+    }
+}
+
+#[async_trait]
+impl ProjectProviderTrait for Provider {
+    async fn list(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
+        Err(StringError::new("not implemented"))
     }
 }
 
@@ -91,10 +98,6 @@ impl ProviderTrait for Provider {
 
     fn type_name(&self) -> String {
         PROVIDER_NAME.to_string()
-    }
-
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
-        Err(StringError::new("not implemented"))
     }
 
     async fn reload(&mut self) {

@@ -8,7 +8,7 @@ use std::any::Any;
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait, TaskProviderTrait},
+    provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
     task_patch::{PatchError, TaskPatch},
 };
@@ -131,6 +131,13 @@ impl std::fmt::Debug for Provider {
 }
 
 #[async_trait]
+impl ProjectProviderTrait for Provider {
+    async fn list(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
+        Ok(Vec::new())
+    }
+}
+
+#[async_trait]
 impl TaskProviderTrait for Provider {
     async fn list(
         &mut self,
@@ -185,10 +192,6 @@ impl ProviderTrait for Provider {
 
     fn type_name(&self) -> String {
         PROVIDER_NAME.to_string()
-    }
-
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
-        Ok(Vec::new())
     }
 
     async fn reload(&mut self) {

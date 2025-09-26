@@ -10,6 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Widget},
 };
 use tatuin_core::{
+    provider::ProjectProviderTrait,
     task::{DateTimeUtc, Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, TaskPatch, ValuePatch},
     types::ArcRwLock,
@@ -305,7 +306,7 @@ impl Dialog {
             return;
         }
         let provider = provider.unwrap();
-        if let Ok(projects) = provider.provider.write().await.projects().await {
+        if let Ok(projects) = ProjectProviderTrait::list(provider.provider.write().await.as_mut()).await {
             self.project_selector
                 .set_items(
                     &projects
