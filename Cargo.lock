@@ -2306,7 +2306,7 @@ dependencies = [
 
 [[package]]
 name = "tatuin-core"
-version = "0.1.5"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "chrono",
@@ -2320,7 +2320,7 @@ dependencies = [
 
 [[package]]
 name = "tatuin-providers"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "chrono",
