@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use redb::Value;
 use serde::{Deserialize, Serialize};
 use tatuin_core::project::Project as ProjectTrait;

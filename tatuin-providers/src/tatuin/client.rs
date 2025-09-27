@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition};
 use std::{error::Error, path::Path, sync::Arc};
 use tatuin_core::{
