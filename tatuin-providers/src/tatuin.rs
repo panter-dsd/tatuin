@@ -36,7 +36,7 @@ pub struct Provider {
 
 impl Provider {
     pub fn new(cfg: Config) -> Result<Self, Box<dyn Error>> {
-        let c = Client::new(&cfg.cache_path()?)?;
+        let c = Client::new(&cfg.cache_path()?);
         Ok(Self { cfg, c })
     }
 }
