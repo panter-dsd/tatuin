@@ -21,6 +21,7 @@ use ratatui::{
 };
 
 #[derive(Copy, Clone, PartialEq, Eq, strum::Display)]
+#[allow(dead_code)]
 pub enum StandardButton {
     Ok,
     Yes,
@@ -68,8 +69,16 @@ impl Dialog {
         }
     }
 
-    pub fn choice(&self) -> StandardButton {
-        self.choice.unwrap()
+    pub fn is_confirmed(&self) -> bool {
+        if self.choice.is_none() {
+            return false;
+        }
+        match self.choice.unwrap() {
+            StandardButton::Ok => true,
+            StandardButton::Yes => true,
+            StandardButton::No => false,
+            StandardButton::Cancel => false,
+        }
     }
 
     fn order_calculator(&mut self) -> OrderChanger<'_> {

@@ -69,6 +69,27 @@ pub trait TaskInfoViewerTrait: Send + Sync {
 
 type TaskInfoViewer = ArcRwLock<dyn TaskInfoViewerTrait>;
 
+enum AsyncCommandType {
+    ChangePriority,
+    ChangeDueDate,
+    EditTask,
+    DeleteTask,
+}
+
+struct AsyncCommand {
+    command_type: AsyncCommandType,
+    task: Box<dyn TaskTrait>,
+}
+
+impl AsyncCommand {
+    fn new(command_type: AsyncCommandType, task: &dyn TaskTrait) -> Self {
+        Self {
+            command_type,
+            task: task.clone_boxed(),
+        }
+    }
+}
+
 pub struct TasksWidget {
     providers_storage: ArcRwLock<dyn ProvidersStorage>,
     error_logger: ErrorLogger,
@@ -83,6 +104,7 @@ pub struct TasksWidget {
     async_jobs_storage: ArcRwLock<AsyncJobStorage>,
     list_state: ListState,
     widget_state: WidgetState,
+    async_command: Option<AsyncCommand>,
 
     activate_shortcut: Shortcut,
     commit_changes_shortcut: Shortcut,
@@ -171,6 +193,7 @@ impl TasksWidget {
             changed_tasks: Vec::new(),
             list_state: ListState::default(),
             widget_state: WidgetState::default(),
+            async_command: None,
             activate_shortcut: Shortcut::new("Activate Tasks block", &['g', 't']),
             tasks: Vec::new(),
             projects_filter: Vec::new(),
@@ -224,22 +247,39 @@ impl TasksWidget {
                                     s.write().await.change_check_state(Some(task::State::InProgress)).await
                                 }
                             },
-                        _ = change_due_rx.recv() => s.write().await.show_change_due_date_dialog().await,
-                        _ = change_priority_rx.recv() => s.write().await.show_change_priority_dialog().await,
+                        _ = change_due_rx.recv() => {
+                                let mut s = s.write().await;
+                                if let Some(t) = s.selected_task() {
+                                    s.async_command = Some(AsyncCommand::new(AsyncCommandType::ChangeDueDate, t.as_ref()));
+                                    s.show_change_due_date_dialog().await
+                                }
+                            },
+                        _ = change_priority_rx.recv() => {
+                                let mut s = s.write().await;
+                                if let Some(t) = s.selected_task() {
+                                    s.async_command = Some(AsyncCommand::new(AsyncCommandType::ChangePriority, t.as_ref()));
+                                    s.show_change_priority_dialog().await
+                                }
+                            },
                         _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
                         _ = add_task_rx.recv() => s.write().await.show_add_task_dialog(None).await,
                         _ = edit_task_rx.recv() => {
                             let mut s = s.write().await;
                             if let Some(t) = s.selected_task()
                                 && t.patch_policy().is_editable {
+                                s.async_command = Some(AsyncCommand::new(AsyncCommandType::EditTask, t.as_ref()));
                                 s.show_add_task_dialog(Some(t)).await;
                             }
                         },
                         _ = delete_task_rx.recv() => {
                             let mut s = s.write().await;
-                            if let Some(t) = s.selected_task()
+                            // We need here the real task instead of patched one. So, we can't
+                            // use selected_task method here.
+                            if let Some(idx) = s.list_state.selected()
+                                && let t = s.tasks[idx].task().clone_boxed()
                                 && t.patch_policy().is_removable {
-                                s.show_delete_task_dialog(t).await;
+                                s.async_command = Some(AsyncCommand::new(AsyncCommandType::DeleteTask, t.as_ref()));
+                                s.show_delete_task_dialog(t.as_ref()).await;
                             }
                         },
                         _ = open_task_link_rx.recv() => {
@@ -497,12 +537,7 @@ impl TasksWidget {
     }
 
     async fn show_change_due_date_dialog(&mut self) {
-        let t = self.selected_task();
-        if t.is_none() {
-            return;
-        }
-
-        let t = t.unwrap();
+        let t = self.async_command.as_ref().unwrap().task.as_ref();
         let available_due_items = t.patch_policy().available_due_items;
         if !available_due_items.is_empty() {
             let mut d = ListDialog::new(
@@ -519,12 +554,7 @@ impl TasksWidget {
     }
 
     async fn show_change_priority_dialog(&mut self) {
-        let t = self.selected_task();
-        if t.is_none() {
-            return;
-        }
-
-        let t = t.unwrap();
+        let t = self.async_command.as_ref().unwrap().task.as_ref();
         let available_priorities = t.patch_policy().available_priorities;
         if !available_priorities.is_empty() {
             let d = ListDialog::new(&available_priorities, t.priority().to_string().as_str());
@@ -595,12 +625,11 @@ impl TasksWidget {
     }
 
     async fn change_due_date(&mut self, due: &DuePatchItem) {
-        let selected = self.list_state.selected();
-        if selected.is_none() {
+        if self.async_command.is_none() {
             return;
         }
 
-        let t = self.tasks[selected.unwrap()].task();
+        let t = self.async_command.as_ref().unwrap().task.as_ref();
         match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
             Some(p) => p.due = ValuePatch::Value(*due),
             None => self.changed_tasks.push(TaskPatch {
@@ -613,12 +642,11 @@ impl TasksWidget {
     }
 
     async fn change_priority(&mut self, priority: &Priority) {
-        let selected = self.list_state.selected();
-        if selected.is_none() {
+        if self.async_command.is_none() {
             return;
         }
 
-        let t = self.tasks[selected.unwrap()].task();
+        let t = self.async_command.as_ref().unwrap().task.as_ref();
         match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
             Some(p) => {
                 p.priority = if *priority == t.priority() {
@@ -677,7 +705,7 @@ impl TasksWidget {
         self.is_global_dialog = true;
     }
 
-    async fn show_delete_task_dialog(&mut self, task: Box<dyn TaskTrait>) {
+    async fn show_delete_task_dialog(&mut self, task: &dyn TaskTrait) {
         let mut d = ConfirmationDialog::new(
             "Delete the task",
             format!(
@@ -745,6 +773,36 @@ impl TasksWidget {
             self.load_tasks(&self.last_filter.clone()).await;
         }
     }
+
+    async fn on_async_command_confirmed(&mut self) {
+        if self.async_command.is_none() {
+            return;
+        }
+
+        let cmd = self.async_command.as_ref().unwrap();
+
+        match cmd.command_type {
+            AsyncCommandType::DeleteTask => {
+                let t = cmd.task.as_ref();
+                let provider = self.providers_storage.read().await.provider(t.provider().as_str());
+                let mut p = provider.provider.write().await;
+                match p.delete(t).await {
+                    Ok(_) => {
+                        self.changed_tasks.retain(|c| !c.is_task(t));
+                        p.reload().await;
+                        self.load_tasks(&self.last_filter.clone()).await;
+                    }
+                    Err(e) => {
+                        tracing::error!(error=?e, task_name=t.text(), task_id=t.id(), "Delete the task");
+                        self.error_logger.write().await.add_error(e.to_string().as_str());
+                    }
+                }
+            }
+            _ => panic!("Wrong command type"),
+        }
+
+        self.async_command = None;
+    }
 }
 
 #[async_trait]
@@ -793,6 +851,12 @@ impl KeyboardHandler for TasksWidget {
                     patch.project_id = d.project_id().await;
                     patch.task_patch = d.task_patch().await;
                     add_another_one_task = d.add_another_one();
+                }
+
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ConfirmationDialog>() {
+                    if d.is_confirmed() {
+                        self.on_async_command_confirmed().await;
+                    }
                 }
                 self.dialog = None;
 

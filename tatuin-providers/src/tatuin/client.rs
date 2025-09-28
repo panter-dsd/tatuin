@@ -61,6 +61,14 @@ impl Client {
             Err(e) => fill_global_error(Vec::new(), tasks, e.to_string().as_str()),
         }
     }
+
+    pub async fn delete_task(&self, t: &Task) -> Result<(), Box<dyn Error>> {
+        let db = Arc::clone(&self.db);
+        let t = t.clone();
+        tokio::task::spawn_blocking(move || delete_task(&db, &t))
+            .await?
+            .map_err(|e| e as Box<dyn Error>)
+    }
 }
 
 fn projects(db: &Database, provider_name: &str) -> Result<Vec<Project>, SyncedError> {
@@ -135,6 +143,21 @@ fn create_task(db: &Database, t: Task) -> Result<(), SyncedError> {
     {
         let mut table = tx.open_table(TASKS_TABLE)?;
         table.insert(t.id.to_string().as_str(), t)?;
+    }
+    tx.commit()?;
+    Ok(())
+}
+
+fn delete_task(db: &Database, t: &Task) -> Result<(), SyncedError> {
+    let tx = db.begin_write()?;
+    {
+        let table_definition = if t.state() == State::Completed {
+            COMPLETED_TASKS_TABLE
+        } else {
+            TASKS_TABLE
+        };
+        let mut table = tx.open_table(table_definition)?;
+        table.remove(t.id.to_string().as_str())?;
     }
     tx.commit()?;
     Ok(())

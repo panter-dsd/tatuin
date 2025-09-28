@@ -23,6 +23,9 @@ pub trait TaskProviderTrait {
     ) -> Result<Vec<Box<dyn TaskTrait>>, StringError>;
     async fn create(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError>;
     async fn update(&mut self, patches: &[TaskPatch]) -> Vec<PatchError>;
+    async fn delete(&mut self, _t: &dyn TaskTrait) -> Result<(), StringError> {
+        unimplemented!()
+    }
 }
 
 #[async_trait]

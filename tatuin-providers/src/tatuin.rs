@@ -112,6 +112,14 @@ impl TaskProviderTrait for Provider {
         let tasks = patches.iter().map(task_patch_to_task).collect::<Vec<Task>>();
         self.c.patch_tasks(&tasks).await
     }
+
+    async fn delete(&mut self, t: &dyn TaskTrait) -> Result<(), StringError> {
+        let t = t.as_any().downcast_ref::<Task>().expect("Wrong casting");
+        self.c.delete_task(t).await.map_err(|e| {
+            tracing::error!(error=?e, "Delete the task from database");
+            e.into()
+        })
+    }
 }
 
 #[async_trait]
