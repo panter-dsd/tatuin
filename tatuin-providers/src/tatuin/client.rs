@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 
 use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition};
-use std::{error::Error, path::Path, sync::Arc};
+use std::{
+    error::Error,
+    path::{Path, PathBuf},
+};
 use tatuin_core::{
     filter::{Filter, FilterState},
     project::Project as ProjectTrait,
@@ -22,18 +25,18 @@ const TASKS_TABLE: TableDefinition<&str, Task> = TableDefinition::new("tasks");
 const COMPLETED_TASKS_TABLE: TableDefinition<&str, Task> = TableDefinition::new("completed_tasks");
 
 pub struct Client {
-    db: Arc<Database>,
+    path: PathBuf,
 }
 
 impl Client {
-    pub fn new(path: &Path) -> Result<Self, Box<dyn Error>> {
-        Ok(Self {
-            db: Arc::new(Database::create(path.join(DB_FILE_NAME))?),
-        })
+    pub fn new(path: &Path) -> Self {
+        Self {
+            path: path.to_path_buf(),
+        }
     }
 
     pub async fn projects(&self, provider_name: &str) -> Result<Vec<Project>, Box<dyn Error>> {
-        let db = Arc::clone(&self.db);
+        let db = Database::create(self.path.join(DB_FILE_NAME))?;
         let provider_name = provider_name.to_string();
         tokio::task::spawn_blocking(move || projects(&db, &provider_name))
             .await?
@@ -41,7 +44,7 @@ impl Client {
     }
 
     pub async fn tasks(&self, project_id: Option<uuid::Uuid>, f: &Filter) -> Result<Vec<Task>, Box<dyn Error>> {
-        let db = Arc::clone(&self.db);
+        let db = Database::create(self.path.join(DB_FILE_NAME))?;
         let f = f.clone();
         tokio::task::spawn_blocking(move || tasks(&db, project_id, f))
             .await?
@@ -49,14 +52,19 @@ impl Client {
     }
 
     pub async fn create_task(&self, t: Task) -> Result<(), Box<dyn Error>> {
-        let db = Arc::clone(&self.db);
+        let db = Database::create(self.path.join(DB_FILE_NAME))?;
         tokio::task::spawn_blocking(move || create_task(&db, t))
             .await?
             .map_err(|e| e as Box<dyn Error>)
     }
 
     pub async fn patch_tasks(&self, tasks: &[Task]) -> Vec<PatchError> {
-        let db = Arc::clone(&self.db);
+        let db = Database::create(self.path.join(DB_FILE_NAME));
+        if let Err(e) = db {
+            return fill_global_error(Vec::new(), tasks, e.to_string().as_str());
+        }
+
+        let db = db.unwrap();
         let tasks_copy = tasks.to_vec();
         match tokio::task::spawn_blocking(move || patch_tasks(&db, &tasks_copy)).await {
             Ok(v) => v,
@@ -220,7 +228,8 @@ mod test {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
         assert_eq!(std::fs::read_dir(temp_dir.path()).unwrap().count(), 0);
 
-        let _ = Client::new(temp_dir.path()).unwrap();
+        let c = Client::new(temp_dir.path());
+        let _ = c.projects("test_name").await;
 
         assert_eq!(std::fs::read_dir(temp_dir.path()).unwrap().count(), 1);
     }
@@ -230,7 +239,7 @@ mod test {
     async fn check_inbox_creates_once() {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
 
-        let c = Client::new(temp_dir.path()).unwrap();
+        let c = Client::new(temp_dir.path());
 
         let projects = c.projects("test_name").await.unwrap();
         let project1 = projects[0].clone();
@@ -247,13 +256,13 @@ mod test {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
 
         let project1 = {
-            let c = Client::new(temp_dir.path()).unwrap();
+            let c = Client::new(temp_dir.path());
             let projects = c.projects("test_name").await.unwrap();
             projects[0].clone()
         };
 
         let project2 = {
-            let c = Client::new(temp_dir.path()).unwrap();
+            let c = Client::new(temp_dir.path());
             let projects = c.projects("test_name").await.unwrap();
             projects[0].clone()
         };
