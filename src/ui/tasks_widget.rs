@@ -708,12 +708,7 @@ impl TasksWidget {
     async fn show_delete_task_dialog(&mut self, task: &dyn TaskTrait) {
         let mut d = ConfirmationDialog::new(
             "Delete the task",
-            format!(
-                "Are you sure to delete the task?\nID=\"{}\"\nName=\"{}\"",
-                task.id(),
-                task.text()
-            )
-            .as_str(),
+            format!("Do you really want to delete the task\n\"{}\"?", task.text()).as_str(),
             &[StandardButton::Yes, StandardButton::No],
             StandardButton::Yes,
         );

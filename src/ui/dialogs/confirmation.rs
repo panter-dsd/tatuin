@@ -40,7 +40,6 @@ pub struct Dialog {
     buttons: Vec<DialogButton>,
     choice: Option<StandardButton>,
     should_be_closed: bool,
-    draw_helper: Option<DrawHelper>,
     widget_state: WidgetState,
 }
 crate::impl_widget_state_trait!(Dialog);
@@ -64,7 +63,6 @@ impl Dialog {
             buttons,
             choice: None,
             should_be_closed: false,
-            draw_helper: None,
             widget_state: WidgetState::default(),
         }
     }
@@ -143,12 +141,11 @@ impl WidgetTrait for Dialog {
         for b in &mut self.buttons {
             b.widget.set_draw_helper(dh.clone());
         }
-        self.draw_helper = Some(dh);
     }
 
     fn size(&self) -> Size {
         let width = Text::raw(&self.title).width().max(Text::raw(&self.question).width());
-        let mut height = self.question.chars().filter(|c| *c == '\n').count() as u16;
+        let mut height = self.question.chars().filter(|c| *c == '\n').count() as u16 + 1;
         height += 1; // empty line
         height += self
             .buttons
@@ -201,9 +198,6 @@ impl KeyboardHandler for Dialog {
             _ => {}
         }
 
-        if self.should_be_closed && self.draw_helper.is_some() {
-            self.draw_helper.as_ref().unwrap().write().await.hide_cursor();
-        }
         true
     }
 }
