@@ -73,7 +73,7 @@ impl Client {
     }
 
     pub async fn delete_task(&self, t: &Task) -> Result<(), Box<dyn Error>> {
-        let db = Arc::clone(&self.db);
+        let db = Database::create(self.path.join(DB_FILE_NAME))?;
         let t = t.clone();
         tokio::task::spawn_blocking(move || delete_task(&db, &t))
             .await?
