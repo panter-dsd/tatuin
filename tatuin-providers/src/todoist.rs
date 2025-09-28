@@ -237,6 +237,10 @@ impl TaskProviderTrait for Provider {
 
         errors
     }
+
+    async fn delete(&mut self, t: &dyn TaskTrait) -> Result<(), StringError> {
+        self.c.delete_task(t.id().as_str()).await.map_err(|e| e.into())
+    }
 }
 
 #[async_trait]

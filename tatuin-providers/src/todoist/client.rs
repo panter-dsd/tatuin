@@ -263,6 +263,20 @@ impl Client {
                 Box::<dyn Error>::from(e.to_string())
             })
     }
+
+    pub async fn delete_task(&self, task_id: &str) -> Result<(), Box<dyn Error>> {
+        self.client
+            .delete(format!("{BASE_URL}/tasks/{task_id}"))
+            .headers(self.default_header.clone())
+            .send()
+            .await?
+            .error_for_status()
+            .map(|_| ())
+            .map_err(|e| {
+                tracing::error!(target:"todoist_client", task_id=task_id, error=?e, "Delete the task");
+                Box::<dyn Error>::from(e.to_string())
+            })
+    }
 }
 
 #[allow(dead_code)]
