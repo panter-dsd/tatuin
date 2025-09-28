@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+use reqwest::StatusCode;
 use serde::Deserialize;
 use std::fs;
 use std::path;
@@ -69,23 +70,31 @@ impl Client {
 
     #[tracing::instrument(level = "info", target = "obsidian_rest_client")]
     pub async fn add_text_to_daily_note(&self, data: &str) -> Result<(), StringError> {
-        // Sometimes, if the daily note doesn't exist, it is created but without any sent data.
-        // I think, it might be because of temlates applying.
-        // So, we send the empty request first to create the note.
         let url = self.url("/periodic/daily")?;
         let token = self.token()?;
 
-        let _ = self
-            .client
+        if let Ok(r) = self.client.get(&url).bearer_auth(&token).send().await
+            && r.status() == StatusCode::NOT_FOUND
+        {
+            // Sometimes, when the user have any templating plugin that rewrites all created files with
+            // template, the daily note creates with no task. So, we create the daily note first
+            // and then add a small delay.
+            tracing::info!("Create daily note");
+
+            self.client
             .post(&url)
             .bearer_auth(&token)
             .header(reqwest::header::CONTENT_TYPE, "text/markdown")
             .send()
             .await
+            .map(|_| ())
             .map_err(|e| {
-                tracing::error!(target:"obsidian_rest_client", data=?data, cfg=?self.cfg, error=?e, "Create the daily note");
+                tracing::error!(target:"obsidian_rest_client", data=?data, cfg=?self.cfg, error=?e, "Create daily note");
                 StringError::new(e.to_string().as_str())
             })?;
+            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        }
+
         self.client
             .post(&url)
             .bearer_auth(&token)

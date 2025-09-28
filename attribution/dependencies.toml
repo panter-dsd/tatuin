@@ -1,6 +1,6 @@
 [[dependencies]]
 name = "addr2line"
-version = "0.24.2"
+version = "0.25.1"
 description = "A cross-platform symbolication library written in Rust, using `gimli`"
 license = "Apache-2.0 OR MIT"
 notices = ["Copyright (c) 2016-2018 The gimli Developers"]
@@ -124,7 +124,7 @@ repository = "https://github.com/cuviper/autocfg"
 
 [[dependencies]]
 name = "backtrace"
-version = "0.3.75"
+version = "0.3.76"
 description = """
 A library to acquire a stack trace (backtrace) at runtime in a Rust program.
 """
@@ -220,7 +220,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.38"
+version = "1.2.39"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -341,7 +341,7 @@ repository = "https://github.com/ParkMyCar/compact_str"
 
 [[dependencies]]
 name = "config"
-version = "0.15.16"
+version = "0.15.17"
 description = "Layered configuration system for Rust applications."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -519,7 +519,7 @@ repository = "https://github.com/TedDriggs/darling"
 
 [[dependencies]]
 name = "deranged"
-version = "0.5.3"
+version = "0.5.4"
 description = "Ranged integers"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -826,7 +826,7 @@ repository = "https://github.com/rust-random/getrandom"
 
 [[dependencies]]
 name = "gimli"
-version = "0.31.1"
+version = "0.32.3"
 description = "A library for reading and writing the DWARF debugging format."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015 The Rust Project Developers"]
@@ -1250,7 +1250,7 @@ repository = "https://github.com/dtolnay/itoa"
 
 [[dependencies]]
 name = "js-sys"
-version = "0.3.80"
+version = "0.3.81"
 description = """
 Bindings for all JS global objects and functions in all JS environments like
 Node.js and browsers, built on `#[wasm_bindgen]` using the `wasm-bindgen` crate.
@@ -1280,7 +1280,7 @@ repository = "https://github.com/rust-lang-nursery/lazy-static.rs"
 
 [[dependencies]]
 name = "libc"
-version = "0.2.175"
+version = "0.2.176"
 description = "Raw FFI bindings to platform libraries like libc."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014-2020 The Rust Project Developers"]
@@ -1379,7 +1379,7 @@ repository = "https://github.com/RustCrypto/hashes"
 
 [[dependencies]]
 name = "memchr"
-version = "2.7.5"
+version = "2.7.6"
 description = """
 Provides extremely fast (uses SIMD on x86_64, aarch64 and wasm32) routines for
 1, 2 or 3 byte search and single substring search.
@@ -1498,7 +1498,7 @@ repository = "https://github.com/rust-num/num-traits"
 
 [[dependencies]]
 name = "object"
-version = "0.36.7"
+version = "0.37.3"
 description = "A unified interface for reading and writing object file formats."
 license = "Apache-2.0 OR MIT"
 notices = ["Copyright (c) 2015 The Gimli Developers"]
@@ -1838,6 +1838,16 @@ repository = "https://github.com/ratatui/ratatui"
 homepage = "https://ratatui.rs"
 
 [[dependencies]]
+name = "redb"
+version = "2.6.3"
+description = "Rust Embedded DataBase"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2021 Christopher Berner"]
+authors = ["Christopher Berner <me@cberner.com>"]
+repository = "https://github.com/cberner/redb"
+homepage = "https://www.redb.org"
+
+[[dependencies]]
 name = "redox_syscall"
 version = "0.5.17"
 description = "A Rust library to access raw Redox system calls"
@@ -1848,7 +1858,7 @@ repository = "https://gitlab.redox-os.org/redox-os/syscall"
 
 [[dependencies]]
 name = "regex"
-version = "1.11.2"
+version = "1.11.3"
 description = """
 An implementation of regular expressions for Rust. This implementation uses
 finite automata and guarantees linear time matching on all inputs.
@@ -1860,7 +1870,7 @@ repository = "https://github.com/rust-lang/regex"
 
 [[dependencies]]
 name = "regex-automata"
-version = "0.4.10"
+version = "0.4.11"
 description = "Automata construction and matching using regular expressions."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 The Rust Project Developers"]
@@ -2069,7 +2079,7 @@ homepage = "https://lib.rs/crates/security-framework-sys"
 
 [[dependencies]]
 name = "serde"
-version = "1.0.225"
+version = "1.0.227"
 description = "A generic serialization/deserialization framework"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -2098,7 +2108,7 @@ repository = "https://github.com/RReverser/serde-xml-rs"
 
 [[dependencies]]
 name = "serde_core"
-version = "1.0.225"
+version = "1.0.227"
 description = "Serde traits only, with no support for derive -- use the `serde` crate instead"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -2110,7 +2120,7 @@ homepage = "https://serde.rs"
 
 [[dependencies]]
 name = "serde_derive"
-version = "1.0.225"
+version = "1.0.227"
 description = "Macros 1.1 implementation of #[derive(Serialize, Deserialize)]"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -2422,21 +2432,21 @@ repository = "https://github.com/mullvad/system-configuration-rs"
 
 [[dependencies]]
 name = "tatuin-core"
-version = "0.1.5"
+version = "0.2.0"
 description = "Core lib of the Tatuin project"
 license = "MIT"
 repository = "https://github.com/panter-dsd/tatuin"
 
 [[dependencies]]
 name = "tatuin-providers"
-version = "0.1.2"
+version = "0.2.0"
 description = "Providers lib of the Tatuin project"
 license = "MIT"
 repository = "https://github.com/panter-dsd/tatuin"
 
 [[dependencies]]
 name = "tempfile"
-version = "3.22.0"
+version = "3.23.0"
 description = "A library for managing temporary files and directories."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015 Steven Allen"]
@@ -2581,7 +2591,7 @@ homepage = "https://tokio.rs"
 
 [[dependencies]]
 name = "tokio-rustls"
-version = "0.26.3"
+version = "0.26.4"
 description = "Asynchronous TLS/SSL streams for Tokio using Rustls."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2017 quininer kel", "Copyright 2017 quininer kel"]
@@ -3064,7 +3074,7 @@ repository = "https://github.com/bytecodealliance/wasi-rs"
 
 [[dependencies]]
 name = "wasm-bindgen"
-version = "0.2.103"
+version = "0.2.104"
 description = """
 Easy support for interacting between JS and Rust.
 """
@@ -3076,7 +3086,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen"
 
 [[dependencies]]
 name = "wasm-bindgen-backend"
-version = "0.2.103"
+version = "0.2.104"
 description = """
 Backend code generation of the wasm-bindgen tool
 """
@@ -3088,7 +3098,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-futures"
-version = "0.4.53"
+version = "0.4.54"
 description = "Bridging the gap between Rust Futures and JavaScript Promises"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -3098,7 +3108,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro"
-version = "0.2.103"
+version = "0.2.104"
 description = """
 Definition of the `#[wasm_bindgen]` attribute, an internal dependency
 """
@@ -3110,7 +3120,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.103"
+version = "0.2.104"
 description = """
 The part of the implementation of the `#[wasm_bindgen]` attribute that is not in the shared backend crate
 """
@@ -3122,7 +3132,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-shared"
-version = "0.2.103"
+version = "0.2.104"
 description = """
 Shared support between wasm-bindgen and wasm-bindgen cli, an internal
 dependency.
@@ -3135,7 +3145,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "web-sys"
-version = "0.3.80"
+version = "0.3.81"
 description = """
 Bindings for all Web APIs, a procedurally generated crate from WebIDL
 """
@@ -3172,7 +3182,7 @@ repository = "https://github.com/retep998/winapi-rs"
 
 [[dependencies]]
 name = "windows-core"
-version = "0.62.0"
+version = "0.62.1"
 description = "Core type support for COM and Windows"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]
@@ -3180,20 +3190,18 @@ repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "windows-implement"
-version = "0.60.0"
+version = "0.60.1"
 description = "The implement macro for the windows crate"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]
-authors = ["Microsoft"]
 repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "windows-interface"
-version = "0.59.1"
+version = "0.59.2"
 description = "The interface macro for the windows crate"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]
-authors = ["Microsoft"]
 repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
@@ -3285,7 +3293,7 @@ repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "windows-sys"
-version = "0.61.0"
+version = "0.61.1"
 description = "Rust for Windows"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]
@@ -3302,11 +3310,10 @@ repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "windows-targets"
-version = "0.53.3"
+version = "0.53.4"
 description = "Import libs for Windows"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Microsoft Corporation."]
-authors = ["Microsoft"]
 repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]

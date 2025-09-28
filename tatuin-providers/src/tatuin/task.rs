@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::project::Project;
 use redb::Value;
 use serde::{Deserialize, Serialize};
