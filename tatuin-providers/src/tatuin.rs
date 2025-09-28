@@ -13,7 +13,7 @@ use task::Task;
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait},
+    provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
@@ -48,16 +48,22 @@ impl std::fmt::Debug for Provider {
 }
 
 #[async_trait]
-impl ProviderTrait for Provider {
-    fn name(&self) -> String {
-        self.cfg.name()
+impl ProjectProviderTrait for Provider {
+    async fn list(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
+        self.c
+            .projects(self.cfg.name().as_str())
+            .await
+            .map(|v| v.iter().map(|p| p.clone_boxed()).collect())
+            .map_err(|e| {
+                tracing::error!(error=?e, "Get projects from database");
+                e.into()
+            })
     }
+}
 
-    fn type_name(&self) -> String {
-        PROVIDER_NAME.to_string()
-    }
-
-    async fn tasks(
+#[async_trait]
+impl TaskProviderTrait for Provider {
+    async fn list(
         &mut self,
         project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
@@ -86,31 +92,7 @@ impl ProviderTrait for Provider {
             .collect::<Vec<Box<dyn TaskTrait>>>())
     }
 
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
-        self.c
-            .projects(self.cfg.name().as_str())
-            .await
-            .map(|v| v.iter().map(|p| p.clone_boxed()).collect())
-            .map_err(|e| {
-                tracing::error!(error=?e, "Get projects from database");
-                e.into()
-            })
-    }
-
-    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
-        let tasks = patches.iter().map(task_patch_to_task).collect::<Vec<Task>>();
-        self.c.patch_tasks(&tasks).await
-    }
-
-    async fn reload(&mut self) {
-        // do nothing for now
-    }
-
-    fn capabilities(&self) -> Capabilities {
-        Capabilities { create_task: true }
-    }
-
-    async fn create_task(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
+    async fn create(&mut self, project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
         let mut t = task::Task::default();
         t.id = uuid::Uuid::new_v4();
         t.name = tp.name.value().unwrap();
@@ -124,6 +106,38 @@ impl ProviderTrait for Provider {
             tracing::error!(error=?e, "Insert task into database");
             e.into()
         })
+    }
+
+    async fn update(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+        let tasks = patches.iter().map(task_patch_to_task).collect::<Vec<Task>>();
+        self.c.patch_tasks(&tasks).await
+    }
+
+    async fn delete(&mut self, t: &dyn TaskTrait) -> Result<(), StringError> {
+        let t = t.as_any().downcast_ref::<Task>().expect("Wrong casting");
+        self.c.delete_task(t).await.map_err(|e| {
+            tracing::error!(error=?e, "Delete the task from database");
+            e.into()
+        })
+    }
+}
+
+#[async_trait]
+impl ProviderTrait for Provider {
+    fn name(&self) -> String {
+        self.cfg.name()
+    }
+
+    fn type_name(&self) -> String {
+        PROVIDER_NAME.to_string()
+    }
+
+    async fn reload(&mut self) {
+        // do nothing for now
+    }
+
+    fn capabilities(&self) -> Capabilities {
+        Capabilities { create_task: true }
     }
 }
 
@@ -171,7 +185,7 @@ mod test {
     use tatuin_core::{
         filter::Filter,
         project::Project,
-        provider::ProviderTrait,
+        provider::{ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
         task::{Priority, State},
         task_patch::{DuePatchItem, TaskPatch, ValuePatch},
     };
@@ -194,9 +208,9 @@ mod test {
         let p = Provider::new(config(temp_dir.path().to_path_buf()));
         assert!(p.is_ok());
 
-        let p: &mut dyn ProviderTrait = &mut p.unwrap();
+        let p: &mut dyn ProjectProviderTrait = &mut p.unwrap();
 
-        let projects = p.projects().await;
+        let projects = p.list().await;
         assert!(projects.is_ok());
 
         let projects = projects.unwrap();
@@ -220,9 +234,9 @@ mod test {
         let p = Provider::new(config(temp_dir.path().to_path_buf()));
         assert!(p.is_ok());
 
-        let p: &mut dyn ProviderTrait = &mut p.unwrap();
+        let p: &mut dyn TaskProviderTrait = &mut p.unwrap();
 
-        let tasks = p.tasks(None, &Filter::full_filter()).await;
+        let tasks = p.list(None, &Filter::full_filter()).await;
         assert!(tasks.is_ok());
 
         let tasks = tasks.unwrap();
@@ -264,7 +278,7 @@ mod test {
         let mut patches = Vec::new();
         for i in 0..count {
             let tp = generate_task_patch(i);
-            p.create_task(project_id, &tp).await?;
+            p.create(project_id, &tp).await?;
             patches.push(tp);
         }
 
@@ -278,16 +292,16 @@ mod test {
 
         let p: &mut dyn ProviderTrait = &mut Provider::new(config(temp_dir.path().to_path_buf())).unwrap();
 
-        let project = &p.projects().await.unwrap()[0];
+        let project = &ProjectProviderTrait::list(p).await.unwrap()[0];
 
-        let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
+        let tasks = TaskProviderTrait::list(p, None, &Filter::full_filter()).await.unwrap();
         assert_eq!(tasks.len(), 0);
 
         let patches = generate_items(p, 100, project.id().as_str()).await;
         assert!(patches.is_ok());
         let patches = patches.unwrap();
 
-        let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
+        let tasks = TaskProviderTrait::list(p, None, &Filter::full_filter()).await.unwrap();
         assert_eq!(tasks.len(), patches.len());
 
         for t in tasks {
@@ -313,16 +327,16 @@ mod test {
 
         let p: &mut dyn ProviderTrait = &mut Provider::new(config(temp_dir.path().to_path_buf())).unwrap();
 
-        let project = &p.projects().await.unwrap()[0];
+        let project = &ProjectProviderTrait::list(p).await.unwrap()[0];
 
-        let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
+        let tasks = TaskProviderTrait::list(p, None, &Filter::full_filter()).await.unwrap();
         assert_eq!(tasks.len(), 0);
 
         let patches = generate_items(p, 100, project.id().as_str()).await;
         assert!(patches.is_ok());
         let patches = patches.unwrap();
 
-        let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
+        let tasks = TaskProviderTrait::list(p, None, &Filter::full_filter()).await.unwrap();
         assert_eq!(tasks.len(), patches.len());
 
         let complete_patches = tasks
@@ -336,10 +350,10 @@ mod test {
                 state: ValuePatch::Value(State::Completed),
             })
             .collect::<Vec<TaskPatch>>();
-        let patch_errors = p.patch_tasks(&complete_patches).await;
+        let patch_errors = p.update(&complete_patches).await;
         assert!(patch_errors.is_empty());
 
-        let tasks = p.tasks(None, &Filter::full_filter()).await.unwrap();
+        let tasks = TaskProviderTrait::list(p, None, &Filter::full_filter()).await.unwrap();
         assert_eq!(tasks.len(), patches.len());
 
         for t in tasks {

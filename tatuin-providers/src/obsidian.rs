@@ -12,7 +12,7 @@ use md_file::task_to_string;
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait},
+    provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
@@ -44,16 +44,19 @@ impl std::fmt::Debug for Provider {
 }
 
 #[async_trait]
-impl ProviderTrait for Provider {
-    fn name(&self) -> String {
-        self.cfg.name()
+impl ProjectProviderTrait for Provider {
+    async fn list(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
+        Ok(vec![Box::new(project::Project::new(
+            self.cfg.name().as_str(),
+            self.c.root_path().as_str(),
+            format!("{}/daily.md", self.c.root_path()).as_str(),
+        ))])
     }
+}
 
-    fn type_name(&self) -> String {
-        PROVIDER_NAME.to_string()
-    }
-
-    async fn tasks(
+#[async_trait]
+impl TaskProviderTrait for Provider {
+    async fn list(
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
@@ -67,15 +70,18 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
-        Ok(vec![Box::new(project::Project::new(
-            self.cfg.name().as_str(),
-            self.c.root_path().as_str(),
-            format!("{}/daily.md", self.c.root_path()).as_str(),
-        ))])
+    async fn create(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
+        let t = task::Task {
+            text: tp.name.value().unwrap(),
+            state: task::State::Uncompleted,
+            due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
+            priority: tp.priority.value().unwrap_or(Priority::Normal),
+            ..task::Task::default()
+        };
+        self.rest.add_text_to_daily_note(task_to_string(&t).as_str()).await
     }
 
-    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+    async fn update(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
         let mut client_patches = Vec::new();
         let mut errors = Vec::new();
         for p in patches.iter() {
@@ -100,6 +106,17 @@ impl ProviderTrait for Provider {
 
         errors
     }
+}
+
+#[async_trait]
+impl ProviderTrait for Provider {
+    fn name(&self) -> String {
+        self.cfg.name()
+    }
+
+    fn type_name(&self) -> String {
+        PROVIDER_NAME.to_string()
+    }
 
     async fn reload(&mut self) {
         // do nothing for now
@@ -109,17 +126,6 @@ impl ProviderTrait for Provider {
         Capabilities {
             create_task: self.rest.is_available(),
         }
-    }
-
-    async fn create_task(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
-        let t = task::Task {
-            text: tp.name.value().unwrap(),
-            state: task::State::Uncompleted,
-            due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
-            priority: tp.priority.value().unwrap_or(Priority::Normal),
-            ..task::Task::default()
-        };
-        self.rest.add_text_to_daily_note(task_to_string(&t).as_str()).await
     }
 }
 

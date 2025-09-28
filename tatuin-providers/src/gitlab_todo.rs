@@ -12,7 +12,7 @@ use std::{any::Any, collections::HashMap, error::Error};
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
-    provider::{Capabilities, ProviderTrait},
+    provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
@@ -166,6 +166,7 @@ impl TaskTrait for Task {
     fn const_patch_policy(&self) -> PatchPolicy {
         PatchPolicy {
             is_editable: false,
+            is_removable: false,
             available_states: vec![State::Uncompleted, State::Completed],
             available_priorities: Vec::new(),
             available_due_items: if self.issue.is_some() {
@@ -268,16 +269,15 @@ impl std::fmt::Debug for Provider {
 }
 
 #[async_trait]
-impl ProviderTrait for Provider {
-    fn name(&self) -> String {
-        self.cfg.name()
+impl ProjectProviderTrait for Provider {
+    async fn list(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
+        Ok(Vec::new())
     }
+}
 
-    fn type_name(&self) -> String {
-        PROVIDER_NAME.to_string()
-    }
-
-    async fn tasks(
+#[async_trait]
+impl TaskProviderTrait for Provider {
+    async fn list(
         &mut self,
         _project: Option<Box<dyn ProjectTrait>>,
         f: &filter::Filter,
@@ -325,11 +325,11 @@ impl ProviderTrait for Provider {
         Ok(result)
     }
 
-    async fn projects(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
-        Ok(Vec::new())
+    async fn create(&mut self, _project_id: &str, _tp: &TaskPatch) -> Result<(), StringError> {
+        Err(StringError::new("Task creation is not supported"))
     }
 
-    async fn patch_tasks(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
+    async fn update(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
         let mut errors = Vec::new();
 
         for p in patches {
@@ -356,6 +356,17 @@ impl ProviderTrait for Provider {
 
         errors
     }
+}
+
+#[async_trait]
+impl ProviderTrait for Provider {
+    fn name(&self) -> String {
+        self.cfg.name()
+    }
+
+    fn type_name(&self) -> String {
+        PROVIDER_NAME.to_string()
+    }
 
     async fn reload(&mut self) {
         self.tasks.clear();
@@ -363,9 +374,5 @@ impl ProviderTrait for Provider {
 
     fn capabilities(&self) -> Capabilities {
         Capabilities { create_task: false }
-    }
-
-    async fn create_task(&mut self, _project_id: &str, _tp: &TaskPatch) -> Result<(), StringError> {
-        Err(StringError::new("Task creation is not supported"))
     }
 }

@@ -21,7 +21,11 @@ use tracing::Level;
 use tracing_subscriber::fmt::format::FmtSpan;
 use ui::style;
 
-use tatuin_core::{filter, folders, project, provider::ProviderTrait, task};
+use tatuin_core::{
+    filter, folders, project,
+    provider::{ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
+    task,
+};
 
 const APP_NAME: &str = "tatuin";
 const KEEP_LOG_FILES_COUNT: usize = 5;
@@ -259,7 +263,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     continue;
                 }
 
-                tasks.append(&mut p.provider.write().await.tasks(None, &f).await?);
+                let mut task_provider = p.provider.write().await;
+                tasks.append(&mut TaskProviderTrait::list(task_provider.as_mut(), None, &f).await?);
             }
             print_boxed_tasks(&tasks);
         }
@@ -273,7 +278,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     continue;
                 }
 
-                projects.append(&mut p.provider.write().await.projects().await?);
+                let mut project_provider = p.provider.write().await;
+                projects.append(&mut ProjectProviderTrait::list(project_provider.as_mut()).await?);
             }
 
             print_projects(&projects);

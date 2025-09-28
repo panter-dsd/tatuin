@@ -118,6 +118,7 @@ impl Client {
                 t.href = f.href.clone();
                 t.patch_policy = PatchPolicy {
                     is_editable: true,
+                    is_removable: false,
                     available_states: vec![State::Uncompleted, State::Completed, State::InProgress],
                     available_priorities: Priority::values(),
                     available_due_items: DuePatchItem::values(),
