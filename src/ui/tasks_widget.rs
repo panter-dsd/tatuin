@@ -853,10 +853,10 @@ impl KeyboardHandler for TasksWidget {
                     add_another_one_task = d.add_another_one();
                 }
 
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ConfirmationDialog>() {
-                    if d.is_confirmed() {
-                        self.on_async_command_confirmed().await;
-                    }
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ConfirmationDialog>()
+                    && d.is_confirmed()
+                {
+                    self.on_async_command_confirmed().await;
                 }
                 self.dialog = None;
 
