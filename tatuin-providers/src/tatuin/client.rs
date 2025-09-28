@@ -226,7 +226,8 @@ mod test {
         let temp_dir = tempfile::tempdir().expect("Can't create a temp dir");
         assert_eq!(std::fs::read_dir(temp_dir.path()).unwrap().count(), 0);
 
-        let _ = Client::new(temp_dir.path());
+        let c = Client::new(temp_dir.path());
+        let _ = c.projects("test_name").await;
 
         assert_eq!(std::fs::read_dir(temp_dir.path()).unwrap().count(), 1);
     }
