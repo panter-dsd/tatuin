@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::obsidian::task::{State, Task};
+use crate::obsidian::task::{Description, State, Task};
 use chrono::{NaiveDate, Utc};
 use regex::Regex;
 use std::error::Error;
@@ -109,7 +109,7 @@ impl File {
                 task = Some(t);
             } else if let Some(t) = &mut task {
                 if l.starts_with(' ') || l.starts_with('\t') {
-                    t.description = Some(t.description.clone().unwrap_or(String::new()) + l + "\n");
+                    t.description = Some(t.description.clone().unwrap_or(Description::new(pos)).append(l));
                 } else {
                     result.push(t.clone());
                     task = None;
@@ -134,8 +134,12 @@ impl File {
             .collect::<String>();
 
         match self.try_parse_task(&line, t.start_pos) {
-            Some(task) => {
+            Some(mut task) => {
+                if let Some(d) = &t.description {
+                    task.description = Some(Description::from_content(content, d.start, d.end));
+                }
                 if &task != t {
+                    println!("{task:?} != {t:?}");
                     return Err(Box::<dyn std::error::Error>::from(
                         "Task has been changed since last loading",
                     ));
@@ -152,28 +156,39 @@ impl File {
     }
 
     fn patch_task_in_content(&self, p: &TaskPatch, content: &str) -> Result<String, Box<dyn Error>> {
-        let mut t = p.task.clone();
-        self.check_task_was_not_changed(&t, content)?;
+        let current_task = p.task;
+        let mut new_task = p.task.clone();
+        self.check_task_was_not_changed(&new_task, content)?;
 
-        t.text = p.name.as_ref().unwrap_or(&t.text).clone();
-        t.state = *p.state.as_ref().unwrap_or(&t.state);
-        t.priority = *p.priority.as_ref().unwrap_or(&t.priority);
-        t.due = p.due.or(t.due);
-        t.completed_at = p
+        new_task.text = p.name.as_ref().unwrap_or(&new_task.text).clone();
+        new_task.description = p.description.as_ref().map(|t| Description::from_str(t.as_str()));
+        new_task.state = *p.state.as_ref().unwrap_or(&new_task.state);
+        new_task.priority = *p.priority.as_ref().unwrap_or(&new_task.priority);
+        new_task.due = p.due.or(new_task.due);
+        new_task.completed_at = p
             .state
             .as_ref()
             .is_some_and(|s| s == &State::Completed)
             .then_some(chrono::Utc::now());
 
         Ok([
-            content.chars().take(t.start_pos).collect::<String>(),
+            content.chars().take(current_task.start_pos).collect::<String>(),
             content
                 .chars()
-                .skip(t.start_pos)
+                .skip(current_task.start_pos)
                 .take_while(|c| *c == ' ')
                 .collect::<String>(),
-            task_to_string(&t),
-            content.chars().skip(t.end_pos).collect::<String>(),
+            task_to_string(&new_task),
+            content
+                .chars()
+                .skip(
+                    current_task
+                        .description
+                        .as_ref()
+                        .map(|d| d.end)
+                        .unwrap_or(current_task.end_pos),
+                )
+                .collect::<String>(),
         ]
         .join(""))
     }
@@ -201,7 +216,14 @@ pub fn task_to_string(t: &Task) -> String {
     if let Some(d) = &t.completed_at {
         elements.push(format!("{COMPLETED_EMOJI} {}", d.format("%Y-%m-%d")))
     }
-    elements.join(" ")
+    let mut s = elements.join(" ");
+    if let Some(d) = &t.description {
+        s.push_str("\n    ");
+        s.push_str(d.text.as_str());
+        s.push('\n');
+    }
+
+    s
 }
 
 fn extract_date_after_emoji(text: &str, emoji: char) -> (String, Option<DateTimeUtc>) {
@@ -398,13 +420,12 @@ End of content
         assert_eq!(task.text, "Some task");
         assert!(task.description.is_some());
         assert_eq!(
-            task.description.as_ref().unwrap(),
+            task.description.as_ref().unwrap().text,
             " Description
   different indent
  return indent back
     tabulation as indent
- return indent back
-"
+ return indent back"
         );
     }
 
@@ -567,6 +588,7 @@ some text
                     &TaskPatch {
                         task: &tasks[i],
                         name: None,
+                        description: None,
                         state: Some(State::Completed),
                         due: None,
                         priority: None,
@@ -661,6 +683,7 @@ some another text
                 let r = p.patch_task_in_content(
                     &TaskPatch {
                         name: None,
+                        description: None,
                         task: &tasks[i],
                         state: Some(State::Uncompleted),
                         due: None,
@@ -829,6 +852,7 @@ Some another text";
                     &TaskPatch {
                         task: &tasks[i],
                         name: None,
+                        description: None,
                         state: None,
                         due: None,
                         priority: Some(c.priority),
@@ -860,6 +884,7 @@ Some another text";
                 patch: TaskPatch {
                     task: &Task::default(),
                     name: None,
+                    description: None,
                     state: None,
                     due: None,
                     priority: None,
@@ -872,6 +897,7 @@ Some another text";
                 patch: TaskPatch {
                     task: &Task::default(),
                     name: Some("Some another text".to_string()),
+                    description: None,
                     state: None,
                     due: None,
                     priority: None,
@@ -879,11 +905,20 @@ Some another text";
             },
             Case {
                 name: "change all",
-                file_content_before: format!("  - [ ] Some text #tag #другой.тег {DUE_EMOJI} 2025-03-01 ⏫ #tag3"),
-                file_content_after: format!("  - [/] Some another text {DUE_EMOJI} 2025-01-27 🔺"),
+                file_content_before: format!(
+                    "  - [ ] Some text #tag #другой.тег {DUE_EMOJI} 2025-03-01 ⏫ #tag3
+  task description
+  on two lines"
+                ),
+                file_content_after: format!(
+                    "  - [/] Some another text {DUE_EMOJI} 2025-01-27 🔺
+    the task description
+"
+                ),
                 patch: TaskPatch {
                     task: &Task::default(),
                     name: Some("Some another text".to_string()),
+                    description: Some("the task description".to_string()),
                     state: Some(State::InProgress),
                     due: Some(DateTimeUtc::from_naive_utc_and_offset(
                         NaiveDate::parse_from_str("2025-01-27", "%Y-%m-%d")

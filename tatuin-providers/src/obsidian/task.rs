@@ -68,6 +68,51 @@ impl From<TaskState> for State {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Description {
+    pub text: String,
+    pub start: usize,
+    pub end: usize,
+}
+
+impl Description {
+    pub fn new(start: usize) -> Self {
+        Self {
+            text: String::new(),
+            start,
+            end: start,
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        Self {
+            text: s.to_string(),
+            start: 0,
+            end: s.chars().count(),
+        }
+    }
+
+    pub fn from_content(s: &str, start: usize, end: usize) -> Self {
+        let text = s.chars().skip(start).take(end - start + 1).collect::<String>();
+        Self { text, start, end }
+    }
+
+    pub fn append(&self, line: &str) -> Self {
+        let mut count = line.chars().count();
+        let text = if self.text.is_empty() {
+            line.to_string()
+        } else {
+            count += 1;
+            self.text.clone() + "\n" + line
+        };
+        Self {
+            text,
+            start: self.start,
+            end: self.end + count,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Task {
     pub root_path: String,
@@ -78,7 +123,7 @@ pub struct Task {
     pub end_pos: usize,
     pub state: State,
     pub text: String,
-    pub description: Option<String>,
+    pub description: Option<Description>,
     pub due: Option<DateTimeUtc>,
     pub completed_at: Option<DateTimeUtc>,
     pub priority: Priority,
@@ -122,7 +167,7 @@ impl TaskTrait for Task {
     }
 
     fn description(&self) -> Option<String> {
-        self.description.clone()
+        self.description.clone().map(|d| d.text)
     }
 
     fn state(&self) -> TaskState {

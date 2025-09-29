@@ -141,6 +141,7 @@ fn patch_to_internal<'a>(t: &'a task::Task, tp: &TaskPatch) -> patch::TaskPatch<
     patch::TaskPatch {
         task: t,
         name: tp.name.value(),
+        description: tp.description.value(),
         state: tp.state.value().map(|s| s.into()),
         due: match tp.due.value() {
             Some(due) => due.into(),
