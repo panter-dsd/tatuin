@@ -106,6 +106,14 @@ impl TaskProviderTrait for Provider {
 
         errors
     }
+
+    async fn delete(&mut self, t: &dyn TaskTrait) -> Result<(), StringError> {
+        let t = t.as_any().downcast_ref::<task::Task>().expect("Wrong casting");
+        self.c.delete_task(t).await.map_err(|e| {
+            tracing::error!(error=?e, name=t.text(), id=t.id(), "Delete the task");
+            e.into()
+        })
+    }
 }
 
 #[async_trait]

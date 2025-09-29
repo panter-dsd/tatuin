@@ -52,6 +52,11 @@ impl File {
         Ok(())
     }
 
+    pub async fn delete_task(&mut self, t: &Task) -> Result<(), Box<dyn Error>> {
+        self.content = self.delete_task_from_content(t, self.content.as_str())?;
+        Ok(())
+    }
+
     fn try_parse_task(&self, line: &str, pos: usize) -> Option<Task> {
         let caps = TASK_RE.captures(line)?;
 
@@ -105,8 +110,7 @@ impl File {
         Ok(result)
     }
 
-    fn patch_task_in_content(&self, p: &TaskPatch, content: &str) -> Result<String, Box<dyn Error>> {
-        let mut t = p.task.clone();
+    fn check_task_was_not_changed(&self, t: &Task, content: &str) -> Result<(), Box<dyn Error>> {
         let line = content
             .chars()
             .skip(t.start_pos)
@@ -115,7 +119,7 @@ impl File {
 
         match self.try_parse_task(&line, t.start_pos) {
             Some(task) => {
-                if task != t {
+                if &task != t {
                     return Err(Box::<dyn std::error::Error>::from(
                         "Task has been changed since last loading",
                     ));
@@ -127,6 +131,13 @@ impl File {
                 ));
             }
         }
+
+        Ok(())
+    }
+
+    fn patch_task_in_content(&self, p: &TaskPatch, content: &str) -> Result<String, Box<dyn Error>> {
+        let mut t = p.task.clone();
+        self.check_task_was_not_changed(&t, content)?;
 
         t.text = p.name.as_ref().unwrap_or(&t.text).clone();
         t.state = *p.state.as_ref().unwrap_or(&t.state);
@@ -147,6 +158,15 @@ impl File {
                 .collect::<String>(),
             task_to_string(&t),
             content.chars().skip(t.end_pos).collect::<String>(),
+        ]
+        .join(""))
+    }
+
+    fn delete_task_from_content(&self, t: &Task, content: &str) -> Result<String, Box<dyn Error>> {
+        self.check_task_was_not_changed(t, content)?;
+        Ok([
+            content.chars().take(t.start_pos).collect::<String>(),
+            content.chars().skip(t.end_pos + 1).collect::<String>(),
         ]
         .join(""))
     }
@@ -843,6 +863,73 @@ Some another text";
                 ..c.patch.clone()
             };
             let r = p.patch_task_in_content(&patch, result.as_str());
+            assert!(r.is_ok(), "{}: {}", c.name, r.unwrap_err());
+            result = r.unwrap();
+            assert_eq!(c.file_content_after, result, "Test '{}' was failed", c.name);
+        }
+    }
+
+    #[test]
+    #[cfg_attr(miri, ignore)]
+    fn task_deleting_test() {
+        struct Case<'a> {
+            name: &'a str,
+            file_content_before: &'a str,
+            file_content_after: &'a str,
+            task_number: usize,
+        }
+        let cases: &[Case] = &[
+            Case {
+                name: "single task without any content",
+                file_content_before: "- [ ] Some text #tag #другой.тег 2025-03-01 ⏫ #tag3",
+                file_content_after: "",
+                task_number: 0,
+            },
+            Case {
+                name: "single task with content",
+                file_content_before: "Some content
+- [ ] Some text #tag #другой.тег 2025-03-01 ⏫ #tag3
+Some another content
+",
+                file_content_after: "Some content
+Some another content
+",
+                task_number: 0,
+            },
+            Case {
+                name: "single task with content and leader spaces",
+                file_content_before: "Some content
+       - [ ] Some text #tag #другой.тег 2025-03-01 ⏫ #tag3
+Some another content
+",
+                file_content_after: "Some content
+Some another content
+",
+                task_number: 0,
+            },
+            Case {
+                name: "several tasks with content",
+                file_content_before: "Some content
+- [ ] Some text #tag #другой.тег 2025-03-01 ⏫ #tag3
+- [ ] Some another text #tag #другой.тег 2025-03-01 ⏫ #tag3
+Some another content
+",
+                file_content_after: "Some content
+- [ ] Some text #tag #другой.тег 2025-03-01 ⏫ #tag3
+Some another content
+",
+                task_number: 1,
+            },
+        ];
+
+        let p = File::new("");
+
+        for c in cases {
+            let tasks = p.tasks_from_content(c.file_content_before).unwrap();
+            assert!(tasks.len() > c.task_number);
+            let task = tasks[c.task_number].clone();
+            let mut result = c.file_content_before.to_string();
+            let r = p.delete_task_from_content(&task, result.as_str());
             assert!(r.is_ok(), "{}: {}", c.name, r.unwrap_err());
             result = r.unwrap();
             assert_eq!(c.file_content_after, result, "Test '{}' was failed", c.name);

@@ -135,6 +135,13 @@ impl Client {
 
         errors
     }
+
+    pub async fn delete_task(&mut self, t: &Task) -> Result<(), Box<dyn Error>> {
+        let mut f = md_file::File::new(&t.file_path);
+        f.open()?;
+        f.delete_task(t).await?;
+        f.flush()
+    }
 }
 
 fn supported_files(p: &Path) -> Result<Vec<String>, Box<dyn Error>> {
