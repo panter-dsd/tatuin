@@ -99,12 +99,28 @@ impl File {
 
         let mut pos: usize = 0;
 
+        let mut task: Option<Task> = None;
+
         for l in content.split(SPLIT_TERMINATOR) {
             if let Some(t) = self.try_parse_task(l, pos) {
-                result.push(t);
+                if let Some(previous_task) = task {
+                    result.push(previous_task);
+                }
+                task = Some(t);
+            } else if let Some(t) = &mut task {
+                if l.starts_with(' ') || l.starts_with('\t') {
+                    t.description = Some(t.description.clone().unwrap_or(String::new()) + l + "\n");
+                } else {
+                    result.push(t.clone());
+                    task = None;
+                }
             }
 
             pos += l.chars().count() + SPLIT_TERMINATOR.len();
+        }
+
+        if let Some(t) = task {
+            result.push(t);
         }
 
         Ok(result)
@@ -361,6 +377,35 @@ some another text
         assert!(task.completed_at.is_some());
         assert_eq!(task.completed_at.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
         assert_eq!(task.tags, vec!["tag", "группа/имя_tag-name123", "tag_at_end"]);
+    }
+
+    #[test]
+    fn parse_description_test() {
+        let text = "Some content
+- [ ] Some task
+ Description
+  different indent
+ return indent back
+    tabulation as indent
+ return indent back
+End of content
+";
+
+        let p = File::new("");
+        let tasks = p.tasks_from_content(text).unwrap();
+        assert_eq!(tasks.len(), 1);
+        let task = &tasks[0];
+        assert_eq!(task.text, "Some task");
+        assert!(task.description.is_some());
+        assert_eq!(
+            task.description.as_ref().unwrap(),
+            " Description
+  different indent
+ return indent back
+    tabulation as indent
+ return indent back
+"
+        );
     }
 
     #[test]

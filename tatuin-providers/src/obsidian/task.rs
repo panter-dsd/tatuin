@@ -78,6 +78,7 @@ pub struct Task {
     pub end_pos: usize,
     pub state: State,
     pub text: String,
+    pub description: Option<String>,
     pub due: Option<DateTimeUtc>,
     pub completed_at: Option<DateTimeUtc>,
     pub priority: Priority,
@@ -90,6 +91,7 @@ impl PartialEq for Task {
             && self.end_pos == o.end_pos
             && self.state == o.state
             && self.text == o.text
+            && self.description == o.description
             && self.due == o.due
             && self.priority == o.priority
             && self.tags == o.tags
@@ -117,6 +119,10 @@ impl TaskTrait for Task {
 
     fn text(&self) -> String {
         self.text.to_string()
+    }
+
+    fn description(&self) -> Option<String> {
+        self.description.clone()
     }
 
     fn state(&self) -> TaskState {
