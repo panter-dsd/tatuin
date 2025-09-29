@@ -421,11 +421,11 @@ End of content
         assert!(task.description.is_some());
         assert_eq!(
             task.description.as_ref().unwrap().text,
-            " Description
-  different indent
- return indent back
-    tabulation as indent
- return indent back"
+            "Description
+different indent
+return indent back
+tabulation as indent
+return indent back"
         );
     }
 

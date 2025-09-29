@@ -92,13 +92,26 @@ impl Description {
         }
     }
 
+    fn ltrim(line: &str) -> &str {
+        line.trim_start_matches([' ', '\t'])
+    }
+
     pub fn from_content(s: &str, start: usize, end: usize) -> Self {
-        let text = s.chars().skip(start).take(end - start + 1).collect::<String>();
+        let text = s
+            .chars()
+            .skip(start)
+            .take(end - start + 1)
+            .collect::<String>()
+            .split('\n')
+            .map(Self::ltrim)
+            .collect::<Vec<&str>>()
+            .join("\n");
         Self { text, start, end }
     }
 
     pub fn append(&self, line: &str) -> Self {
         let mut count = line.chars().count();
+        let line = Self::ltrim(line);
         let text = if self.text.is_empty() {
             line.to_string()
         } else {
