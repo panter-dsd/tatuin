@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use super::project::Project;
+use super::{indent::Indent, project::Project};
 use sha256::digest;
 use std::{any::Any, fmt::Write, path::PathBuf};
 use tatuin_core::{
@@ -92,10 +92,6 @@ impl Description {
         }
     }
 
-    fn ltrim(line: &str) -> &str {
-        line.trim_start_matches([' ', '\t'])
-    }
-
     pub fn from_content(s: &str, start: usize, end: usize) -> Self {
         let text = s
             .chars()
@@ -103,7 +99,7 @@ impl Description {
             .take(end - start)
             .collect::<String>()
             .split('\n')
-            .map(Self::ltrim)
+            .map(Indent::trim_str)
             .collect::<Vec<&str>>()
             .join("\n");
         Self { text, start, end }
@@ -111,7 +107,7 @@ impl Description {
 
     pub fn append(&self, line: &str) -> Self {
         let mut count = line.chars().count();
-        let line = Self::ltrim(line);
+        let line = Indent::trim_str(line);
         let text = if self.text.is_empty() {
             line.to_string()
         } else {

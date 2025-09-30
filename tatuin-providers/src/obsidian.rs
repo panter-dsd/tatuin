@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 mod client;
+mod indent;
 mod md_file;
 mod patch;
 mod project;
