@@ -78,7 +78,7 @@ impl TaskProviderTrait for Provider {
             priority: tp.priority.value().unwrap_or(Priority::Normal),
             ..task::Task::default()
         };
-        self.rest.add_text_to_daily_note(task_to_string(&t).as_str()).await
+        self.rest.add_text_to_daily_note(task_to_string(&t, "").as_str()).await
     }
 
     async fn update(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {

@@ -171,14 +171,15 @@ impl File {
             .is_some_and(|s| s == &State::Completed)
             .then_some(chrono::Utc::now());
 
+        let indent = content
+            .chars()
+            .skip(current_task.start_pos)
+            .take_while(|c| *c == ' ' || *c == '\t')
+            .collect::<String>();
         Ok([
             content.chars().take(current_task.start_pos).collect::<String>(),
-            content
-                .chars()
-                .skip(current_task.start_pos)
-                .take_while(|c| *c == ' ')
-                .collect::<String>(),
-            task_to_string(&new_task),
+            indent.clone(),
+            task_to_string(&new_task, indent.as_str()),
             content
                 .chars()
                 .skip(
@@ -203,7 +204,7 @@ impl File {
     }
 }
 
-pub fn task_to_string(t: &Task) -> String {
+pub fn task_to_string(t: &Task, indent: &str) -> String {
     let state_char: char = t.state.into();
     let mut elements = vec![format!("- [{state_char}]"), t.text.clone()];
     if let Some(due) = &t.due {
@@ -218,9 +219,10 @@ pub fn task_to_string(t: &Task) -> String {
     }
     let mut s = elements.join(" ");
     if let Some(d) = &t.description {
-        s.push_str("\n    ");
-        s.push_str(d.text.as_str());
-        s.push('\n');
+        for l in d.text.split("\n") {
+            s.push_str(format!("\n{indent}    ").as_str());
+            s.push_str(l);
+        }
     }
 
     s
@@ -891,9 +893,9 @@ Some another text";
                 },
             },
             Case {
-                name: "change name",
-                file_content_before: format!("  - [ ] Some text #tag #другой.тег {DUE_EMOJI} 2025-03-01 ⏫ #tag3"),
-                file_content_after: format!("  - [ ] Some another text {DUE_EMOJI} 2025-03-01 ⏫"),
+                name: "change name with tabulation as indent",
+                file_content_before: format!("\t- [ ] Some text #tag #другой.тег {DUE_EMOJI} 2025-03-01 ⏫ #tag3"),
+                file_content_after: format!("\t- [ ] Some another text {DUE_EMOJI} 2025-03-01 ⏫"),
                 patch: TaskPatch {
                     task: &Task::default(),
                     name: Some("Some another text".to_string()),
@@ -912,8 +914,7 @@ Some another text";
                 ),
                 file_content_after: format!(
                     "  - [/] Some another text {DUE_EMOJI} 2025-01-27 🔺
-    the task description
-"
+      the task description"
                 ),
                 patch: TaskPatch {
                     task: &Task::default(),
@@ -928,6 +929,68 @@ Some another text";
                         Utc,
                     )),
                     priority: Some(Priority::Highest),
+                },
+            },
+            Case {
+                name: "change description",
+                file_content_before: "
+- [ ] One two three 📅 2025-09-18
+      текст
+      some another text
+- [ ] another task 📅 2025-09-18
+"
+                .to_string(),
+                file_content_after: "
+- [ ] One two three 📅 2025-09-18
+    измененный текст из одной строки
+    второй строки
+    и третьей тоже
+- [ ] another task 📅 2025-09-18
+"
+                .to_string(),
+                patch: TaskPatch {
+                    task: &Task::default(),
+                    name: None,
+                    description: Some(
+                        "измененный текст из одной строки
+второй строки
+и третьей тоже"
+                            .to_string(),
+                    ),
+                    state: None,
+                    due: None,
+                    priority: None,
+                },
+            },
+            Case {
+                name: "change description in task with indentation",
+                file_content_before: "
+  - [ ] One two three 📅 2025-09-18
+      текст
+      some another text
+- [ ] another task 📅 2025-09-18
+"
+                .to_string(),
+                file_content_after: "
+  - [ ] One two three 📅 2025-09-18
+      измененный текст из одной строки
+      второй строки
+      и третьей тоже
+- [ ] another task 📅 2025-09-18
+"
+                .to_string(),
+                patch: TaskPatch {
+                    task: &Task::default(),
+                    name: None,
+                    description: Some(
+                        "измененный текст из одной строки
+второй строки
+и третьей тоже"
+                            .to_string(),
+                    ),
+                    state: None,
+                    due: None,
+                    priority: None,
                 },
             },
         ];

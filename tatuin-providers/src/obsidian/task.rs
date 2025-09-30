@@ -100,7 +100,7 @@ impl Description {
         let text = s
             .chars()
             .skip(start)
-            .take(end - start + 1)
+            .take(end - start)
             .collect::<String>()
             .split('\n')
             .map(Self::ltrim)
