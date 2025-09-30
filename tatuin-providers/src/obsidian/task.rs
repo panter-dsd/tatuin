@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use super::project::Project;
+use super::{indent, project::Project};
 use sha256::digest;
 use std::{any::Any, fmt::Write, path::PathBuf};
 use tatuin_core::{
@@ -68,6 +68,60 @@ impl From<TaskState> for State {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Description {
+    pub text: String,
+    pub start: usize,
+    pub end: usize,
+}
+
+impl Description {
+    pub fn new(start: usize) -> Self {
+        Self {
+            text: String::new(),
+            start,
+            end: start,
+        }
+    }
+
+    pub fn from_str(s: &str) -> Self {
+        Self {
+            text: s.to_string(),
+            start: 0,
+            end: s.chars().count(),
+        }
+    }
+
+    pub fn from_content(s: &str, start: usize, end: usize) -> Self {
+        let text = s
+            .chars()
+            .skip(start)
+            .take(end - start)
+            .collect::<String>()
+            .split('\n')
+            .map(indent::trim_str)
+            .collect::<Vec<&str>>()
+            .join("\n");
+        Self { text, start, end }
+    }
+
+    pub fn append(&self, line: &str) -> Self {
+        let mut count = line.chars().count();
+        let line = indent::trim_str(line);
+        let text = if self.text.is_empty() {
+            line.to_string()
+        } else {
+            count += 1;
+            self.text.clone() + "\n" + line
+        };
+        Self {
+            text,
+            start: self.start,
+            end: self.end + count,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct Task {
     pub root_path: String,
@@ -78,6 +132,7 @@ pub struct Task {
     pub end_pos: usize,
     pub state: State,
     pub text: String,
+    pub description: Option<Description>,
     pub due: Option<DateTimeUtc>,
     pub completed_at: Option<DateTimeUtc>,
     pub priority: Priority,
@@ -90,6 +145,7 @@ impl PartialEq for Task {
             && self.end_pos == o.end_pos
             && self.state == o.state
             && self.text == o.text
+            && self.description == o.description
             && self.due == o.due
             && self.priority == o.priority
             && self.tags == o.tags
@@ -117,6 +173,10 @@ impl TaskTrait for Task {
 
     fn text(&self) -> String {
         self.text.to_string()
+    }
+
+    fn description(&self) -> Option<String> {
+        self.description.clone().map(|d| d.text)
     }
 
     fn state(&self) -> TaskState {

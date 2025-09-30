@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 mod client;
+mod indent;
 mod md_file;
 mod patch;
 mod project;
@@ -78,7 +79,7 @@ impl TaskProviderTrait for Provider {
             priority: tp.priority.value().unwrap_or(Priority::Normal),
             ..task::Task::default()
         };
-        self.rest.add_text_to_daily_note(task_to_string(&t).as_str()).await
+        self.rest.add_text_to_daily_note(task_to_string(&t, "").as_str()).await
     }
 
     async fn update(&mut self, patches: &[TaskPatch]) -> Vec<PatchError> {
@@ -141,6 +142,7 @@ fn patch_to_internal<'a>(t: &'a task::Task, tp: &TaskPatch) -> patch::TaskPatch<
     patch::TaskPatch {
         task: t,
         name: tp.name.value(),
+        description: tp.description.value(),
         state: tp.state.value().map(|s| s.into()),
         due: match tp.due.value() {
             Some(due) => due.into(),

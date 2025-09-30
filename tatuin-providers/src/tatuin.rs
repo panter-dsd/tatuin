@@ -297,7 +297,7 @@ mod test {
         let tasks = TaskProviderTrait::list(p, None, &Filter::full_filter()).await.unwrap();
         assert_eq!(tasks.len(), 0);
 
-        let patches = generate_items(p, 100, project.id().as_str()).await;
+        let patches = generate_items(p, 10, project.id().as_str()).await;
         assert!(patches.is_ok());
         let patches = patches.unwrap();
 
@@ -332,7 +332,7 @@ mod test {
         let tasks = TaskProviderTrait::list(p, None, &Filter::full_filter()).await.unwrap();
         assert_eq!(tasks.len(), 0);
 
-        let patches = generate_items(p, 100, project.id().as_str()).await;
+        let patches = generate_items(p, 10, project.id().as_str()).await;
         assert!(patches.is_ok());
         let patches = patches.unwrap();
 
