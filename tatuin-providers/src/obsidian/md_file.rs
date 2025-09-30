@@ -159,8 +159,9 @@ impl File {
 
     fn patch_task_in_content(&self, p: &TaskPatch, content: &str) -> Result<String, Box<dyn Error>> {
         let current_task = p.task;
+        self.check_task_was_not_changed(current_task, content)?;
+
         let mut new_task = p.task.clone();
-        self.check_task_was_not_changed(&new_task, content)?;
 
         new_task.text = p.name.as_ref().unwrap_or(&new_task.text).clone();
         new_task.description = p.description.as_ref().map(|t| Description::from_str(t.as_str()));
