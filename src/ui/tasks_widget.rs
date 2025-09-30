@@ -273,10 +273,7 @@ impl TasksWidget {
                         },
                         _ = delete_task_rx.recv() => {
                             let mut s = s.write().await;
-                            // We need here the real task instead of patched one. So, we can't
-                            // use selected_task method here.
-                            if let Some(idx) = s.list_state.selected()
-                                && let t = s.tasks[idx].task().clone_boxed()
+                            if let Some(t) = s.selected_task()
                                 && t.patch_policy().is_removable {
                                 s.async_command = Some(AsyncCommand::new(AsyncCommandType::DeleteTask, t.as_ref()));
                                 s.show_delete_task_dialog(t.as_ref()).await;

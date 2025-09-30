@@ -105,7 +105,8 @@ impl TaskTrait for PatchedTask {
     }
 
     fn as_any(&self) -> &dyn Any {
-        self
+        // Return the underlying task here to correct downcast
+        self.task.as_any()
     }
 
     fn clone_boxed(&self) -> Box<dyn TaskTrait> {
