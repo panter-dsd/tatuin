@@ -1,25 +1,15 @@
-pub struct Indent<'a> {
-    s: &'a str,
+pub fn exists(s: &str) -> bool {
+    indent_chars().iter().any(|c| s.starts_with(*c))
 }
 
-impl<'a> Indent<'a> {
-    pub fn new(s: &'a str) -> Self {
-        Self { s }
-    }
+pub fn indent_chars() -> [char; 2] {
+    [' ', '\t']
+}
 
-    pub fn exists(&self) -> bool {
-        Self::chars().iter().any(|c| self.s.starts_with(*c))
-    }
+pub fn is_indent(c: &char) -> bool {
+    indent_chars().iter().any(|ch| c == ch)
+}
 
-    pub fn chars() -> [char; 2] {
-        [' ', '\t']
-    }
-
-    pub fn is_indent(c: &char) -> bool {
-        Self::chars().iter().any(|ch| c == ch)
-    }
-
-    pub fn trim_str(s: &'a str) -> &'a str {
-        s.trim_start_matches(Self::chars())
-    }
+pub fn trim_str(s: &str) -> &str {
+    s.trim_start_matches(indent_chars())
 }

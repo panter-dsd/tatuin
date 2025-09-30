@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 use crate::obsidian::{
-    indent::Indent,
+    indent,
     task::{Description, State, Task},
 };
 use chrono::{NaiveDate, Utc};
@@ -111,7 +111,7 @@ impl File {
                 }
                 task = Some(t);
             } else if let Some(t) = &mut task {
-                if Indent::new(l).exists() {
+                if indent::exists(l) {
                     t.description = Some(t.description.clone().unwrap_or(Description::new(pos)).append(l));
                 } else {
                     result.push(t.clone());
@@ -176,7 +176,7 @@ impl File {
         let indent = content
             .chars()
             .skip(current_task.start_pos)
-            .take_while(Indent::is_indent)
+            .take_while(indent::is_indent)
             .collect::<String>();
         Ok([
             content.chars().take(current_task.start_pos).collect::<String>(),
