@@ -139,7 +139,6 @@ impl File {
                     task.description = Some(Description::from_content(content, d.start, d.end));
                 }
                 if &task != t {
-                    println!("{task:?} != {t:?}");
                     return Err(Box::<dyn std::error::Error>::from(
                         "Task has been changed since last loading",
                     ));
