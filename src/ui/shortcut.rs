@@ -80,3 +80,14 @@ impl Shortcut {
         }
     }
 }
+
+impl std::fmt::Debug for Shortcut {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let data = self.data.read().unwrap();
+        write!(
+            f,
+            "Shortcut (name={}, keys={:?}, is_global={}, current_input_keys={:?})",
+            data.name, data.keys, data.is_global, data.current_input_keys
+        )
+    }
+}
