@@ -74,6 +74,7 @@ enum AsyncCommandType {
     ChangeDueDate,
     EditTask,
     DeleteTask,
+    DuplicateTask,
 }
 
 struct AsyncCommand {
@@ -117,6 +118,7 @@ pub struct TasksWidget {
     edit_task_shortcut: Shortcut,
     delete_task_shortcut: Shortcut,
     open_task_link_shortcut: Shortcut,
+    duplicate_task_shortcut: Shortcut,
 
     last_filter: Filter,
 
@@ -144,6 +146,7 @@ impl AppBlockWidget for TasksWidget {
             &mut self.edit_task_shortcut,
             &mut self.delete_task_shortcut,
             &mut self.open_task_link_shortcut,
+            &mut self.duplicate_task_shortcut,
         ]
     }
 
@@ -211,6 +214,8 @@ impl TasksWidget {
             edit_task_shortcut: Shortcut::new("Edit the task", &['e']),
             delete_task_shortcut: Shortcut::new("Delete the task", &['d']),
             open_task_link_shortcut: Shortcut::new("Open the task's link", &['o']),
+            duplicate_task_shortcut: Shortcut::new("Duplicate the task", &['m', 'c']),
+
             last_filter: Filter::default(),
             dialog: None,
             is_global_dialog: true,
@@ -231,6 +236,7 @@ impl TasksWidget {
                 let mut edit_task_rx = s_guard.edit_task_shortcut.subscribe_to_accepted();
                 let mut delete_task_rx = s_guard.delete_task_shortcut.subscribe_to_accepted();
                 let mut open_task_link_rx = s_guard.open_task_link_shortcut.subscribe_to_accepted();
+                let mut duplicate_task_rx = s_guard.duplicate_task_shortcut.subscribe_to_accepted();
                 drop(s_guard);
                 loop {
                     tokio::select! {
@@ -286,6 +292,13 @@ impl TasksWidget {
                                 s.write().await.error_logger.write().await.add_error(e.to_string().as_str());
                             }
                         }
+                        _ = duplicate_task_rx.recv() => {
+                            let mut s = s.write().await;
+                            if let Some(t) = s.selected_task() {
+                                s.async_command = Some(AsyncCommand::new(AsyncCommandType::DuplicateTask, t.as_ref()));
+                                s.show_duplicate_task_dialog(t.as_ref()).await;
+                            }
+                        },
                     }
 
                     s.write().await.update_task_info_view().await;
@@ -715,6 +728,19 @@ impl TasksWidget {
         self.dialog = Some(Box::new(d));
     }
 
+    async fn show_duplicate_task_dialog(&mut self, task: &dyn TaskTrait) {
+        let mut d = ConfirmationDialog::new(
+            "Duplicate the task",
+            format!("Do you want to duplicate the task\n\"{}\"?", task.text()).as_str(),
+            &[StandardButton::Yes, StandardButton::No],
+            StandardButton::Yes,
+        );
+        if let Some(dh) = &self.draw_helper {
+            d.set_draw_helper(dh.clone());
+        }
+        self.dialog = Some(Box::new(d));
+    }
+
     #[tracing::instrument(level = "info", target = "tasks_widget")]
     async fn create_or_update_task(&mut self, patch: &Patch) {
         let provider = self
@@ -776,6 +802,39 @@ impl TasksWidget {
                     }
                     Err(e) => {
                         tracing::error!(error=?e, task_name=t.text(), task_id=t.id(), "Delete the task");
+                        self.error_logger.write().await.add_error(e.to_string().as_str());
+                    }
+                }
+            }
+            AsyncCommandType::DuplicateTask => {
+                let t = cmd.task.as_ref();
+                if t.project().is_none() {
+                    self.error_logger
+                        .write()
+                        .await
+                        .add_error("I can't duplicate the task with empty project");
+                    return;
+                }
+                let project = t.project().unwrap();
+                let provider = self.providers_storage.read().await.provider(t.provider().as_str());
+                let mut p = provider.provider.write().await;
+
+                let patch = TaskPatch {
+                    task: None,
+                    name: ValuePatch::Value(t.text()),
+                    description: t.description().into(),
+                    due: t.due().map(|d| d.into()).into(),
+                    priority: ValuePatch::Value(t.priority()),
+                    state: ValuePatch::Value(State::Uncompleted),
+                };
+
+                match p.create(project.id().as_str(), &patch).await {
+                    Ok(_) => {
+                        p.reload().await;
+                        self.load_tasks(&self.last_filter.clone()).await;
+                    }
+                    Err(e) => {
+                        tracing::error!(error=?e, task_name=t.text(), task_id=t.id(), "Duplicate the task");
                         self.error_logger.write().await.add_error(e.to_string().as_str());
                     }
                 }
