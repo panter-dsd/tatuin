@@ -207,7 +207,7 @@ impl TasksWidget {
             change_due_shortcut: Shortcut::new("Change due date of the task", &['c', 'd']),
             change_priority_shortcut: Shortcut::new("Change priority of the task", &['c', 'p']),
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
-            add_task_shortcut: Shortcut::new("Create a task", &['a']),
+            add_task_shortcut: Shortcut::new("Create a task", &['a']).global(),
             edit_task_shortcut: Shortcut::new("Edit the task", &['e']),
             delete_task_shortcut: Shortcut::new("Delete the task", &['d']),
             open_task_link_shortcut: Shortcut::new("Open the task's link", &['o']),
