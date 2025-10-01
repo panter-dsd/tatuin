@@ -10,6 +10,7 @@ mod task;
 
 use async_trait::async_trait;
 use md_file::task_to_string;
+use task::Description;
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
@@ -74,6 +75,7 @@ impl TaskProviderTrait for Provider {
     async fn create(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
         let t = task::Task {
             text: tp.name.value().unwrap(),
+            description: tp.description.value().map(|s| Description::from_str(s.as_str())),
             state: task::State::Uncompleted,
             due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
             priority: tp.priority.value().unwrap_or(Priority::Normal),
