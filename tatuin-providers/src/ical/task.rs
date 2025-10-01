@@ -66,6 +66,7 @@ pub struct Task {
     pub provider: String,
     pub properties: Vec<ical::property::Property>,
     pub href: String,
+    pub etag: Option<String>,
     pub task_type: TaskType,
     pub patch_policy: PatchPolicy,
 
@@ -87,7 +88,7 @@ impl std::fmt::Debug for Task {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Task uuid={} name={} description={:?} status={:?} priority={} start={:?} end={:?} due={:?} completed={:?} created={:?} duration={:?} categories={:?} properties={:?} href={} type={:?}",
+            "Task uuid={} name={} description={:?} status={:?} priority={} start={:?} end={:?} due={:?} completed={:?} created={:?} duration={:?} categories={:?} properties={:?} href={} etag={:?} type={:?}",
             self.uid,
             self.name,
             self.description,
@@ -102,6 +103,7 @@ impl std::fmt::Debug for Task {
             self.categories,
             self.properties,
             self.href,
+            self.etag,
             self.task_type,
         )
     }

@@ -725,17 +725,7 @@ impl TasksWidget {
         let project_id = patch.project_id.as_ref().unwrap();
         let tp = patch.task_patch.as_ref().unwrap();
 
-        if tp.task.is_some() {
-            let patched_task = tp
-                .task
-                .as_ref()
-                .unwrap()
-                .as_any()
-                .downcast_ref::<PatchedTask>()
-                .expect("Wrong logic! PatchedTask was expected.");
-
-            let task = patched_task.original_task();
-
+        if let Some(task) = &tp.task {
             match self.changed_tasks.iter_mut().find(|p| p.is_task(task.as_ref())) {
                 Some(p) => {
                     replace_if(&mut p.name, &tp.name);
@@ -746,7 +736,7 @@ impl TasksWidget {
                 }
                 None => {
                     let mut tp = tp.clone();
-                    tp.task = Some(task);
+                    tp.task = Some(task.clone_boxed());
                     self.changed_tasks.push(tp);
                 }
             }
