@@ -4,7 +4,7 @@ use chrono::TimeDelta;
 use ical::property::Property;
 use itertools::Itertools;
 use reqwest::{
-    Method, StatusCode,
+    StatusCode,
     header::{HeaderMap, HeaderValue},
 };
 use reqwest_dav::{Auth, Client as WebDavClient, ClientBuilder, Depth, list_cmd::ListEntity};
@@ -116,9 +116,10 @@ impl Client {
             let mut tasks = self.parse_calendar(&f.file_name).await?;
             tasks.iter_mut().for_each(|t| {
                 t.href = f.href.clone();
+                t.etag = f.etag.clone();
                 t.patch_policy = PatchPolicy {
                     is_editable: true,
-                    is_removable: false,
+                    is_removable: true,
                     available_states: vec![State::Uncompleted, State::Completed, State::InProgress],
                     available_priorities: Priority::values(),
                     available_due_items: DuePatchItem::values(),
@@ -173,6 +174,10 @@ impl Client {
 
         let r = r.error_for_status();
         r.map(|_| ()).map_err(|e| Box::new(e) as Box<dyn Error>)
+    }
+
+    pub async fn delete(&mut self, t: &Task) -> Result<(), Box<dyn Error>> {
+        self.send_delete_request(t).await
     }
 }
 
@@ -290,16 +295,43 @@ END:VCALENDAR"#,
         tracing::debug!(body=?body, task=?&t, href=href, "Create or update a task");
 
         let c = self.client()?;
-        c.start_request(Method::from_bytes(b"PUT").unwrap(), &href)
+        c.start_request(reqwest::Method::PUT, &href)
             .await?
             .headers({
                 let mut map = HeaderMap::new();
-                map.insert("Content-Type", HeaderValue::from_str("text/calendar; charset=utf-8")?);
+                map.insert(
+                    reqwest::header::CONTENT_TYPE,
+                    HeaderValue::from_str("text/calendar; charset=utf-8")?,
+                );
+                if let Some(etag) = &t.etag {
+                    map.insert(reqwest::header::IF_MATCH, HeaderValue::from_str(etag)?);
+                }
                 map
             })
             .body(body)
             .send()
             .await
+            .map_err(|e| Box::new(e) as Box<dyn Error>)
+    }
+
+    async fn send_delete_request(&mut self, t: &Task) -> Result<(), Box<dyn Error>> {
+        let href = self.task_href(t)?;
+        let etag = t.etag.as_ref().ok_or("ETag should be set")?;
+
+        tracing::debug!(etag=?etag, task=?&t, href=href, "Delete the task");
+
+        let c = self.client()?;
+        c.start_request(reqwest::Method::DELETE, &href)
+            .await?
+            .headers({
+                let mut map = HeaderMap::new();
+                map.insert(reqwest::header::IF_MATCH, HeaderValue::from_str(etag.as_str())?);
+                map
+            })
+            .send()
+            .await?
+            .error_for_status()
+            .map(|_| ())
             .map_err(|e| Box::new(e) as Box<dyn Error>)
     }
 }
