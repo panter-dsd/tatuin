@@ -1,6 +1,6 @@
 [package]
 name = "tatuin-providers"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 description = "Providers lib of the Tatuin project"
 repository = "https://github.com/panter-dsd/tatuin"
@@ -31,4 +31,4 @@ toml = "0.9.5"
 uuid = { version = "1.18.1", features = ["serde", "v4"] }
 tempfile = "3.23.0"
 redb = "2.6.3"
-tatuin-core = { path = "../tatuin-core", version = "0.2.0" }
+tatuin-core = { path = "../tatuin-core", version = "0.2.1" }
