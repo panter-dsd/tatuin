@@ -1,6 +1,6 @@
 [package]
 name = "tatuin-core"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 description = "Core lib of the Tatuin project"
 repository = "https://github.com/panter-dsd/tatuin"
