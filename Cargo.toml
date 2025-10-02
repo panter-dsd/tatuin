@@ -6,7 +6,7 @@ description = "Task Aggregator TUI for N providers"
 repository = "https://github.com/panter-dsd/tatuin"
 license = "MIT"
 readme = "README.md"
-rust-version = "1.88"
+rust-version = "1.89"
 
 [workspace]
 resolver = "3"

@@ -926,10 +926,9 @@ impl App {
             self.add_error(e.as_str()).await;
         }
 
-        let e = self.settings.write().await.save(name, state);
-        if e.is_err() {
-            self.add_error(format!("Save state error: {}", e.unwrap_err()).as_str())
-                .await;
+        let r = self.settings.write().await.save(name, state);
+        if let Err(e) = r {
+            self.add_error(format!("Save state error: {}", e).as_str()).await;
         }
     }
 

@@ -6,7 +6,7 @@ description = "Providers lib of the Tatuin project"
 repository = "https://github.com/panter-dsd/tatuin"
 readme = "README.md"
 license = "MIT"
-rust-version = "1.88"
+rust-version = "1.89"
 
 [dependencies]
 async-trait = "0.1.89"
@@ -30,5 +30,5 @@ iso8601-duration = { version = "0.2.0", features = ["chrono"] }
 toml = "0.9.5"
 uuid = { version = "1.18.1", features = ["serde", "v4"] }
 tempfile = "3.23.0"
-redb = "2.6.3"
+redb = "3.1.0"
 tatuin-core = { path = "../tatuin-core", version = "0.2.1" }
