@@ -6,7 +6,7 @@ description = "Providers lib of the Tatuin project"
 repository = "https://github.com/panter-dsd/tatuin"
 readme = "README.md"
 license = "MIT"
-rust-version = "1.88"
+rust-version = "1.89"
 
 [dependencies]
 async-trait = "0.1.89"
