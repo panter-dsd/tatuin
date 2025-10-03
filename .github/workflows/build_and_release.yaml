@@ -72,7 +72,7 @@ jobs:
         id: none_version
         if: ${{ !inputs.version && inputs.release_type == 'none' }}
         run: |
-          version=$(cargo metadata --format-version=1 --no-deps | jql '"packages"|>"version"<|[0]' --raw-string);
+          version=$(cargo metadata --format-version=1 --no-deps | jql '"packages"|={"name"="tatuin"}|>"version"<|[0]' --raw-string);
           echo $version;
           echo "crate_version=$version" >> "$GITHUB_OUTPUT";
           normal_version=v$version
@@ -83,7 +83,7 @@ jobs:
         if: ${{ !inputs.version && inputs.release_type != 'none' }}
         run: |
           cargo bump ${{ inputs.release_type }};
-          version=$(cargo metadata --format-version=1 --no-deps | jql '"packages"|>"version"<|[0]' --raw-string);
+          version=$(cargo metadata --format-version=1 --no-deps | jql '"packages"|={"name"="tatuin"}|>"version"<|[0]' --raw-string);
           echo $version;
           echo "crate_version=$version" >> "$GITHUB_OUTPUT";
           normal_version=v$version
