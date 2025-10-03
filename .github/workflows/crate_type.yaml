@@ -21,7 +21,7 @@ jobs:
       - name: Searching for lib
         id: searching
         run: |
-          result=$(cargo metadata --format-version=1 --no-deps | jql '"packages"|>"targets"<|[0]|>"kind"' | jql '..' -i);
+          result=$(cargo metadata --format-version=1 --no-deps | jql '"packages"|={"name"="tatuin"}|>"targets"<|[0]|>"kind"' | jql '..' -i);
           echo "targets=$result" >> "$GITHUB_OUTPUT";
           echo kind of targets $result;
     outputs:
