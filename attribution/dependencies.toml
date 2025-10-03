@@ -46,7 +46,7 @@ repository = "https://github.com/nical/android_system_properties"
 
 [[dependencies]]
 name = "anstream"
-version = "0.6.20"
+version = "0.6.21"
 description = "IO stream adapters for writing colored text that will gracefully degrade according to your terminal's capabilities."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -54,7 +54,7 @@ repository = "https://github.com/rust-cli/anstyle.git"
 
 [[dependencies]]
 name = "anstyle"
-version = "1.0.11"
+version = "1.0.13"
 description = "ANSI text styling"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -341,7 +341,7 @@ repository = "https://github.com/ParkMyCar/compact_str"
 
 [[dependencies]]
 name = "config"
-version = "0.15.17"
+version = "0.15.18"
 description = "Layered configuration system for Rust applications."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -1570,7 +1570,7 @@ repository = "https://github.com/sgodwincs/ordered-multimap-rs"
 
 [[dependencies]]
 name = "owo-colors"
-version = "4.2.2"
+version = "4.2.3"
 description = "Zero-allocation terminal colors that'll make people go owo"
 license = "MIT"
 notices = ["Copyright (c) 2020 - present The owo-colors Developers"]
@@ -1761,7 +1761,7 @@ repository = "https://github.com/dtolnay/proc-macro2"
 
 [[dependencies]]
 name = "quote"
-version = "1.0.40"
+version = "1.0.41"
 description = "Quasi-quoting macro quote!(...)"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -1839,7 +1839,7 @@ homepage = "https://ratatui.rs"
 
 [[dependencies]]
 name = "redb"
-version = "2.6.3"
+version = "3.1.0"
 description = "Rust Embedded DataBase"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2021 Christopher Berner"]
@@ -2000,7 +2000,7 @@ repository = "https://github.com/rustls/pki-types"
 
 [[dependencies]]
 name = "rustls-webpki"
-version = "0.103.6"
+version = "0.103.7"
 description = "Web PKI X.509 Certificate Verification."
 license = "ISC"
 notices = ["Copyright 2015 Brian Smith."]
@@ -2079,7 +2079,7 @@ homepage = "https://lib.rs/crates/security-framework-sys"
 
 [[dependencies]]
 name = "serde"
-version = "1.0.227"
+version = "1.0.228"
 description = "A generic serialization/deserialization framework"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -2108,7 +2108,7 @@ repository = "https://github.com/RReverser/serde-xml-rs"
 
 [[dependencies]]
 name = "serde_core"
-version = "1.0.227"
+version = "1.0.228"
 description = "Serde traits only, with no support for derive -- use the `serde` crate instead"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -2120,7 +2120,7 @@ homepage = "https://serde.rs"
 
 [[dependencies]]
 name = "serde_derive"
-version = "1.0.227"
+version = "1.0.228"
 description = "Macros 1.1 implementation of #[derive(Serialize, Deserialize)]"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -2432,14 +2432,14 @@ repository = "https://github.com/mullvad/system-configuration-rs"
 
 [[dependencies]]
 name = "tatuin-core"
-version = "0.2.0"
+version = "0.2.1"
 description = "Core lib of the Tatuin project"
 license = "MIT"
 repository = "https://github.com/panter-dsd/tatuin"
 
 [[dependencies]]
 name = "tatuin-providers"
-version = "0.2.0"
+version = "0.3.0"
 description = "Providers lib of the Tatuin project"
 license = "MIT"
 repository = "https://github.com/panter-dsd/tatuin"
@@ -2826,7 +2826,7 @@ repository = "https://github.com/dtolnay/typeid"
 
 [[dependencies]]
 name = "typenum"
-version = "1.18.0"
+version = "1.19.0"
 description = """
 Typenum is a Rust library for type-level numbers evaluated at
     compile time. It currently supports bits, unsigned integers, and signed
@@ -3590,7 +3590,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "zeroize"
-version = "1.8.1"
+version = "1.8.2"
 description = """
 Securely clear secrets from memory with a simple trait built on
 stable Rust primitives which guarantee memory is zeroed using an
@@ -3601,7 +3601,8 @@ even WASM!
 license = "Apache-2.0 OR MIT"
 notices = ["Copyright (c) 2018-2021 The RustCrypto Project Developers"]
 authors = ["The RustCrypto Project Developers"]
-repository = "https://github.com/RustCrypto/utils/tree/master/zeroize"
+repository = "https://github.com/RustCrypto/utils"
+homepage = "https://github.com/RustCrypto/utils/tree/master/zeroize"
 
 [[dependencies]]
 name = "zerotrie"
