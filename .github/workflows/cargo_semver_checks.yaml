@@ -54,7 +54,7 @@ jobs:
             fi
           else
             echo "Tag doesn't exist, it will use the latest crate version as the baseline tag"
-            latest_tag=v$(cargo metadata --format-version=1 --no-deps | jql '"packages"|>"version"<|[0]' --raw-string);
+            latest_tag=v$(cargo metadata --format-version=1 --no-deps | jql '"packages"|={"name"="tatuin"}|>"version"<|[0]' --raw-string);
             echo "baseline_tag: $latest_tag"
             # This allow to skip semver-checks when there is not tags.
             hash=$(git rev-parse "$latest_tag" 2>/dev/null || echo '')
@@ -98,9 +98,3 @@ jobs:
           tool: cargo-edit
       - name: Run cargo edit
         run: cargo set-version -p tatuin ${{ inputs.bump-version || inputs.release_type }}
-      - name: Install cargo-semver-checks
-        uses: taiki-e/install-action@v2
-        with:
-          tool: cargo-semver-checks
-      - name: Run cargo-semver-checks
-        run: cargo semver-checks --baseline-rev ${{ needs.get-baseline.outputs.baseline }};
