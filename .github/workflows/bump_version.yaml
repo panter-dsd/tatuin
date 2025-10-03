@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       crate-version:
-        description: "Bump version: (e.g. -> 3.1.4-alpha+159)"
+        description: 'Bump version: (e.g. -> 3.1.4-alpha+159)'
         required: true
         type: string
 jobs:
@@ -21,13 +21,13 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - uses: actions/checkout@v5
       - run: git pull
-      - name: Install cargo-bump
+      - name: Install cargo-edit
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-bump
-      - name: Run cargo bump
-        run: cargo bump ${{ inputs.crate-version }}
+          tool: cargo-edit
+      - name: Run cargo edit
+        run: cargo set-version -p tatuin ${{ inputs.crate-version }}
       - name: Commit and Push
         uses: stefanzweifel/git-auto-commit-action@v6
         with:
-          commit_message: "Bump version: ${{ inputs.crate-version }}"
+          commit_message: 'Bump version: ${{ inputs.crate-version }}'
