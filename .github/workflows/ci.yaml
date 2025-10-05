@@ -158,5 +158,4 @@ jobs:
         run: |
           export HOSTNAME=$(docker ps -ql)
           export CROSS_DOCKER_IN_DOCKER=true
-          export CROSS_CONTAINER_IN_CONTAINER=true
           ~/.cargo/bin/cross build --target x86_64-unknown-freebsd --release
