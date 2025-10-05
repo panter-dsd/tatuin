@@ -155,4 +155,4 @@ jobs:
       - name: Install cross
         run: cargo install cross --git https://github.com/cross-rs/cross
       - name: cross-build
-        run: cross build --target x86_64-unknown-freebsd --release
+        run: ~/.cargo/bin/cross build --target x86_64-unknown-freebsd --release
