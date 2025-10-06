@@ -186,7 +186,8 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          target: ${{ matrix.target }}
+          toolchain: stable
+          targets: ${{ matrix.target }}
       - name: Install cross
         run: cargo install cross --git https://github.com/cross-rs/cross
       - name: cross-build
