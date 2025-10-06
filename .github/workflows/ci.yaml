@@ -156,7 +156,5 @@ jobs:
         run: cargo install cross --git https://github.com/cross-rs/cross
       - name: cross-build
         run: |
-          export HOSTNAME=$(docker ps -ql)
           export CROSS_DOCKER_IN_DOCKER=true
-          ls /github/home/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin
           ~/.cargo/bin/cross build -v --target x86_64-unknown-freebsd --release
