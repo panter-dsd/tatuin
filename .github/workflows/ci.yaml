@@ -193,4 +193,5 @@ jobs:
       - name: cross-build
         run: |
           export CROSS_DOCKER_IN_DOCKER=${{ matrix.cross }}
+          export HOSTNAME=$(docker ps -ql)
           ~/.cargo/bin/cross build -v --target ${{ matrix.target }} --release
