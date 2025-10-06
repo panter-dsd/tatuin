@@ -50,6 +50,10 @@ enum ColorElement {
     DateTimeEditorInactiveElementBG,
     ActiveButtonFG,
     ActiveButtonBG,
+    EnabledButtonFG,
+    EnabledButtonBG,
+    DisabledButtonFG,
+    DisabledButtonBG,
     InactiveButtonFG,
     WarningTextFG,
     BorderColor,
@@ -70,31 +74,34 @@ fn element_color(element: ColorElement) -> Color {
         return *c;
     }
 
+    const DEFAULT_FG: Color = Color::White;
+    const DEFAULT_BG: Color = Color::Black;
+
     use ColorElement::*;
     match element {
-        DefaultBG => Color::Black,
-        DefaultFG => Color::White,
+        DefaultBG => DEFAULT_BG,
+        DefaultFG => DEFAULT_FG,
         TaskRowDueFG => Color::Blue,
         TaskRowPlaceFG => Color::Yellow,
-        UrlFG => Color::White,
+        UrlFG => DEFAULT_FG,
         UrlUnderMouseFG => Color::Blue,
         ActiveBlockFG => SLATE.c100,
         ActiveBlockBG => GREEN.c800,
         InactiveBlockFG => SLATE.c100,
         InactiveBlockBG => BLUE.c800,
         OverdueTaskFG => Color::LightRed,
-        TodayTaskFG => Color::White,
+        TodayTaskFG => DEFAULT_FG,
         FutureTaskFG => Color::LightGreen,
-        NoDateTaskFG => Color::White,
+        NoDateTaskFG => DEFAULT_FG,
         DescriptionKeyFG => Color::Blue,
-        DescriptionValueFG => Color::White,
+        DescriptionValueFG => DEFAULT_FG,
         Provider1FG => Color::Green,
         Provider2FG => Color::Magenta,
         Provider3FG => Color::Cyan,
         Provider4FG => Color::Yellow,
         Provider5FG => Color::Blue,
         Provider6FG => Color::Red,
-        FooterKeysHelpFG => Color::White,
+        FooterKeysHelpFG => DEFAULT_FG,
         FooterDatetimeLabelFG => Color::Yellow,
         FooterDatetimeFG => Color::LightCyan,
         FooterKeysLabelFG => Color::Green,
@@ -102,17 +109,21 @@ fn element_color(element: ColorElement) -> Color {
         HeaderKeySelectedFG => Color::LightRed,
         HeaderKeyFG => Color::Rgb(255, 192, 203),
         SelectedRowBG => SLATE.c800,
-        RegularTextFG => Color::White,
+        RegularTextFG => DEFAULT_FG,
         LabelFG => Color::Cyan,
-        DateTimeEditorActiveElementFG => Color::Black,
+        DateTimeEditorActiveElementFG => DEFAULT_BG,
         DateTimeEditorActiveElementBG => Color::LightBlue,
         DateTimeEditorInactiveElementFG => Color::Black,
         DateTimeEditorInactiveElementBG => Color::Gray,
         ActiveButtonFG => SLATE.c100,
         ActiveButtonBG => GREEN.c800,
-        InactiveButtonFG => Color::White,
+        EnabledButtonFG => DEFAULT_FG,
+        EnabledButtonBG => DEFAULT_BG,
+        DisabledButtonFG => DEFAULT_FG,
+        DisabledButtonBG => Color::DarkGray,
+        InactiveButtonFG => DEFAULT_FG,
         WarningTextFG => Color::Yellow,
-        BorderColor => Color::White,
+        BorderColor => DEFAULT_FG,
         LowestPriorityFG => Color::DarkGray,
         LowPriorityFG => Color::Gray,
         NormalPriorityFG => Color::LightGreen,
@@ -263,8 +274,17 @@ pub fn active_button_style() -> Style {
         .fg(element_color(ColorElement::ActiveButtonFG))
         .bg(element_color(ColorElement::ActiveButtonBG))
 }
-pub fn inactive_button_style() -> Style {
-    default_style().fg(element_color(ColorElement::InactiveButtonFG))
+
+pub fn disabled_button_style() -> Style {
+    default_style()
+        .bg(element_color(ColorElement::DisabledButtonBG))
+        .fg(element_color(ColorElement::DisabledButtonFG))
+}
+
+pub fn enabled_button_style() -> Style {
+    default_style()
+        .bg(element_color(ColorElement::EnabledButtonBG))
+        .fg(element_color(ColorElement::EnabledButtonFG))
 }
 
 pub fn warning_text_style() -> Style {

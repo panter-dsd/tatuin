@@ -249,6 +249,8 @@ impl Dialog {
             &mut self.task_description_editor,
             &mut self.priority_selector,
             &mut self.due_date_selector,
+            &mut self.create_task_button,
+            &mut self.create_task_and_another_one,
         ])
     }
 
@@ -288,9 +290,6 @@ impl Dialog {
 
         self.create_task_button.set_enabled(can_create_task);
         self.create_task_and_another_one.set_enabled(can_create_task);
-        self.create_task_button.set_active(self.create_task_button.is_enabled());
-        self.create_task_and_another_one
-            .set_active(self.create_task_and_another_one.is_enabled());
     }
 
     async fn fill_project_selector_items(&mut self) {
@@ -498,6 +497,17 @@ impl WidgetTrait for Dialog {
 #[async_trait]
 impl KeyboardHandler for Dialog {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        if self.create_task_button.handle_key(key).await {
+            self.should_be_closed = true;
+            return true;
+        }
+
+        if self.create_task_and_another_one.handle_key(key).await {
+            self.should_be_closed = true;
+            self.add_another_one = true;
+            return true;
+        }
+
         if self.can_create_task() && key.code == KeyCode::Enter {
             let mut handled = true;
             match key.modifiers {

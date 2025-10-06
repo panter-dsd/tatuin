@@ -65,14 +65,14 @@ impl std::fmt::Debug for Button {
 #[async_trait]
 impl WidgetTrait for Button {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
-        let block = Block::default()
-            .borders(Borders::ALL)
-            .border_style(style::border_color())
-            .style(if self.widget_state.is_active() {
-                style::active_button_style()
-            } else {
-                style::inactive_button_style()
-            });
+        let s = if self.widget_state.is_active() {
+            style::active_button_style()
+        } else if self.widget_state.is_enabled() {
+            style::enabled_button_style()
+        } else {
+            style::disabled_button_style()
+        };
+        let block = Block::default().borders(Borders::ALL).border_style(s).style(s);
         let inner_area = block.inner(area);
         block.render(area, buf);
 
