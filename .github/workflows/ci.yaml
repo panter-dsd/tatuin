@@ -186,7 +186,7 @@ jobs:
       - name: Fetch Repository
         uses: actions/checkout@v5
       - name: Install stable toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.target }}
       - name: Install cross
