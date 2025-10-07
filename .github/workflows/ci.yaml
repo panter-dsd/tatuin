@@ -195,6 +195,7 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.target }}
       - name: Install cross
+        if: ${{ matrix.cross }}
         run: cargo install cross --git https://github.com/cross-rs/cross
       - name: cross-build
         if: ${{ matrix.cross }}
