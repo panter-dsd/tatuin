@@ -135,7 +135,7 @@ jobs:
   cargo-miri:
     uses: ./.github/workflows/cargo_miri.yaml
   cross-build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     services:
       docker:
         image: docker:dind
@@ -151,7 +151,7 @@ jobs:
             target: x86_64-unknown-freebsd
             cross: false
           - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
+            target: i686-unknown-linux-gnu
             cross: false
           - os: ubuntu-latest
             target: x86_64-unknown-freebsd
