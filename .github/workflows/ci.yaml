@@ -137,7 +137,7 @@ jobs:
   cross-build:
     runs-on: ${{ matrix.os }}
     services:
-      if: ${{ matrix.os == "ubuntu-latest" }}
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       docker:
         image: docker:dind
         options: --privileged --shm-size=2g
