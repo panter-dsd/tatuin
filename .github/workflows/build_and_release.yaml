@@ -245,6 +245,7 @@ jobs:
         with:
           executable-name: tatuin
           target: ${{ matrix.target }}
+          release-tag: ${{ inputs.version }}
           changes-file:
   publish-crate:
     needs:
