@@ -177,7 +177,7 @@ jobs:
       - uses: taiki-e/create-gh-release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          changelog: CHANGELOG.md
+          changelog:
           allow-missing-changelog: true
           ref: refs/tags/${{ needs.get-version.outputs.new_tag_version }}
   build-and-release:
@@ -235,13 +235,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Build executable
-        uses: houseabsolute/actions-rust-cross@v0
+        uses: houseabsolute/actions-rust-cross@v1
         with:
           target: ${{ matrix.target }}
           args: --locked --release
           strip: true
       - name: Publish artifacts and release
-        uses: houseabsolute/actions-rust-release@v0
+        uses: panter-dsd/actions-rust-release@v0
         with:
           executable-name: tatuin
           target: ${{ matrix.target }}
