@@ -15,7 +15,7 @@ use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
-    task::{Priority, Task as TaskTrait},
+    task::{DateTimeUtc, Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
 
@@ -143,13 +143,13 @@ impl ProviderTrait for Provider {
 fn patch_to_internal<'a>(t: &'a task::Task, tp: &TaskPatch) -> patch::TaskPatch<'a> {
     patch::TaskPatch {
         task: t,
-        name: tp.name.value(),
-        description: tp.description.value(),
-        state: tp.state.value().map(|s| s.into()),
-        due: match tp.due.value() {
-            Some(due) => due.into(),
-            None => None,
-        },
-        priority: tp.priority.value(),
+        name: tp.name.clone(),
+        description: tp.description.clone(),
+        state: tp.state.clone().map(|s| s.into()),
+        due: tp.due.clone().map(|due| {
+            let d: Option<DateTimeUtc> = due.into();
+            d.expect("can't convert DuePatchItem to DateTimeUTC")
+        }),
+        priority: tp.priority.clone(),
     }
 }
