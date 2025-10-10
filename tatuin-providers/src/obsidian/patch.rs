@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-use tatuin_core::task::{DateTimeUtc, Priority};
+use tatuin_core::{
+    task::{DateTimeUtc, Priority},
+    task_patch::ValuePatch,
+};
 
 use super::task::{State, Task};
 
@@ -8,11 +11,11 @@ use super::task::{State, Task};
 #[derive(Clone)]
 pub struct TaskPatch<'a> {
     pub task: &'a Task,
-    pub name: Option<String>,
-    pub description: Option<String>,
-    pub state: Option<State>,
-    pub due: Option<DateTimeUtc>,
-    pub priority: Option<Priority>,
+    pub name: ValuePatch<String>,
+    pub description: ValuePatch<String>,
+    pub state: ValuePatch<State>,
+    pub due: ValuePatch<DateTimeUtc>,
+    pub priority: ValuePatch<Priority>,
 }
 
 pub struct PatchError {

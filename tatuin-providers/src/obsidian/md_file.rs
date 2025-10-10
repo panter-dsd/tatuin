@@ -9,7 +9,10 @@ use regex::Regex;
 use std::error::Error;
 use std::fs;
 use std::sync::LazyLock;
-use tatuin_core::task::{DateTimeUtc, Priority};
+use tatuin_core::{
+    task::{DateTimeUtc, Priority},
+    task_patch::ValuePatch,
+};
 
 use super::patch::TaskPatch;
 
@@ -163,16 +166,26 @@ impl File {
 
         let mut new_task = p.task.clone();
 
-        new_task.text = p.name.as_ref().unwrap_or(&new_task.text).clone();
-        new_task.description = p.description.as_ref().map(|t| Description::from_str(t.as_str()));
-        new_task.state = *p.state.as_ref().unwrap_or(&new_task.state);
-        new_task.priority = *p.priority.as_ref().unwrap_or(&new_task.priority);
-        new_task.due = p.due.or(new_task.due);
-        new_task.completed_at = p
-            .state
-            .as_ref()
-            .is_some_and(|s| s == &State::Completed)
-            .then_some(chrono::Utc::now());
+        if let ValuePatch::Value(n) = &p.name {
+            new_task.text = n.clone();
+        }
+
+        if p.description.is_set() {
+            new_task.description = p.description.value().map(|t| Description::from_str(t.as_str()));
+        }
+
+        if let ValuePatch::Value(v) = p.state {
+            new_task.completed_at = (v == State::Completed).then_some(chrono::Utc::now());
+            new_task.state = v;
+        }
+
+        if let ValuePatch::Value(v) = p.priority {
+            new_task.priority = v;
+        }
+
+        if p.due.is_set() {
+            new_task.due = p.due.value();
+        }
 
         let indent = content
             .chars()
@@ -592,11 +605,11 @@ some text
                 let r = p.patch_task_in_content(
                     &TaskPatch {
                         task: &tasks[i],
-                        name: None,
-                        description: None,
-                        state: Some(State::Completed),
-                        due: None,
-                        priority: None,
+                        name: ValuePatch::NotSet,
+                        description: ValuePatch::NotSet,
+                        state: ValuePatch::Value(State::Completed),
+                        due: ValuePatch::NotSet,
+                        priority: ValuePatch::NotSet,
                     },
                     result.as_str(),
                 );
@@ -687,12 +700,12 @@ some another text
             for i in 0..original_tasks.len() {
                 let r = p.patch_task_in_content(
                     &TaskPatch {
-                        name: None,
-                        description: None,
+                        name: ValuePatch::NotSet,
+                        description: ValuePatch::NotSet,
                         task: &tasks[i],
-                        state: Some(State::Uncompleted),
-                        due: None,
-                        priority: None,
+                        state: ValuePatch::Value(State::Uncompleted),
+                        due: ValuePatch::NotSet,
+                        priority: ValuePatch::NotSet,
                     },
                     result.as_str(),
                 );
@@ -856,11 +869,11 @@ Some another text";
                 let r = p.patch_task_in_content(
                     &TaskPatch {
                         task: &tasks[i],
-                        name: None,
-                        description: None,
-                        state: None,
-                        due: None,
-                        priority: Some(c.priority),
+                        name: ValuePatch::NotSet,
+                        description: ValuePatch::NotSet,
+                        state: ValuePatch::NotSet,
+                        due: ValuePatch::NotSet,
+                        priority: ValuePatch::Value(c.priority),
                     },
                     result.as_str(),
                 );
@@ -888,11 +901,11 @@ Some another text";
                 file_content_after: format!("  - [ ] Some text #tag #другой.тег #tag3 {DUE_EMOJI} 2025-03-01 ⏫"),
                 patch: TaskPatch {
                     task: &Task::default(),
-                    name: None,
-                    description: None,
-                    state: None,
-                    due: None,
-                    priority: None,
+                    name: ValuePatch::NotSet,
+                    description: ValuePatch::NotSet,
+                    state: ValuePatch::NotSet,
+                    due: ValuePatch::NotSet,
+                    priority: ValuePatch::NotSet,
                 },
             },
             Case {
@@ -901,11 +914,11 @@ Some another text";
                 file_content_after: format!("\t- [ ] Some another text {DUE_EMOJI} 2025-03-01 ⏫"),
                 patch: TaskPatch {
                     task: &Task::default(),
-                    name: Some("Some another text".to_string()),
-                    description: None,
-                    state: None,
-                    due: None,
-                    priority: None,
+                    name: ValuePatch::Value("Some another text".to_string()),
+                    description: ValuePatch::NotSet,
+                    state: ValuePatch::NotSet,
+                    due: ValuePatch::NotSet,
+                    priority: ValuePatch::NotSet,
                 },
             },
             Case {
@@ -921,17 +934,17 @@ Some another text";
                 ),
                 patch: TaskPatch {
                     task: &Task::default(),
-                    name: Some("Some another text".to_string()),
-                    description: Some("the task description".to_string()),
-                    state: Some(State::InProgress),
-                    due: Some(DateTimeUtc::from_naive_utc_and_offset(
+                    name: ValuePatch::Value("Some another text".to_string()),
+                    description: ValuePatch::Value("the task description".to_string()),
+                    state: ValuePatch::Value(State::InProgress),
+                    due: ValuePatch::Value(DateTimeUtc::from_naive_utc_and_offset(
                         NaiveDate::parse_from_str("2025-01-27", "%Y-%m-%d")
                             .unwrap()
                             .and_hms_opt(0, 0, 0)
                             .unwrap(),
                         Utc,
                     )),
-                    priority: Some(Priority::Highest),
+                    priority: ValuePatch::Value(Priority::Highest),
                 },
             },
             Case {
@@ -953,16 +966,16 @@ Some another text";
                 .to_string(),
                 patch: TaskPatch {
                     task: &Task::default(),
-                    name: None,
-                    description: Some(
+                    name: ValuePatch::NotSet,
+                    description: ValuePatch::Value(
                         "измененный текст из одной строки
 второй строки
 и третьей тоже"
                             .to_string(),
                     ),
-                    state: None,
-                    due: None,
-                    priority: None,
+                    state: ValuePatch::NotSet,
+                    due: ValuePatch::NotSet,
+                    priority: ValuePatch::NotSet,
                 },
             },
             Case {
@@ -984,16 +997,16 @@ Some another text";
                 .to_string(),
                 patch: TaskPatch {
                     task: &Task::default(),
-                    name: None,
-                    description: Some(
+                    name: ValuePatch::NotSet,
+                    description: ValuePatch::Value(
                         "измененный текст из одной строки
 второй строки
 и третьей тоже"
                             .to_string(),
                     ),
-                    state: None,
-                    due: None,
-                    priority: None,
+                    state: ValuePatch::NotSet,
+                    due: ValuePatch::NotSet,
+                    priority: ValuePatch::NotSet,
                 },
             },
         ];

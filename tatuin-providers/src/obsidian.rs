@@ -16,7 +16,7 @@ use tatuin_core::{
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{Priority, Task as TaskTrait},
-    task_patch::{DuePatchItem, PatchError, TaskPatch},
+    task_patch::{DuePatchItem, PatchError, TaskPatch, ValuePatch},
 };
 
 use crate::config::Config;
@@ -143,13 +143,20 @@ impl ProviderTrait for Provider {
 fn patch_to_internal<'a>(t: &'a task::Task, tp: &TaskPatch) -> patch::TaskPatch<'a> {
     patch::TaskPatch {
         task: t,
-        name: tp.name.value(),
-        description: tp.description.value(),
-        state: tp.state.value().map(|s| s.into()),
-        due: match tp.due.value() {
-            Some(due) => due.into(),
-            None => None,
+        name: tp.name.clone(),
+        description: tp.description.clone(),
+        state: tp.state.clone().map(|s| s.into()),
+        due: match tp.due {
+            ValuePatch::NotSet => ValuePatch::NotSet,
+            ValuePatch::Empty => ValuePatch::Empty,
+            ValuePatch::Value(due) => {
+                if let Some(d) = due.into() {
+                    ValuePatch::Value(d)
+                } else {
+                    ValuePatch::Empty
+                }
+            }
         },
-        priority: tp.priority.value(),
+        priority: tp.priority.clone(),
     }
 }

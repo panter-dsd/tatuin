@@ -111,6 +111,17 @@ where
     pub fn is_set(&self) -> bool {
         !matches!(self, ValuePatch::NotSet)
     }
+
+    pub fn map<U, F>(self, f: F) -> ValuePatch<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        match self {
+            ValuePatch::NotSet => ValuePatch::NotSet,
+            ValuePatch::Empty => ValuePatch::Empty,
+            ValuePatch::Value(x) => ValuePatch::Value(f(x)),
+        }
+    }
 }
 
 #[cfg(test)]
