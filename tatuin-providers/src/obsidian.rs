@@ -15,8 +15,8 @@ use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
-    task::{DateTimeUtc, Priority, Task as TaskTrait},
-    task_patch::{DuePatchItem, PatchError, TaskPatch},
+    task::{Priority, Task as TaskTrait},
+    task_patch::{DuePatchItem, PatchError, TaskPatch, ValuePatch},
 };
 
 use crate::config::Config;
@@ -146,10 +146,17 @@ fn patch_to_internal<'a>(t: &'a task::Task, tp: &TaskPatch) -> patch::TaskPatch<
         name: tp.name.clone(),
         description: tp.description.clone(),
         state: tp.state.clone().map(|s| s.into()),
-        due: tp.due.clone().map(|due| {
-            let d: Option<DateTimeUtc> = due.into();
-            d.expect("can't convert DuePatchItem to DateTimeUTC")
-        }),
+        due: match tp.due {
+            ValuePatch::NotSet => ValuePatch::NotSet,
+            ValuePatch::Empty => ValuePatch::Empty,
+            ValuePatch::Value(due) => {
+                if let Some(d) = due.into() {
+                    ValuePatch::Value(d)
+                } else {
+                    ValuePatch::Empty
+                }
+            }
+        },
         priority: tp.priority.clone(),
     }
 }
