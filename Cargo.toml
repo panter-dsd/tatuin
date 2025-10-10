@@ -34,7 +34,7 @@ strum = { version = "0.27.2", features = ["derive"] }
 time = { version = "0.3.43", features = ["parsing", "formatting"] }
 tokio = { version = "1.47.0", features = ["full"] }
 tokio-stream = "0.1.17"
-toml = "0.9.7"
+toml = "0.9.8"
 tracing = { version = "0.1.41", features = ["async-await", "log"] }
 tracing-appender = "0.2.3"
 tracing-subscriber = "0.3.19"
