@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 mod async_jobs;
+mod migration;
 mod provider;
 mod settings;
 mod ui;
@@ -27,7 +28,10 @@ use tatuin_core::{
     task,
 };
 
+use crate::migration::migrate_config;
+
 const APP_NAME: &str = "tatuin";
+const CONFIG_FILE_NAME: &str = "settings.toml";
 const KEEP_LOG_FILES_COUNT: usize = 5;
 
 #[derive(Parser, Debug)]
@@ -153,10 +157,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = if let Some(p) = cli.settings_file {
         Settings::new(p.as_str())
     } else {
-        let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME);
-        let config_path = xdg_dirs
-            .place_config_file("settings.toml")
-            .expect("cannot create configuration directory");
+        migrate_config(APP_NAME, CONFIG_FILE_NAME);
+        let config_dir = dirs::config_dir().expect("Can't detect config dir");
+        let config_path = config_dir.join(APP_NAME).join(CONFIG_FILE_NAME);
         Settings::new(config_path.to_str().unwrap())
     };
 
