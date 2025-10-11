@@ -1,6 +1,6 @@
 [self]
 name = "tatuin"
-version = "0.24.0"
+version = "0.24.1"
 description = "Task Aggregator TUI for N providers"
 license = "MIT"
 notices = ["Copyright © 2025 <copyright holders>"]
