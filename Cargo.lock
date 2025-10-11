@@ -2282,7 +2282,7 @@ dependencies = [
 
 [[package]]
 name = "tatuin"
-version = "0.24.0"
+version = "0.24.1"
 dependencies = [
  "async-trait",
  "chrono",
