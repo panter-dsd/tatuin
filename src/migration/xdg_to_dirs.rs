@@ -1,7 +1,13 @@
+#[cfg(not(windows))]
 use std::path::Path;
 
+#[cfg(not(windows))]
 use tatuin_core::folders;
 
+#[cfg(windows)]
+pub fn migrate_config(_app_name: &str, _file_name: &str) {}
+
+#[cfg(not(windows))]
 pub fn migrate_config(app_name: &str, file_name: &str) {
     let config_dir = folders::config_folder(app_name);
     let new_config_file = config_dir.join(file_name);
@@ -29,6 +35,7 @@ pub fn migrate_config(app_name: &str, file_name: &str) {
     }
 }
 
+#[cfg(not(windows))]
 fn migrate_themes(app_name: &str) {
     println!("Migrate theme files to the new location");
 
@@ -58,6 +65,7 @@ fn migrate_themes(app_name: &str) {
     }
 }
 
+#[cfg(not(windows))]
 fn migrate_cache(app_name: &str) {
     println!("Migrate provider's cache");
 
@@ -81,6 +89,7 @@ fn migrate_cache(app_name: &str) {
     }
 }
 
+#[cfg(not(windows))]
 fn copy_recursively(source: impl AsRef<Path>, destination: impl AsRef<Path>) -> std::io::Result<()> {
     std::fs::create_dir_all(&destination)?;
     for entry in std::fs::read_dir(source)? {
