@@ -2370,10 +2370,10 @@ dependencies = [
  "chrono",
  "clap",
  "colored",
+ "dirs",
  "serde",
  "serde_json",
  "tokio",
- "xdg",
 ]
 
 [[package]]
