@@ -551,7 +551,7 @@ impl App {
         self.key_buffer.clear();
 
         match key.code {
-            KeyCode::Char('q') | KeyCode::Esc => {
+            KeyCode::Char('q') => {
                 if self.error_logger.read().await.is_empty() {
                     self.should_exit = true;
                 } else {
