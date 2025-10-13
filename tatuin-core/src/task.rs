@@ -25,7 +25,7 @@ impl fmt::Display for State {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             State::Completed => write!(f, "✅"),
-            State::Uncompleted => write!(f, " "),
+            State::Uncompleted => write!(f, "  "),
             State::InProgress => write!(f, "⏳"),
             State::Unknown(x) => f.write_char(*x),
         }
