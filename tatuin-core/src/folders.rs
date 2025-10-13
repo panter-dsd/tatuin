@@ -8,7 +8,7 @@ pub fn cache_folder(app_name: &str) -> PathBuf {
     p
 }
 
-pub fn state_folder(app_name: &str) -> PathBuf {
+pub fn log_folder(app_name: &str) -> PathBuf {
     let p = if cfg!(target_os = "macos") {
         dirs::home_dir()
             .expect("Can't detect home folder")
@@ -19,10 +19,6 @@ pub fn state_folder(app_name: &str) -> PathBuf {
     };
     create_dir_panicked(&p);
     p
-}
-
-pub fn log_folder(app_name: &str) -> PathBuf {
-    state_folder(app_name)
 }
 
 pub fn config_folder(app_name: &str) -> PathBuf {
