@@ -65,6 +65,7 @@ enum Commands {
         provider: Option<String>,
     },
     AddProvider {},
+    ConfigDir {},
 }
 
 fn print_boxed_tasks(tasks: &[Box<dyn task::Task>]) {
@@ -288,6 +289,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             print_projects(&projects);
         }
         Some(Commands::AddProvider {}) => add_provider(&mut cfg)?,
+        Some(Commands::ConfigDir {}) => println!("{}", folders::config_folder(APP_NAME).to_str().unwrap()),
         _ => {
             tracing::info!("Start tui");
             color_eyre::install()?;
