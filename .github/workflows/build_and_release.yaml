@@ -233,7 +233,7 @@ jobs:
             cross: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
       - name: Build executable
         uses: houseabsolute/actions-rust-cross@v1
         with:
