@@ -43,7 +43,7 @@ pub fn create_dir_panicked(p: &PathBuf) {
     }
 }
 
-pub fn create_dir(p: &PathBuf) -> Result<(), std::io::Error> {
+pub fn create_dir(p: &PathBuf) -> std::io::Result<()> {
     if let Err(e) = std::fs::create_dir_all(p)
         && e.kind() != ErrorKind::AlreadyExists
     {
