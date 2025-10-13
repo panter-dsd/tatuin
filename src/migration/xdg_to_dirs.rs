@@ -20,7 +20,7 @@ pub fn migrate_config(app_name: &str, file_name: &str) {
     if let Some(config_file) = xdg_dirs.get_config_file(file_name)
         && std::fs::exists(&config_file).is_ok_and(|r| r)
     {
-        println!("Copy the config file {config_file:?} to the new destination {new_config_file:?}");
+        println!("Copy the config file {config_file:?} to the new location {new_config_file:?}");
         if let Err(e) = std::fs::copy(&config_file, &new_config_file) {
             panic!("Copy config from {config_file:?} to {new_config_file:?}: {e}");
         }
@@ -51,7 +51,7 @@ fn migrate_themes(app_name: &str) {
             {
                 let new_name = folders::config_folder(app_name).join(p.file_name().expect("Can't get a file name"));
 
-                println!("Copy the theme file {p:?} to the new destination {new_name:?}");
+                println!("Copy the theme file {p:?} to the new location {new_name:?}");
                 if let Err(e) = std::fs::copy(&p, &new_name) {
                     panic!("Copy theme file from {p:?} to {new_name:?}: {e}");
                 }
@@ -78,7 +78,7 @@ fn migrate_cache(app_name: &str) {
 
     let new_cache = folders::cache_folder(app_name);
 
-    println!("Copy the folder {old_cache:?} to the new destination {new_cache:?}");
+    println!("Copy the folder {old_cache:?} to the new location {new_cache:?}");
     if let Err(e) = copy_recursively(&old_cache, &new_cache) {
         panic!("Copy cache folder {old_cache:?} to {new_cache:?}: {e}");
     }
