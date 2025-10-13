@@ -28,7 +28,6 @@ fn default_states_hash_map() -> HashMap<String, State> {
 
 impl Settings {
     pub fn new(file_name: &str) -> Self {
-        println!("Load config from {file_name}");
         let settings = Config::builder()
             .add_source(File::new(file_name, FileFormat::Toml))
             .build();
