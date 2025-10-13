@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 mod async_jobs;
+mod migration;
 mod provider;
 mod settings;
 mod ui;
@@ -27,7 +28,10 @@ use tatuin_core::{
     task,
 };
 
+use crate::migration::migrate_config;
+
 const APP_NAME: &str = "tatuin";
+const CONFIG_FILE_NAME: &str = "settings.toml";
 const KEEP_LOG_FILES_COUNT: usize = 5;
 
 #[derive(Parser, Debug)]
@@ -61,6 +65,7 @@ enum Commands {
         provider: Option<String>,
     },
     AddProvider {},
+    ConfigDir {},
 }
 
 fn print_boxed_tasks(tasks: &[Box<dyn task::Task>]) {
@@ -153,10 +158,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = if let Some(p) = cli.settings_file {
         Settings::new(p.as_str())
     } else {
-        let xdg_dirs = xdg::BaseDirectories::with_prefix(APP_NAME);
-        let config_path = xdg_dirs
-            .place_config_file("settings.toml")
-            .expect("cannot create configuration directory");
+        let config_dir = folders::config_folder(APP_NAME);
+        let config_path = config_dir.join(CONFIG_FILE_NAME);
+        if !std::fs::exists(&config_path).is_ok_and(|r| r) {
+            migrate_config(APP_NAME, CONFIG_FILE_NAME);
+        }
         Settings::new(config_path.to_str().unwrap())
     };
 
@@ -285,6 +291,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             print_projects(&projects);
         }
         Some(Commands::AddProvider {}) => add_provider(&mut cfg)?,
+        Some(Commands::ConfigDir {}) => println!("{}", folders::config_folder(APP_NAME).to_str().unwrap()),
         _ => {
             tracing::info!("Start tui");
             color_eyre::install()?;
