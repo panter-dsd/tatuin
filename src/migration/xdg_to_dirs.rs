@@ -11,13 +11,8 @@ pub fn migrate_config(_app_name: &str, _file_name: &str) {}
 pub fn migrate_config(app_name: &str, file_name: &str) {
     let config_dir = folders::config_folder(app_name);
     let new_config_file = config_dir.join(file_name);
-    if std::fs::exists(&new_config_file).is_ok_and(|r| r) {
-        // do nothing because of new configuration exists
-        return;
-    }
 
-    let xdg_dirs = xdg::BaseDirectories::with_prefix(app_name);
-    if let Some(config_file) = xdg_dirs.get_config_file(file_name)
+    if let Some(config_file) = xdg::BaseDirectories::with_prefix(app_name).get_config_file(file_name)
         && std::fs::exists(&config_file).is_ok_and(|r| r)
     {
         println!("Copy the config file {config_file:?} to the new location {new_config_file:?}");
