@@ -28,6 +28,6 @@ jobs:
       - name: Run cargo edit
         run: cargo set-version -p tatuin ${{ inputs.crate-version }}
       - name: Commit and Push
-        uses: stefanzweifel/git-auto-commit-action@v6
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: 'Bump version: ${{ inputs.crate-version }}'

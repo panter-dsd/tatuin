@@ -23,6 +23,6 @@ jobs:
       - name: Run cargo attribution
         run: cargo attribution
       - name: Commit and Push
-        uses: stefanzweifel/git-auto-commit-action@v6
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "[${{ inputs.commit_message || 'Manual run' }}]: Update Attributions"
