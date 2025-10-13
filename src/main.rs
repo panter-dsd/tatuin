@@ -158,9 +158,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut cfg = if let Some(p) = cli.settings_file {
         Settings::new(p.as_str())
     } else {
-        migrate_config(APP_NAME, CONFIG_FILE_NAME);
-        let config_dir = dirs::config_dir().expect("Can't detect config dir");
-        let config_path = config_dir.join(APP_NAME).join(CONFIG_FILE_NAME);
+        let config_dir = folders::config_folder(APP_NAME);
+        let config_path = config_dir.join(CONFIG_FILE_NAME);
+        if !std::fs::exists(&config_path).is_ok_and(|r| r) {
+            migrate_config(APP_NAME, CONFIG_FILE_NAME);
+        }
         Settings::new(config_path.to_str().unwrap())
     };
 
