@@ -2,6 +2,7 @@
 
 mod widgets;
 use crate::async_jobs::AsyncJobStorage;
+use crate::ui::dialogs::{ConfirmationDialog, ConfirmationDialogIcon, StandardButton};
 use crate::ui::draw_helper::CursorStyle;
 
 use super::provider::Provider;
@@ -351,6 +352,7 @@ impl App {
                 && d.should_be_closed()
             {
                 self.close_dialog().await;
+                continue;
             }
 
             {
@@ -553,7 +555,18 @@ impl App {
         match key.code {
             KeyCode::Char('q') => {
                 if self.error_logger.read().await.is_empty() {
-                    self.should_exit = true;
+                    if self.tasks_widget.read().await.has_changes() {
+                        let d = ConfirmationDialog::new(
+                            "Exit",
+                            "You have uncommitted changes.\nDo you want to exit and lose them?",
+                            &[StandardButton::Yes, StandardButton::No],
+                            StandardButton::No,
+                        )
+                        .icon(ConfirmationDialogIcon::Warning);
+                        self.dialog = Some(Box::new(d));
+                    } else {
+                        self.should_exit = true;
+                    }
                 } else {
                     self.error_logger.write().await.clear();
                 }
@@ -968,6 +981,11 @@ impl App {
             if !t.is_empty() {
                 self.save_state(Some(t.as_str())).await;
             }
+        }
+        if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ConfirmationDialog>()
+            && d.is_confirmed()
+        {
+            self.should_exit = true;
         }
     }
 

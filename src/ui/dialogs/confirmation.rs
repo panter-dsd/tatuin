@@ -34,8 +34,17 @@ struct DialogButton {
     widget: Button,
 }
 
+#[allow(dead_code)]
+pub enum Icon {
+    Question,
+    Warning,
+    Error,
+    Custom(char),
+}
+
 pub struct Dialog {
     title: String,
+    icon: Option<Icon>,
     question: String,
     buttons: Vec<DialogButton>,
     choice: Option<StandardButton>,
@@ -59,12 +68,18 @@ impl Dialog {
             .collect();
         Self {
             title: title.to_string(),
+            icon: None,
             question: question.to_string(),
             buttons,
             choice: None,
             should_be_closed: false,
             widget_state: WidgetState::default(),
         }
+    }
+
+    pub fn icon(mut self, icon: Icon) -> Self {
+        self.icon = Some(icon);
+        self
     }
 
     pub fn is_confirmed(&self) -> bool {
@@ -100,8 +115,16 @@ impl Dialog {
 #[async_trait]
 impl WidgetTrait for Dialog {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
+        let title = match self.icon {
+            Some(Icon::Question) => format!("❔ {}", self.title),
+            Some(Icon::Warning) => format!("⚠️ {}", self.title),
+            Some(Icon::Error) => format!("❌ {}", self.title),
+            Some(Icon::Custom(c)) => format!("{c} {}", self.title),
+            None => self.title.clone(),
+        };
+
         let b = Block::default()
-            .title_top(self.title.clone())
+            .title_top(title)
             .title_alignment(Alignment::Center)
             .borders(Borders::ALL)
             .border_style(style::border_color());

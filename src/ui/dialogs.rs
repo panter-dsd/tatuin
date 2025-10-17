@@ -8,7 +8,7 @@ mod list;
 mod states;
 mod text_input;
 
-pub use confirmation::{Dialog as ConfirmationDialog, StandardButton};
+pub use confirmation::{Dialog as ConfirmationDialog, Icon as ConfirmationDialogIcon, StandardButton};
 pub use create_update_task::Dialog as CreateUpdateTaskDialog;
 pub use dialog::DialogTrait;
 pub use key_bindings_help::Dialog as KeyBindingsHelpDialog;
