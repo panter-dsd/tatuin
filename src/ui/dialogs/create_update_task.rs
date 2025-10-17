@@ -525,17 +525,28 @@ impl KeyboardHandler for Dialog {
 
         let current_provider = self.provider_selector.value().await;
         if self.provider_selector.is_active() && self.provider_selector.handle_key(key).await {
-            let new_provider = self.provider_selector.value().await;
-            if current_provider != new_provider {
+            let provider_changed = self.provider_selector.value().await != current_provider;
+
+            if provider_changed {
                 self.fill_project_selector_items().await;
                 self.fill_priority_selector_items().await;
             }
+
             self.update_enabled_state().await;
+
+            if provider_changed {
+                self.next_widget().await;
+            }
             return true;
         }
 
+        let current_project = self.project_selector.value().await;
         if self.project_selector.is_active() && self.project_selector.handle_key(key).await {
+            let project_changed = self.project_selector.value().await != current_project;
             self.update_enabled_state().await;
+            if project_changed {
+                self.next_widget().await;
+            }
             return true;
         }
 
