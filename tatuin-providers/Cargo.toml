@@ -13,7 +13,7 @@ async-trait = "0.1.89"
 chrono = "0.4.42"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.143"
-tokio = { version = "1.47.0", features = ["full"] }
+tokio = { version = "1.48.0", features = ["full"] }
 reqwest = { version = "0.12.24", features = ["json"] }
 reqwest_dav = "0.2.1"
 url = "2.5.7"
