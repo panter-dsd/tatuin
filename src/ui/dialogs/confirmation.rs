@@ -39,6 +39,7 @@ pub enum Icon {
     Question,
     Warning,
     Error,
+    Custom(char),
 }
 
 pub struct Dialog {
@@ -118,6 +119,7 @@ impl WidgetTrait for Dialog {
             Some(Icon::Question) => format!("❔ {}", self.title),
             Some(Icon::Warning) => format!("⚠️ {}", self.title),
             Some(Icon::Error) => format!("❌ {}", self.title),
+            Some(Icon::Custom(c)) => format!("{c} {}", self.title),
             None => self.title.clone(),
         };
 
