@@ -233,7 +233,7 @@ repository = "https://github.com/rust-lang/cc-rs"
 
 [[dependencies]]
 name = "cfg-if"
-version = "1.0.3"
+version = "1.0.4"
 description = """
 A macro to ergonomically define an item depending on a large number of #[cfg]
 parameters. Structured like an if-else chain, the first matching branch is the
@@ -268,7 +268,7 @@ repository = "https://github.com/chronotope/chrono-tz"
 
 [[dependencies]]
 name = "clap"
-version = "4.5.48"
+version = "4.5.49"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -276,7 +276,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_builder"
-version = "4.5.48"
+version = "4.5.49"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -284,7 +284,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_derive"
-version = "4.5.47"
+version = "4.5.49"
 description = "Parse command line argument by defining a struct, derive crate."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -292,7 +292,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_lex"
-version = "0.7.5"
+version = "0.7.6"
 description = "Minimal, flexible command line parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -566,6 +566,24 @@ authors = ["Ondřej Hruška <ondra@ondrovo.com>"]
 repository = "https://git.ondrovo.com/packages/digest_auth_rs"
 
 [[dependencies]]
+name = "dirs"
+version = "6.0.0"
+description = "A tiny low-level library that provides platform-specific standard locations of directories for config, cache and other data on Linux, Windows, macOS and Redox by leveraging the mechanisms defined by the XDG base/user directory specifications on Linux, the Known Folder API on Windows, and the Standard Directory guidelines on macOS."
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2018-2019 dirs-rs contributors"]
+authors = ["Simon Ochsenreither <simon@ochsenreither.de>"]
+repository = "https://github.com/soc/dirs-rs"
+
+[[dependencies]]
+name = "dirs-sys"
+version = "0.5.0"
+description = "System-level helper functions for the dirs and directories crates."
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2018-2019 dirs-rs contributors"]
+authors = ["Simon Ochsenreither <simon@ochsenreither.de>"]
+repository = "https://github.com/dirs-dev/dirs-sys-rs"
+
+[[dependencies]]
 name = "displaydoc"
 version = "0.2.5"
 description = """
@@ -790,7 +808,7 @@ homepage = "https://rust-lang.github.io/futures-rs"
 
 [[dependencies]]
 name = "generic-array"
-version = "0.14.7"
+version = "0.14.9"
 description = "Generic types implementing functionality of arrays"
 license = "MIT"
 notices = ["Copyright (c) 2015 Bartłomiej Kamiński"]
@@ -814,7 +832,7 @@ repository = "https://github.com/rust-random/getrandom"
 
 [[dependencies]]
 name = "getrandom"
-version = "0.3.3"
+version = "0.3.4"
 description = "A small cross-platform library for retrieving random data from system source"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -1147,7 +1165,7 @@ repository = "https://github.com/yaahc/indenter"
 
 [[dependencies]]
 name = "indexmap"
-version = "2.11.4"
+version = "2.12.0"
 description = "A hash table with consistent order and fast iteration."
 license = "Apache-2.0 OR MIT"
 notices = ["Copyright (c) 2016--2017"]
@@ -1175,18 +1193,6 @@ authors = [
   "The Ratatui Developers",
 ]
 repository = "https://github.com/ratatui/instability"
-
-[[dependencies]]
-name = "io-uring"
-version = "0.7.10"
-description = "The low-level `io_uring` userspace interface for Rust"
-license = "MIT OR Apache-2.0"
-notices = [
-  "Copyright (c) 2019 quininer@live.com",
-  "Copyright 2019 quininer kel",
-]
-authors = ["quininer <quininer@live.com>"]
-repository = "https://github.com/tokio-rs/io-uring"
 
 [[dependencies]]
 name = "ipnet"
@@ -1286,6 +1292,15 @@ license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014-2020 The Rust Project Developers"]
 authors = ["The Rust Project Developers"]
 repository = "https://github.com/rust-lang/libc"
+
+[[dependencies]]
+name = "libredox"
+version = "0.1.10"
+description = "Redox stable ABI"
+license = "MIT"
+notices = ["Copyright (c) 2023 4lDO2"]
+authors = ["4lDO2 <4lDO2@protonmail.com>"]
+repository = "https://gitlab.redox-os.org/redox-os/libredox.git"
 
 [[dependencies]]
 name = "linux-raw-sys"
@@ -1522,12 +1537,12 @@ repository = "https://github.com/polyfill-rs/once_cell_polyfill"
 
 [[dependencies]]
 name = "openssl"
-version = "0.10.73"
+version = "0.10.74"
 description = "OpenSSL bindings"
 license = "Apache-2.0"
 notices = ["Copyright 2011-2017 Google Inc."]
 authors = ["Steven Fackler <sfackler@gmail.com>"]
-repository = "https://github.com/sfackler/rust-openssl"
+repository = "https://github.com/rust-openssl/rust-openssl"
 
 [[dependencies]]
 name = "openssl-macros"
@@ -1560,7 +1575,7 @@ repository = "https://github.com/alexcrichton/openssl-src-rs"
 
 [[dependencies]]
 name = "openssl-sys"
-version = "0.9.109"
+version = "0.9.110"
 description = "FFI bindings to OpenSSL"
 license = "MIT"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -1568,7 +1583,16 @@ authors = [
   "Alex Crichton <alex@alexcrichton.com>",
   "Steven Fackler <sfackler@gmail.com>",
 ]
-repository = "https://github.com/sfackler/rust-openssl"
+repository = "https://github.com/rust-openssl/rust-openssl"
+
+[[dependencies]]
+name = "option-ext"
+version = "0.2.0"
+description = "Extends `Option` with additional operations"
+license = "MPL-2.0"
+authors = ["Simon Ochsenreither <simon@ochsenreither.de>"]
+repository = "https://github.com/soc/option-ext.git"
+homepage = "https://github.com/soc/option-ext"
 
 [[dependencies]]
 name = "ordered-multimap"
@@ -1868,8 +1892,20 @@ authors = ["Jeremy Soller <jackpot51@gmail.com>"]
 repository = "https://gitlab.redox-os.org/redox-os/syscall"
 
 [[dependencies]]
+name = "redox_users"
+version = "0.5.2"
+description = "A Rust library to access Redox users and groups functionality"
+license = "MIT"
+notices = ["Copyright (c) 2017 Jose Narvaez"]
+authors = [
+  "Jose Narvaez <goyox86@gmail.com>",
+  "Wesley Hershberger <mggmugginsmc@gmail.com>",
+]
+repository = "https://gitlab.redox-os.org/redox-os/users"
+
+[[dependencies]]
 name = "regex"
-version = "1.12.1"
+version = "1.12.2"
 description = """
 An implementation of regular expressions for Rust. This implementation uses
 finite automata and guarantees linear time matching on all inputs.
@@ -1881,7 +1917,7 @@ repository = "https://github.com/rust-lang/regex"
 
 [[dependencies]]
 name = "regex-automata"
-version = "0.4.12"
+version = "0.4.13"
 description = "Automata construction and matching using regular expressions."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 The Rust Project Developers"]
@@ -1891,7 +1927,7 @@ homepage = "https://github.com/rust-lang/regex/tree/master/regex-automata"
 
 [[dependencies]]
 name = "regex-syntax"
-version = "0.8.7"
+version = "0.8.8"
 description = "A regular expression parser."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 The Rust Project Developers"]
@@ -1901,7 +1937,7 @@ homepage = "https://github.com/rust-lang/regex/tree/master/regex-syntax"
 
 [[dependencies]]
 name = "reqwest"
-version = "0.12.23"
+version = "0.12.24"
 description = "higher level HTTP client library"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -1989,7 +2025,7 @@ repository = "https://github.com/bytecodealliance/rustix"
 
 [[dependencies]]
 name = "rustls"
-version = "0.23.32"
+version = "0.23.33"
 description = "Rustls is a modern TLS library written in Rust."
 license = "Apache-2.0 OR ISC OR MIT"
 notices = [
@@ -2296,7 +2332,7 @@ repository = "https://github.com/servo/rust-smallvec"
 
 [[dependencies]]
 name = "socket2"
-version = "0.6.0"
+version = "0.6.1"
 description = """
 Utilities for handling networking sockets with a maximal amount of configuration
 possible intended.
@@ -2479,8 +2515,24 @@ authors = ["David Tolnay <dtolnay@gmail.com>"]
 repository = "https://github.com/dtolnay/thiserror"
 
 [[dependencies]]
+name = "thiserror"
+version = "2.0.17"
+description = "derive(Error)"
+license = "MIT OR Apache-2.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+repository = "https://github.com/dtolnay/thiserror"
+
+[[dependencies]]
 name = "thiserror-impl"
 version = "1.0.69"
+description = "Implementation detail of the `thiserror` crate"
+license = "MIT OR Apache-2.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+repository = "https://github.com/dtolnay/thiserror"
+
+[[dependencies]]
+name = "thiserror-impl"
+version = "2.0.17"
 description = "Implementation detail of the `thiserror` crate"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2545,7 +2597,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "tokio"
-version = "1.47.1"
+version = "1.48.0"
 description = """
 An event-driven, non-blocking I/O platform for writing asynchronous I/O
 backed applications.
@@ -2558,7 +2610,7 @@ homepage = "https://tokio.rs"
 
 [[dependencies]]
 name = "tokio-macros"
-version = "2.5.0"
+version = "2.6.0"
 description = """
 Tokio's proc macros.
 """
@@ -3052,13 +3104,6 @@ description = "Experimental WASI API bindings for Rust"
 license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
 authors = ["The Cranelift Project Developers"]
 repository = "https://github.com/bytecodealliance/wasi"
-
-[[dependencies]]
-name = "wasi"
-version = "0.14.7+wasi-0.2.4"
-description = "WASI API bindings for Rust"
-license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
-repository = "https://github.com/bytecodealliance/wasi-rs"
 
 [[dependencies]]
 name = "wasip2"
