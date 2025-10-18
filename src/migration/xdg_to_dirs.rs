@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 #[cfg(not(windows))]
 use std::path::Path;
 
