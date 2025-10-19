@@ -237,15 +237,19 @@ impl<T> Default for SelectableList<T> {
 
 const STATE_KEY: &str = "selected_item_index";
 
-impl<T> StatefulObject for SelectableList<T> {
-    fn save(&self) -> State {
+#[async_trait]
+impl<T> StatefulObject for SelectableList<T>
+where
+    T: Sync + Send,
+{
+    async fn save(&self) -> State {
         State::from([(
             STATE_KEY.to_string(),
             self.state.selected().unwrap_or_default().to_string(),
         )])
     }
 
-    fn restore(&mut self, state: State) {
+    async fn restore(&mut self, state: State) {
         if let Some(idx) = state.get(STATE_KEY)
             && let Ok(idx) = idx.parse::<usize>()
         {
