@@ -11,6 +11,7 @@ use ratatui::{
 };
 use tatuin_core::{
     provider::ProjectProviderTrait,
+    state::{State, StatefulObject},
     task::{DateTimeUtc, Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, TaskPatch, ValuePatch},
     types::ArcRwLock,
@@ -142,21 +143,31 @@ impl Dialog {
         self.task.is_none()
     }
 
+    async fn set_provider(&mut self, provider: &str) {
+        self.provider_selector
+            .set_current_item(&provider.to_string().into())
+            .await;
+        self.fill_project_selector_items().await;
+        self.fill_priority_selector_items().await;
+    }
+
+    async fn set_project(&mut self, project_name: &str, project_id: &str) {
+        let item = ComboBoxItem::new(project_name, project_id.to_string());
+        let found = self.project_selector.set_current_item(&item).await;
+        if !found {
+            self.project_selector.add_item(item.clone()).await;
+            self.project_selector.set_current_item(&item).await;
+        }
+    }
+
     pub async fn set_task(&mut self, task: &dyn TaskTrait) {
         self.task = Some(task.clone_boxed());
         self.create_task_and_another_one.set_visible(false);
         self.create_task_button
             .set_title("Update the task and close\nCtrl+Enter");
-        self.provider_selector.set_current_item(&task.provider().into()).await;
-        self.fill_project_selector_items().await;
-        self.fill_priority_selector_items().await;
+        self.set_provider(task.provider().as_str()).await;
         if let Some(p) = task.project() {
-            let item = ComboBoxItem::new(p.name().as_str(), p.id());
-            let found = self.project_selector.set_current_item(&item).await;
-            if !found {
-                self.project_selector.add_item(item.clone()).await;
-                self.project_selector.set_current_item(&item).await;
-            }
+            self.set_project(p.name().as_str(), p.id().as_str()).await;
         } else {
             self.project_selector.set_current_item_index(&Some(0)).await;
         }
@@ -599,4 +610,38 @@ impl KeyboardHandler for Dialog {
 #[async_trait]
 impl MouseHandler for Dialog {
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
+}
+
+const PROVIDER_KEY: &str = "provider";
+const PROJECT_ID_KEY: &str = "project_id";
+const PROJECT_NAME_KEY: &str = "project_name";
+
+#[async_trait]
+impl StatefulObject for Dialog {
+    async fn save(&self) -> State {
+        let mut result = State::new();
+        if let Some(p) = self.provider_name().await {
+            result.insert(PROVIDER_KEY.to_string(), p);
+        }
+        if let Some(p) = self.project_selector.value().await {
+            result.insert(PROJECT_ID_KEY.to_string(), p.data().to_string());
+            result.insert(PROJECT_NAME_KEY.to_string(), p.text().to_string());
+        }
+
+        result
+    }
+
+    async fn restore(&mut self, state: State) {
+        if let Some(p) = state.get(PROVIDER_KEY) {
+            self.set_provider(p).await;
+        }
+        if let Some(project_name) = state.get(PROJECT_NAME_KEY)
+            && let Some(project_id) = state.get(PROJECT_ID_KEY)
+        {
+            self.set_project(project_name, project_id).await;
+        }
+        self.provider_selector.set_active(false);
+        self.task_name_editor.set_active(true);
+        self.update_enabled_state().await;
+    }
 }

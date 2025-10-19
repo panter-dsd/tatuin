@@ -2,6 +2,8 @@
 
 use std::collections::HashMap;
 
+use async_trait::async_trait;
+
 pub type State = HashMap<String, String>;
 
 pub fn state_to_str(s: &State) -> Result<String, Box<dyn std::error::Error>> {
@@ -18,9 +20,10 @@ pub fn state_from_str(s: &str) -> Result<State, Box<dyn std::error::Error>> {
     }
 }
 
+#[async_trait]
 pub trait StatefulObject {
-    fn save(&self) -> State;
-    fn restore(&mut self, state: State);
+    async fn save(&self) -> State;
+    async fn restore(&mut self, state: State);
 }
 
 pub trait StateSettings: Send + Sync {

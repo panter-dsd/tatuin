@@ -923,7 +923,7 @@ impl App {
         let mut errors = Vec::new();
 
         for (block_name, w) in &self.stateful_widgets {
-            let s = w.read().await.save();
+            let s = w.read().await.save().await;
 
             match state_to_str(&s) {
                 Ok(v) => {
@@ -951,7 +951,7 @@ impl App {
                 && let Some(b) = self.stateful_widgets.get_mut(&n)
                 && let Ok(st) = state_from_str(&st)
             {
-                b.write().await.restore(st);
+                b.write().await.restore(st).await;
             }
         }
 

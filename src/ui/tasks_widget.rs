@@ -32,6 +32,7 @@ use std::{any::Any, slice::Iter, slice::IterMut, sync::Arc};
 use tatuin_core::{
     patched_task::PatchedTask,
     provider::TaskProviderTrait,
+    state::{State as ObjectState, StatefulObject},
     task_patch::{DuePatchItem, PatchError, TaskPatch, ValuePatch},
     types::ArcRwLock,
 };
@@ -268,13 +269,13 @@ impl TasksWidget {
                                 }
                             },
                         _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
-                        _ = add_task_rx.recv() => s.write().await.show_add_task_dialog(None).await,
+                        _ = add_task_rx.recv() => s.write().await.show_add_task_dialog(None, None).await,
                         _ = edit_task_rx.recv() => {
                             let mut s = s.write().await;
                             if let Some(t) = s.selected_task()
                                 && t.patch_policy().is_editable {
                                 s.async_command = Some(AsyncCommand::new(AsyncCommandType::EditTask, t.as_ref()));
-                                s.show_add_task_dialog(Some(t)).await;
+                                s.show_add_task_dialog(Some(t), None).await;
                             }
                         },
                         _ = delete_task_rx.recv() => {
@@ -697,7 +698,7 @@ impl TasksWidget {
         self.task_info_viewer.write().await.set_task(self.selected_task()).await;
     }
 
-    async fn show_add_task_dialog(&mut self, task: Option<Box<dyn TaskTrait>>) {
+    async fn show_add_task_dialog(&mut self, task: Option<Box<dyn TaskTrait>>, state: Option<ObjectState>) {
         let title = if task.is_some() {
             "Update the task"
         } else {
@@ -705,12 +706,17 @@ impl TasksWidget {
         };
 
         let mut d = CreateUpdateTaskDialog::new(title, self.providers_storage.clone()).await;
+
         if let Some(t) = task {
             d.set_task(t.as_ref()).await;
+        } else if let Some(s) = state {
+            d.restore(s).await;
         }
+
         if let Some(dh) = &self.draw_helper {
             d.set_draw_helper(dh.clone());
         }
+
         self.dialog = Some(Box::new(d));
         self.is_global_dialog = true;
     }
@@ -865,6 +871,7 @@ impl KeyboardHandler for TasksWidget {
         let mut new_priority = None;
         let mut patch = Patch::default();
         let mut add_another_one_task = false;
+        let mut create_task_dialog_state = None;
 
         if let Some(d) = &mut self.dialog {
             need_to_update_view = true;
@@ -892,6 +899,7 @@ impl KeyboardHandler for TasksWidget {
                     patch.project_id = d.project_id().await;
                     patch.task_patch = d.task_patch().await;
                     add_another_one_task = d.add_another_one();
+                    create_task_dialog_state = Some(d.save().await);
                 }
 
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ConfirmationDialog>()
@@ -924,7 +932,7 @@ impl KeyboardHandler for TasksWidget {
         }
 
         if add_another_one_task {
-            self.show_add_task_dialog(None).await;
+            self.show_add_task_dialog(None, create_task_dialog_state).await;
         }
 
         handled

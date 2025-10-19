@@ -270,8 +270,9 @@ impl WidgetTrait for FilterWidget {
 
 const STATE_KEY: &str = "filter";
 
+#[async_trait]
 impl StatefulObject for FilterWidget {
-    fn save(&self) -> tatuin_core::state::State {
+    async fn save(&self) -> tatuin_core::state::State {
         let mut state = tatuin_core::state::State::new();
 
         if let Ok(s) = serde_json::to_string(&self.filter) {
@@ -281,7 +282,7 @@ impl StatefulObject for FilterWidget {
         state
     }
 
-    fn restore(&mut self, state: tatuin_core::state::State) {
+    async fn restore(&mut self, state: tatuin_core::state::State) {
         if let Some(s) = state.get(STATE_KEY)
             && let Ok(f) = serde_json::from_str(s)
         {
