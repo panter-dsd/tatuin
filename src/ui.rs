@@ -861,7 +861,9 @@ impl App {
             lines.push(Span::styled(self.key_buffer.to_string(), style::footer_keys_fg()));
         }
 
-        Paragraph::new(Line::from(lines)).render(area, buf);
+        Paragraph::new(Line::from(lines))
+            .style(style::default_style())
+            .render(area, buf);
         self.render_tg_link(area, buf).await;
         self.render_home_link(area, buf).await;
     }
