@@ -263,11 +263,13 @@ impl App {
             app_blocks: HashMap::new(),
             stateful_widgets: HashMap::new(),
             key_buffer: key_buffer::KeyBuffer::default(),
-            select_first_shortcut: Shortcut::new("Select first", &['g', 'g']).global(),
-            select_last_shortcut: Shortcut::new("Select last", &['G']).global(),
+            select_first_shortcut: Shortcut::new("Select first", &['g', 'g'])
+                .global()
+                .with_short_name("First"),
+            select_last_shortcut: Shortcut::new("Select last", &['G']).global().with_short_name("Last"),
             load_state_shortcut: Shortcut::new("Load state", &['s', 'l']).global(),
             save_state_shortcut: Shortcut::new("Save the current state", &['s', 's']).global(),
-            show_keybindings_help_shortcut: Shortcut::new("Show help", &['?']).global(),
+            show_keybindings_help_shortcut: Shortcut::new("Show help", &['?']).global().with_short_name("Help"),
             all_shortcuts: Vec::new(),
             dialog: None,
             settings: Arc::new(RwLock::new(settings)),
@@ -765,7 +767,7 @@ impl App {
             return;
         }
         let [header_area, main_area, footer_area] =
-            Layout::vertical([Constraint::Length(2), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
+            Layout::vertical([Constraint::Length(1), Constraint::Fill(1), Constraint::Length(1)]).areas(area);
 
         let [left_area, right_area] =
             Layout::horizontal([Constraint::Length(50), Constraint::Fill(3)]).areas(main_area);
@@ -822,27 +824,46 @@ impl App {
             .bold()
             .centered()
             .render(area, buf);
+        let dt_span = Span::styled(
+            chrono::Local::now().format("%Y-%m-%d %H:%M").to_string(),
+            style::current_datetime_fg(),
+        );
+        Paragraph::new(Line::from(dt_span)).right_aligned().render(area, buf);
     }
 
     async fn render_footer(&mut self, area: Rect, buf: &mut Buffer) {
-        let mut lines = vec![
-            Span::styled(
-                "Use ↓↑ to move up/down, Tab/BackTab to move between blocks, ? for help. ",
-                style::footer_keys_help_color(),
-            ),
-            Span::styled("Current date/time: ", style::footer_datetime_label_fg()),
-            Span::styled(
-                chrono::Local::now().format("%Y-%m-%d %H:%M").to_string(),
-                style::footer_datetime_fg(),
-            ),
-        ];
+        let mut lines = Vec::new();
+        let mut add_shortcut = |s: &Shortcut| {
+            lines.push(Span::styled(
+                format!("{}{}: ", if lines.is_empty() { "" } else { ", " }, s.short_name()),
+                style::key_help_name_fg(),
+            ));
+            lines.push(Span::styled(
+                s.keys().iter().collect::<String>(),
+                style::key_help_value_fg(),
+            ));
+        };
+
+        add_shortcut(&self.show_keybindings_help_shortcut);
+
+        for (t, b) in &self.app_blocks {
+            let mut b = b.write().await;
+            for s in b.shortcuts() {
+                let short_name = s.short_name();
+                if !short_name.is_empty() && (s.is_global() || self.current_block == *t) {
+                    add_shortcut(s);
+                }
+            }
+        }
 
         if !self.key_buffer.is_empty() {
             lines.push(Span::styled(" Keys: ", style::footer_keys_label_fg()));
             lines.push(Span::styled(self.key_buffer.to_string(), style::footer_keys_fg()));
         }
 
-        Paragraph::new(Line::from(lines)).centered().render(area, buf);
+        Paragraph::new(Line::from(lines))
+            .style(style::default_style())
+            .render(area, buf);
         self.render_tg_link(area, buf).await;
         self.render_home_link(area, buf).await;
     }

@@ -13,6 +13,7 @@ pub enum AcceptResult {
 
 pub struct SharedData {
     pub name: String,
+    pub short_name: String,
     pub keys: Vec<char>,
     pub is_global: bool,
     current_input_keys: Vec<char>,
@@ -30,6 +31,7 @@ impl Shortcut {
         Self {
             data: Arc::new(RwLock::new(SharedData {
                 name: name.to_string(),
+                short_name: String::new(),
                 keys: keys.to_vec(),
                 is_global: false,
                 current_input_keys: Vec::new(),
@@ -45,6 +47,15 @@ impl Shortcut {
 
     pub fn is_global(&self) -> bool {
         self.data.read().unwrap().is_global
+    }
+
+    pub fn with_short_name(self, name: &str) -> Self {
+        self.data.write().unwrap().short_name = name.to_string();
+        self
+    }
+
+    pub fn short_name(&self) -> String {
+        self.data.read().unwrap().short_name.clone()
     }
 
     pub fn internal_data(&self) -> ArcRwLockBlocked<SharedData> {

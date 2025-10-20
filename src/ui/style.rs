@@ -34,9 +34,9 @@ enum ColorElement {
     Provider4FG,
     Provider5FG,
     Provider6FG,
-    FooterKeysHelpFG,
-    FooterDatetimeLabelFG,
-    FooterDatetimeFG,
+    KeyHelpNameFG,
+    KeyHelpValueFG,
+    CurrentDateTimeFG,
     FooterKeysLabelFG,
     FooterKeysFG,
     HeaderKeySelectedFG,
@@ -101,9 +101,9 @@ fn element_color(element: ColorElement) -> Color {
         Provider4FG => Color::Yellow,
         Provider5FG => Color::Blue,
         Provider6FG => Color::Red,
-        FooterKeysHelpFG => DEFAULT_FG,
-        FooterDatetimeLabelFG => Color::Yellow,
-        FooterDatetimeFG => Color::LightCyan,
+        KeyHelpNameFG => DEFAULT_FG,
+        KeyHelpValueFG => Color::LightCyan,
+        CurrentDateTimeFG => Color::LightCyan,
         FooterKeysLabelFG => Color::Green,
         FooterKeysFG => Color::LightRed,
         HeaderKeySelectedFG => Color::LightRed,
@@ -204,15 +204,18 @@ pub fn provider_colors() -> Vec<Color> {
     ]
 }
 
-pub fn footer_keys_help_color() -> Color {
-    element_color(ColorElement::FooterKeysHelpFG)
+pub fn key_help_name_fg() -> Color {
+    element_color(ColorElement::KeyHelpNameFG)
 }
-pub fn footer_datetime_label_fg() -> Color {
-    element_color(ColorElement::FooterDatetimeLabelFG)
+
+pub fn key_help_value_fg() -> Color {
+    element_color(ColorElement::KeyHelpValueFG)
 }
-pub fn footer_datetime_fg() -> Color {
-    element_color(ColorElement::FooterDatetimeFG)
+
+pub fn current_datetime_fg() -> Color {
+    element_color(ColorElement::CurrentDateTimeFG)
 }
+
 pub fn footer_keys_label_fg() -> Color {
     element_color(ColorElement::FooterKeysLabelFG)
 }
