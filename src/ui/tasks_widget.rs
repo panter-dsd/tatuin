@@ -137,15 +137,15 @@ impl AppBlockWidget for TasksWidget {
     }
     fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
         vec![
+            &mut self.add_task_shortcut,
+            &mut self.edit_task_shortcut,
+            &mut self.delete_task_shortcut,
             &mut self.commit_changes_shortcut,
             &mut self.swap_completed_state_shortcut,
             &mut self.in_progress_shortcut,
             &mut self.change_due_shortcut,
             &mut self.change_priority_shortcut,
             &mut self.undo_changes_shortcut,
-            &mut self.add_task_shortcut,
-            &mut self.edit_task_shortcut,
-            &mut self.delete_task_shortcut,
             &mut self.open_task_link_shortcut,
             &mut self.duplicate_task_shortcut,
         ]
@@ -205,15 +205,21 @@ impl TasksWidget {
             draw_helper: None,
             on_changes_broadcast: tx,
             async_jobs_storage,
-            commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c']).global(),
+            commit_changes_shortcut: Shortcut::new("Commit changes", &['c', 'c'])
+                .global()
+                .with_short_name("Commit"),
             swap_completed_state_shortcut: Shortcut::new("Swap completed state of the task", &[' ']),
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
-            change_due_shortcut: Shortcut::new("Change due date of the task", &['c', 'd']),
-            change_priority_shortcut: Shortcut::new("Change priority of the task", &['c', 'p']),
-            undo_changes_shortcut: Shortcut::new("Undo changes", &['u']),
-            add_task_shortcut: Shortcut::new("Create a task", &['a']).global(),
-            edit_task_shortcut: Shortcut::new("Edit the task", &['e']),
-            delete_task_shortcut: Shortcut::new("Delete the task", &['d']),
+            change_due_shortcut: Shortcut::new("Change due date of the task", &['c', 'd'])
+                .with_short_name("Change due"),
+            change_priority_shortcut: Shortcut::new("Change priority of the task", &['c', 'p'])
+                .with_short_name("Change priority"),
+            undo_changes_shortcut: Shortcut::new("Undo changes", &['u']).with_short_name("Undo"),
+            add_task_shortcut: Shortcut::new("Create a task", &['a'])
+                .global()
+                .with_short_name("Create task"),
+            edit_task_shortcut: Shortcut::new("Edit the task", &['e']).with_short_name("Edit task"),
+            delete_task_shortcut: Shortcut::new("Delete the task", &['d']).with_short_name("Delete task"),
             open_task_link_shortcut: Shortcut::new("Open the task's link", &['o']),
             duplicate_task_shortcut: Shortcut::new("Duplicate the task", &['m', 'c']),
 
@@ -1006,7 +1012,7 @@ impl WidgetTrait for TasksWidget {
 
         Block::new()
             .style(style::default_style())
-            .render(Rect::new(area.x, y, area.width, area.height + 2 - y), buf);
+            .render(Rect::new(area.x, y, area.width, area.height + 1 - y), buf);
 
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
             .begin_symbol(Some("↑"))
