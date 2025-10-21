@@ -5,6 +5,7 @@ use std::{any::Any, sync::Arc};
 use super::{HyperlinkWidget, Text, WidgetState, WidgetStateTrait, WidgetTrait};
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
+use itertools::Itertools;
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
@@ -17,6 +18,30 @@ use tokio::sync::RwLock;
 use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 use tatuin_core::types::ArcRwLock;
 
+pub struct Config {
+    pub skip_first_empty_lines: bool,
+    pub line_count: usize,
+}
+
+impl Config {
+    pub fn default() -> Self {
+        Self {
+            skip_first_empty_lines: true,
+            line_count: 1,
+        }
+    }
+
+    fn apply(&self, text: &str) -> String {
+        let mut text = text.to_string();
+        if self.skip_first_empty_lines {
+            text = skip_empty_lines_at_start(text.as_str());
+        }
+
+        let t = text.split("\n").take(self.line_count).join("\n");
+        if text != t { t + "..." } else { text.to_string() }
+    }
+}
+
 pub struct MarkdownLine {
     pos: Position,
     width: u16,
@@ -27,19 +52,11 @@ pub struct MarkdownLine {
 }
 crate::impl_widget_state_trait!(MarkdownLine);
 
-fn first_not_empty_string(s: &str) -> String {
-    if s.contains('\n')
-        && let Some(ss) = s.split('\n').find(|s| !s.trim().is_empty())
-    {
-        return ss.trim().to_string() + "...";
-    }
-
-    s.to_string()
-}
-
 impl MarkdownLine {
-    pub fn new(text: &str) -> Self {
-        let widgets = match markdown::to_mdast(&first_not_empty_string(text), &markdown::ParseOptions::default()) {
+    pub fn new(text: &str, cfg: Config) -> Self {
+        let text = cfg.apply(text);
+
+        let widgets = match markdown::to_mdast(&text, &markdown::ParseOptions::default()) {
             Ok(root) => widgets(&root),
             Err(_) => Vec::new(),
         };
@@ -191,4 +208,44 @@ fn generate_node_text(root: &Node) -> String {
         }
     }
     lines.join(" ")
+}
+
+fn skip_empty_lines_at_start(s: &str) -> String {
+    s.split("\n").skip_while(|s| s.trim().is_empty()).join("\n")
+}
+
+#[cfg(test)]
+mod test {
+    use super::skip_empty_lines_at_start;
+
+    #[test]
+    fn skip_empty_lines_at_start_test() {
+        struct Case<'a> {
+            name: &'a str,
+            input: &'a str,
+            output: &'a str,
+        }
+        const CASES: &[Case] = &[
+            Case {
+                name: "empty string",
+                input: "",
+                output: "",
+            },
+            Case {
+                name: "string with one line without symbols",
+                input: " ",
+                output: "",
+            },
+            Case {
+                name: "string with one line with symbols",
+                input: " some text ",
+                output: " some text ",
+            },
+        ];
+
+        for c in CASES {
+            let s = skip_empty_lines_at_start(c.input);
+            assert_eq!(c.output, s.as_str(), "Test '{}' was failed", c.name)
+        }
+    }
 }

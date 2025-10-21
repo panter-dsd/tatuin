@@ -11,7 +11,10 @@ use super::{
     widgets::HyperlinkWidget,
     widgets::{Text, WidgetState, WidgetStateTrait, WidgetTrait},
 };
-use crate::ui::{style, widgets::MarkdownLine};
+use crate::ui::{
+    style,
+    widgets::{MarkdownLine, MarkdownLineConfig},
+};
 use async_trait::async_trait;
 use chrono::Local;
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -97,7 +100,7 @@ impl TaskInfoWidget {
             });
             entries.push(Entry {
                 title: "Text".to_string(),
-                widget: Box::new(MarkdownLine::new(t.text().as_str())),
+                widget: Box::new(MarkdownLine::new(t.text().as_str(), MarkdownLineConfig::default())),
             });
 
             if let Some(d) = t.due() {
@@ -122,7 +125,7 @@ impl TaskInfoWidget {
             if let Some(d) = t.description() {
                 entries.push(Entry {
                     title: "Description".to_string(),
-                    widget: Box::new(MarkdownLine::new(d.as_str())),
+                    widget: Box::new(MarkdownLine::new(d.as_str(), MarkdownLineConfig::default())),
                 });
             }
 

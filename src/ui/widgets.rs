@@ -16,7 +16,7 @@ pub use combo_box::{ComboBox, CustomWidgetItemUpdater, Item as ComboBoxItem};
 pub use date::DateEditor;
 pub use hyperlink_widget::HyperlinkWidget;
 pub use line_edit::LineEdit;
-pub use markdown_line::MarkdownLine;
+pub use markdown_line::{Config as MarkdownLineConfig, MarkdownLine};
 pub use task_row::TaskRow;
 pub use text::Text;
 pub use text_edit::TextEdit;
