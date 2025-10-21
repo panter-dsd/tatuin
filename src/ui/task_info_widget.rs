@@ -13,7 +13,7 @@ use super::{
 };
 use crate::ui::{
     style,
-    widgets::{MarkdownLine, MarkdownLineConfig},
+    widgets::{MarkdownView, MarkdownViewConfig},
 };
 use async_trait::async_trait;
 use chrono::Local;
@@ -100,7 +100,7 @@ impl TaskInfoWidget {
             });
             entries.push(Entry {
                 title: "Text".to_string(),
-                widget: Box::new(MarkdownLine::new(t.text().as_str(), MarkdownLineConfig::default())),
+                widget: Box::new(MarkdownView::new(t.text().as_str(), MarkdownViewConfig::default())),
             });
 
             if let Some(d) = t.due() {
@@ -125,9 +125,9 @@ impl TaskInfoWidget {
             if let Some(d) = t.description() {
                 entries.push(Entry {
                     title: "Description".to_string(),
-                    widget: Box::new(MarkdownLine::new(
+                    widget: Box::new(MarkdownView::new(
                         d.as_str(),
-                        MarkdownLineConfig {
+                        MarkdownViewConfig {
                             skip_first_empty_lines: true,
                             line_count: 3,
                         },
