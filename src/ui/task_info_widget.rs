@@ -125,7 +125,13 @@ impl TaskInfoWidget {
             if let Some(d) = t.description() {
                 entries.push(Entry {
                     title: "Description".to_string(),
-                    widget: Box::new(MarkdownLine::new(d.as_str(), MarkdownLineConfig::default())),
+                    widget: Box::new(MarkdownLine::new(
+                        d.as_str(),
+                        MarkdownLineConfig {
+                            skip_first_empty_lines: true,
+                            line_count: 3,
+                        },
+                    )),
                 });
             }
 
@@ -182,6 +188,11 @@ impl WidgetTrait for TaskInfoWidget {
         let mut row_area = area;
         row_area.y += 1;
         for e in self.entries.write().await.iter_mut() {
+            let widget_height = e.widget.size().height;
+            if row_area.y + widget_height > area.y + area.height {
+                break;
+            }
+
             let label = RatatuiText::from(Line::styled(
                 format!("{}: ", e.title),
                 style::default_style()
@@ -195,10 +206,7 @@ impl WidgetTrait for TaskInfoWidget {
             e.widget.set_pos(Position::new(row_area.x, row_area.y));
             e.widget.render(row_area, buf).await;
             row_area.x = area.x;
-            row_area.y += e.widget.size().height;
-            if row_area.y >= area.y + area.height {
-                break;
-            }
+            row_area.y += widget_height;
         }
     }
 

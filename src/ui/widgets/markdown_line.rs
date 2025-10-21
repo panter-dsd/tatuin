@@ -42,12 +42,15 @@ impl Config {
     }
 }
 
+type Line = Vec<Box<dyn WidgetTrait>>;
+
 pub struct MarkdownLine {
     pos: Position,
     width: u16,
+    height: u16,
     style: Option<Style>,
     style_applied: bool,
-    widgets: ArcRwLock<Vec<Box<dyn WidgetTrait>>>,
+    lines: ArcRwLock<Vec<Line>>,
     widget_state: WidgetState,
 }
 crate::impl_widget_state_trait!(MarkdownLine);
@@ -56,20 +59,32 @@ impl MarkdownLine {
     pub fn new(text: &str, cfg: Config) -> Self {
         let text = cfg.apply(text);
 
-        let widgets = match markdown::to_mdast(&text, &markdown::ParseOptions::default()) {
-            Ok(root) => widgets(&root),
-            Err(_) => Vec::new(),
-        };
+        let mut lines = Vec::new();
+        let mut width = 0;
+        let mut height = 0;
+        for t in text.split("\n") {
+            let line = match markdown::to_mdast(t, &markdown::ParseOptions::default()) {
+                Ok(root) => widgets(&root),
+                Err(_) => Vec::new(),
+            };
+
+            width = width.max(
+                line.iter()
+                    .map(|w| w.size().width)
+                    .reduce(|acc, w| acc + w)
+                    .unwrap_or_default(),
+            );
+            height += 1;
+            lines.push(line);
+        }
+
         Self {
             pos: Position::default(),
-            width: widgets
-                .iter()
-                .map(|w| w.size().width)
-                .reduce(|acc, w| acc + w)
-                .unwrap_or_default(),
+            width,
+            height,
             style: None,
             style_applied: true,
-            widgets: Arc::new(RwLock::new(widgets)),
+            lines: Arc::new(RwLock::new(lines)),
             widget_state: WidgetState::default(),
         }
     }
@@ -86,11 +101,13 @@ impl WidgetTrait for MarkdownLine {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         if !self.style_applied {
             if let Some(s) = &self.style {
-                for w in self.widgets.write().await.iter_mut() {
-                    let mut style = w.style();
-                    style.bg = s.bg;
-                    style.fg = s.fg;
-                    w.set_style(style);
+                for line in self.lines.write().await.iter_mut() {
+                    for w in line {
+                        let mut style = w.style();
+                        style.bg = s.bg;
+                        style.fg = s.fg;
+                        w.set_style(style);
+                    }
                 }
             }
             self.style_applied = true;
@@ -103,16 +120,20 @@ impl WidgetTrait for MarkdownLine {
             height: area.height,
         };
 
-        for w in self.widgets.write().await.iter_mut() {
-            let size = w.size();
-            w.set_pos(Position::new(area.x, area.y));
-            w.render(area, buf).await;
-            area.x += size.width;
+        for line in self.lines.write().await.iter_mut() {
+            let mut line_area = area;
+            for w in line {
+                let size = w.size();
+                w.set_pos(Position::new(line_area.x, line_area.y));
+                w.render(line_area, buf).await;
+                line_area.x += size.width;
+            }
+            area.y += 1;
         }
     }
 
     fn size(&self) -> Size {
-        Size::new(self.width, 1)
+        Size::new(self.width, self.height)
     }
 
     fn set_pos(&mut self, pos: Position) {
@@ -147,8 +168,10 @@ impl KeyboardHandler for MarkdownLine {
 #[async_trait]
 impl MouseHandler for MarkdownLine {
     async fn handle_mouse(&mut self, ev: &MouseEvent) {
-        for h in self.widgets.write().await.iter_mut() {
-            h.handle_mouse(ev).await;
+        for line in self.lines.write().await.iter_mut() {
+            for w in line {
+                w.handle_mouse(ev).await;
+            }
         }
     }
 }
