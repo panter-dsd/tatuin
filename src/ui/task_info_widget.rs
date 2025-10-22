@@ -11,7 +11,10 @@ use super::{
     widgets::HyperlinkWidget,
     widgets::{Text, WidgetState, WidgetStateTrait, WidgetTrait},
 };
-use crate::ui::{style, widgets::MarkdownLine};
+use crate::ui::{
+    style,
+    widgets::{MarkdownView, MarkdownViewConfig},
+};
 use async_trait::async_trait;
 use chrono::Local;
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -33,24 +36,18 @@ struct Entry {
     widget: Box<dyn WidgetTrait>,
 }
 
+pub struct Config {
+    pub description_line_count: usize,
+}
+
 pub struct TaskInfoWidget {
+    cfg: Config,
     t: Option<Box<dyn TaskTrait>>,
     shortcut: Shortcut,
     entries: ArcRwLock<Vec<Entry>>,
     widget_state: WidgetState,
 }
 crate::impl_widget_state_trait!(TaskInfoWidget);
-
-impl Default for TaskInfoWidget {
-    fn default() -> Self {
-        Self {
-            t: None,
-            shortcut: Shortcut::new("Activate Task Info block", &['g', 'i']),
-            entries: Arc::new(RwLock::new(Vec::new())),
-            widget_state: WidgetState::default(),
-        }
-    }
-}
 
 #[async_trait]
 impl AppBlockWidget for TaskInfoWidget {
@@ -81,6 +78,16 @@ impl KeyboardHandler for TaskInfoWidget {
 }
 
 impl TaskInfoWidget {
+    pub fn new(cfg: Config) -> Self {
+        Self {
+            cfg,
+            t: None,
+            shortcut: Shortcut::new("Activate Task Info block", &['g', 'i']),
+            entries: Arc::new(RwLock::new(Vec::new())),
+            widget_state: WidgetState::default(),
+        }
+    }
+
     pub async fn set_task(&mut self, t: Option<Box<dyn TaskTrait>>) {
         self.t = t;
 
@@ -97,7 +104,7 @@ impl TaskInfoWidget {
             });
             entries.push(Entry {
                 title: "Text".to_string(),
-                widget: Box::new(MarkdownLine::new(t.text().as_str())),
+                widget: Box::new(MarkdownView::new(t.text().as_str(), MarkdownViewConfig::default())),
             });
 
             if let Some(d) = t.due() {
@@ -122,7 +129,14 @@ impl TaskInfoWidget {
             if let Some(d) = t.description() {
                 entries.push(Entry {
                     title: "Description".to_string(),
-                    widget: Box::new(MarkdownLine::new(d.as_str())),
+                    widget: Box::new(MarkdownView::new(
+                        d.as_str(),
+                        MarkdownViewConfig {
+                            skip_first_empty_lines: true,
+                            skip_empty_lines: true,
+                            line_count: self.cfg.description_line_count,
+                        },
+                    )),
                 });
             }
 
@@ -179,6 +193,11 @@ impl WidgetTrait for TaskInfoWidget {
         let mut row_area = area;
         row_area.y += 1;
         for e in self.entries.write().await.iter_mut() {
+            let widget_height = e.widget.size().height;
+            if row_area.y + widget_height > area.y + area.height {
+                break;
+            }
+
             let label = RatatuiText::from(Line::styled(
                 format!("{}: ", e.title),
                 style::default_style()
@@ -192,10 +211,7 @@ impl WidgetTrait for TaskInfoWidget {
             e.widget.set_pos(Position::new(row_area.x, row_area.y));
             e.widget.render(row_area, buf).await;
             row_area.x = area.x;
-            row_area.y += e.widget.size().height;
-            if row_area.y >= area.y + area.height {
-                break;
-            }
+            row_area.y += widget_height;
         }
     }
 

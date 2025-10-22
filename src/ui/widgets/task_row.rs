@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
-use super::{MarkdownLine, Text, WidgetState, WidgetStateTrait, WidgetTrait};
-use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
+use super::{MarkdownView, Text, WidgetState, WidgetStateTrait, WidgetTrait};
+use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style, widgets::MarkdownViewConfig};
 use async_trait::async_trait;
 use chrono::{Local, NaiveTime};
 use crossterm::event::{KeyEvent, MouseEvent};
@@ -79,7 +79,10 @@ impl TaskRow {
 
         let mut children: Vec<Box<dyn WidgetTrait>> = vec![
             Box::new(Text::new(format!("[{state}] ").as_str())),
-            Box::new(MarkdownLine::new(name.as_str()).style(style::default_style().fg(fg_color))),
+            Box::new(
+                MarkdownView::new(name.as_str(), MarkdownViewConfig::default())
+                    .style(style::default_style().fg(fg_color)),
+            ),
             Box::new(Text::new(format!(" (due: {due})").as_str()).style(style::default_style().fg(style::due_color()))),
             Box::new(
                 Text::new(format!(" (Priority: {priority})").as_str())

@@ -5,6 +5,7 @@ use std::{any::Any, sync::Arc};
 use super::{HyperlinkWidget, Text, WidgetState, WidgetStateTrait, WidgetTrait};
 use async_trait::async_trait;
 use crossterm::event::{KeyEvent, MouseEvent};
+use itertools::Itertools;
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
@@ -17,42 +18,79 @@ use tokio::sync::RwLock;
 use crate::ui::{keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
 use tatuin_core::types::ArcRwLock;
 
-pub struct MarkdownLine {
-    pos: Position,
-    width: u16,
-    style: Option<Style>,
-    style_applied: bool,
-    widgets: ArcRwLock<Vec<Box<dyn WidgetTrait>>>,
-    widget_state: WidgetState,
+pub struct Config {
+    pub skip_first_empty_lines: bool,
+    pub skip_empty_lines: bool,
+    pub line_count: usize,
 }
-crate::impl_widget_state_trait!(MarkdownLine);
 
-fn first_not_empty_string(s: &str) -> String {
-    if s.contains('\n')
-        && let Some(ss) = s.split('\n').find(|s| !s.trim().is_empty())
-    {
-        return ss.trim().to_string() + "...";
+impl Config {
+    pub fn default() -> Self {
+        Self {
+            skip_first_empty_lines: true,
+            skip_empty_lines: true,
+            line_count: 1,
+        }
     }
 
-    s.to_string()
+    fn apply(&self, text: &str) -> String {
+        let mut text = text.to_string();
+        if self.skip_first_empty_lines {
+            text = skip_empty_lines_at_start(text.as_str());
+        }
+
+        let t = text
+            .split("\n")
+            .filter(|l| !self.skip_empty_lines || !l.is_empty())
+            .take(self.line_count)
+            .join("\n");
+        if text != t { t + "..." } else { text.to_string() }
+    }
 }
 
-impl MarkdownLine {
-    pub fn new(text: &str) -> Self {
-        let widgets = match markdown::to_mdast(&first_not_empty_string(text), &markdown::ParseOptions::default()) {
-            Ok(root) => widgets(&root),
-            Err(_) => Vec::new(),
-        };
+type Line = Vec<Box<dyn WidgetTrait>>;
+
+pub struct MarkdownView {
+    pos: Position,
+    width: u16,
+    height: u16,
+    style: Option<Style>,
+    style_applied: bool,
+    lines: ArcRwLock<Vec<Line>>,
+    widget_state: WidgetState,
+}
+crate::impl_widget_state_trait!(MarkdownView);
+
+impl MarkdownView {
+    pub fn new(text: &str, cfg: Config) -> Self {
+        let text = cfg.apply(text);
+
+        let mut lines = Vec::new();
+        let mut width = 0;
+        let mut height = 0;
+        for t in text.split("\n") {
+            let line = match markdown::to_mdast(t, &markdown::ParseOptions::default()) {
+                Ok(root) => widgets(&root),
+                Err(_) => Vec::new(),
+            };
+
+            width = width.max(
+                line.iter()
+                    .map(|w| w.size().width)
+                    .reduce(|acc, w| acc + w)
+                    .unwrap_or_default(),
+            );
+            height += 1;
+            lines.push(line);
+        }
+
         Self {
             pos: Position::default(),
-            width: widgets
-                .iter()
-                .map(|w| w.size().width)
-                .reduce(|acc, w| acc + w)
-                .unwrap_or_default(),
+            width,
+            height,
             style: None,
             style_applied: true,
-            widgets: Arc::new(RwLock::new(widgets)),
+            lines: Arc::new(RwLock::new(lines)),
             widget_state: WidgetState::default(),
         }
     }
@@ -65,15 +103,17 @@ impl MarkdownLine {
 }
 
 #[async_trait]
-impl WidgetTrait for MarkdownLine {
+impl WidgetTrait for MarkdownView {
     async fn render(&mut self, area: Rect, buf: &mut Buffer) {
         if !self.style_applied {
             if let Some(s) = &self.style {
-                for w in self.widgets.write().await.iter_mut() {
-                    let mut style = w.style();
-                    style.bg = s.bg;
-                    style.fg = s.fg;
-                    w.set_style(style);
+                for line in self.lines.write().await.iter_mut() {
+                    for w in line {
+                        let mut style = w.style();
+                        style.bg = s.bg;
+                        style.fg = s.fg;
+                        w.set_style(style);
+                    }
                 }
             }
             self.style_applied = true;
@@ -86,16 +126,20 @@ impl WidgetTrait for MarkdownLine {
             height: area.height,
         };
 
-        for w in self.widgets.write().await.iter_mut() {
-            let size = w.size();
-            w.set_pos(Position::new(area.x, area.y));
-            w.render(area, buf).await;
-            area.x += size.width;
+        for line in self.lines.write().await.iter_mut() {
+            let mut line_area = area;
+            for w in line {
+                let size = w.size();
+                w.set_pos(Position::new(line_area.x, line_area.y));
+                w.render(line_area, buf).await;
+                line_area.x += size.width;
+            }
+            area.y += 1;
         }
     }
 
     fn size(&self) -> Size {
-        Size::new(self.width, 1)
+        Size::new(self.width, self.height)
     }
 
     fn set_pos(&mut self, pos: Position) {
@@ -121,17 +165,19 @@ impl WidgetTrait for MarkdownLine {
 }
 
 #[async_trait]
-impl KeyboardHandler for MarkdownLine {
+impl KeyboardHandler for MarkdownView {
     async fn handle_key(&mut self, _key: KeyEvent) -> bool {
         false
     }
 }
 
 #[async_trait]
-impl MouseHandler for MarkdownLine {
+impl MouseHandler for MarkdownView {
     async fn handle_mouse(&mut self, ev: &MouseEvent) {
-        for h in self.widgets.write().await.iter_mut() {
-            h.handle_mouse(ev).await;
+        for line in self.lines.write().await.iter_mut() {
+            for w in line {
+                w.handle_mouse(ev).await;
+            }
         }
     }
 }
@@ -191,4 +237,44 @@ fn generate_node_text(root: &Node) -> String {
         }
     }
     lines.join(" ")
+}
+
+fn skip_empty_lines_at_start(s: &str) -> String {
+    s.split("\n").skip_while(|s| s.trim().is_empty()).join("\n")
+}
+
+#[cfg(test)]
+mod test {
+    use super::skip_empty_lines_at_start;
+
+    #[test]
+    fn skip_empty_lines_at_start_test() {
+        struct Case<'a> {
+            name: &'a str,
+            input: &'a str,
+            output: &'a str,
+        }
+        const CASES: &[Case] = &[
+            Case {
+                name: "empty string",
+                input: "",
+                output: "",
+            },
+            Case {
+                name: "string with one line without symbols",
+                input: " ",
+                output: "",
+            },
+            Case {
+                name: "string with one line with symbols",
+                input: " some text ",
+                output: " some text ",
+            },
+        ];
+
+        for c in CASES {
+            let s = skip_empty_lines_at_start(c.input);
+            assert_eq!(c.output, s.as_str(), "Test '{}' was failed", c.name)
+        }
+    }
 }

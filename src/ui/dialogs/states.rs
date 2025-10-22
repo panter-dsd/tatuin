@@ -23,7 +23,7 @@ use ratatui::{
 
 pub struct Dialog {
     states: SelectableList<String>,
-    settings: ArcRwLock<Box<dyn StateSettings>>,
+    settings: ArcRwLock<dyn StateSettings>,
     should_be_closed: bool,
     selected_state: Option<String>,
     widget_state: WidgetState,
@@ -31,10 +31,12 @@ pub struct Dialog {
 crate::impl_widget_state_trait!(Dialog);
 
 impl Dialog {
-    pub async fn new(settings: &ArcRwLock<Box<dyn StateSettings>>) -> Self {
+    pub async fn new(settings: ArcRwLock<dyn StateSettings>) -> Self {
+        let states = settings.read().await.states().to_vec();
+
         Self {
-            states: SelectableList::new(settings.read().await.states().to_vec(), Some(0)),
-            settings: settings.clone(),
+            states: SelectableList::new(states, Some(0)),
+            settings,
             should_be_closed: false,
             selected_state: None,
             widget_state: WidgetState::default(),

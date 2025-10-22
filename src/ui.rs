@@ -2,6 +2,7 @@
 
 mod widgets;
 use crate::async_jobs::AsyncJobStorage;
+use crate::settings::Settings;
 use crate::ui::dialogs::{ConfirmationDialog, ConfirmationDialogIcon, StandardButton};
 use crate::ui::draw_helper::CursorStyle;
 
@@ -196,7 +197,7 @@ pub struct App {
 
     dialog: Option<Box<dyn DialogTrait>>,
 
-    settings: ArcRwLock<Box<dyn StateSettings>>,
+    settings: ArcRwLock<Settings>,
     set_cursor_pos_cmd: SetCursorPosCmd,
 }
 
@@ -224,14 +225,18 @@ impl tasks_widget::TaskInfoViewerTrait for task_info_widget::TaskInfoWidget {
 
 #[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
 impl App {
-    pub async fn new(providers: Vec<Provider>, settings: Box<dyn StateSettings>) -> Self {
+    pub async fn new(providers: Vec<Provider>, settings: Settings) -> Self {
         let providers_widget = Arc::new(RwLock::new(
             SelectableList::new(providers, Some(0))
                 .add_all_item()
                 .shortcut(Shortcut::new("Activate Providers block", &['g', 'v'])),
         ));
         let error_logger = Arc::new(RwLock::new(ErrorLogger::new()));
-        let task_info_widget = Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::default()));
+        let task_info_widget = Arc::new(RwLock::new(task_info_widget::TaskInfoWidget::new(
+            task_info_widget::Config {
+                description_line_count: settings.interface.task_info_panel.description_line_count,
+            },
+        )));
         let async_jobs_storage = Arc::new(RwLock::new(AsyncJobStorage::default()));
         let mut s = Self {
             should_exit: false,
@@ -980,7 +985,8 @@ impl App {
     }
 
     async fn load_state(&mut self) {
-        let d = StatesDialog::new(&self.settings).await;
+        let s: ArcRwLock<dyn StateSettings> = self.settings.clone();
+        let d = StatesDialog::new(s).await;
         self.dialog = Some(Box::new(d));
     }
 
