@@ -36,24 +36,18 @@ struct Entry {
     widget: Box<dyn WidgetTrait>,
 }
 
+pub struct Config {
+    pub description_line_count: usize,
+}
+
 pub struct TaskInfoWidget {
+    cfg: Config,
     t: Option<Box<dyn TaskTrait>>,
     shortcut: Shortcut,
     entries: ArcRwLock<Vec<Entry>>,
     widget_state: WidgetState,
 }
 crate::impl_widget_state_trait!(TaskInfoWidget);
-
-impl Default for TaskInfoWidget {
-    fn default() -> Self {
-        Self {
-            t: None,
-            shortcut: Shortcut::new("Activate Task Info block", &['g', 'i']),
-            entries: Arc::new(RwLock::new(Vec::new())),
-            widget_state: WidgetState::default(),
-        }
-    }
-}
 
 #[async_trait]
 impl AppBlockWidget for TaskInfoWidget {
@@ -84,6 +78,16 @@ impl KeyboardHandler for TaskInfoWidget {
 }
 
 impl TaskInfoWidget {
+    pub fn new(cfg: Config) -> Self {
+        Self {
+            cfg,
+            t: None,
+            shortcut: Shortcut::new("Activate Task Info block", &['g', 'i']),
+            entries: Arc::new(RwLock::new(Vec::new())),
+            widget_state: WidgetState::default(),
+        }
+    }
+
     pub async fn set_task(&mut self, t: Option<Box<dyn TaskTrait>>) {
         self.t = t;
 
@@ -129,7 +133,7 @@ impl TaskInfoWidget {
                         d.as_str(),
                         MarkdownViewConfig {
                             skip_first_empty_lines: true,
-                            line_count: 3,
+                            line_count: self.cfg.description_line_count,
                         },
                     )),
                 });

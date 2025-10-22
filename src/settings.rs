@@ -9,6 +9,24 @@ use tatuin_core::state::{State, StateSettings};
 
 const DEFAULT_STATE_NAME: &str = "default";
 
+#[derive(Serialize, Deserialize)]
+pub struct TaskInfoPanel {
+    pub description_line_count: usize,
+}
+
+impl Default for TaskInfoPanel {
+    fn default() -> Self {
+        Self {
+            description_line_count: 3,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Default)]
+pub struct Interface {
+    pub task_info_panel: TaskInfoPanel,
+}
+
 #[derive(Serialize, Deserialize, Default)]
 pub struct Settings {
     #[serde(skip_serializing, skip_deserializing)]
@@ -16,14 +34,13 @@ pub struct Settings {
 
     pub providers: HashMap<String, HashMap<String, String>>,
 
-    #[serde(default = "default_states_hash_map")]
+    #[serde(default)]
     states: HashMap<String, State>,
 
     pub theme: Option<String>,
-}
 
-fn default_states_hash_map() -> HashMap<String, State> {
-    HashMap::new()
+    #[serde(default)]
+    pub interface: Interface,
 }
 
 impl Settings {
