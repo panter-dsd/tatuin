@@ -133,6 +133,7 @@ impl TaskInfoWidget {
                         d.as_str(),
                         MarkdownViewConfig {
                             skip_first_empty_lines: true,
+                            skip_empty_lines: true,
                             line_count: self.cfg.description_line_count,
                         },
                     )),

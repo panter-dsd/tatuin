@@ -20,6 +20,7 @@ use tatuin_core::types::ArcRwLock;
 
 pub struct Config {
     pub skip_first_empty_lines: bool,
+    pub skip_empty_lines: bool,
     pub line_count: usize,
 }
 
@@ -27,6 +28,7 @@ impl Config {
     pub fn default() -> Self {
         Self {
             skip_first_empty_lines: true,
+            skip_empty_lines: true,
             line_count: 1,
         }
     }
@@ -37,7 +39,11 @@ impl Config {
             text = skip_empty_lines_at_start(text.as_str());
         }
 
-        let t = text.split("\n").take(self.line_count).join("\n");
+        let t = text
+            .split("\n")
+            .filter(|l| !self.skip_empty_lines || !l.is_empty())
+            .take(self.line_count)
+            .join("\n");
         if text != t { t + "..." } else { text.to_string() }
     }
 }
