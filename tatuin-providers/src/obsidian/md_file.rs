@@ -255,6 +255,11 @@ fn extract_date_after_emoji(text: &str, emoji: char) -> (String, Option<DateTime
 
     const DATE_PATTERN: &str = "0000-00-00";
 
+    if idx + start.len() + DATE_PATTERN.len() > text.len() {
+        // wrong date
+        return (text.to_string(), None);
+    }
+
     let date_str = &text[idx + start.len()..idx + start.len() + DATE_PATTERN.len()];
 
     if let Ok(d) = NaiveDate::parse_from_str(date_str, "%Y-%m-%d")
@@ -481,6 +486,11 @@ return indent back"
                         .unwrap(),
                     Utc,
                 )),
+            },
+            Case {
+                name: "broken date",
+                line: "Some text ⏫ 📅 2025-",
+                expected: None,
             },
         ];
 
