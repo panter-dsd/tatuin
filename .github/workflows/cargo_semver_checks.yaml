@@ -1,4 +1,6 @@
 name: Cargo Semver Checks
+permissions:
+  contents: read
 on:
   workflow_call:
     inputs:
