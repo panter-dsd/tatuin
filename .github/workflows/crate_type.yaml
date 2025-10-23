@@ -1,4 +1,6 @@
 name: Crate Type
+permissions:
+  contents: read
 on:
   workflow_call:
     outputs:
