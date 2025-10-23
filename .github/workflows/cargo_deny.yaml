@@ -1,6 +1,8 @@
 # Check for licenses and advisores
 # ../../deny.toml
 name: Cargo deny
+permissions:
+  contents: read
 on:
   workflow_call:
   workflow_dispatch:
