@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: MIT
 
 mod client;
+mod description;
 mod indent;
 mod md_file;
 mod patch;
 mod project;
 mod rest;
+mod state;
 mod task;
 
 use async_trait::async_trait;
+use description::Description;
 use md_file::task_to_string;
-use task::Description;
+use state::State;
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
@@ -76,7 +79,7 @@ impl TaskProviderTrait for Provider {
         let t = task::Task {
             text: tp.name.value().unwrap(),
             description: tp.description.value().map(|s| Description::from_str(s.as_str())),
-            state: task::State::Uncompleted,
+            state: State::Uncompleted,
             due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
             priority: tp.priority.value().unwrap_or(Priority::Normal),
             ..task::Task::default()

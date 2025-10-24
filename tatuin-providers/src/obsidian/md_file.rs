@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::obsidian::{
-    indent,
-    task::{Description, State, Task},
-};
+use crate::obsidian::{description::Description, indent, state::State, task::Task};
 use chrono::{NaiveDate, Utc};
 use regex::Regex;
 use std::error::Error;
