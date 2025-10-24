@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 
 use super::{description::Description, project::Project, state::State};
-use sha256::digest;
 use std::{any::Any, path::PathBuf};
 use tatuin_core::{
     project::Project as ProjectTrait,
@@ -53,7 +52,7 @@ impl Task {
 
 impl TaskTrait for Task {
     fn id(&self) -> String {
-        digest(format!(
+        sha256::digest(format!(
             "{}:{}:{}:{}:{}",
             self.file_path, self.start_pos, self.end_pos, self.state, self.text
         ))
@@ -68,12 +67,7 @@ impl TaskTrait for Task {
     }
 
     fn state(&self) -> TaskState {
-        match self.state {
-            State::Completed => TaskState::Completed,
-            State::Uncompleted => TaskState::Uncompleted,
-            State::InProgress => TaskState::InProgress,
-            State::Unknown(x) => TaskState::Unknown(x),
-        }
+        self.state.into()
     }
 
     fn place(&self) -> String {
@@ -105,24 +99,17 @@ impl TaskTrait for Task {
     }
 
     fn url(&self) -> String {
-        let path_buf: PathBuf = self.root_path.clone().into();
-
-        let mut vault_name = String::new();
-        if let Some(n) = path_buf.file_name()
-            && let Some(s) = n.to_str()
-        {
-            vault_name = s.to_string();
-        }
-
-        if vault_name.is_empty() {
-            return String::new();
-        }
-
-        format!(
-            "obsidian://open?vault={}&file={}",
-            vault_name,
-            encode(self.file_path.strip_prefix(self.root_path.as_str()).unwrap_or_default())
-        )
+        PathBuf::from(&self.root_path)
+            .file_name()
+            .and_then(|s| s.to_str())
+            .map(|vault_name| {
+                format!(
+                    "obsidian://open?vault={}&file={}",
+                    vault_name,
+                    encode(self.file_path.strip_prefix(self.root_path.as_str()).unwrap_or_default())
+                )
+            })
+            .unwrap_or_default()
     }
 
     fn labels(&self) -> Vec<String> {

@@ -59,3 +59,14 @@ impl From<TaskState> for State {
         }
     }
 }
+
+impl From<State> for TaskState {
+    fn from(v: State) -> Self {
+        match v {
+            State::Completed => TaskState::Completed,
+            State::Uncompleted => TaskState::Uncompleted,
+            State::InProgress => TaskState::InProgress,
+            State::Unknown(x) => TaskState::Unknown(x),
+        }
+    }
+}
