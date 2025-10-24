@@ -124,7 +124,7 @@ impl TaskTrait for Task {
         self.uid.clone()
     }
 
-    fn text(&self) -> String {
+    fn name(&self) -> String {
         self.name.clone()
     }
 

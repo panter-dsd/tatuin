@@ -152,7 +152,7 @@ impl std::fmt::Display for TaskPatch {
         f.write_fmt(format_args!(
             "TaskPatch {{ task_id: {}, task_title: {} state: {:?}, due: {:?}, priority: {:?}, name: {:?}, description: {:?}",
             self.task.as_ref().map(|t| t.id()).unwrap_or("-".to_string()),
-            self.task.as_ref().map(|t| t.text()).unwrap_or("-".to_string()),
+            self.task.as_ref().map(|t| t.name()).unwrap_or("-".to_string()),
             self.state,
             self.due,
             self.priority,

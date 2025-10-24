@@ -84,7 +84,7 @@ impl TaskTrait for Task {
         self.id.to_string()
     }
 
-    fn text(&self) -> String {
+    fn name(&self) -> String {
         self.content.to_string()
     }
 

@@ -171,7 +171,7 @@ impl Dialog {
         } else {
             self.project_selector.set_current_item_index(&Some(0)).await;
         }
-        self.task_name_editor.set_text(task.text().as_str());
+        self.task_name_editor.set_text(task.name().as_str());
         if let Some(d) = task.description() {
             self.task_description_editor.set_text(&d);
         }

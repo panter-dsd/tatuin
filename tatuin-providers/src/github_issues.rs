@@ -45,7 +45,7 @@ impl TaskTrait for Task {
         self.issue.id.to_string()
     }
 
-    fn text(&self) -> String {
+    fn name(&self) -> String {
         self.issue.title.to_string()
     }
 

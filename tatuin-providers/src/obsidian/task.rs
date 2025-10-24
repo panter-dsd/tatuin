@@ -18,7 +18,7 @@ pub struct Task {
     pub start_pos: usize,
     pub end_pos: usize,
     pub state: State,
-    pub text: String,
+    pub name: String,
     pub description: Option<Description>,
     pub due: Option<DateTimeUtc>,
     pub completed_at: Option<DateTimeUtc>,
@@ -31,7 +31,7 @@ impl PartialEq for Task {
         self.start_pos == o.start_pos
             && self.end_pos == o.end_pos
             && self.state == o.state
-            && self.text == o.text
+            && self.name == o.name
             && self.description == o.description
             && self.due == o.due
             && self.priority == o.priority
@@ -54,12 +54,12 @@ impl TaskTrait for Task {
     fn id(&self) -> String {
         sha256::digest(format!(
             "{}:{}:{}:{}:{}",
-            self.file_path, self.start_pos, self.end_pos, self.state, self.text
+            self.file_path, self.start_pos, self.end_pos, self.state, self.name
         ))
     }
 
-    fn text(&self) -> String {
-        self.text.to_string()
+    fn name(&self) -> String {
+        self.name.to_string()
     }
 
     fn description(&self) -> Option<String> {

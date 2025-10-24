@@ -74,7 +74,7 @@ pub struct PatchPolicy {
 #[allow(dead_code)]
 pub trait Task: Send + Sync {
     fn id(&self) -> String;
-    fn text(&self) -> String;
+    fn name(&self) -> String;
 
     fn description(&self) -> Option<String> {
         None
@@ -157,7 +157,7 @@ pub fn format(t: &dyn Task) -> String {
     format!(
         "- [{}] {} ({}) ({})",
         t.state(),
-        t.text(),
+        t.name(),
         format!("due: {}", datetime_to_str(t.due(), &Local::now().timezone())).blue(),
         t.place().green()
     )

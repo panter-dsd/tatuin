@@ -101,7 +101,7 @@ impl TaskTrait for Task {
         self.todo.id.to_string()
     }
 
-    fn text(&self) -> String {
+    fn name(&self) -> String {
         self.todo.body.to_string()
     }
 

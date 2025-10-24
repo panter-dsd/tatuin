@@ -28,14 +28,14 @@ impl TaskTrait for PatchedTask {
         self.task.id()
     }
 
-    fn text(&self) -> String {
+    fn name(&self) -> String {
         if let Some(p) = &self.patch
             && let Some(name) = &p.name.value()
         {
             return name.to_string();
         }
 
-        self.task.text()
+        self.task.name()
     }
 
     fn description(&self) -> Option<String> {

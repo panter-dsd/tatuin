@@ -42,7 +42,7 @@ impl TaskTrait for Task {
         self.id.to_string()
     }
 
-    fn text(&self) -> String {
+    fn name(&self) -> String {
         self.name.clone()
     }
 

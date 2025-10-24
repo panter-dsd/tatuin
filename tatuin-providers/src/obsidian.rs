@@ -77,7 +77,7 @@ impl TaskProviderTrait for Provider {
 
     async fn create(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
         let t = task::Task {
-            text: tp.name.value().unwrap(),
+            name: tp.name.value().unwrap(),
             description: tp.description.value().map(|s| Description::from_str(s.as_str())),
             state: State::Uncompleted,
             due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
@@ -98,7 +98,7 @@ impl TaskProviderTrait for Provider {
                 None => panic!(
                     "Wrong casting the task id=`{}` name=`{}` to obsidian!",
                     task.id(),
-                    task.text(),
+                    task.name(),
                 ),
             };
         }
@@ -116,7 +116,7 @@ impl TaskProviderTrait for Provider {
     async fn delete(&mut self, t: &dyn TaskTrait) -> Result<(), StringError> {
         let t = t.as_any().downcast_ref::<task::Task>().expect("Wrong casting");
         self.c.delete_task(t).await.map_err(|e| {
-            tracing::error!(error=?e, name=t.text(), id=t.id(), "Delete the task");
+            tracing::error!(error=?e, name=t.name(), id=t.id(), "Delete the task");
             e.into()
         })
     }

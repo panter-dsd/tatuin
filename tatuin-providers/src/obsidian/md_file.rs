@@ -86,7 +86,7 @@ impl File {
                     }
                 }
             },
-            text: text.trim().to_string(),
+            name: text.trim().to_string(),
             due,
             priority,
             completed_at,
@@ -164,7 +164,7 @@ impl File {
         let mut new_task = p.task.clone();
 
         if let ValuePatch::Value(n) = &p.name {
-            new_task.text = n.clone();
+            new_task.name = n.clone();
         }
 
         if p.description.is_set() {
@@ -219,7 +219,7 @@ impl File {
 
 pub fn task_to_string(t: &Task, indent: &str) -> String {
     let state_char: char = t.state.into();
-    let mut elements = vec![format!("- [{state_char}]"), t.text.clone()];
+    let mut elements = vec![format!("- [{state_char}]"), t.name.clone()];
     if let Some(due) = &t.due {
         elements.push(format!("{DUE_EMOJI} {}", due.format("%Y-%m-%d")))
     }
@@ -412,7 +412,7 @@ some another text
         let task = p.try_parse_task(text.as_str(), 0);
         assert!(task.is_some());
         let task = task.unwrap();
-        assert_eq!(task.text, "Some #tag task #группа/имя_tag-name123 text #tag_at_end");
+        assert_eq!(task.name, "Some #tag task #группа/имя_tag-name123 text #tag_at_end");
         assert_eq!(task.state, State::Completed);
         assert!(task.due.is_some());
         assert_eq!(task.due.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
@@ -437,7 +437,7 @@ End of content
         let tasks = p.tasks_from_content(text).unwrap();
         assert_eq!(tasks.len(), 1);
         let task = &tasks[0];
-        assert_eq!(task.text, "Some task");
+        assert_eq!(task.name, "Some task");
         assert!(task.description.is_some());
         assert_eq!(
             task.description.as_ref().unwrap().text,
