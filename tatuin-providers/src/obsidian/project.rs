@@ -1,20 +1,24 @@
 // SPDX-License-Identifier: MIT
 
+use std::path::{Path, PathBuf};
+
 use tatuin_core::project::Project as ProjectTrait;
+
+use crate::obsidian::utils;
 
 #[derive(Clone)]
 pub struct Project {
     provider: String,
-    root_path: String,
-    file_path: String,
+    vault_path: PathBuf,
+    file_path: PathBuf,
 }
 
 impl Project {
-    pub fn new(provider: &str, root_path: &str, file_path: &str) -> Self {
+    pub fn new(provider: &str, vault_path: &Path, file_path: &Path) -> Self {
         Self {
             provider: provider.to_string(),
-            root_path: root_path.to_string(),
-            file_path: file_path.to_string(),
+            vault_path: vault_path.into(),
+            file_path: file_path.into(),
         }
     }
 }
@@ -32,10 +36,7 @@ impl std::fmt::Debug for Project {
 
 impl ProjectTrait for Project {
     fn id(&self) -> String {
-        self.file_path
-            .strip_prefix(self.root_path.as_str())
-            .unwrap_or_default()
-            .to_string()
+        utils::strip_root_str(&self.vault_path, &self.file_path)
     }
 
     fn name(&self) -> String {

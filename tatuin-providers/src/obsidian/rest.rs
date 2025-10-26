@@ -4,6 +4,7 @@ use reqwest::StatusCode;
 use serde::Deserialize;
 use std::fs;
 use std::path;
+use std::path::Path;
 
 use tatuin_core::StringError;
 
@@ -42,9 +43,9 @@ fn read_config(file_name: path::PathBuf) -> Option<Config> {
 }
 
 impl Client {
-    pub fn new(vault_path: &str) -> Self {
+    pub fn new(vault_path: &Path) -> Self {
         Self {
-            cfg: read_config(path::Path::new(vault_path).join(CONFIG_PATH)),
+            cfg: read_config(vault_path.join(CONFIG_PATH)),
             client: reqwest::Client::new(),
         }
     }

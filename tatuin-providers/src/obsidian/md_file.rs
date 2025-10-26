@@ -3,9 +3,10 @@
 use crate::obsidian::{description::Description, indent, state::State, task::Task};
 use chrono::{NaiveDate, Utc};
 use regex::Regex;
-use std::error::Error;
 use std::fs;
+use std::path::Path;
 use std::sync::LazyLock;
+use std::{error::Error, path::PathBuf};
 use tatuin_core::{
     task::{DateTimeUtc, Priority, TaskNameProvider as TaskNameProviderTrait},
     task_patch::ValuePatch,
@@ -21,25 +22,25 @@ const DUE_EMOJI: char = '📅';
 const COMPLETED_EMOJI: char = '✅';
 
 pub struct File {
-    file_path: String,
+    file_path: PathBuf,
     content: String,
 }
 
 impl File {
-    pub fn new(file_path: &str) -> Self {
+    pub fn new(file_path: &Path) -> Self {
         Self {
-            file_path: String::from(file_path),
+            file_path: file_path.into(),
             content: String::new(),
         }
     }
 
     pub fn open(&mut self) -> Result<(), std::io::Error> {
-        self.content = fs::read_to_string(self.file_path.as_str())?;
+        self.content = fs::read_to_string(&self.file_path)?;
         Ok(())
     }
 
     pub fn flush(&mut self) -> Result<(), Box<dyn Error>> {
-        if let Err(err) = fs::write(self.file_path.as_str(), &self.content) {
+        if let Err(err) = fs::write(&self.file_path, &self.content) {
             return Err(Box::new(err));
         }
 
@@ -74,7 +75,7 @@ impl File {
             .collect::<Vec<String>>();
 
         Some(Task {
-            file_path: self.file_path.to_string(),
+            file_path: self.file_path.clone(),
             start_pos: pos,
             end_pos: pos + line.chars().count(),
             state: {
@@ -331,7 +332,7 @@ mod tests {
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
     async fn parse_not_exists_file_test() {
-        let mut p = File::new("/etc/file/not/exists");
+        let mut p = File::new(Path::new("/etc/file/not/exists"));
         let err = p.open().unwrap_err();
         assert_eq!(err.kind(), std::io::ErrorKind::NotFound);
     }
@@ -394,7 +395,7 @@ some another text
             },
         ];
 
-        let p = File::new("");
+        let p = File::new(Path::new("/"));
 
         for c in CASES {
             let tasks = p.tasks_from_content(c.file_content).unwrap();
@@ -408,7 +409,7 @@ some another text
             "- [x] Some #tag task #группа/имя_tag-name123 text ⏫ {DUE_EMOJI} 2025-01-01 {COMPLETED_EMOJI} 2025-01-01 #tag_at_end"
         );
 
-        let p = File::new("");
+        let p = File::new(Path::new(""));
         let task = p.try_parse_task(text.as_str(), 0);
         assert!(task.is_some());
         let task = task.unwrap();
@@ -437,7 +438,7 @@ some another text
 End of content
 ";
 
-        let p = File::new("");
+        let p = File::new(Path::new(""));
         let tasks = p.tasks_from_content(text).unwrap();
         assert_eq!(tasks.len(), 1);
         let task = &tasks[0];
@@ -606,7 +607,7 @@ some text
             },
         ];
 
-        let p = File::new("");
+        let p = File::new(Path::new(""));
 
         for c in cases {
             let original_tasks = p.tasks_from_content(c.file_content_before.as_str()).unwrap();
@@ -702,7 +703,7 @@ some another text
             },
         ];
 
-        let p = File::new("");
+        let p = File::new(Path::new(""));
 
         for c in CASES {
             let original_tasks = p.tasks_from_content(c.file_content_before).unwrap();
@@ -733,7 +734,7 @@ some another text
         let content = "Some text
 - [ ] Task
 Some another text";
-        let tasks = File::new("").tasks_from_content(content);
+        let tasks = File::new(Path::new("")).tasks_from_content(content);
         assert!(tasks.is_ok());
 
         let tasks = tasks.unwrap();
@@ -747,7 +748,7 @@ Some another text";
         let content = "Какой-то текст
 - [ ] Задача
 Какой-то другой текст";
-        let tasks = File::new("").tasks_from_content(content);
+        let tasks = File::new(Path::new("")).tasks_from_content(content);
         assert!(tasks.is_ok());
 
         let tasks = tasks.unwrap();
@@ -870,7 +871,7 @@ Some another text";
             },
         ];
 
-        let p = File::new("");
+        let p = File::new(Path::new(""));
 
         for c in cases {
             let original_tasks = p.tasks_from_content(c.file_content_before.as_str()).unwrap();
@@ -1022,7 +1023,7 @@ Some another text";
             },
         ];
 
-        let p = File::new("");
+        let p = File::new(Path::new(""));
 
         for c in cases {
             let original_tasks = p.tasks_from_content(c.file_content_before.as_str()).unwrap();
@@ -1092,7 +1093,7 @@ Some another content
             },
         ];
 
-        let p = File::new("");
+        let p = File::new(Path::new(""));
 
         for c in cases {
             let tasks = p.tasks_from_content(c.file_content_before).unwrap();

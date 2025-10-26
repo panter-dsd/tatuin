@@ -10,6 +10,9 @@ mod rest;
 mod state;
 mod task;
 mod task_name_provider;
+mod utils;
+
+use std::path::Path;
 
 use async_trait::async_trait;
 use description::Description;
@@ -34,7 +37,7 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(cfg: Config, path: &str) -> Self {
+    pub fn new(cfg: Config, path: &Path) -> Self {
         Self {
             cfg,
             c: client::Client::new(path),
@@ -54,8 +57,8 @@ impl ProjectProviderTrait for Provider {
     async fn list(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
         Ok(vec![Box::new(project::Project::new(
             self.cfg.name().as_str(),
-            self.c.root_path().as_str(),
-            format!("{}/daily.md", self.c.root_path()).as_str(),
+            &self.c.root_path(),
+            &self.c.root_path().join("daily.md"),
         ))])
     }
 }

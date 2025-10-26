@@ -7,7 +7,7 @@ use itertools::Itertools;
 use std::cmp::Ordering;
 use std::error::Error;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tatuin_core::filter;
 use tokio::sync::Semaphore;
@@ -16,26 +16,24 @@ use tracing::Level;
 const SIMULTANEOUS_JOB_COUNT: usize = 10;
 
 pub struct Client {
-    path: String,
+    path: PathBuf,
 }
 
 impl Client {
-    pub fn new(path: &str) -> Self {
-        Self {
-            path: String::from(path),
-        }
+    pub fn new(path: &Path) -> Self {
+        Self { path: path.into() }
     }
 
-    pub fn root_path(&self) -> String {
+    pub fn root_path(&self) -> PathBuf {
         self.path.clone()
     }
 
-    pub fn all_supported_files(&self) -> Result<Vec<String>, Box<dyn Error>> {
-        supported_files(Path::new(self.path.as_str()))
+    pub fn all_supported_files(&self) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+        supported_files(&self.path)
     }
 
     pub async fn tasks(&self, f: &filter::Filter) -> Result<Vec<Task>, Box<dyn Error>> {
-        let span = tracing::span!(Level::TRACE, "tasks", path=self.path,  filter = ?&f, "Load tasks");
+        let span = tracing::span!(Level::TRACE, "tasks", path=?self.path,  filter = ?&f, "Load tasks");
         let _enter = span.enter();
 
         let files = self.all_supported_files()?;
@@ -55,11 +53,11 @@ impl Client {
 
                 let mut tasks = Vec::new();
 
-                let mut parser = md_file::File::new(f.as_str());
+                let mut parser = md_file::File::new(&f);
                 if parser.open().is_ok() {
                     tasks = parser.tasks().await.unwrap();
                     for t in &mut tasks {
-                        t.set_root_path(p.to_string());
+                        t.set_vault_path(&p);
                     }
                 }
                 drop(_permit);
@@ -88,7 +86,7 @@ impl Client {
     pub async fn patch_tasks<'a>(&mut self, patches: &'a [TaskPatch<'a>]) -> Vec<PatchError> {
         let mut errors = Vec::new();
 
-        let mut files: Vec<&'a str> = Vec::new();
+        let mut files: Vec<&'a Path> = Vec::new();
         for p in patches {
             files.push(&p.task.file_path);
         }
@@ -99,7 +97,7 @@ impl Client {
                 errors.extend(
                     patches
                         .iter()
-                        .filter(|p| p.task.file_path.as_str().cmp(file) == Ordering::Equal)
+                        .filter(|p| p.task.file_path.cmp(&file.to_path_buf()) == Ordering::Equal)
                         .map(|p| PatchError {
                             task: p.task.clone(),
                             error: e.to_string(),
@@ -109,7 +107,7 @@ impl Client {
             }
             let mut file_patches = patches
                 .iter()
-                .filter(|p| p.task.file_path.as_str().cmp(file) == Ordering::Equal)
+                .filter(|p| p.task.file_path.cmp(&file.to_path_buf()) == Ordering::Equal)
                 .collect::<Vec<&'a TaskPatch>>();
             file_patches.sort_by_key(|p| std::cmp::Reverse(p.task.start_pos));
             for p in file_patches {
@@ -124,7 +122,7 @@ impl Client {
                 errors.extend(
                     patches
                         .iter()
-                        .filter(|p| p.task.file_path.as_str().cmp(file) == Ordering::Equal)
+                        .filter(|p| p.task.file_path.cmp(&file.to_path_buf()) == Ordering::Equal)
                         .map(|p| PatchError {
                             task: p.task.clone(),
                             error: e.to_string(),
@@ -144,17 +142,15 @@ impl Client {
     }
 }
 
-fn supported_files(p: &Path) -> Result<Vec<String>, Box<dyn Error>> {
-    let mut result: Vec<String> = Vec::new();
+fn supported_files(p: &Path) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+    let mut result = Vec::new();
 
     for e in fs::read_dir(p)? {
         let entry = e?;
         let path = entry.path();
         let name = path.file_name().unwrap_or_default().to_str().unwrap_or_default();
         if path.is_file() && name.ends_with(".md") {
-            if let Some(p) = path.to_str() {
-                result.push(String::from(p));
-            }
+            result.push(path);
         } else if path.is_dir() {
             let mut files = supported_files(path.as_path())?;
             result.append(&mut files);

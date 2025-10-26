@@ -7,7 +7,10 @@ mod settings;
 mod ui;
 mod wizard;
 
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 use tatuin_providers::{caldav, config::Config, github_issues, gitlab_todo, ical, obsidian, tatuin, todoist};
 
 use clap::{Parser, Subcommand};
@@ -202,7 +205,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     path.push('/');
                 }
 
-                Some(Box::new(obsidian::Provider::new(cfg, path.as_str())))
+                Some(Box::new(obsidian::Provider::new(cfg, Path::new(&path))))
             }
             todoist::PROVIDER_NAME => Some(Box::new(todoist::Provider::new(
                 cfg,

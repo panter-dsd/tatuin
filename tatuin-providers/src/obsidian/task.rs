@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 
-use super::{description::Description, project::Project, state::State, task_name_provider::TaskNameProvider};
-use std::{any::Any, path::PathBuf};
+use super::{description::Description, project::Project, state::State, task_name_provider::TaskNameProvider, utils};
+use std::{
+    any::Any,
+    path::{Path, PathBuf},
+};
 use tatuin_core::{
     project::Project as ProjectTrait,
     task::{
@@ -14,11 +17,11 @@ use urlencoding::encode;
 
 #[derive(Debug, Clone, Default)]
 pub struct Task {
-    pub root_path: String,
+    pub vault_path: PathBuf,
     pub provider: String,
 
     pub name: TaskNameProvider,
-    pub file_path: String,
+    pub file_path: PathBuf,
     pub start_pos: usize,
     pub end_pos: usize,
     pub state: State,
@@ -45,9 +48,10 @@ impl PartialEq for Task {
 impl Eq for Task {}
 
 impl Task {
-    pub fn set_root_path(&mut self, p: String) {
-        self.root_path = p;
+    pub fn set_vault_path(&mut self, p: &Path) {
+        self.vault_path = p.to_path_buf();
     }
+
     pub fn set_provider(&mut self, p: String) {
         self.provider = p;
     }
@@ -56,7 +60,7 @@ impl Task {
 impl TaskTrait for Task {
     fn id(&self) -> String {
         sha256::digest(format!(
-            "{}:{}:{}:{}:{}",
+            "{:?}:{}:{}:{}:{}",
             self.file_path,
             self.start_pos,
             self.end_pos,
@@ -80,7 +84,7 @@ impl TaskTrait for Task {
     fn place(&self) -> String {
         format!(
             "{}:{}",
-            self.file_path.strip_prefix(self.root_path.as_str()).unwrap_or_default(),
+            utils::strip_root_str(&self.vault_path, &self.file_path),
             self.start_pos,
         )
     }
@@ -98,7 +102,11 @@ impl TaskTrait for Task {
     }
 
     fn project(&self) -> Option<Box<dyn ProjectTrait>> {
-        Some(Box::new(Project::new(&self.provider, &self.root_path, &self.file_path)))
+        Some(Box::new(Project::new(
+            &self.provider,
+            &self.vault_path,
+            &self.file_path,
+        )))
     }
 
     fn priority(&self) -> Priority {
@@ -106,14 +114,14 @@ impl TaskTrait for Task {
     }
 
     fn url(&self) -> String {
-        PathBuf::from(&self.root_path)
+        PathBuf::from(&self.vault_path)
             .file_name()
             .and_then(|s| s.to_str())
             .map(|vault_name| {
                 format!(
                     "obsidian://open?vault={}&file={}",
                     vault_name,
-                    encode(self.file_path.strip_prefix(self.root_path.as_str()).unwrap_or_default())
+                    encode(utils::strip_root_str(&self.vault_path, &self.file_path).as_str())
                 )
             })
             .unwrap_or_default()
