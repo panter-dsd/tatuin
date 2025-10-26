@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use super::{description::Description, project::Project, state::State, task_name_provider::TaskNameProvider, utils};
+use super::{description::Description, fs, project::Project, state::State, task_name_provider::TaskNameProvider};
 use std::{
     any::Any,
     path::{Path, PathBuf},
@@ -84,7 +84,7 @@ impl TaskTrait for Task {
     fn place(&self) -> String {
         format!(
             "{}:{}",
-            utils::strip_root_str(&self.vault_path, &self.file_path),
+            fs::strip_root_str(&self.vault_path, &self.file_path),
             self.start_pos,
         )
     }
@@ -121,7 +121,7 @@ impl TaskTrait for Task {
                 format!(
                     "obsidian://open?vault={}&file={}",
                     vault_name,
-                    encode(utils::strip_root_str(&self.vault_path, &self.file_path).as_str())
+                    encode(fs::strip_root_str(&self.vault_path, &self.file_path).as_str())
                 )
             })
             .unwrap_or_default()

@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 use tatuin_core::project::Project as ProjectTrait;
 
-use crate::obsidian::utils;
+use crate::obsidian::fs;
 
 #[derive(Clone)]
 pub struct Project {
@@ -36,7 +36,7 @@ impl std::fmt::Debug for Project {
 
 impl ProjectTrait for Project {
     fn id(&self) -> String {
-        utils::strip_root_str(&self.vault_path, &self.file_path)
+        fs::strip_root_str(&self.vault_path, &self.file_path)
     }
 
     fn name(&self) -> String {

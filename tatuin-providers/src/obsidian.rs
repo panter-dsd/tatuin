@@ -2,6 +2,7 @@
 
 mod client;
 mod description;
+mod fs;
 mod indent;
 mod md_file;
 mod patch;
@@ -10,7 +11,6 @@ mod rest;
 mod state;
 mod task;
 mod task_name_provider;
-mod utils;
 
 use std::path::Path;
 

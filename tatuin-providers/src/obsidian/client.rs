@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-use super::patch::{PatchError, TaskPatch};
-use crate::obsidian::md_file;
-use crate::obsidian::task::Task;
+use crate::obsidian::{
+    fs, md_file,
+    patch::{PatchError, TaskPatch},
+    task::Task,
+};
 use itertools::Itertools;
 use std::cmp::Ordering;
 use std::error::Error;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tatuin_core::filter;
@@ -28,8 +29,8 @@ impl Client {
         self.path.clone()
     }
 
-    pub fn all_supported_files(&self) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-        supported_files(&self.path)
+    pub fn all_supported_files(&self) -> Result<Vec<PathBuf>, std::io::Error> {
+        fs::supported_files(&self.path)
     }
 
     pub async fn tasks(&self, f: &filter::Filter) -> Result<Vec<Task>, Box<dyn Error>> {
@@ -140,22 +141,4 @@ impl Client {
         f.delete_task(t).await?;
         f.flush()
     }
-}
-
-fn supported_files(p: &Path) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-    let mut result = Vec::new();
-
-    for e in fs::read_dir(p)? {
-        let entry = e?;
-        let path = entry.path();
-        let name = path.file_name().unwrap_or_default().to_str().unwrap_or_default();
-        if path.is_file() && name.ends_with(".md") {
-            result.push(path);
-        } else if path.is_dir() {
-            let mut files = supported_files(path.as_path())?;
-            result.append(&mut files);
-        }
-    }
-
-    Ok(result)
 }
