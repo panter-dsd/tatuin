@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::obsidian::{
-    description::Description, indent, state::State, task::Task, task_name_provider::TaskNameProvider,
-};
+use crate::obsidian::{description::Description, indent, state::State, task::Task};
 use chrono::{NaiveDate, Utc};
 use regex::Regex;
 use std::error::Error;
@@ -88,7 +86,7 @@ impl File {
                     }
                 }
             },
-            name: TaskNameProvider::new(text.trim()),
+            name: text.trim().into(),
             due,
             priority,
             completed_at,
@@ -166,7 +164,7 @@ impl File {
         let mut new_task = p.task.clone();
 
         if let ValuePatch::Value(n) = &p.name {
-            new_task.name = TaskNameProvider::new(n);
+            new_task.name = n.into();
         }
 
         if p.description.is_set() {

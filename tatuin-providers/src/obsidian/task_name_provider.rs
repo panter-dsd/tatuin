@@ -11,7 +11,7 @@ pub struct TaskNameProvider {
 }
 
 impl TaskNameProvider {
-    pub fn new(name: &str) -> Self {
+    fn new(name: &str) -> Self {
         Self {
             name: name.to_string(),
             display: Self::clear_tags(name),
