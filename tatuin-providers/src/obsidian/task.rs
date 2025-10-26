@@ -4,7 +4,7 @@ use super::{description::Description, project::Project, state::State};
 use std::{any::Any, path::PathBuf};
 use tatuin_core::{
     project::Project as ProjectTrait,
-    task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait},
+    task::{DateTimeUtc, PatchPolicy, Priority, RawTaskName, State as TaskState, Task as TaskTrait, TaskNameProvider},
     task_patch::DuePatchItem,
 };
 use urlencoding::encode;
@@ -58,8 +58,8 @@ impl TaskTrait for Task {
         ))
     }
 
-    fn name(&self) -> String {
-        self.name.to_string()
+    fn name(&self) -> Box<dyn TaskNameProvider> {
+        Box::new(RawTaskName::from(&self.name))
     }
 
     fn description(&self) -> Option<String> {

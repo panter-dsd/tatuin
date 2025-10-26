@@ -306,7 +306,7 @@ mod test {
 
         for t in tasks {
             let found = patches.iter().any(|tp| {
-                *tp.name.value().unwrap() == t.name()
+                *tp.name.value().unwrap() == t.name().raw()
                     && tp.description.value() == t.description()
                     && tp.due.value() == t.due().map(|d| d.into())
                     && tp.priority.value().unwrap_or(Priority::Normal) == t.priority()
@@ -358,7 +358,7 @@ mod test {
 
         for t in tasks {
             let found = patches.iter().any(|tp| {
-                *tp.name.value().unwrap() == t.name()
+                *tp.name.value().unwrap() == t.name().raw()
                     && tp.description.value() == t.description()
                     && tp.due.value() == t.due().map(|d| d.into())
                     && tp.priority.value().unwrap_or(Priority::Normal) == t.priority()

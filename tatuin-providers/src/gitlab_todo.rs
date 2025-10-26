@@ -13,7 +13,7 @@ use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
-    task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
+    task::{DateTimeUtc, PatchPolicy, RawTaskName, State, Task as TaskTrait, TaskNameProvider, due_group},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
 
@@ -101,8 +101,8 @@ impl TaskTrait for Task {
         self.todo.id.to_string()
     }
 
-    fn name(&self) -> String {
-        self.todo.body.to_string()
+    fn name(&self) -> Box<dyn TaskNameProvider> {
+        Box::new(RawTaskName::from(&self.todo.body))
     }
 
     fn created_at(&self) -> Option<DateTimeUtc> {

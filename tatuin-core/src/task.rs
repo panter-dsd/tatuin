@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     any::Any,
     cmp::Ordering,
-    fmt::{self, Write},
+    fmt::{self, Display, Write},
 };
 
 pub type DateTimeUtc = DateTime<Utc>;
@@ -71,10 +71,45 @@ pub struct PatchPolicy {
     pub available_due_items: Vec<DuePatchItem>,
 }
 
+pub trait TaskNameProvider: std::fmt::Debug {
+    fn raw(&self) -> String;
+    fn display(&self) -> String {
+        self.raw()
+    }
+}
+
+#[derive(PartialEq, Eq)]
+pub struct RawTaskName {
+    name: String,
+}
+
+impl<T> From<T> for RawTaskName
+where
+    T: Display,
+{
+    fn from(value: T) -> Self {
+        Self {
+            name: value.to_string(),
+        }
+    }
+}
+
+impl TaskNameProvider for RawTaskName {
+    fn raw(&self) -> String {
+        self.name.clone()
+    }
+}
+
+impl std::fmt::Debug for RawTaskName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "TaskName (name={})", self.name)
+    }
+}
+
 #[allow(dead_code)]
 pub trait Task: Send + Sync {
     fn id(&self) -> String;
-    fn name(&self) -> String;
+    fn name(&self) -> Box<dyn TaskNameProvider>;
 
     fn description(&self) -> Option<String> {
         None
@@ -157,7 +192,7 @@ pub fn format(t: &dyn Task) -> String {
     format!(
         "- [{}] {} ({}) ({})",
         t.state(),
-        t.name(),
+        t.name().display(),
         format!("due: {}", datetime_to_str(t.due(), &Local::now().timezone())).blue(),
         t.place().green()
     )

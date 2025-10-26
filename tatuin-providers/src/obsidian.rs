@@ -98,7 +98,7 @@ impl TaskProviderTrait for Provider {
                 None => panic!(
                     "Wrong casting the task id=`{}` name=`{}` to obsidian!",
                     task.id(),
-                    task.name(),
+                    task.name().raw(),
                 ),
             };
         }
@@ -116,7 +116,7 @@ impl TaskProviderTrait for Provider {
     async fn delete(&mut self, t: &dyn TaskTrait) -> Result<(), StringError> {
         let t = t.as_any().downcast_ref::<task::Task>().expect("Wrong casting");
         self.c.delete_task(t).await.map_err(|e| {
-            tracing::error!(error=?e, name=t.name(), id=t.id(), "Delete the task");
+            tracing::error!(error=?e, name=?t.name(), id=t.id(), "Delete the task");
             e.into()
         })
     }

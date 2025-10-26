@@ -104,7 +104,10 @@ impl TaskInfoWidget {
             });
             entries.push(Entry {
                 title: "Text".to_string(),
-                widget: Box::new(MarkdownView::new(t.name().as_str(), MarkdownViewConfig::default())),
+                widget: Box::new(MarkdownView::new(
+                    t.name().display().as_str(),
+                    MarkdownViewConfig::default(),
+                )),
             });
 
             if let Some(d) = t.due() {
