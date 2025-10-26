@@ -4,8 +4,9 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::Deserialize;
 use std::any::Any;
 use tatuin_core::{
+    RawTaskName,
     project::Project as ProjectTrait,
-    task::{DateTimeUtc, PatchPolicy, Priority, RawTaskName, State as TaskState, Task as TaskTrait, TaskNameProvider},
+    task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait, TaskNameProvider},
     task_patch::DuePatchItem,
 };
 

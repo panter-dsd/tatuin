@@ -7,8 +7,9 @@ use ical::property::Property;
 
 use super::priority::TaskPriority;
 use tatuin_core::{
+    RawTaskName,
     project::Project as ProjectTrait,
-    task::{DateTimeUtc, PatchPolicy, Priority, RawTaskName, State, Task as TaskTrait, TaskNameProvider},
+    task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait, TaskNameProvider},
 };
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]

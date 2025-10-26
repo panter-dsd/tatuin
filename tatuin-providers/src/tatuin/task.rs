@@ -3,9 +3,12 @@
 use super::project::Project;
 use redb::Value;
 use serde::{Deserialize, Serialize};
-use tatuin_core::project::Project as ProjectTrait;
-use tatuin_core::task::{DateTimeUtc, PatchPolicy, Priority, RawTaskName, State, Task as TaskTrait, TaskNameProvider};
-use tatuin_core::task_patch::DuePatchItem;
+use tatuin_core::{
+    RawTaskName,
+    project::Project as ProjectTrait,
+    task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait, TaskNameProvider},
+    task_patch::DuePatchItem,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Task {

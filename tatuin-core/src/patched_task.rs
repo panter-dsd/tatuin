@@ -2,10 +2,11 @@
 
 use std::any::Any;
 
-use crate::task::{RawTaskName, TaskNameProvider};
+use crate::task::TaskNameProvider;
 
 use super::project::Project as ProjectTrait;
 use super::{
+    RawTaskName,
     task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
     task_patch::TaskPatch,
 };

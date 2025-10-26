@@ -3,8 +3,9 @@
 use super::{description::Description, project::Project, state::State};
 use std::{any::Any, path::PathBuf};
 use tatuin_core::{
+    RawTaskName,
     project::Project as ProjectTrait,
-    task::{DateTimeUtc, PatchPolicy, Priority, RawTaskName, State as TaskState, Task as TaskTrait, TaskNameProvider},
+    task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait, TaskNameProvider},
     task_patch::DuePatchItem,
 };
 use urlencoding::encode;

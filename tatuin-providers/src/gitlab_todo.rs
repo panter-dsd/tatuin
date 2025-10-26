@@ -10,10 +10,10 @@ use crate::{
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use std::{any::Any, collections::HashMap, error::Error};
 use tatuin_core::{
-    StringError, filter,
+    RawTaskName, StringError, filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
-    task::{DateTimeUtc, PatchPolicy, RawTaskName, State, Task as TaskTrait, TaskNameProvider, due_group},
+    task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, TaskNameProvider, due_group},
     task_patch::{DuePatchItem, PatchError, TaskPatch},
 };
 

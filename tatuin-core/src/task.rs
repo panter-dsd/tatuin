@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     any::Any,
     cmp::Ordering,
-    fmt::{self, Display, Write},
+    fmt::{self, Write},
 };
 
 pub type DateTimeUtc = DateTime<Utc>;
@@ -75,34 +75,6 @@ pub trait TaskNameProvider: std::fmt::Debug {
     fn raw(&self) -> String;
     fn display(&self) -> String {
         self.raw()
-    }
-}
-
-#[derive(PartialEq, Eq)]
-pub struct RawTaskName {
-    name: String,
-}
-
-impl<T> From<T> for RawTaskName
-where
-    T: Display,
-{
-    fn from(value: T) -> Self {
-        Self {
-            name: value.to_string(),
-        }
-    }
-}
-
-impl TaskNameProvider for RawTaskName {
-    fn raw(&self) -> String {
-        self.name.clone()
-    }
-}
-
-impl std::fmt::Debug for RawTaskName {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "TaskName (name={})", self.name)
     }
 }
 
