@@ -40,7 +40,7 @@ impl ProjectTrait for Project {
     }
 
     fn name(&self) -> String {
-        std::path::Path::new(&self.file_path)
+        self.file_path
             .file_name()
             .unwrap_or_default()
             .to_str()
