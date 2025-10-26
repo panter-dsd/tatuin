@@ -13,8 +13,7 @@ pub fn supported_files(p: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
     for e in std::fs::read_dir(p)? {
         let entry = e?;
         let path = entry.path();
-        let name = path.file_name().unwrap_or_default().to_str().unwrap_or_default();
-        if path.is_file() && name.ends_with(".md") {
+        if path.is_file() && path.extension().is_some_and(|ext| ext == "md") {
             result.push(path);
         } else if path.is_dir() {
             let mut files = supported_files(path.as_path())?;
