@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 
-use super::{description::Description, project::Project, state::State};
+use super::{description::Description, project::Project, state::State, task_name_provider::TaskNameProvider};
 use std::{any::Any, path::PathBuf};
 use tatuin_core::{
-    RawTaskName,
     project::Project as ProjectTrait,
-    task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait, TaskNameProvider},
+    task::{
+        DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait,
+        TaskNameProvider as TaskNameProviderTrait,
+    },
     task_patch::DuePatchItem,
 };
 use urlencoding::encode;
@@ -15,11 +17,11 @@ pub struct Task {
     pub root_path: String,
     pub provider: String,
 
+    pub name: TaskNameProvider,
     pub file_path: String,
     pub start_pos: usize,
     pub end_pos: usize,
     pub state: State,
-    pub name: String,
     pub description: Option<Description>,
     pub due: Option<DateTimeUtc>,
     pub completed_at: Option<DateTimeUtc>,
@@ -55,12 +57,16 @@ impl TaskTrait for Task {
     fn id(&self) -> String {
         sha256::digest(format!(
             "{}:{}:{}:{}:{}",
-            self.file_path, self.start_pos, self.end_pos, self.state, self.name
+            self.file_path,
+            self.start_pos,
+            self.end_pos,
+            self.state,
+            self.name.raw()
         ))
     }
 
-    fn name(&self) -> Box<dyn TaskNameProvider> {
-        Box::new(RawTaskName::from(&self.name))
+    fn name(&self) -> Box<dyn TaskNameProviderTrait> {
+        Box::new(self.name.clone())
     }
 
     fn description(&self) -> Option<String> {

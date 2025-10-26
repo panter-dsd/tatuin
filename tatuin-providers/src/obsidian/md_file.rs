@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: MIT
 
-use crate::obsidian::{description::Description, indent, state::State, task::Task};
+use crate::obsidian::{
+    description::Description, indent, state::State, task::Task, task_name_provider::TaskNameProvider,
+};
 use chrono::{NaiveDate, Utc};
 use regex::Regex;
 use std::error::Error;
 use std::fs;
 use std::sync::LazyLock;
 use tatuin_core::{
-    task::{DateTimeUtc, Priority},
+    task::{DateTimeUtc, Priority, TaskNameProvider as TaskNameProviderTrait},
     task_patch::ValuePatch,
 };
 
 use super::patch::TaskPatch;
 
 static TASK_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^\s*-\ \[(.)\]\ (.*)$").unwrap());
-static TAG_RE: LazyLock<Regex> =
+pub(crate) static TAG_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"( #((?:[^\x00-\x7F]|\w)(?:[^\x00-\x7F]|\w|-|_|\/)+))").unwrap());
 
 const DUE_EMOJI: char = '📅';
@@ -86,7 +88,7 @@ impl File {
                     }
                 }
             },
-            name: text.trim().to_string(),
+            name: TaskNameProvider::new(text.trim()),
             due,
             priority,
             completed_at,
@@ -164,7 +166,7 @@ impl File {
         let mut new_task = p.task.clone();
 
         if let ValuePatch::Value(n) = &p.name {
-            new_task.name = n.clone();
+            new_task.name = TaskNameProvider::new(n);
         }
 
         if p.description.is_set() {
@@ -219,7 +221,7 @@ impl File {
 
 pub fn task_to_string(t: &Task, indent: &str) -> String {
     let state_char: char = t.state.into();
-    let mut elements = vec![format!("- [{state_char}]"), t.name.clone()];
+    let mut elements = vec![format!("- [{state_char}]"), t.name.raw()];
     if let Some(due) = &t.due {
         elements.push(format!("{DUE_EMOJI} {}", due.format("%Y-%m-%d")))
     }
@@ -412,7 +414,11 @@ some another text
         let task = p.try_parse_task(text.as_str(), 0);
         assert!(task.is_some());
         let task = task.unwrap();
-        assert_eq!(task.name, "Some #tag task #группа/имя_tag-name123 text #tag_at_end");
+        assert_eq!(
+            task.name.raw(),
+            "Some #tag task #группа/имя_tag-name123 text #tag_at_end"
+        );
+        assert_eq!(task.name.display(), "Some task text");
         assert_eq!(task.state, State::Completed);
         assert!(task.due.is_some());
         assert_eq!(task.due.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
@@ -437,7 +443,7 @@ End of content
         let tasks = p.tasks_from_content(text).unwrap();
         assert_eq!(tasks.len(), 1);
         let task = &tasks[0];
-        assert_eq!(task.name, "Some task");
+        assert_eq!(task.name.raw(), "Some task");
         assert!(task.description.is_some());
         assert_eq!(
             task.description.as_ref().unwrap().text,
