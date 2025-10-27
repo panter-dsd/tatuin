@@ -66,19 +66,19 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_empty_string() {
+    fn test_find_wiki_links_empty_string() {
         let result = find_wiki_links("");
         assert!(result.is_empty());
     }
 
     #[test]
-    fn test_regular_string_without_any_link() {
+    fn test_find_wiki_links_regular_string_without_any_link() {
         let result = find_wiki_links("some string");
         assert!(result.is_empty());
     }
 
     #[test]
-    fn test_single_simple_link_alone() {
+    fn test_find_wiki_links_single_simple_link_alone() {
         let result = find_wiki_links("[[some string]]");
         let expected = vec![LinkSearchResult {
             start: 0,
@@ -92,7 +92,7 @@ mod test {
     }
 
     #[test]
-    fn test_single_simple_link_with_suffix() {
+    fn test_find_wiki_links_single_simple_link_with_suffix() {
         let result = find_wiki_links("Text [[some string]]");
         let expected = vec![LinkSearchResult {
             start: 5,
@@ -106,7 +106,7 @@ mod test {
     }
 
     #[test]
-    fn test_single_simple_link_with_prefix() {
+    fn test_find_wiki_links_single_simple_link_with_prefix() {
         let result = find_wiki_links("[[some string]] text");
         let expected = vec![LinkSearchResult {
             start: 0,
@@ -120,7 +120,7 @@ mod test {
     }
 
     #[test]
-    fn test_single_simple_link_with_prefix_and_suffix() {
+    fn test_find_wiki_links_single_simple_link_with_prefix_and_suffix() {
         let result = find_wiki_links("Text [[some string]] text");
         let expected = vec![LinkSearchResult {
             start: 5,
@@ -134,7 +134,7 @@ mod test {
     }
 
     #[test]
-    fn test_single_with_display_name_link_alone() {
+    fn test_find_wiki_links_single_with_display_name_link_alone() {
         let result = find_wiki_links("[[some string|name]]");
         let expected = vec![LinkSearchResult {
             start: 0,
@@ -148,7 +148,7 @@ mod test {
     }
 
     #[test]
-    fn test_single_with_display_name_link_with_suffix() {
+    fn test_find_wiki_links_single_with_display_name_link_with_suffix() {
         let result = find_wiki_links("Text [[some string|name]]");
         let expected = vec![LinkSearchResult {
             start: 5,
@@ -162,7 +162,7 @@ mod test {
     }
 
     #[test]
-    fn test_single_with_display_name_link_with_prefix() {
+    fn test_find_wiki_links_single_with_display_name_link_with_prefix() {
         let result = find_wiki_links("[[some string|name]] text");
         let expected = vec![LinkSearchResult {
             start: 0,
@@ -176,7 +176,7 @@ mod test {
     }
 
     #[test]
-    fn test_single_with_display_name_link_with_prefix_and_suffix() {
+    fn test_find_wiki_links_single_with_display_name_link_with_prefix_and_suffix() {
         let result = find_wiki_links("Text [[some string|name]] text");
         let expected = vec![LinkSearchResult {
             start: 5,
@@ -190,7 +190,7 @@ mod test {
     }
 
     #[test]
-    fn test_single_with_display_name_and_heading_link_alone() {
+    fn test_find_wiki_links_single_with_display_name_and_heading_link_alone() {
         let result = find_wiki_links("[[some string#heading|name]]");
         let expected = vec![LinkSearchResult {
             start: 0,
@@ -204,7 +204,7 @@ mod test {
     }
 
     #[test]
-    fn test_single_with_display_name_and_heading_link_with_suffix() {
+    fn test_find_wiki_links_single_with_display_name_and_heading_link_with_suffix() {
         let result = find_wiki_links("Text [[some string#heading|name]]");
         let expected = vec![LinkSearchResult {
             start: 5,
@@ -218,7 +218,7 @@ mod test {
     }
 
     #[test]
-    fn test_single_with_display_name_and_heading_link_with_prefix() {
+    fn test_find_wiki_links_single_with_display_name_and_heading_link_with_prefix() {
         let result = find_wiki_links("[[some string#heading|name]] text");
         let expected = vec![LinkSearchResult {
             start: 0,
@@ -232,7 +232,7 @@ mod test {
     }
 
     #[test]
-    fn test_single_with_display_name_and_heading_link_with_prefix_and_suffix() {
+    fn test_find_wiki_links_single_with_display_name_and_heading_link_with_prefix_and_suffix() {
         let result = find_wiki_links("Text [[some string#heading|name]] text");
         let expected = vec![LinkSearchResult {
             start: 5,
@@ -246,7 +246,7 @@ mod test {
     }
 
     #[test]
-    fn test_several_links_in_one_text() {
+    fn test_find_wiki_links_several_links_in_one_text() {
         let result =
             find_wiki_links("Text [[some string#heading|name]] text [[another link]] [[and one more|link]] end");
         let expected = vec![
@@ -279,7 +279,7 @@ mod test {
     }
 
     #[test]
-    fn test_unfinished_link_and_a_good_one() {
+    fn test_find_wiki_links_unfinished_link_and_a_good_one() {
         let result = find_wiki_links("Text [[some [[some string#heading|name]] text");
         let expected = vec![LinkSearchResult {
             start: 12,
@@ -293,7 +293,7 @@ mod test {
     }
 
     #[test]
-    fn test_nested_link() {
+    fn test_find_wiki_links_nested_link() {
         let result = find_wiki_links("Text [[some [[some string#heading|name]] text]");
         let expected = vec![LinkSearchResult {
             start: 12,
@@ -307,14 +307,14 @@ mod test {
     }
 
     #[test]
-    fn test_two_separators() {
+    fn test_find_wiki_links_two_separators() {
         let result = find_wiki_links("Text [[some string#heading|name|name]] text");
         let expected = Vec::new();
         assert_eq!(result, expected);
     }
 
     #[test]
-    fn test_two_hash_separators() {
+    fn test_find_wiki_links_two_hash_separators() {
         let result = find_wiki_links("Text [[some string#heading#|name]] text");
         let expected = Vec::new();
         assert_eq!(result, expected);
