@@ -279,6 +279,40 @@ mod test {
     }
 
     #[test]
+    fn test_find_wiki_links_several_links_in_one_text_with_cyrillic() {
+        let result = find_wiki_links(
+            "Текст [[одна строка#ссылка внутри строки|имя]] текст [[другая ссылка]] [[и еще одна|ссылка]] конец",
+        );
+        let expected = vec![
+            LinkSearchResult {
+                start: 11,
+                end: 81,
+                heading_separator_pos: Some(34),
+                display_text_separator_pos: Some(73),
+                display_text: "имя",
+                link: "одна строка",
+            },
+            LinkSearchResult {
+                start: 94,
+                end: 122,
+                heading_separator_pos: None,
+                display_text_separator_pos: None,
+                display_text: "",
+                link: "другая ссылка",
+            },
+            LinkSearchResult {
+                start: 124,
+                end: 158,
+                heading_separator_pos: None,
+                display_text_separator_pos: Some(144),
+                display_text: "ссылка",
+                link: "и еще одна",
+            },
+        ];
+        assert_eq!(result, expected);
+    }
+
+    #[test]
     fn test_find_wiki_links_unfinished_link_and_a_good_one() {
         let result = find_wiki_links("Text [[some [[some string#heading|name]] text");
         let expected = vec![LinkSearchResult {
