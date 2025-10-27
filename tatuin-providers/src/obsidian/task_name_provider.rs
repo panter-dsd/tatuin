@@ -36,12 +36,20 @@ fn fix_wiki_links(text: &str, vault_path: &Path) -> String {
 
     for l in markdown::find_wiki_links(text).iter().rev() {
         let file_name = format!("{}.md", l.link);
+
         let link = if let Ok(f) = fs::find_file(vault_path, &file_name) {
             fs::obsidian_url(vault_path, &f)
         } else {
             l.link.to_string()
         };
-        result.replace_range(l.start..l.end + 1, format!("[{}]({})", l.display_text, link).as_str());
+
+        let display = if l.display_text.is_empty() {
+            l.link.to_string()
+        } else {
+            l.display_text.to_string()
+        };
+
+        result.replace_range(l.start..l.end + 1, format!("[{display}]({link})").as_str());
     }
 
     result
