@@ -4,6 +4,7 @@ mod client;
 mod description;
 mod fs;
 mod indent;
+mod markdown;
 mod md_file;
 mod patch;
 mod project;

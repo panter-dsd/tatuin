@@ -13,7 +13,6 @@ use tatuin_core::{
     },
     task_patch::DuePatchItem,
 };
-use urlencoding::encode;
 
 #[derive(Debug, Clone, Default)]
 pub struct Task {
@@ -50,6 +49,7 @@ impl Eq for Task {}
 impl Task {
     pub fn set_vault_path(&mut self, p: &Path) {
         self.vault_path = p.to_path_buf();
+        self.name.set_vault_path(p);
     }
 
     pub fn set_provider(&mut self, p: String) {
@@ -114,17 +114,7 @@ impl TaskTrait for Task {
     }
 
     fn url(&self) -> String {
-        PathBuf::from(&self.vault_path)
-            .file_name()
-            .and_then(|s| s.to_str())
-            .map(|vault_name| {
-                format!(
-                    "obsidian://open?vault={}&file={}",
-                    vault_name,
-                    encode(fs::strip_root_str(&self.vault_path, &self.file_path).as_str())
-                )
-            })
-            .unwrap_or_default()
+        fs::obsidian_url(&self.vault_path, &self.file_path)
     }
 
     fn labels(&self) -> Vec<String> {
