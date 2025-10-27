@@ -4,13 +4,21 @@ use tatuin_core::task::TaskNameProvider as TaskNameProviderTrait;
 
 use crate::obsidian::{fs, markdown, md_file::TAG_RE};
 
-#[derive(Debug, PartialEq, Eq, Clone, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct TaskNameProvider {
     name: String,
     display: String,
 
     vault_path_was_set: bool,
 }
+
+impl PartialEq for TaskNameProvider {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+
+impl Eq for TaskNameProvider {}
 
 impl TaskNameProvider {
     fn new(name: &str) -> Self {
