@@ -52,7 +52,7 @@ impl TaskRow {
                 None => style::no_date_task_fg(),
             }
         };
-        let mut name = t.text();
+        let mut name = t.name().display();
         let mut state = t.state();
         let mut due = task::datetime_to_str(t.due(), &tz);
         let mut priority = t.priority();

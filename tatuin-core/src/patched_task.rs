@@ -2,8 +2,11 @@
 
 use std::any::Any;
 
+use crate::task::TaskNameProvider;
+
 use super::project::Project as ProjectTrait;
 use super::{
+    RawTaskName,
     task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
     task_patch::TaskPatch,
 };
@@ -28,14 +31,14 @@ impl TaskTrait for PatchedTask {
         self.task.id()
     }
 
-    fn text(&self) -> String {
+    fn name(&self) -> Box<dyn TaskNameProvider> {
         if let Some(p) = &self.patch
             && let Some(name) = &p.name.value()
         {
-            return name.to_string();
+            Box::new(RawTaskName::from(name))
+        } else {
+            self.task.name()
         }
-
-        self.task.text()
     }
 
     fn description(&self) -> Option<String> {

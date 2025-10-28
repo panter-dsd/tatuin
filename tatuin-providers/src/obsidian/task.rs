@@ -1,137 +1,29 @@
 // SPDX-License-Identifier: MIT
 
-use super::{indent, project::Project};
-use sha256::digest;
-use std::{any::Any, fmt::Write, path::PathBuf};
+use super::{description::Description, fs, project::Project, state::State, task_name_provider::TaskNameProvider};
+use std::{
+    any::Any,
+    path::{Path, PathBuf},
+};
 use tatuin_core::{
     project::Project as ProjectTrait,
-    task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait},
+    task::{
+        DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait,
+        TaskNameProvider as TaskNameProviderTrait,
+    },
     task_patch::DuePatchItem,
 };
-use urlencoding::encode;
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum State {
-    Unknown(char),
-    Uncompleted,
-    Completed,
-    InProgress,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        State::Unknown(' ')
-    }
-}
-
-impl State {
-    pub fn new(c: char) -> Self {
-        match c {
-            ' ' => State::Uncompleted,
-            'x' => State::Completed,
-            '/' => State::InProgress,
-            _ => State::Unknown(c),
-        }
-    }
-}
-
-impl From<State> for char {
-    fn from(st: State) -> Self {
-        match st {
-            State::Uncompleted => ' ',
-            State::Completed => 'x',
-            State::InProgress => '/',
-            State::Unknown(x) => x,
-        }
-    }
-}
-
-impl std::fmt::Display for State {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            State::Completed => write!(f, "✅"),
-            State::Uncompleted => write!(f, " "),
-            State::InProgress => write!(f, "⏳"),
-            State::Unknown(x) => f.write_char(*x),
-        }
-    }
-}
-
-impl From<TaskState> for State {
-    fn from(v: TaskState) -> Self {
-        match v {
-            TaskState::Completed => State::Completed,
-            TaskState::Uncompleted => State::Uncompleted,
-            TaskState::InProgress => State::InProgress,
-            TaskState::Unknown(x) => State::Unknown(x),
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Description {
-    pub text: String,
-    pub start: usize,
-    pub end: usize,
-}
-
-impl Description {
-    pub fn new(start: usize) -> Self {
-        Self {
-            text: String::new(),
-            start,
-            end: start,
-        }
-    }
-
-    pub fn from_str(s: &str) -> Self {
-        Self {
-            text: s.to_string(),
-            start: 0,
-            end: s.chars().count(),
-        }
-    }
-
-    pub fn from_content(s: &str, start: usize, end: usize) -> Self {
-        let text = s
-            .chars()
-            .skip(start)
-            .take(end - start)
-            .collect::<String>()
-            .split('\n')
-            .map(indent::trim_str)
-            .collect::<Vec<&str>>()
-            .join("\n");
-        Self { text, start, end }
-    }
-
-    pub fn append(&self, line: &str) -> Self {
-        let mut count = line.chars().count();
-        let line = indent::trim_str(line);
-        let text = if self.text.is_empty() {
-            line.to_string()
-        } else {
-            count += 1;
-            self.text.clone() + "\n" + line
-        };
-        Self {
-            text,
-            start: self.start,
-            end: self.end + count,
-        }
-    }
-}
 
 #[derive(Debug, Clone, Default)]
 pub struct Task {
-    pub root_path: String,
+    pub vault_path: PathBuf,
     pub provider: String,
 
-    pub file_path: String,
+    pub name: TaskNameProvider,
+    pub file_path: PathBuf,
     pub start_pos: usize,
     pub end_pos: usize,
     pub state: State,
-    pub text: String,
     pub description: Option<Description>,
     pub due: Option<DateTimeUtc>,
     pub completed_at: Option<DateTimeUtc>,
@@ -144,7 +36,7 @@ impl PartialEq for Task {
         self.start_pos == o.start_pos
             && self.end_pos == o.end_pos
             && self.state == o.state
-            && self.text == o.text
+            && self.name == o.name
             && self.description == o.description
             && self.due == o.due
             && self.priority == o.priority
@@ -155,9 +47,11 @@ impl PartialEq for Task {
 impl Eq for Task {}
 
 impl Task {
-    pub fn set_root_path(&mut self, p: String) {
-        self.root_path = p;
+    pub fn set_vault_path(&mut self, p: &Path) {
+        self.vault_path = p.to_path_buf();
+        self.name.set_vault_path(p);
     }
+
     pub fn set_provider(&mut self, p: String) {
         self.provider = p;
     }
@@ -165,14 +59,18 @@ impl Task {
 
 impl TaskTrait for Task {
     fn id(&self) -> String {
-        digest(format!(
-            "{}:{}:{}:{}:{}",
-            self.file_path, self.start_pos, self.end_pos, self.state, self.text
+        sha256::digest(format!(
+            "{:?}:{}:{}:{}:{}",
+            self.file_path,
+            self.start_pos,
+            self.end_pos,
+            self.state,
+            self.name.raw()
         ))
     }
 
-    fn text(&self) -> String {
-        self.text.to_string()
+    fn name(&self) -> Box<dyn TaskNameProviderTrait> {
+        Box::new(self.name.clone())
     }
 
     fn description(&self) -> Option<String> {
@@ -180,18 +78,13 @@ impl TaskTrait for Task {
     }
 
     fn state(&self) -> TaskState {
-        match self.state {
-            State::Completed => TaskState::Completed,
-            State::Uncompleted => TaskState::Uncompleted,
-            State::InProgress => TaskState::InProgress,
-            State::Unknown(x) => TaskState::Unknown(x),
-        }
+        self.state.into()
     }
 
     fn place(&self) -> String {
         format!(
             "{}:{}",
-            self.file_path.strip_prefix(self.root_path.as_str()).unwrap_or_default(),
+            fs::strip_root_str(&self.vault_path, &self.file_path),
             self.start_pos,
         )
     }
@@ -209,7 +102,11 @@ impl TaskTrait for Task {
     }
 
     fn project(&self) -> Option<Box<dyn ProjectTrait>> {
-        Some(Box::new(Project::new(&self.provider, &self.root_path, &self.file_path)))
+        Some(Box::new(Project::new(
+            &self.provider,
+            &self.vault_path,
+            &self.file_path,
+        )))
     }
 
     fn priority(&self) -> Priority {
@@ -217,24 +114,7 @@ impl TaskTrait for Task {
     }
 
     fn url(&self) -> String {
-        let path_buf: PathBuf = self.root_path.clone().into();
-
-        let mut vault_name = String::new();
-        if let Some(n) = path_buf.file_name()
-            && let Some(s) = n.to_str()
-        {
-            vault_name = s.to_string();
-        }
-
-        if vault_name.is_empty() {
-            return String::new();
-        }
-
-        format!(
-            "obsidian://open?vault={}&file={}",
-            vault_name,
-            encode(self.file_path.strip_prefix(self.root_path.as_str()).unwrap_or_default())
-        )
+        fs::obsidian_url(&self.vault_path, &self.file_path)
     }
 
     fn labels(&self) -> Vec<String> {

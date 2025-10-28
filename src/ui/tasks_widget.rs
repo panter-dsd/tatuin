@@ -528,7 +528,7 @@ impl TasksWidget {
                                     .then_with(|| r.priority().cmp(&l.priority()))
                                     .then_with(|| l.due().cmp(&r.due()))
                                     .then_with(|| project_name(l.as_ref()).cmp(&project_name(r.as_ref())))
-                                    .then_with(|| l.text().cmp(&r.text()))
+                                    .then_with(|| l.name().display().cmp(&r.name().display()))
                             });
 
                             s.remove_changed_tasks_that_are_not_exists_anymore();
@@ -730,7 +730,7 @@ impl TasksWidget {
     async fn show_delete_task_dialog(&mut self, task: &dyn TaskTrait) {
         let mut d = ConfirmationDialog::new(
             "Delete the task",
-            format!("Do you really want to delete the task\n\"{}\"?", task.text()).as_str(),
+            format!("Do you really want to delete the task\n\"{}\"?", task.name().display()).as_str(),
             &[StandardButton::Yes, StandardButton::No],
             StandardButton::Yes,
         );
@@ -743,7 +743,7 @@ impl TasksWidget {
     async fn show_duplicate_task_dialog(&mut self, task: &dyn TaskTrait) {
         let mut d = ConfirmationDialog::new(
             "Duplicate the task",
-            format!("Do you want to duplicate the task\n\"{}\"?", task.text()).as_str(),
+            format!("Do you want to duplicate the task\n\"{}\"?", task.name().display()).as_str(),
             &[StandardButton::Yes, StandardButton::No],
             StandardButton::Yes,
         );
@@ -813,7 +813,7 @@ impl TasksWidget {
                         self.load_tasks(&self.last_filter.clone()).await;
                     }
                     Err(e) => {
-                        tracing::error!(error=?e, task_name=t.text(), task_id=t.id(), "Delete the task");
+                        tracing::error!(error=?e, task_name=?t.name(), task_id=t.id(), "Delete the task");
                         self.error_logger.write().await.add_error(e.to_string().as_str());
                     }
                 }
@@ -833,7 +833,7 @@ impl TasksWidget {
 
                 let patch = TaskPatch {
                     task: None,
-                    name: ValuePatch::Value(t.text()),
+                    name: ValuePatch::Value(t.name().raw()),
                     description: t.description().into(),
                     due: t.due().map(|d| d.into()).into(),
                     priority: ValuePatch::Value(t.priority()),
@@ -846,7 +846,7 @@ impl TasksWidget {
                         self.load_tasks(&self.last_filter.clone()).await;
                     }
                     Err(e) => {
-                        tracing::error!(error=?e, task_name=t.text(), task_id=t.id(), "Duplicate the task");
+                        tracing::error!(error=?e, task_name=?t.name(), task_id=t.id(), "Duplicate the task");
                         self.error_logger.write().await.add_error(e.to_string().as_str());
                     }
                 }

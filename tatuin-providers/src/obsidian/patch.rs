@@ -5,7 +5,7 @@ use tatuin_core::{
     task_patch::ValuePatch,
 };
 
-use super::task::{State, Task};
+use super::{state::State, task::Task};
 
 #[allow(dead_code)]
 #[derive(Clone)]

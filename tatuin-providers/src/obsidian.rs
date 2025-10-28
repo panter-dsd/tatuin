@@ -1,16 +1,24 @@
 // SPDX-License-Identifier: MIT
 
 mod client;
+mod description;
+mod fs;
 mod indent;
+mod markdown;
 mod md_file;
 mod patch;
 mod project;
 mod rest;
+mod state;
 mod task;
+mod task_name_provider;
+
+use std::path::Path;
 
 use async_trait::async_trait;
+use description::Description;
 use md_file::task_to_string;
-use task::Description;
+use state::State;
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
@@ -30,7 +38,7 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(cfg: Config, path: &str) -> Self {
+    pub fn new(cfg: Config, path: &Path) -> Self {
         Self {
             cfg,
             c: client::Client::new(path),
@@ -50,8 +58,8 @@ impl ProjectProviderTrait for Provider {
     async fn list(&mut self) -> Result<Vec<Box<dyn ProjectTrait>>, StringError> {
         Ok(vec![Box::new(project::Project::new(
             self.cfg.name().as_str(),
-            self.c.root_path().as_str(),
-            format!("{}/daily.md", self.c.root_path()).as_str(),
+            &self.c.root_path(),
+            &self.c.root_path().join("daily.md"),
         ))])
     }
 }
@@ -74,9 +82,9 @@ impl TaskProviderTrait for Provider {
 
     async fn create(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
         let t = task::Task {
-            text: tp.name.value().unwrap(),
+            name: tp.name.value().unwrap().into(),
             description: tp.description.value().map(|s| Description::from_str(s.as_str())),
-            state: task::State::Uncompleted,
+            state: State::Uncompleted,
             due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
             priority: tp.priority.value().unwrap_or(Priority::Normal),
             ..task::Task::default()
@@ -95,7 +103,7 @@ impl TaskProviderTrait for Provider {
                 None => panic!(
                     "Wrong casting the task id=`{}` name=`{}` to obsidian!",
                     task.id(),
-                    task.text(),
+                    task.name().raw(),
                 ),
             };
         }
@@ -113,7 +121,7 @@ impl TaskProviderTrait for Provider {
     async fn delete(&mut self, t: &dyn TaskTrait) -> Result<(), StringError> {
         let t = t.as_any().downcast_ref::<task::Task>().expect("Wrong casting");
         self.c.delete_task(t).await.map_err(|e| {
-            tracing::error!(error=?e, name=t.text(), id=t.id(), "Delete the task");
+            tracing::error!(error=?e, name=?t.name(), id=t.id(), "Delete the task");
             e.into()
         })
     }

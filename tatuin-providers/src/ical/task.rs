@@ -7,8 +7,9 @@ use ical::property::Property;
 
 use super::priority::TaskPriority;
 use tatuin_core::{
+    RawTaskName,
     project::Project as ProjectTrait,
-    task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
+    task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait, TaskNameProvider},
 };
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -124,8 +125,8 @@ impl TaskTrait for Task {
         self.uid.clone()
     }
 
-    fn text(&self) -> String {
-        self.name.clone()
+    fn name(&self) -> Box<dyn TaskNameProvider> {
+        Box::new(RawTaskName::from(&self.name))
     }
 
     fn state(&self) -> State {

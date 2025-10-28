@@ -71,10 +71,17 @@ pub struct PatchPolicy {
     pub available_due_items: Vec<DuePatchItem>,
 }
 
+pub trait TaskNameProvider: std::fmt::Debug {
+    fn raw(&self) -> String;
+    fn display(&self) -> String {
+        self.raw()
+    }
+}
+
 #[allow(dead_code)]
 pub trait Task: Send + Sync {
     fn id(&self) -> String;
-    fn text(&self) -> String;
+    fn name(&self) -> Box<dyn TaskNameProvider>;
 
     fn description(&self) -> Option<String> {
         None
@@ -157,7 +164,7 @@ pub fn format(t: &dyn Task) -> String {
     format!(
         "- [{}] {} ({}) ({})",
         t.state(),
-        t.text(),
+        t.name().display(),
         format!("due: {}", datetime_to_str(t.due(), &Local::now().timezone())).blue(),
         t.place().green()
     )

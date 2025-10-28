@@ -3,9 +3,12 @@
 use super::project::Project;
 use redb::Value;
 use serde::{Deserialize, Serialize};
-use tatuin_core::project::Project as ProjectTrait;
-use tatuin_core::task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait};
-use tatuin_core::task_patch::DuePatchItem;
+use tatuin_core::{
+    RawTaskName,
+    project::Project as ProjectTrait,
+    task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait, TaskNameProvider},
+    task_patch::DuePatchItem,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct Task {
@@ -42,8 +45,8 @@ impl TaskTrait for Task {
         self.id.to_string()
     }
 
-    fn text(&self) -> String {
-        self.name.clone()
+    fn name(&self) -> Box<dyn TaskNameProvider> {
+        Box::new(RawTaskName::from(&self.name))
     }
 
     fn description(&self) -> Option<String> {
