@@ -31,8 +31,8 @@ impl TaskNameProvider {
 
     pub fn set_vault_path(&mut self, p: &Path) {
         if !self.vault_path_was_set {
-            self.display = fix_wiki_links(self.display.as_str(), p);
             self.display = fix_refular_links(self.display.as_str(), p);
+            self.display = fix_wiki_links(self.display.as_str(), p);
             self.vault_path_was_set = true;
         }
     }
@@ -48,7 +48,9 @@ fn fix_wiki_links(text: &str, vault_path: &Path) -> String {
     for l in markdown::find_wiki_links(text).iter().rev() {
         let file_name = format!("{}.md", l.link);
 
-        let link = if let Ok(f) = fs::find_file(vault_path, &file_name) {
+        let link = if let Ok(file_name) = urlencoding::decode(&file_name)
+            && let Ok(f) = fs::find_file(vault_path, &file_name)
+        {
             fs::obsidian_url(vault_path, &f)
         } else {
             l.link.to_string()
@@ -70,7 +72,9 @@ fn fix_refular_links(text: &str, vault_path: &Path) -> String {
     let mut result = text.to_string();
 
     for l in markdown::find_regular_links(text).iter().rev() {
-        if let Ok(f) = fs::find_file(vault_path, l.link) {
+        if let Ok(file_name) = urlencoding::decode(l.link)
+            && let Ok(f) = fs::find_file(vault_path, &file_name)
+        {
             result.replace_range(
                 l.start..l.end,
                 format!("[{}]({})", l.display_text, fs::obsidian_url(vault_path, &f)).as_str(),
