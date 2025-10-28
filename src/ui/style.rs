@@ -304,6 +304,12 @@ pub fn default_style() -> Style {
         .fg(element_color(ColorElement::DefaultFG))
 }
 
+pub fn url_hover_hint_style() -> Style {
+    Style::new()
+        .bg(element_color(ColorElement::DefaultFG))
+        .fg(element_color(ColorElement::DefaultBG))
+}
+
 pub fn priority_color(p: &Priority) -> Color {
     match p {
         Priority::Lowest => element_color(ColorElement::LowestPriorityFG),
