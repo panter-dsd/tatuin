@@ -30,8 +30,11 @@ impl TaskNameProvider {
     }
 
     pub fn set_vault_path(&mut self, p: &Path) {
-        self.display = fix_wiki_links(self.display.as_str(), p);
-        self.vault_path_was_set = true;
+        if !self.vault_path_was_set {
+            self.display = fix_wiki_links(self.display.as_str(), p);
+            self.display = fix_refular_links(self.display.as_str(), p);
+            self.vault_path_was_set = true;
+        }
     }
 }
 
@@ -58,6 +61,21 @@ fn fix_wiki_links(text: &str, vault_path: &Path) -> String {
         };
 
         result.replace_range(l.start..l.end + 1, format!("[{display}]({link})").as_str());
+    }
+
+    result
+}
+
+fn fix_refular_links(text: &str, vault_path: &Path) -> String {
+    let mut result = text.to_string();
+
+    for l in markdown::find_regular_links(text).iter().rev() {
+        if let Ok(f) = fs::find_file(vault_path, l.link) {
+            result.replace_range(
+                l.start..l.end,
+                format!("[{}]({})", l.display_text, fs::obsidian_url(vault_path, &f)).as_str(),
+            );
+        }
     }
 
     result

@@ -1,3 +1,7 @@
+use std::sync::LazyLock;
+
+use regex::Regex;
+
 #[derive(PartialEq, Eq, Debug, Copy, Clone)]
 pub struct LinkSearchResult<'a> {
     pub start: usize,
@@ -56,6 +60,28 @@ pub fn find_wiki_links<'a>(text: &'a str) -> Vec<LinkSearchResult<'a>> {
         }
 
         prev_char = c;
+    }
+
+    result
+}
+
+pub fn find_regular_links<'a>(text: &'a str) -> Vec<LinkSearchResult<'a>> {
+    static RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\[([^\]]+)\]\(([^)]+.md)\)").unwrap());
+
+    let mut result = Vec::new();
+
+    for cap in RE.captures_iter(text) {
+        let m = cap.get(0).unwrap();
+        let (_, [display_text, link]) = cap.extract();
+
+        result.push(LinkSearchResult {
+            start: m.start(),
+            end: m.end(),
+            heading_separator_pos: None,
+            display_text_separator_pos: None,
+            display_text,
+            link,
+        });
     }
 
     result
