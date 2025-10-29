@@ -223,7 +223,6 @@ impl tasks_widget::TaskInfoViewerTrait for task_info_widget::TaskInfoWidget {
     }
 }
 
-#[allow(clippy::arc_with_non_send_sync)] // TODO: think how to remove this
 impl App {
     pub async fn new(providers: Vec<Provider>, settings: Settings) -> Self {
         let providers_widget = Arc::new(RwLock::new(
