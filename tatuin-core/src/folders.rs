@@ -14,8 +14,12 @@ pub fn log_folder(app_name: &str) -> PathBuf {
             .expect("Can't detect home folder")
             .join("Library/Logs")
             .join(app_name)
+    } else if cfg!(target_os = "linux") {
+        dirs::state_dir().expect("Can't detect log folder").join(app_name)
+    } else if cfg!(target_os = "windows") {
+        dirs::cache_dir().expect("Can't detect log folder").join(app_name)
     } else {
-        dirs::state_dir().expect("Can't detect state folder").join(app_name)
+        dirs::state_dir().expect("Can't detect log folder").join(app_name)
     };
     create_dir_panicked(&p);
     p
