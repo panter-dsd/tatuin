@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::fmt::Write;
 
 use tatuin_core::task::State as TaskState;

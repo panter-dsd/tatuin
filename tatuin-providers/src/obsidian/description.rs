@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use super::indent;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

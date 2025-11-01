@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::path::{Path, PathBuf};
 
 use urlencoding::encode;

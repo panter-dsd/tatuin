@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::{fmt::Display, path::Path};
 
 use tatuin_core::task::TaskNameProvider as TaskNameProviderTrait;
