@@ -44,3 +44,9 @@ tatuin-core = { path = "./tatuin-core", version = "0.2.2" }
 tatuin-providers = { path = "./tatuin-providers", version = "0.3.1" }
 dirs = "6.0.0"
 xdg = "3.0.0"
+
+[profile.release]
+strip = "symbols"
+opt-level = 3
+panic = "abort"
+lto = true
