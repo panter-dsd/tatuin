@@ -301,10 +301,7 @@ impl App {
 
     pub async fn run(mut self, mut terminal: DefaultTerminal) -> Result<()> {
         execute!(std::io::stdout(), EnableMouseCapture)?;
-        execute!(
-            std::io::stdout(),
-            PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
-        )?;
+        self.enable_advanced_terminal_flags();
 
         for b in self.app_blocks.values_mut() {
             let mut b = b.write().await;
@@ -1034,6 +1031,17 @@ impl App {
                 .collect::<Vec<Arc<std::sync::RwLock<shortcut::SharedData>>>>(),
         );
         self.dialog = Some(Box::new(d));
+    }
+
+    fn enable_advanced_terminal_flags(&self) {
+        let r = execute!(
+            std::io::stdout(),
+            PushKeyboardEnhancementFlags(KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES)
+        );
+
+        if let Err(e) = r {
+            tracing::error!(target="app", error=?e, "Enable advanced terminal features");
+        }
     }
 }
 
