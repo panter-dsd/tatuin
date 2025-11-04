@@ -11,7 +11,7 @@ use ratatui::{
 };
 use tatuin_core::{
     provider::ProjectProviderTrait,
-    state::{State, StatefulObject},
+    state::{State, StatefulObject, state_from_str, state_to_str},
     task::{DateTimeUtc, Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, TaskPatch, ValuePatch},
     types::ArcRwLock,
@@ -143,12 +143,16 @@ impl Dialog {
         self.task.is_none()
     }
 
+    async fn on_provider_changed(&mut self) {
+        self.fill_project_selector_items().await;
+        self.fill_priority_selector_items().await;
+    }
+
     async fn set_provider(&mut self, provider: &str) {
         self.provider_selector
             .set_current_item(&provider.to_string().into())
             .await;
-        self.fill_project_selector_items().await;
-        self.fill_priority_selector_items().await;
+        self.on_provider_changed().await;
     }
 
     async fn set_project(&mut self, project_name: &str, project_id: &str) {
@@ -539,8 +543,7 @@ impl KeyboardHandler for Dialog {
             let provider_changed = self.provider_selector.value().await != current_provider;
 
             if provider_changed {
-                self.fill_project_selector_items().await;
-                self.fill_priority_selector_items().await;
+                self.on_provider_changed().await;
             }
 
             self.update_enabled_state().await;
@@ -613,35 +616,58 @@ impl MouseHandler for Dialog {
 }
 
 const PROVIDER_KEY: &str = "provider";
-const PROJECT_ID_KEY: &str = "project_id";
-const PROJECT_NAME_KEY: &str = "project_name";
+const PROJECT_KEY: &str = "project";
+const PRIORITY_KEY: &str = "priority";
+const DUE_KEY: &str = "due";
 
 #[async_trait]
 impl StatefulObject for Dialog {
     async fn save(&self) -> State {
         let mut result = State::new();
-        if let Some(p) = self.provider_name().await {
-            result.insert(PROVIDER_KEY.to_string(), p);
+        if let Ok(s) = state_to_str(&self.provider_selector.save().await) {
+            result.insert(PROVIDER_KEY.to_string(), s);
         }
-        if let Some(p) = self.project_selector.value().await {
-            result.insert(PROJECT_ID_KEY.to_string(), p.data().to_string());
-            result.insert(PROJECT_NAME_KEY.to_string(), p.text().to_string());
+        if let Ok(s) = state_to_str(&self.project_selector.save().await) {
+            result.insert(PROJECT_KEY.to_string(), s);
+        }
+        if let Ok(s) = state_to_str(&self.priority_selector.save().await) {
+            result.insert(PRIORITY_KEY.to_string(), s);
+        }
+        if let Ok(s) = state_to_str(&self.due_date_selector.save().await) {
+            result.insert(DUE_KEY.to_string(), s);
         }
 
         result
     }
 
     async fn restore(&mut self, state: State) {
-        if let Some(p) = state.get(PROVIDER_KEY) {
-            self.set_provider(p).await;
-        }
-        if let Some(project_name) = state.get(PROJECT_NAME_KEY)
-            && let Some(project_id) = state.get(PROJECT_ID_KEY)
+        if let Some(v) = state.get(PROVIDER_KEY)
+            && let Ok(s) = state_from_str(v)
         {
-            self.set_project(project_name, project_id).await;
+            self.provider_selector.restore(s).await;
+            self.on_provider_changed().await;
+        }
+
+        if let Some(v) = state.get(PROJECT_KEY)
+            && let Ok(s) = state_from_str(v)
+        {
+            self.project_selector.restore(s).await;
         }
         self.provider_selector.set_active(false);
         self.task_name_editor.set_active(true);
+
+        if let Some(v) = state.get(PRIORITY_KEY)
+            && let Ok(s) = state_from_str(v)
+        {
+            self.priority_selector.restore(s).await;
+        }
+
+        if let Some(v) = state.get(DUE_KEY)
+            && let Ok(s) = state_from_str(v)
+        {
+            self.due_date_selector.restore(s).await;
+        }
+
         self.update_enabled_state().await;
     }
 }

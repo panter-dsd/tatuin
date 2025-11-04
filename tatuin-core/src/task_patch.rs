@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 
 use chrono::{Datelike, Local};
+use serde::{Deserialize, Serialize};
 
 use crate::task::{DateTimeUtc, Priority, State, Task as TaskTrait, datetime_to_str};
 use crate::time::{add_days, clear_time};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum DuePatchItem {
     Today,
     Tomorrow,
