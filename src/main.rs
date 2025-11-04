@@ -304,7 +304,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 tracing::info!("End tui");
             });
             let terminal = ratatui::init();
-            let _app_result = ui::App::new(providers, cfg).await.run(terminal).await;
+            let app_result = ui::App::new(providers, cfg).await.run(terminal).await;
+            if let Err(e) = app_result {
+                tracing::error!(target="main", error=?e, "Run app");
+                return Err(e.into());
+            }
         }
     };
 
