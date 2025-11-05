@@ -11,7 +11,7 @@ use ratatui::{
 };
 use tatuin_core::{
     provider::ProjectProviderTrait,
-    state::{State, StatefulObject, state_from_str, state_to_str},
+    state::{State, StatefulObject, state_from_str},
     task::{DateTimeUtc, Priority, Task as TaskTrait},
     task_patch::{DuePatchItem, TaskPatch, ValuePatch},
     types::ArcRwLock,
@@ -623,21 +623,12 @@ const DUE_KEY: &str = "due";
 #[async_trait]
 impl StatefulObject for Dialog {
     async fn save(&self) -> State {
-        let mut result = State::new();
-        if let Ok(s) = state_to_str(&self.provider_selector.save().await) {
-            result.insert(PROVIDER_KEY.to_string(), s);
-        }
-        if let Ok(s) = state_to_str(&self.project_selector.save().await) {
-            result.insert(PROJECT_KEY.to_string(), s);
-        }
-        if let Ok(s) = state_to_str(&self.priority_selector.save().await) {
-            result.insert(PRIORITY_KEY.to_string(), s);
-        }
-        if let Ok(s) = state_to_str(&self.due_date_selector.save().await) {
-            result.insert(DUE_KEY.to_string(), s);
-        }
-
-        result
+        State::from([
+            (PROVIDER_KEY.to_string(), self.provider_selector.save().await.into()),
+            (PROJECT_KEY.to_string(), self.project_selector.save().await.into()),
+            (PRIORITY_KEY.to_string(), self.priority_selector.save().await.into()),
+            (DUE_KEY.to_string(), self.due_date_selector.save().await.into()),
+        ])
     }
 
     async fn restore(&mut self, state: State) {

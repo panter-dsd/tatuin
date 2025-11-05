@@ -402,9 +402,9 @@ where
     T: Serialize + DeserializeOwned + Send + Sync + Clone + Eq + std::fmt::Debug + 'static,
 {
     async fn save(&self) -> State {
-        let mut result = State::new();
+        let mut result = State::default();
         if let Some(p) = &self.internal_data.read().await.selected {
-            result.insert(STATE_KEY.to_string(), serde_json::to_string(p).unwrap());
+            result.insert(STATE_KEY, serde_json::to_string(p).unwrap().as_str());
         }
 
         result

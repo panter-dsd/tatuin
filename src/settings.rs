@@ -83,7 +83,7 @@ fn state_name(name: Option<&str>) -> String {
 
 impl StateSettings for Settings {
     fn load(&self, name: Option<&str>) -> State {
-        self.states.get(&state_name(name)).cloned().unwrap_or(State::new())
+        self.states.get(&state_name(name)).cloned().unwrap_or(State::default())
     }
 
     fn save(&mut self, name: Option<&str>, state: State) -> Result<(), Box<dyn Error>> {

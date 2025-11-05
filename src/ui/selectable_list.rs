@@ -243,10 +243,12 @@ where
     T: Sync + Send,
 {
     async fn save(&self) -> State {
-        State::from([(
-            STATE_KEY.to_string(),
-            self.state.selected().unwrap_or_default().to_string(),
-        )])
+        let mut s = State::default();
+        s.insert(
+            STATE_KEY,
+            self.state.selected().unwrap_or_default().to_string().as_str(),
+        );
+        s
     }
 
     async fn restore(&mut self, state: State) {
