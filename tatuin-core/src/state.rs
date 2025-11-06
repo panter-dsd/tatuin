@@ -30,13 +30,7 @@ impl State {
 }
 
 pub fn state_from_str(s: &str) -> Result<State, serde_json::Error> {
-    Ok(State(serde_json::from_str(s)?))
-}
-
-impl From<&str> for State {
-    fn from(s: &str) -> Self {
-        Self(serde_json::from_str(s).unwrap())
-    }
+    serde_json::from_str(s)
 }
 
 impl From<State> for String {
