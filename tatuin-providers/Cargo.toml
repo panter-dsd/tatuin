@@ -31,4 +31,4 @@ toml = "0.9.8"
 uuid = { version = "1.18.1", features = ["serde", "v4"] }
 tempfile = "3.23.0"
 redb = "3.1.0"
-tatuin-core = { path = "../tatuin-core", version = "0.2.2" }
+tatuin-core = { path = "../tatuin-core", version = "0.3.0" }
