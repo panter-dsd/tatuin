@@ -9,6 +9,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect, Size},
     widgets::{Clear, Widget},
 };
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tokio::sync::RwLock;
 
 use super::{Button, LineEdit, Text, WidgetState, WidgetStateTrait, WidgetTrait};
@@ -18,9 +19,12 @@ use crate::ui::{
     mouse_handler::MouseHandler,
     style,
 };
-use tatuin_core::types::ArcRwLock;
+use tatuin_core::{
+    state::{State, StatefulObject},
+    types::ArcRwLock,
+};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 #[allow(dead_code)]
 pub struct Item<T> {
     text: String,
@@ -234,8 +238,9 @@ where
     }
 
     pub async fn current_item(self, item: &Item<T>) -> Self {
-        self.set_current_item(item).await;
-        self
+        let mut result = self;
+        result.set_current_item(item).await;
+        result
     }
 
     pub async fn set_items(&self, items: &[Item<T>]) {
@@ -248,7 +253,7 @@ where
         self.internal_data.write().await.items.push(item);
     }
 
-    pub async fn set_current_item(&self, item: &Item<T>) -> bool {
+    pub async fn set_current_item(&mut self, item: &Item<T>) -> bool {
         let mut data = self.internal_data.write().await;
         if let Some(item) = data.items.iter().find(|i| *i == item) {
             data.selected = Some(item.clone());
@@ -387,4 +392,29 @@ where
     T: Sync + Send,
 {
     async fn handle_mouse(&mut self, _ev: &MouseEvent) {}
+}
+
+const STATE_KEY: &str = "selected";
+
+#[async_trait]
+impl<T> StatefulObject for ComboBox<T>
+where
+    T: Serialize + DeserializeOwned + Send + Sync + Clone + Eq + std::fmt::Debug + 'static,
+{
+    async fn save(&self) -> State {
+        let mut result = State::default();
+        if let Some(p) = &self.internal_data.read().await.selected {
+            result.insert(STATE_KEY, serde_json::to_string(p).unwrap().as_str());
+        }
+
+        result
+    }
+
+    async fn restore(&mut self, state: State) {
+        if let Some(v) = state.get(STATE_KEY)
+            && let Ok(item) = serde_json::from_str::<Item<T>>(v)
+        {
+            self.set_current_item(&item).await;
+        }
+    }
 }

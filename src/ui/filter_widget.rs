@@ -273,10 +273,10 @@ const STATE_KEY: &str = "filter";
 #[async_trait]
 impl StatefulObject for FilterWidget {
     async fn save(&self) -> tatuin_core::state::State {
-        let mut state = tatuin_core::state::State::new();
+        let mut state = tatuin_core::state::State::default();
 
         if let Ok(s) = serde_json::to_string(&self.filter) {
-            state.insert(STATE_KEY.to_string(), s);
+            state.insert(STATE_KEY, &s);
         }
 
         state

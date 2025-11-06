@@ -39,7 +39,7 @@ use std::{
 use tasks_widget::ErrorLoggerTrait;
 use tatuin_core::{
     filter, project,
-    state::{State, StateSettings, StatefulObject, state_from_str, state_to_str},
+    state::{State, StateSettings, StatefulObject, state_from_str},
     types::ArcRwLock,
 };
 use tokio::sync::{OnceCell, RwLock, mpsc};
@@ -941,24 +941,11 @@ impl App {
     }
 
     async fn save_state(&mut self, name: Option<&str>) {
-        let mut state = State::new();
-        let mut errors = Vec::new();
+        let mut state = State::default();
 
         for (block_name, w) in &self.stateful_widgets {
             let s = w.read().await.save().await;
-
-            match state_to_str(&s) {
-                Ok(v) => {
-                    state.insert(block_name.to_string(), v);
-                }
-                Err(e) => {
-                    errors.push(format!("serialize state of {block_name}: {e}"));
-                }
-            }
-        }
-
-        for e in errors {
-            self.add_error(e.as_str()).await;
+            state.insert_str(block_name.to_string().as_str(), s.into());
         }
 
         let r = self.settings.write().await.save(name, state);
@@ -968,10 +955,10 @@ impl App {
     }
 
     async fn restore_state(&mut self, name: Option<&str>) {
-        for (block_name, st) in self.settings.read().await.load(name) {
+        for (block_name, st) in self.settings.read().await.load(name).as_map() {
             if let Ok(n) = AppBlock::from_str(block_name.as_str())
                 && let Some(b) = self.stateful_widgets.get_mut(&n)
-                && let Ok(st) = state_from_str(&st)
+                && let Ok(st) = state_from_str(st)
             {
                 b.write().await.restore(st).await;
             }

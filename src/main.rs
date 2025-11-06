@@ -148,33 +148,11 @@ fn load_theme(theme: &Option<String>) -> Result<(), Box<dyn std::error::Error>> 
     Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // console_subscriber::init();
+fn is_true(v: bool) -> bool {
+    v
+}
 
-    init_logging();
-
-    tracing::info!("Start application");
-
-    let cli = Cli::parse();
-
-    let mut cfg = if let Some(p) = cli.settings_file {
-        Settings::new(p.as_str())
-    } else {
-        let config_dir = folders::config_folder(APP_NAME);
-        let config_path = config_dir.join(CONFIG_FILE_NAME);
-        if !std::fs::exists(&config_path).is_ok_and(|r| r) {
-            migrate_config(APP_NAME, CONFIG_FILE_NAME);
-        }
-        Settings::new(config_path.to_str().unwrap())
-    };
-
-    if let Err(e) = load_theme(&cli.theme.or(cfg.theme.clone())) {
-        println!("Load theme error: {e}")
-    }
-
-    let mut providers: Vec<Provider> = Vec::new();
-
+fn load_providers(cfg: &Settings) -> Result<Vec<Provider>, Box<dyn std::error::Error>> {
     let providers_colors = style::provider_colors();
     let mut it = providers_colors.iter();
     let mut color = || -> &Color {
@@ -188,45 +166,46 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    let mut providers: Vec<Provider> = Vec::new();
+
     for (name, config) in &cfg.providers {
-        if let Some(v) = config.get("disabled")
-            && v.parse::<bool>() == Ok(true)
+        if config
+            .get("disabled")
+            .is_some_and(|v| v.parse::<bool>().is_ok_and(is_true))
         {
             continue;
         }
 
         let cfg = Config::new(APP_NAME, name);
+        let config_value = |key: &str| -> &str { config.get(key).unwrap() };
 
-        let p: Option<Box<dyn ProviderTrait>> = match config.get("type").unwrap().as_str() {
+        let p: Option<Box<dyn ProviderTrait>> = match config_value("type") {
             tatuin::PROVIDER_NAME => Some(Box::new(tatuin::Provider::new(cfg)?)),
             obsidian::PROVIDER_NAME => {
-                let mut path = config.get("path").unwrap().to_string();
+                let mut path = config_value("path").to_string();
                 if !path.ends_with('/') {
                     path.push('/');
                 }
 
                 Some(Box::new(obsidian::Provider::new(cfg, Path::new(&path))))
             }
-            todoist::PROVIDER_NAME => Some(Box::new(todoist::Provider::new(
-                cfg,
-                config.get("api_key").unwrap().as_str(),
-            ))),
+            todoist::PROVIDER_NAME => Some(Box::new(todoist::Provider::new(cfg, config_value("api_key")))),
             gitlab_todo::PROVIDER_NAME => Some(Box::new(gitlab_todo::Provider::new(
                 cfg,
-                config.get("base_url").unwrap().as_str(),
-                config.get("api_key").unwrap().as_str(),
+                config_value("base_url"),
+                config_value("api_key"),
             ))),
             github_issues::PROVIDER_NAME => Some(Box::new(github_issues::Provider::new(
                 cfg,
-                config.get("api_key").unwrap().as_str(),
-                config.get("repository").unwrap().as_str(),
+                config_value("api_key"),
+                config_value("repository"),
             ))),
-            ical::PROVIDER_NAME => Some(Box::new(ical::Provider::new(cfg, config.get("url").unwrap().as_str())?)),
+            ical::PROVIDER_NAME => Some(Box::new(ical::Provider::new(cfg, config_value("url"))?)),
             caldav::PROVIDER_NAME => Some(Box::new(caldav::Provider::new(
                 cfg,
-                config.get("url").unwrap().as_str(),
-                config.get("login").unwrap().as_str(),
-                config.get("password").unwrap().as_str(),
+                config_value("url"),
+                config_value("login"),
+                config_value("password"),
             )?)),
             _ => {
                 println!("Unknown provider configuration for section: {name}");
@@ -245,13 +224,45 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if providers.is_empty() {
-        println!("There is no provider that has been added yet. Please add one.");
-        return add_provider(&mut cfg);
+    providers.sort_by_key(|p| p.name.clone());
+
+    Ok(providers)
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // console_subscriber::init();
+
+    init_logging();
+
+    tracing::info!("Start application");
+
+    let cli = Cli::parse();
+
+    let mut cfg = if let Some(p) = cli.settings_file {
+        Settings::new(p.as_str())
+    } else {
+        let config_dir = folders::config_folder(APP_NAME);
+        let config_path = config_dir.join(CONFIG_FILE_NAME);
+        if !std::fs::exists(&config_path).is_ok_and(is_true) {
+            migrate_config(APP_NAME, CONFIG_FILE_NAME);
+        }
+        Settings::new(config_path.to_str().unwrap())
+    };
+
+    if let Err(e) = load_theme(&cli.theme.or(cfg.theme.clone())) {
+        println!("Load theme error: {e}")
     }
 
-    if !providers.is_empty() {
-        providers.sort_by_key(|p| p.name.clone());
+    let mut providers = load_providers(&cfg)?;
+
+    if providers.is_empty() {
+        println!("There is no provider that has been added yet. Please add one.");
+        add_provider(&mut cfg)?;
+        providers = load_providers(&cfg)?;
+        if providers.is_empty() {
+            return Ok(());
+        }
     }
 
     match &cli.command {
