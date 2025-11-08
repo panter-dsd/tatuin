@@ -220,7 +220,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.44"
+version = "1.2.45"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -646,7 +646,7 @@ repository = "https://github.com/indexmap-rs/equivalent"
 
 [[dependencies]]
 name = "erased-serde"
-version = "0.4.8"
+version = "0.4.9"
 description = "Type-erased Serialize and Serializer traits"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -1205,7 +1205,7 @@ repository = "https://github.com/krisprice/ipnet"
 
 [[dependencies]]
 name = "iri-string"
-version = "0.7.8"
+version = "0.7.9"
 description = "IRI as string types"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright 2019-2024 YOSHIOKA Takuma"]
@@ -1537,7 +1537,7 @@ repository = "https://github.com/polyfill-rs/once_cell_polyfill"
 
 [[dependencies]]
 name = "openssl"
-version = "0.10.74"
+version = "0.10.75"
 description = "OpenSSL bindings"
 license = "Apache-2.0"
 notices = ["Copyright 2011-2017 Google Inc."]
@@ -1575,7 +1575,7 @@ repository = "https://github.com/alexcrichton/openssl-src-rs"
 
 [[dependencies]]
 name = "openssl-sys"
-version = "0.9.110"
+version = "0.9.111"
 description = "FFI bindings to OpenSSL"
 license = "MIT"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -1796,7 +1796,7 @@ repository = "https://github.com/dtolnay/proc-macro2"
 
 [[dependencies]]
 name = "quote"
-version = "1.0.41"
+version = "1.0.42"
 description = "Quasi-quoting macro quote!(...)"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2025,7 +2025,7 @@ repository = "https://github.com/bytecodealliance/rustix"
 
 [[dependencies]]
 name = "rustls"
-version = "0.23.34"
+version = "0.23.35"
 description = "Rustls is a modern TLS library written in Rust."
 license = "Apache-2.0 OR ISC OR MIT"
 notices = [
@@ -2435,7 +2435,7 @@ homepage = "https://dalek.rs/"
 
 [[dependencies]]
 name = "syn"
-version = "2.0.108"
+version = "2.0.109"
 description = "Parser for Rust source code"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2658,7 +2658,7 @@ homepage = "https://tokio.rs"
 
 [[dependencies]]
 name = "tokio-util"
-version = "0.7.16"
+version = "0.7.17"
 description = """
 Additional utilities for working with Tokio.
 """
