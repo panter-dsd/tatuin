@@ -55,7 +55,8 @@ fn fix_wiki_links(text: &str, vault_path: &Path) -> String {
         {
             fs::obsidian_url(vault_path, &f)
         } else {
-            l.link.to_string()
+            // there is no existed file, so render as-is
+            continue;
         };
 
         let display = if l.display_text.is_empty() {

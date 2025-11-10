@@ -2,7 +2,6 @@
 
 use std::fmt::Debug;
 
-#[allow(dead_code)]
 pub trait Project: Send + Sync + Debug {
     fn id(&self) -> String;
     fn name(&self) -> String;
