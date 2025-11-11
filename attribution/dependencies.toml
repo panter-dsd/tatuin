@@ -2486,7 +2486,7 @@ repository = "https://github.com/panter-dsd/tatuin"
 
 [[dependencies]]
 name = "tatuin-providers"
-version = "0.4.0"
+version = "0.4.1"
 description = "Providers lib of the Tatuin project"
 license = "MIT"
 repository = "https://github.com/panter-dsd/tatuin"
