@@ -8,8 +8,7 @@ mod ui;
 mod wizard;
 
 use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
+    path::{Path, PathBuf}, str::FromStr, sync::Arc
 };
 use tatuin_providers::{caldav, config::Config, github_issues, gitlab_todo, ical, obsidian, tatuin, todoist};
 
@@ -178,6 +177,7 @@ fn load_providers(cfg: &Settings) -> Result<Vec<Provider>, Box<dyn std::error::E
 
         let cfg = Config::new(APP_NAME, name);
         let config_value = |key: &str| -> &str { config.get(key).unwrap() };
+        let config_value_default = |key: &str, default: &'static str| -> &str { if let Some(o) = config.get(key) { o } else { default } }; 
 
         let p: Option<Box<dyn ProviderTrait>> = match config_value("type") {
             tatuin::PROVIDER_NAME => Some(Box::new(tatuin::Provider::new(cfg)?)),
@@ -206,6 +206,7 @@ fn load_providers(cfg: &Settings) -> Result<Vec<Provider>, Box<dyn std::error::E
                 config_value("url"),
                 config_value("login"),
                 config_value("password"),
+                config_value_default("auth_type", "basic"),
             )?)),
             _ => {
                 println!("Unknown provider configuration for section: {name}");

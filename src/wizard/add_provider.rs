@@ -205,10 +205,20 @@ impl AddProvider {
         io::stdin().read_line(&mut input_line).expect("Failed to read line");
         let password = input_line.trim().to_string();
 
+        print!("Please, provide the type of authentication (basic/digest)> ");
+        let _ = io::stdout().flush();
+        // FIXME: Check if the user actually put down "basic" or "digest"
+
+        let mut input_line = String::new();
+
+        io::stdin().read_line(&mut input_line).expect("Failed to read line");
+        let auth_type = input_line.trim().to_string().to_lowercase(); // Ignore caps
+
         Ok(HashMap::from([
             ("url".to_string(), url),
             ("login".to_string(), login),
             ("password".to_string(), password),
+            ("auth_type".to_string(), auth_type),
         ]))
     }
 

@@ -8,7 +8,7 @@ use std::error::Error;
 use async_trait::async_trait;
 
 use super::ical::Task;
-use crate::config::Config as ProviderConfig;
+use crate::{caldav::client::AuthType, config::Config as ProviderConfig};
 use client::{Client, Config};
 use tatuin_core::{
     StringError, filter,
@@ -28,11 +28,12 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(cfg: ProviderConfig, url: &str, login: &str, password: &str) -> Result<Self, Box<dyn Error>> {
+    pub fn new(cfg: ProviderConfig, url: &str, login: &str, password: &str, auth_type: &str) -> Result<Self, Box<dyn Error>> {
         let mut c = Client::new(Config {
             url: url.to_string(),
             login: login.to_string(),
             password: password.to_string(),
+            auth_type: AuthType::from_str(&auth_type)?,
         });
         c.set_cache_folder(&cfg.cache_path()?);
         Ok(Self {

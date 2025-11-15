@@ -10,8 +10,7 @@ use reqwest::{
 use reqwest_dav::{Auth, Client as WebDavClient, ClientBuilder, Depth, list_cmd::ListEntity};
 use serde::{Deserialize, Serialize};
 use std::{
-    error::Error,
-    path::{Path, PathBuf},
+    error::Error, fmt::format, path::{Path, PathBuf}
 };
 use tatuin_core::{
     StringError,
@@ -25,10 +24,34 @@ use crate::ical::{Task, property_to_str};
 const INDEX_FILE_NAME: &str = "index.toml";
 const DEFAULT_EVENT_DURATION: TimeDelta = TimeDelta::hours(1);
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub enum AuthType {
+    Basic, 
+    Digest,
+} 
+
+impl AuthType {
+    fn to_dav_auth(self, login: String, password: String) -> Auth {
+        match self {
+            AuthType::Basic => Auth::Basic(login, password),
+            AuthType::Digest => Auth::Digest(login, password),
+        }
+    }
+    pub fn from_str(val: &str) -> Result<Self, String> {
+        match val {
+            "basic" => Ok(Self::Basic), 
+            "digest" => Ok(Self::Digest),  
+            x => Err(format!("Invalid authentication type for CalDav: {}", x)),
+            
+        }
+    } 
+} 
+
 pub struct Config {
     pub url: String,
     pub login: String,
     pub password: String,
+    pub auth_type: AuthType,  
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -195,7 +218,7 @@ impl Client {
             self.c = Some(
                 ClientBuilder::new()
                     .set_host(u.to_string())
-                    .set_auth(Auth::Basic(self.cfg.login.clone(), self.cfg.password.clone()))
+                    .set_auth(self.cfg.auth_type.to_dav_auth(self.cfg.login.clone(), self.cfg.password.clone()))
                     .build()?,
             );
         }
