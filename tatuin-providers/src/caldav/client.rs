@@ -10,7 +10,7 @@ use reqwest::{
 use reqwest_dav::{Auth, Client as WebDavClient, ClientBuilder, Depth, list_cmd::ListEntity};
 use serde::{Deserialize, Serialize};
 use std::{
-    error::Error, fmt::format, path::{Path, PathBuf}
+    error::Error, path::{Path, PathBuf}
 };
 use tatuin_core::{
     StringError,

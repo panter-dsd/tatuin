@@ -8,7 +8,7 @@ mod ui;
 mod wizard;
 
 use std::{
-    path::{Path, PathBuf}, str::FromStr, sync::Arc
+    path::{Path, PathBuf}, sync::Arc
 };
 use tatuin_providers::{caldav, config::Config, github_issues, gitlab_todo, ical, obsidian, tatuin, todoist};
 
