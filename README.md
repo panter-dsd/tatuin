@@ -4,12 +4,20 @@ Tatuin is a task aggregation tool that allows you to manage and track your tasks
 from various providers in one convenient place.
 Currently, the project supports the next providers:
 
-- **Obsidian**
-- **Todoist**
-- **GitLab TODO**
-- **GitHub Issues** (read only)
-- **iCal** - any provider that provides Calendar Subscription URL (read only)
-- **CalDav** - any provider that implements CalDav protocol (NextCloud for instance)
+| Provider name        | List | Create | Update | Delete | Status change    |
+| -------------------- | ---- | ------ | ------ | ------ | ---------------- |
+| Obsidian             | ✅   | ✅     | ✅     | ✅     | ✅               |
+| Todoist              | ✅   | ✅     | ✅     | ✅     | ✅<sup>(1)</sup> |
+| GitLab TODO          | ✅   | ❌     | ❌     | ❌     | ✅<sup>(1)</sup> |
+| GitHub Issues        | ✅   | ❌     | ❌     | ❌     | ❌               |
+| iCal<sup>(2)</sup>   | ✅   | ❌     | ❌     | ❌     | ❌               |
+| CalDav<sup>(3)</sup> | ✅   | ✅     | ✅     | ✅     | ✅               |
+
+(1): the provider supports the only Complete/Not complete statuses
+
+(2): any provider that provides Calendar Subscription URL
+
+(3): any provider that implements CalDav protocol (NextCloud for instance)
 
 Tatuin provides users with an easy-to-use Text User Interface (TUI) for viewing and managing their tasks.
 
