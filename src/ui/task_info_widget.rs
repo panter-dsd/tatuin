@@ -129,7 +129,9 @@ impl TaskInfoWidget {
                 widget: Box::new(Text::new(t.priority().to_string().as_str())),
             });
 
-            if let Some(d) = t.description() {
+            if let Some(d) = t.description()
+                && !d.trim().is_empty()
+            {
                 entries.push(Entry {
                     title: "Description".to_string(),
                     widget: Box::new(MarkdownView::new(
