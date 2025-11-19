@@ -4,14 +4,14 @@ Tatuin is a task aggregation tool that allows you to manage and track your tasks
 from various providers in one convenient place.
 Currently, the project supports the next providers:
 
-| Provider name        | List | Create | Update | Delete | Status change    |
-| -------------------- | ---- | ------ | ------ | ------ | ---------------- |
-| Obsidian             | ✅   | ✅     | ✅     | ✅     | ✅               |
-| Todoist              | ✅   | ✅     | ✅     | ✅     | ✅<sup>(1)</sup> |
-| GitLab TODO          | ✅   | ❌     | ❌     | ❌     | ✅<sup>(1)</sup> |
-| GitHub Issues        | ✅   | ❌     | ❌     | ❌     | ❌               |
-| iCal<sup>(2)</sup>   | ✅   | ❌     | ❌     | ❌     | ❌               |
-| CalDav<sup>(3)</sup> | ✅   | ✅     | ✅     | ✅     | ✅               |
+| Provider name        | List | Create | Update | Delete |  Status change   |
+| -------------------- | :--: | :----: | :----: | :----: | :--------------: |
+| Obsidian             |  ✅  |   ✅   |   ✅   |   ✅   |        ✅        |
+| Todoist              |  ✅  |   ✅   |   ✅   |   ✅   | ✅<sup>(1)</sup> |
+| GitLab TODO          |  ✅  |   ❌   |   ❌   |   ❌   | ✅<sup>(1)</sup> |
+| GitHub Issues        |  ✅  |   ❌   |   ❌   |   ❌   |        ❌        |
+| iCal<sup>(2)</sup>   |  ✅  |   ❌   |   ❌   |   ❌   |        ❌        |
+| CalDav<sup>(3)</sup> |  ✅  |   ✅   |   ✅   |   ✅   |        ✅        |
 
 (1): the provider supports the only Complete/Not complete statuses
 
