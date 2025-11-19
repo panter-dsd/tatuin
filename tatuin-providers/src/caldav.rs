@@ -6,9 +6,10 @@ mod fake_project;
 use std::error::Error;
 
 use async_trait::async_trait;
+use reqwest_dav::Auth;
 
 use super::ical::Task;
-use crate::{caldav::client::AuthType, config::Config as ProviderConfig};
+use crate::config::Config as ProviderConfig;
 use client::{Client, Config};
 use tatuin_core::{
     StringError, filter,
@@ -28,12 +29,18 @@ pub struct Provider {
 }
 
 impl Provider {
-    pub fn new(cfg: ProviderConfig, url: &str, login: &str, password: &str, auth_type: &str) -> Result<Self, Box<dyn Error>> {
+    pub fn new(
+        cfg: ProviderConfig,
+        url: &str,
+        login: &str,
+        password: &str,
+        auth_type: Option<AuthType>,
+    ) -> Result<Self, Box<dyn Error>> {
         let mut c = Client::new(Config {
             url: url.to_string(),
             login: login.to_string(),
             password: password.to_string(),
-            auth_type: AuthType::from_str(&auth_type)?,
+            auth_type: auth_type.unwrap_or(AuthType::Basic),
         });
         c.set_cache_folder(&cfg.cache_path()?);
         Ok(Self {
@@ -173,5 +180,35 @@ impl ProviderTrait for Provider {
 
     fn capabilities(&self) -> Capabilities {
         Capabilities { create_task: true }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum AuthType {
+    Basic,
+    Digest,
+}
+
+impl AuthType {
+    fn to_dav_auth(self, login: &str, password: &str) -> Auth {
+        match self {
+            AuthType::Basic => Auth::Basic(login.to_string(), password.to_string()),
+            AuthType::Digest => Auth::Digest(login.to_string(), password.to_string()),
+        }
+    }
+}
+
+impl std::str::FromStr for AuthType {
+    type Err = tatuin_core::StringError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "basic" => Ok(Self::Basic),
+            "digest" => Ok(Self::Digest),
+            x => Err(tatuin_core::StringError::new(&format!(
+                "Invalid authentication type for CalDav: {}",
+                x
+            ))),
+        }
     }
 }
