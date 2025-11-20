@@ -17,7 +17,7 @@ pub const AVAILABLE_PROVIDERS: &[&str] = &[
     caldav::PROVIDER_NAME,
 ];
 
-pub const CALDAV_AUTH_TYPES: &[&str] = &["basic", "digest"];
+pub const CALDAV_AUTH_TYPES: &[caldav::AuthType] = &[caldav::AuthType::Basic, caldav::AuthType::Digest];
 
 pub struct AddProvider {}
 
