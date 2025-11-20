@@ -11,6 +11,7 @@ use reqwest_dav::Auth;
 use super::ical::Task;
 use crate::config::Config as ProviderConfig;
 use client::{Client, Config};
+use strum::{Display, EnumString};
 use tatuin_core::{
     StringError, filter,
     project::Project as ProjectTrait,
@@ -183,7 +184,8 @@ impl ProviderTrait for Provider {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, EnumString, Display)]
+#[strum(serialize_all = "lowercase")]
 pub enum AuthType {
     Basic,
     Digest,
@@ -198,17 +200,22 @@ impl AuthType {
     }
 }
 
-impl std::str::FromStr for AuthType {
-    type Err = tatuin_core::StringError;
+#[cfg(test)]
+mod test {
+    use std::str::FromStr;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "basic" => Ok(Self::Basic),
-            "digest" => Ok(Self::Digest),
-            x => Err(tatuin_core::StringError::new(&format!(
-                "Invalid authentication type for CalDav: {}",
-                x
-            ))),
-        }
+    use super::*;
+
+    #[test]
+    fn auth_to_str_test() {
+        assert_eq!("basic", AuthType::Basic.to_string());
+        assert_eq!("digest", AuthType::Digest.to_string());
+    }
+
+    #[test]
+    fn auth_from_str_test() {
+        assert_eq!(AuthType::Basic, AuthType::from_str("basic").unwrap());
+        assert_eq!(AuthType::Digest, AuthType::from_str("digest").unwrap());
+        assert!(AuthType::from_str("some").is_err());
     }
 }
