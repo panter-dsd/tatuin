@@ -7,7 +7,7 @@ use reqwest::{
     StatusCode,
     header::{HeaderMap, HeaderValue},
 };
-use reqwest_dav::{Auth, Client as WebDavClient, ClientBuilder, Depth, list_cmd::ListEntity};
+use reqwest_dav::{Client as WebDavClient, ClientBuilder, Depth, list_cmd::ListEntity};
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
@@ -20,7 +20,10 @@ use tatuin_core::{
 };
 use tokio::io::AsyncWriteExt;
 
-use crate::ical::{Task, property_to_str};
+use crate::{
+    caldav::AuthType,
+    ical::{Task, property_to_str},
+};
 
 const INDEX_FILE_NAME: &str = "index.toml";
 const DEFAULT_EVENT_DURATION: TimeDelta = TimeDelta::hours(1);
@@ -29,6 +32,7 @@ pub struct Config {
     pub url: String,
     pub login: String,
     pub password: String,
+    pub auth_type: AuthType,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -195,7 +199,7 @@ impl Client {
             self.c = Some(
                 ClientBuilder::new()
                     .set_host(u.to_string())
-                    .set_auth(Auth::Basic(self.cfg.login.clone(), self.cfg.password.clone()))
+                    .set_auth(self.cfg.auth_type.to_dav_auth(&self.cfg.login, &self.cfg.password))
                     .build()?,
             );
         }

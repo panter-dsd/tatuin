@@ -9,9 +9,14 @@ mod wizard;
 
 use std::{
     path::{Path, PathBuf},
+    str::FromStr,
     sync::Arc,
 };
-use tatuin_providers::{caldav, config::Config, github_issues, gitlab_todo, ical, obsidian, tatuin, todoist};
+use tatuin_providers::{
+    caldav::{self, AuthType},
+    config::Config,
+    github_issues, gitlab_todo, ical, obsidian, tatuin, todoist,
+};
 
 use clap::{Parser, Subcommand};
 use color_eyre::owo_colors::OwoColorize;
@@ -177,7 +182,8 @@ fn load_providers(cfg: &Settings) -> Result<Vec<Provider>, Box<dyn std::error::E
         }
 
         let cfg = Config::new(APP_NAME, name);
-        let config_value = |key: &str| -> &str { config.get(key).unwrap() };
+        let try_config_value = |key: &str| -> Option<&str> { config.get(key).map(String::as_str) };
+        let config_value = |key: &str| -> &str { try_config_value(key).unwrap() };
 
         let p: Option<Box<dyn ProviderTrait>> = match config_value("type") {
             tatuin::PROVIDER_NAME => Some(Box::new(tatuin::Provider::new(cfg)?)),
@@ -206,6 +212,7 @@ fn load_providers(cfg: &Settings) -> Result<Vec<Provider>, Box<dyn std::error::E
                 config_value("url"),
                 config_value("login"),
                 config_value("password"),
+                try_config_value("auth_type").map(|t| AuthType::from_str(t).unwrap()),
             )?)),
             _ => {
                 println!("Unknown provider configuration for section: {name}");

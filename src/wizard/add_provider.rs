@@ -17,6 +17,8 @@ pub const AVAILABLE_PROVIDERS: &[&str] = &[
     caldav::PROVIDER_NAME,
 ];
 
+pub const CALDAV_AUTH_TYPES: &[&str] = &["basic", "digest"];
+
 pub struct AddProvider {}
 
 fn num_choice(question: &str, range: (u8, u8), default: Option<u8>) -> Option<u8> {
@@ -205,10 +207,24 @@ impl AddProvider {
         io::stdin().read_line(&mut input_line).expect("Failed to read line");
         let password = input_line.trim().to_string();
 
+        println!("Available authentication types:");
+        for (i, p) in CALDAV_AUTH_TYPES.iter().enumerate() {
+            println!("\t{i}) {p}")
+        }
+
+        let auth_types_idx = num_choice(
+            "Please, provide the type of authentication:",
+            (0, (CALDAV_AUTH_TYPES.len() - 1) as u8),
+            Some(0),
+        );
+
+        let auth_type = CALDAV_AUTH_TYPES[auth_types_idx.unwrap() as usize].to_string();
+
         Ok(HashMap::from([
             ("url".to_string(), url),
             ("login".to_string(), login),
             ("password".to_string(), password),
+            ("auth_type".to_string(), auth_type),
         ]))
     }
 
