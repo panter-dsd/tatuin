@@ -208,7 +208,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.46"
+version = "1.2.47"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -256,7 +256,7 @@ repository = "https://github.com/chronotope/chrono-tz"
 
 [[dependencies]]
 name = "clap"
-version = "4.5.51"
+version = "4.5.53"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -264,7 +264,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_builder"
-version = "4.5.51"
+version = "4.5.53"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -870,7 +870,7 @@ repository = "https://github.com/rust-lang/hashbrown"
 
 [[dependencies]]
 name = "hashbrown"
-version = "0.16.0"
+version = "0.16.1"
 description = "A Rust port of Google's SwissTable hash map"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2016 Amanieu d'Antras"]
@@ -1153,7 +1153,7 @@ repository = "https://github.com/yaahc/indenter"
 
 [[dependencies]]
 name = "indexmap"
-version = "2.12.0"
+version = "2.12.1"
 description = "A hash table with consistent order and fast iteration."
 license = "Apache-2.0 OR MIT"
 notices = ["Copyright (c) 2016--2017"]
@@ -1646,7 +1646,7 @@ repository = "https://github.com/servo/rust-url/"
 
 [[dependencies]]
 name = "pest"
-version = "2.8.3"
+version = "2.8.4"
 description = "The Elegant Parser"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -1655,7 +1655,7 @@ homepage = "https://pest.rs/"
 
 [[dependencies]]
 name = "pest_derive"
-version = "2.8.3"
+version = "2.8.4"
 description = "pest's derive macro"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -1664,7 +1664,7 @@ homepage = "https://pest.rs/"
 
 [[dependencies]]
 name = "pest_generator"
-version = "2.8.3"
+version = "2.8.4"
 description = "pest code generator"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -1673,7 +1673,7 @@ homepage = "https://pest.rs/"
 
 [[dependencies]]
 name = "pest_meta"
-version = "2.8.3"
+version = "2.8.4"
 description = "pest meta language parser and validator"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -3520,7 +3520,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "zerocopy"
-version = "0.8.27"
+version = "0.8.28"
 description = """Zerocopy makes zero-cost memory manipulation effortless. We write "unsafe" so you don't have to."""
 license = "BSD-2-Clause OR Apache-2.0 OR MIT"
 notices = [
@@ -3535,7 +3535,7 @@ repository = "https://github.com/google/zerocopy"
 
 [[dependencies]]
 name = "zerocopy-derive"
-version = "0.8.27"
+version = "0.8.28"
 description = "Custom derive for traits from the zerocopy crate"
 license = "BSD-2-Clause OR Apache-2.0 OR MIT"
 notices = [
