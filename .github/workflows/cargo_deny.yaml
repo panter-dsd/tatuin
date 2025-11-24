@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Cargo deny
@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - uses: taiki-e/install-action@v2
