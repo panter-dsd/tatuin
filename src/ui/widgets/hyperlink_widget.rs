@@ -36,6 +36,22 @@ impl HyperlinkWidget {
             widget_state: WidgetState::default(),
         }
     }
+
+    fn tool_tip_rect(&self, area: Rect) -> Rect {
+        let text_width = Text::from(self.url.as_str()).width() as u16;
+        let mut r = Rect {
+            x: self.area.x,
+            y: self.area.y - 1,
+            width: (area.width - self.area.x).min(text_width),
+            height: 1,
+        };
+
+        if r.width < text_width {
+            r.x = r.x.saturating_sub(text_width - r.width);
+            r.width = area.width - r.x;
+        }
+        r
+    }
 }
 
 #[async_trait]
@@ -63,16 +79,11 @@ impl WidgetTrait for HyperlinkWidget {
             .style(style)
             .render(self.area, buf);
         if self.is_under_mouse {
-            let area = Rect {
-                x: self.area.x,
-                y: self.area.y - 1,
-                width: area.width.min(Text::from(self.url.as_str()).width() as u16),
-                height: 1,
-            };
-            Clear {}.render(area, buf);
+            let r = self.tool_tip_rect(area);
+            Clear {}.render(r, buf);
             Paragraph::new(self.url.as_str())
                 .style(style::url_hover_hint_style())
-                .render(area, buf);
+                .render(r, buf);
         }
     }
 
