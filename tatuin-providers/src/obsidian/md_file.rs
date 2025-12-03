@@ -8,7 +8,8 @@ use std::path::Path;
 use std::sync::LazyLock;
 use std::{error::Error, path::PathBuf};
 use tatuin_core::{
-    task::{DateTimeUtc, Priority, TaskNameProvider as TaskNameProviderTrait},
+    RichStringTrait,
+    task::{DateTimeUtc, Priority},
     task_patch::ValuePatch,
 };
 

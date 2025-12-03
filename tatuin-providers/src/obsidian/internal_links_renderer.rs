@@ -2,33 +2,37 @@
 
 use std::{fmt::Display, path::Path};
 
-use tatuin_core::task::TaskNameProvider as TaskNameProviderTrait;
+use tatuin_core::RichStringTrait;
 
 use crate::obsidian::{fs, markdown, md_file::TAG_RE};
 
 #[derive(Debug, Clone, Default)]
-pub struct TaskNameProvider {
-    name: String,
+pub struct InternalLinksRenderer {
+    raw: String,
     display: String,
 
     vault_path_was_set: bool,
 }
 
-impl PartialEq for TaskNameProvider {
+impl PartialEq for InternalLinksRenderer {
     fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
+        self.raw == other.raw
     }
 }
 
-impl Eq for TaskNameProvider {}
+impl Eq for InternalLinksRenderer {}
 
-impl TaskNameProvider {
-    fn new(name: &str) -> Self {
+impl InternalLinksRenderer {
+    fn new(s: &str) -> Self {
         Self {
-            name: name.to_string(),
-            display: clear_tags(name),
+            raw: s.to_string(),
+            display: s.to_string(),
             vault_path_was_set: false,
         }
+    }
+
+    pub fn remove_tags(&mut self) {
+        self.display = clear_tags(&self.display);
     }
 
     pub fn set_vault_path(&mut self, p: &Path) {
@@ -88,7 +92,7 @@ fn fix_refular_links(text: &str, vault_path: &Path) -> String {
     result
 }
 
-impl<T> From<T> for TaskNameProvider
+impl<T> From<T> for InternalLinksRenderer
 where
     T: Display,
 {
@@ -97,9 +101,9 @@ where
     }
 }
 
-impl TaskNameProviderTrait for TaskNameProvider {
+impl RichStringTrait for InternalLinksRenderer {
     fn raw(&self) -> String {
-        self.name.clone()
+        self.raw.clone()
     }
 
     fn display(&self) -> String {

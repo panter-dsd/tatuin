@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+use crate::RichStringTrait;
+
 use super::{filter, project::Project as ProjectTrait, task_patch::DuePatchItem};
 use chrono::{DateTime, prelude::*};
 use colored::Colorize;
@@ -71,17 +73,10 @@ pub struct PatchPolicy {
     pub available_due_items: Vec<DuePatchItem>,
 }
 
-pub trait TaskNameProvider: std::fmt::Debug {
-    fn raw(&self) -> String;
-    fn display(&self) -> String {
-        self.raw()
-    }
-}
-
 #[allow(dead_code)]
 pub trait Task: Send + Sync {
     fn id(&self) -> String;
-    fn name(&self) -> Box<dyn TaskNameProvider>;
+    fn name(&self) -> Box<dyn RichStringTrait>;
 
     fn description(&self) -> Option<String> {
         None

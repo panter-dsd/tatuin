@@ -6,10 +6,10 @@ use super::github::{client::Client, structs};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use std::any::Any;
 use tatuin_core::{
-    RawTaskName, StringError, filter,
+    RichString, RichStringTrait, StringError, filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
-    task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, TaskNameProvider, due_group},
+    task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
     task_patch::{PatchError, TaskPatch},
 };
 
@@ -45,8 +45,8 @@ impl TaskTrait for Task {
         self.issue.id.to_string()
     }
 
-    fn name(&self) -> Box<dyn TaskNameProvider> {
-        Box::new(RawTaskName::from(&self.issue.title))
+    fn name(&self) -> Box<dyn RichStringTrait> {
+        Box::new(RichString::from(&self.issue.title))
     }
 
     fn created_at(&self) -> Option<DateTimeUtc> {
