@@ -46,11 +46,11 @@ impl TaskTrait for Task {
     }
 
     fn name(&self) -> Box<dyn RichStringTrait> {
-        Box::new(RichString::from(&self.name))
+        RichString::new_boxed(&self.name)
     }
 
-    fn description(&self) -> Option<String> {
-        self.description.clone()
+    fn description(&self) -> Option<Box<dyn RichStringTrait>> {
+        self.description.as_ref().map(|s| RichString::new_boxed(s))
     }
 
     fn priority(&self) -> Priority {

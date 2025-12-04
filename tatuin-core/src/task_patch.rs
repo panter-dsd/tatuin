@@ -109,6 +109,13 @@ where
         }
     }
 
+    pub fn ref_value(&self) -> Option<&T> {
+        match self {
+            ValuePatch::NotSet | ValuePatch::Empty => None,
+            ValuePatch::Value(v) => Some(v),
+        }
+    }
+
     pub fn is_set(&self) -> bool {
         !matches!(self, ValuePatch::NotSet)
     }

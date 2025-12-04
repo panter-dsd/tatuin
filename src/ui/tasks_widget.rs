@@ -834,7 +834,7 @@ impl TasksWidget {
                 let patch = TaskPatch {
                     task: None,
                     name: ValuePatch::Value(t.name().raw()),
-                    description: t.description().into(),
+                    description: t.description().map(|d| d.raw()).into(),
                     due: t.due().map(|d| d.into()).into(),
                     priority: ValuePatch::Value(t.priority()),
                     state: ValuePatch::Value(State::Uncompleted),

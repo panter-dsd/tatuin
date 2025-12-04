@@ -78,7 +78,7 @@ pub trait Task: Send + Sync {
     fn id(&self) -> String;
     fn name(&self) -> Box<dyn RichStringTrait>;
 
-    fn description(&self) -> Option<String> {
+    fn description(&self) -> Option<Box<dyn RichStringTrait>> {
         None
     }
 

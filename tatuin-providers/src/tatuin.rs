@@ -307,7 +307,7 @@ mod test {
         for t in tasks {
             let found = patches.iter().any(|tp| {
                 *tp.name.value().unwrap() == t.name().raw()
-                    && tp.description.value() == t.description()
+                    && tp.description.value() == t.description().map(|d| d.raw())
                     && tp.due.value() == t.due().map(|d| d.into())
                     && tp.priority.value().unwrap_or(Priority::Normal) == t.priority()
                     && t.state() == State::Uncompleted
@@ -359,7 +359,7 @@ mod test {
         for t in tasks {
             let found = patches.iter().any(|tp| {
                 *tp.name.value().unwrap() == t.name().raw()
-                    && tp.description.value() == t.description()
+                    && tp.description.value() == t.description().map(|d| d.raw())
                     && tp.due.value() == t.due().map(|d| d.into())
                     && tp.priority.value().unwrap_or(Priority::Normal) == t.priority()
                     && t.state() == State::Completed

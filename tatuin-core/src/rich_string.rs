@@ -7,9 +7,15 @@ pub trait Trait: Debug {
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone)]
 pub struct DefaultImpl {
     s: String,
+}
+
+impl DefaultImpl {
+    pub fn new_boxed(s: &str) -> Box<dyn Trait> {
+        Box::new(Self { s: s.to_string() })
+    }
 }
 
 impl<T> From<T> for DefaultImpl

@@ -34,17 +34,17 @@ impl TaskTrait for PatchedTask {
         if let Some(p) = &self.patch
             && let Some(name) = &p.name.value()
         {
-            Box::new(RichString::from(name))
+            RichString::new_boxed(name)
         } else {
             self.task.name()
         }
     }
 
-    fn description(&self) -> Option<String> {
+    fn description(&self) -> Option<Box<dyn RichStringTrait>> {
         if let Some(p) = &self.patch
             && p.description.is_set()
         {
-            return p.description.value();
+            return p.description.value().map(|s| RichString::new_boxed(&s));
         }
 
         self.task.description()

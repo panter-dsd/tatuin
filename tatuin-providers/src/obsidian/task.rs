@@ -74,8 +74,13 @@ impl TaskTrait for Task {
         Box::new(self.name.clone())
     }
 
-    fn description(&self) -> Option<String> {
-        self.description.clone().map(|d| d.text)
+    fn description(&self) -> Option<Box<dyn RichStringTrait>> {
+        self.description.clone().map(|d| {
+            let mut renderer = InternalLinksRenderer::new(&d.text);
+            renderer.set_vault_path(&self.vault_path);
+            let result: Box<dyn RichStringTrait> = Box::new(renderer);
+            result
+        })
     }
 
     fn state(&self) -> TaskState {

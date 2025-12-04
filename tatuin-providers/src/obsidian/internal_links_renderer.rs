@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 
-use std::{fmt::Display, path::Path};
+use std::{
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 
 use tatuin_core::RichStringTrait;
 
@@ -11,7 +14,7 @@ pub struct InternalLinksRenderer {
     raw: String,
     display: String,
 
-    vault_path_was_set: bool,
+    vault_path: Option<PathBuf>,
 }
 
 impl PartialEq for InternalLinksRenderer {
@@ -23,11 +26,11 @@ impl PartialEq for InternalLinksRenderer {
 impl Eq for InternalLinksRenderer {}
 
 impl InternalLinksRenderer {
-    fn new(s: &str) -> Self {
+    pub fn new(s: &str) -> Self {
         Self {
             raw: s.to_string(),
             display: s.to_string(),
-            vault_path_was_set: false,
+            vault_path: None,
         }
     }
 
@@ -36,10 +39,10 @@ impl InternalLinksRenderer {
     }
 
     pub fn set_vault_path(&mut self, p: &Path) {
-        if !self.vault_path_was_set {
+        if self.vault_path.is_none() {
             self.display = fix_refular_links(self.display.as_str(), p);
             self.display = fix_wiki_links(self.display.as_str(), p);
-            self.vault_path_was_set = true;
+            self.vault_path = Some(p.to_path_buf());
         }
     }
 }

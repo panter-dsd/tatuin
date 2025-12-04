@@ -177,7 +177,7 @@ impl Dialog {
         }
         self.task_name_editor.set_text(task.name().raw().as_str());
         if let Some(d) = task.description() {
-            self.task_description_editor.set_text(&d);
+            self.task_description_editor.set_text(&d.raw());
         }
         self.priority_selector
             .set_current_item(&ComboBoxItem::new(

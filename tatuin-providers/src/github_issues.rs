@@ -46,7 +46,7 @@ impl TaskTrait for Task {
     }
 
     fn name(&self) -> Box<dyn RichStringTrait> {
-        Box::new(RichString::from(&self.issue.title))
+        RichString::new_boxed(&self.issue.title)
     }
 
     fn created_at(&self) -> Option<DateTimeUtc> {
