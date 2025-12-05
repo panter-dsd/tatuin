@@ -38,7 +38,7 @@ toml = "0.9.8"
 tracing = { version = "0.1.41", features = ["async-await", "log"] }
 tracing-appender = "0.2.4"
 tracing-subscriber = "0.3.19"
-uuid = { version = "1.18.1", features = ["v4"] }
+uuid = { version = "1.19.0", features = ["v4"] }
 openssl = { version = "0.10", features = ["vendored"] }
 tatuin-core = { path = "./tatuin-core", version = "0.3.0" }
 tatuin-providers = { path = "./tatuin-providers", version = "0.4.1" }
