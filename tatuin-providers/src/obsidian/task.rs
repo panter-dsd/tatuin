@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
 
-use super::{description::Description, fs, project::Project, state::State, task_name_provider::TaskNameProvider};
+use crate::obsidian::internal_links_renderer::InternalLinksRenderer;
+
+use super::{description::Description, fs, project::Project, state::State};
 use std::{
     any::Any,
     path::{Path, PathBuf},
 };
 use tatuin_core::{
+    RichStringTrait,
     project::Project as ProjectTrait,
-    task::{
-        DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait,
-        TaskNameProvider as TaskNameProviderTrait,
-    },
+    task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait},
     task_patch::DuePatchItem,
 };
 
@@ -19,7 +19,7 @@ pub struct Task {
     pub vault_path: PathBuf,
     pub provider: String,
 
-    pub name: TaskNameProvider,
+    pub name: InternalLinksRenderer,
     pub file_path: PathBuf,
     pub start_pos: usize,
     pub end_pos: usize,
@@ -50,6 +50,7 @@ impl Task {
     pub fn set_vault_path(&mut self, p: &Path) {
         self.vault_path = p.to_path_buf();
         self.name.set_vault_path(p);
+        self.name.remove_tags();
     }
 
     pub fn set_provider(&mut self, p: String) {
@@ -69,12 +70,17 @@ impl TaskTrait for Task {
         ))
     }
 
-    fn name(&self) -> Box<dyn TaskNameProviderTrait> {
+    fn name(&self) -> Box<dyn RichStringTrait> {
         Box::new(self.name.clone())
     }
 
-    fn description(&self) -> Option<String> {
-        self.description.clone().map(|d| d.text)
+    fn description(&self) -> Option<Box<dyn RichStringTrait>> {
+        self.description.clone().map(|d| {
+            let mut renderer = InternalLinksRenderer::new(&d.text);
+            renderer.set_vault_path(&self.vault_path);
+            let result: Box<dyn RichStringTrait> = Box::new(renderer);
+            result
+        })
     }
 
     fn state(&self) -> TaskState {

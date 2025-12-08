@@ -56,7 +56,7 @@ impl TaskRow {
         let mut state = t.state();
         let mut due = task::datetime_to_str(t.due(), &tz);
         let mut priority = t.priority();
-        let mut description = t.description();
+        let mut description = t.description().map(|d| d.display());
         let mut uncommitted = false;
         if let Some(patch) = changed_tasks.iter().find(|c| c.is_task(t)) {
             uncommitted = !patch.is_empty();

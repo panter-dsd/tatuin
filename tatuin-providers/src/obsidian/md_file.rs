@@ -8,7 +8,8 @@ use std::path::Path;
 use std::sync::LazyLock;
 use std::{error::Error, path::PathBuf};
 use tatuin_core::{
-    task::{DateTimeUtc, Priority, TaskNameProvider as TaskNameProviderTrait},
+    RichStringTrait,
+    task::{DateTimeUtc, Priority},
     task_patch::ValuePatch,
 };
 
@@ -412,7 +413,8 @@ some another text
         let p = File::new(Path::new(""));
         let task = p.try_parse_task(text.as_str(), 0);
         assert!(task.is_some());
-        let task = task.unwrap();
+        let mut task = task.unwrap();
+        task.set_vault_path(Path::new("."));
         assert_eq!(
             task.name.raw(),
             "Some #tag task #группа/имя_tag-name123 text #tag_at_end"

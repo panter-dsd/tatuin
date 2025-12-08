@@ -4,9 +4,9 @@ use super::project::Project;
 use redb::Value;
 use serde::{Deserialize, Serialize};
 use tatuin_core::{
-    RawTaskName,
+    RichString, RichStringTrait,
     project::Project as ProjectTrait,
-    task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait, TaskNameProvider},
+    task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
     task_patch::DuePatchItem,
 };
 
@@ -45,12 +45,12 @@ impl TaskTrait for Task {
         self.id.to_string()
     }
 
-    fn name(&self) -> Box<dyn TaskNameProvider> {
-        Box::new(RawTaskName::from(&self.name))
+    fn name(&self) -> Box<dyn RichStringTrait> {
+        RichString::new_boxed(&self.name)
     }
 
-    fn description(&self) -> Option<String> {
-        self.description.clone()
+    fn description(&self) -> Option<Box<dyn RichStringTrait>> {
+        self.description.as_ref().map(|s| RichString::new_boxed(s))
     }
 
     fn priority(&self) -> Priority {

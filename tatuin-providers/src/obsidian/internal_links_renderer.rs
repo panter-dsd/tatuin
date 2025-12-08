@@ -1,41 +1,48 @@
 // SPDX-License-Identifier: MIT
 
-use std::{fmt::Display, path::Path};
+use std::{
+    fmt::Display,
+    path::{Path, PathBuf},
+};
 
-use tatuin_core::task::TaskNameProvider as TaskNameProviderTrait;
+use tatuin_core::RichStringTrait;
 
 use crate::obsidian::{fs, markdown, md_file::TAG_RE};
 
 #[derive(Debug, Clone, Default)]
-pub struct TaskNameProvider {
-    name: String,
+pub struct InternalLinksRenderer {
+    raw: String,
     display: String,
 
-    vault_path_was_set: bool,
+    vault_path: Option<PathBuf>,
 }
 
-impl PartialEq for TaskNameProvider {
+impl PartialEq for InternalLinksRenderer {
     fn eq(&self, other: &Self) -> bool {
-        self.name == other.name
+        self.raw == other.raw
     }
 }
 
-impl Eq for TaskNameProvider {}
+impl Eq for InternalLinksRenderer {}
 
-impl TaskNameProvider {
-    fn new(name: &str) -> Self {
+impl InternalLinksRenderer {
+    pub fn new(s: &str) -> Self {
         Self {
-            name: name.to_string(),
-            display: clear_tags(name),
-            vault_path_was_set: false,
+            raw: s.to_string(),
+            display: s.to_string(),
+            vault_path: None,
         }
     }
 
+    pub fn remove_tags(&mut self) {
+        self.display = clear_tags(&self.display);
+    }
+
     pub fn set_vault_path(&mut self, p: &Path) {
-        if !self.vault_path_was_set {
+        if self.vault_path.is_none() {
             self.display = fix_refular_links(self.display.as_str(), p);
             self.display = fix_wiki_links(self.display.as_str(), p);
-            self.vault_path_was_set = true;
+            self.vault_path = Some(p.to_path_buf());
         }
     }
 }
@@ -88,7 +95,7 @@ fn fix_refular_links(text: &str, vault_path: &Path) -> String {
     result
 }
 
-impl<T> From<T> for TaskNameProvider
+impl<T> From<T> for InternalLinksRenderer
 where
     T: Display,
 {
@@ -97,9 +104,9 @@ where
     }
 }
 
-impl TaskNameProviderTrait for TaskNameProvider {
+impl RichStringTrait for InternalLinksRenderer {
     fn raw(&self) -> String {
-        self.name.clone()
+        self.raw.clone()
     }
 
     fn display(&self) -> String {
