@@ -5,6 +5,7 @@ mod create_update_task;
 mod dialog;
 mod key_bindings_help;
 mod list;
+mod multi_select_list;
 mod states;
 mod text_input;
 
@@ -13,5 +14,6 @@ pub use create_update_task::Dialog as CreateUpdateTaskDialog;
 pub use dialog::DialogTrait;
 pub use key_bindings_help::Dialog as KeyBindingsHelpDialog;
 pub use list::Dialog as ListDialog;
+pub use multi_select_list::Dialog as MultiSelectListDialog;
 pub use states::Dialog as StatesDialog;
 pub use text_input::Dialog as TextInputDialog;
