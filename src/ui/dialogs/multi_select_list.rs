@@ -199,6 +199,10 @@ where
             KeyCode::Char('k') | KeyCode::Char('p') | KeyCode::Up => self.items.select_previous().await,
             KeyCode::Char('g') | KeyCode::Home => self.items.select_first().await,
             KeyCode::Char('G') | KeyCode::End => self.items.select_last().await,
+            KeyCode::Char('a') => {
+                self.selected = self.items.iter().cloned().collect();
+            }
+            KeyCode::Char('c') => self.selected.clear(),
             KeyCode::Char(' ') => {
                 if let Some(v) = self.items.selected() {
                     if let Some(idx) = self.selected.iter().position(|s| s == v) {
