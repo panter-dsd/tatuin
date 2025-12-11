@@ -1058,7 +1058,7 @@ impl WidgetTrait for TasksWidget {
                 x: list_area.x,
                 y: list_area.y, // header
                 width: list_area.width,
-                height: list_area.height,
+                height: list_area.height - 1,
             },
             buf,
             &mut scrollbar_state,
