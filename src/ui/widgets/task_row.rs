@@ -8,7 +8,7 @@ use crossterm::event::{KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
-    style::Style,
+    style::{Modifier, Style},
 };
 use std::{any::Any, cmp::Ordering};
 use tatuin_core::{
@@ -145,7 +145,10 @@ impl WidgetTrait for TaskRow {
         };
         s.fg = None;
         for child in self.children.iter_mut() {
-            child.set_style(child.style().patch(s));
+            let mut current_style = child.style();
+            current_style.add_modifier = Modifier::default();
+            current_style.sub_modifier = Modifier::default();
+            child.set_style(current_style.patch(s));
             child.render(area, buf).await;
             area.x += child.size().width;
         }
