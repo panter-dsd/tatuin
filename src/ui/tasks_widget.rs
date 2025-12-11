@@ -16,7 +16,6 @@ use crate::{
     filter::Filter,
     project::Project as ProjectTrait,
     provider::Provider,
-    style,
     task::{self, DateTimeUtc, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
     ui::dialogs::MultiSelectListDialog,
 };
@@ -28,7 +27,7 @@ use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
     text::Text,
-    widgets::{Block, Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
+    widgets::{Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
 use std::{any::Any, slice::Iter, slice::IterMut, sync::Arc};
 use tatuin_core::{
@@ -999,7 +998,8 @@ impl WidgetTrait for TasksWidget {
         let h = Header::new(title.as_str(), self.is_active(), Some(&self.activate_shortcut));
         h.block().render(area, buf);
 
-        let mut y = area.y + 1;
+        let mut list_area = area;
+        list_area.y += 1;
 
         let mut selected = self.list_state.selected();
         if selected.is_some_and(|idx| idx >= self.tasks.len()) {
@@ -1008,8 +1008,8 @@ impl WidgetTrait for TasksWidget {
 
         let skip_count = selected
             .map(|mut idx| {
-                let mut height = y;
-                while idx != 0 && height < area.height {
+                let mut height = list_area.y;
+                while idx != 0 && height < list_area.height {
                     height += self.tasks[idx].size().height;
                     idx -= 1;
                 }
@@ -1018,8 +1018,10 @@ impl WidgetTrait for TasksWidget {
             })
             .unwrap_or_default();
 
+        let mut y = list_area.y;
+
         for (i, w) in self.tasks.iter_mut().enumerate() {
-            if i < skip_count || y > area.height {
+            if i < skip_count || y > list_area.height {
                 w.set_visible(false);
                 continue;
             }
@@ -1033,23 +1035,19 @@ impl WidgetTrait for TasksWidget {
                 .style(default_style())
                 .render(
                     Rect {
-                        x: area.x,
+                        x: list_area.x,
                         y,
                         width: 1,
                         height: 1,
                     },
                     buf,
                 );
-            w.set_pos(Position::new(area.x + 1, y));
-            w.render(area, buf).await;
+            w.set_pos(Position::new(list_area.x + 1, y));
+            w.render(list_area, buf).await;
 
             let size = w.size();
             y += size.height;
         }
-
-        Block::new()
-            .style(style::default_style())
-            .render(Rect::new(area.x, y, area.width, area.height + 1 - y), buf);
 
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
             .begin_symbol(Some("↑"))
@@ -1057,10 +1055,10 @@ impl WidgetTrait for TasksWidget {
         let mut scrollbar_state = ScrollbarState::new(self.tasks.len()).position(selected.unwrap_or_default());
         scrollbar.render(
             Rect {
-                x: area.x,
-                y: area.y + 1, // header
-                width: area.width,
-                height: area.height - 1,
+                x: list_area.x,
+                y: list_area.y, // header
+                width: list_area.width,
+                height: list_area.height,
             },
             buf,
             &mut scrollbar_state,
