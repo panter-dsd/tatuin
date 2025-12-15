@@ -81,6 +81,10 @@ impl LineEdit {
     pub fn clear(&mut self) {
         self.text.clear();
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.text.is_empty()
+    }
 }
 
 #[async_trait]

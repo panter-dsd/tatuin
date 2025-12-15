@@ -17,7 +17,7 @@ use crate::{
     project::Project as ProjectTrait,
     provider::Provider,
     task::{self, DateTimeUtc, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
-    ui::dialogs::MultiSelectListDialog,
+    ui::{dialogs::MultiSelectListDialog, widgets::FilterPanel},
 };
 use async_trait::async_trait;
 use chrono::Local;
@@ -124,10 +124,10 @@ pub struct TasksWidget {
     filter_by_tag_shortcut: Shortcut,
 
     last_filter: Filter,
-    tag_filter: Vec<String>,
 
     dialog: Option<Box<dyn DialogTrait>>,
     is_global_dialog: bool,
+    filter_panel: FilterPanel,
 
     arc_self: Option<ArcRwLock<Self>>,
 }
@@ -156,14 +156,14 @@ impl AppBlockWidget for TasksWidget {
     }
 
     async fn select_next(&mut self) {
-        if self.list_state.selected().is_none_or(|i| i < self.tasks.len() - 1) {
+        if !self.tasks.is_empty() && self.list_state.selected().is_none_or(|i| i < self.tasks.len() - 1) {
             self.list_state.select_next();
             self.update_task_info_view().await;
         }
     }
 
     async fn select_previous(&mut self) {
-        if self.list_state.selected().is_some_and(|i| i > 0) {
+        if !self.tasks.is_empty() && self.list_state.selected().is_some_and(|i| i > 0) {
             self.list_state.select_previous();
             self.update_task_info_view().await;
         }
@@ -231,9 +231,9 @@ impl TasksWidget {
                 .global(),
 
             last_filter: Filter::default(),
-            tag_filter: Vec::new(),
             dialog: None,
             is_global_dialog: true,
+            filter_panel: FilterPanel::new(),
             arc_self: None,
         }));
         s.write().await.arc_self = Some(s.clone());
@@ -359,7 +359,9 @@ impl TasksWidget {
                 {
                     return false;
                 }
-                if !(self.tag_filter.is_empty() || t.labels().iter().any(|t| self.tag_filter.contains(t))) {
+
+                let tag_filter = self.filter_panel.tag_filter();
+                if !(tag_filter.is_empty() || t.labels().iter().any(|t| tag_filter.contains(t))) {
                     return false;
                 }
                 true
@@ -877,7 +879,7 @@ impl TasksWidget {
 
     async fn show_filter_by_tag_dialog(&mut self) {
         let mut d = MultiSelectListDialog::new(&self.available_tags());
-        d.set_selected(&self.tag_filter);
+        d.set_selected(&self.filter_panel.tag_filter());
         self.dialog = Some(Box::new(d));
         self.is_global_dialog = true;
     }
@@ -909,7 +911,9 @@ impl KeyboardHandler for TasksWidget {
             need_to_update_view = true;
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DuePatchItem>>() {
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DuePatchItem>>()
+                    && d.accepted()
+                {
                     new_due = d.selected().map(|p| match p {
                         DuePatchItem::Custom(_) => {
                             let w = d.selected_custom_widget().unwrap();
@@ -922,11 +926,15 @@ impl KeyboardHandler for TasksWidget {
                         _ => *p,
                     });
                 }
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<Priority>>() {
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<Priority>>()
+                    && d.accepted()
+                {
                     new_priority = d.selected().cloned();
                 }
 
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<CreateUpdateTaskDialog>() {
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<CreateUpdateTaskDialog>()
+                    && d.accepted()
+                {
                     patch.provider_name = d.provider_name().await;
                     patch.project_id = d.project_id().await;
                     patch.task_patch = d.task_patch().await;
@@ -934,12 +942,14 @@ impl KeyboardHandler for TasksWidget {
                     create_task_dialog_state = Some(d.save().await);
                 }
 
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<MultiSelectListDialog<String>>() {
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<MultiSelectListDialog<String>>()
+                    && d.accepted()
+                {
                     tag_filter = Some(d.selected().iter().cloned().collect_vec());
                 }
 
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ConfirmationDialog>()
-                    && d.is_confirmed()
+                    && d.accepted()
                 {
                     self.on_async_command_confirmed().await;
                 }
@@ -972,12 +982,76 @@ impl KeyboardHandler for TasksWidget {
             self.show_add_task_dialog(None, create_task_dialog_state).await;
         }
 
-        if let Some(f) = tag_filter {
-            self.tag_filter = f;
+        if let Some(f) = &tag_filter {
+            self.filter_panel.set_tag_filter(f);
             self.filter_tasks();
         }
 
         handled
+    }
+}
+
+impl TasksWidget {
+    // rendering
+    async fn render_scrollbar(&mut self, area: Rect, buf: &mut Buffer, pos: usize) {
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓"));
+        let mut scrollbar_state = ScrollbarState::new(self.tasks.len()).position(pos);
+        scrollbar.render(
+            Rect {
+                x: area.x,
+                y: area.y, // header
+                width: area.width,
+                height: area.height - 1,
+            },
+            buf,
+            &mut scrollbar_state,
+        );
+    }
+
+    async fn render_tasks(&mut self, area: Rect, buf: &mut Buffer, selected: usize) {
+        let skip_count = {
+            let mut selected = selected;
+            let mut height = area.y;
+            while selected != 0 && height < area.height {
+                height += self.tasks[selected].size().height;
+                selected -= 1;
+            }
+
+            selected
+        };
+
+        let mut y = area.y;
+
+        for (i, w) in self.tasks.iter_mut().enumerate() {
+            if i < skip_count || y > area.height {
+                w.set_visible(false);
+                continue;
+            }
+
+            w.set_visible(true);
+
+            let is_row_selected = selected == i;
+            w.set_selected(is_row_selected);
+
+            Text::from(if is_row_selected { ">" } else { " " })
+                .style(default_style())
+                .render(
+                    Rect {
+                        x: area.x,
+                        y,
+                        width: 1,
+                        height: 1,
+                    },
+                    buf,
+                );
+            w.set_pos(Position::new(area.x + 1, y));
+            w.render(area, buf).await;
+
+            let size = w.size();
+            y += size.height;
+        }
     }
 }
 
@@ -1001,68 +1075,33 @@ impl WidgetTrait for TasksWidget {
         let mut list_area = area;
         list_area.y += 1;
 
-        let mut selected = self.list_state.selected();
-        if selected.is_some_and(|idx| idx >= self.tasks.len()) {
-            selected = Some(0);
+        if !self.filter_panel.is_empty() {
+            list_area.height -= self.filter_panel.size().height;
         }
 
-        let skip_count = selected
-            .map(|mut idx| {
-                let mut height = list_area.y;
-                while idx != 0 && height < list_area.height {
-                    height += self.tasks[idx].size().height;
-                    idx -= 1;
-                }
-
-                idx
-            })
+        let selected = self
+            .list_state
+            .selected()
+            .map(|idx| if idx >= self.tasks.len() { 0 } else { idx })
             .unwrap_or_default();
 
-        let mut y = list_area.y;
+        self.render_tasks(list_area, buf, selected).await;
+        self.render_scrollbar(list_area, buf, selected).await;
 
-        for (i, w) in self.tasks.iter_mut().enumerate() {
-            if i < skip_count || y > list_area.height {
-                w.set_visible(false);
-                continue;
-            }
-
-            w.set_visible(true);
-
-            let is_row_selected = selected.is_some_and(|idx| idx == i);
-            w.set_selected(is_row_selected);
-
-            Text::from(if is_row_selected { ">" } else { " " })
-                .style(default_style())
+        if !self.filter_panel.is_empty() {
+            let height = self.filter_panel.size().height;
+            self.filter_panel
                 .render(
                     Rect {
                         x: list_area.x,
-                        y,
-                        width: 1,
-                        height: 1,
+                        y: area.y + area.height - height,
+                        width: list_area.width,
+                        height,
                     },
                     buf,
-                );
-            w.set_pos(Position::new(list_area.x + 1, y));
-            w.render(list_area, buf).await;
-
-            let size = w.size();
-            y += size.height;
+                )
+                .await;
         }
-
-        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-            .begin_symbol(Some("↑"))
-            .end_symbol(Some("↓"));
-        let mut scrollbar_state = ScrollbarState::new(self.tasks.len()).position(selected.unwrap_or_default());
-        scrollbar.render(
-            Rect {
-                x: list_area.x,
-                y: list_area.y, // header
-                width: list_area.width,
-                height: list_area.height - 1,
-            },
-            buf,
-            &mut scrollbar_state,
-        );
 
         if self.dialog.is_some() {
             self.render_dialog(area, buf).await;

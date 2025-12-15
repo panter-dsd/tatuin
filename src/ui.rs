@@ -993,7 +993,7 @@ impl App {
             }
         }
         if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ConfirmationDialog>()
-            && d.is_confirmed()
+            && d.accepted()
         {
             self.should_exit = true;
         }

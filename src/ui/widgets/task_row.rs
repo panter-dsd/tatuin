@@ -96,7 +96,7 @@ impl TaskRow {
         for l in t.labels() {
             children.push(Box::new(Text::new(" ")));
             children.push(Box::new(
-                Text::new(format!("🏷️{l}").as_str()).style(style::label_style()),
+                Text::new(format!("{}{l}", style::tag_icon()).as_str()).style(style::label_style()),
             ));
         }
 

@@ -63,6 +63,8 @@ enum ColorElement {
     MediumPriorityFG,
     HighPriorityFG,
     HighestPriorityFG,
+    FilterPanelBG,
+    FilterPanelFG,
 }
 
 static THEME_MAP: RwLock<Option<HashMap<ColorElement, Color>>> = RwLock::new(None);
@@ -130,6 +132,8 @@ fn element_color(element: ColorElement) -> Color {
         MediumPriorityFG => Color::Rgb(255, 192, 203),
         HighPriorityFG => Color::LightRed,
         HighestPriorityFG => Color::Red,
+        FilterPanelBG => Color::Yellow,
+        FilterPanelFG => Color::Black,
     }
 }
 
@@ -319,4 +323,12 @@ pub fn priority_color(p: &Priority) -> Color {
         Priority::High => element_color(ColorElement::HighPriorityFG),
         Priority::Highest => element_color(ColorElement::HighestPriorityFG),
     }
+}
+
+pub fn filter_panel_bg() -> Color {
+    element_color(ColorElement::FilterPanelBG)
+}
+
+pub fn tag_icon() -> &'static str {
+    "🏷️"
 }

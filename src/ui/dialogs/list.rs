@@ -221,6 +221,9 @@ impl<T> DialogTrait for Dialog<T>
 where
     T: Display + Clone + Send + Sync + 'static,
 {
+    fn accepted(&self) -> bool {
+        self.item_has_chosen
+    }
     fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }

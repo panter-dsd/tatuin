@@ -27,6 +27,7 @@ pub struct Dialog<T> {
     items: SelectableList<T>,
     selected: Vec<T>,
     should_be_closed: bool,
+    accepted: bool,
     show_top_title: bool,
     show_bottom_title: bool,
     widget_state: WidgetState,
@@ -70,6 +71,7 @@ where
             items: SelectableList::new(items.to_vec(), Some(0)),
             selected: Vec::new(),
             should_be_closed: false,
+            accepted: false,
             show_top_title: true,
             show_bottom_title: true,
             widget_state: WidgetState::default(),
@@ -168,6 +170,10 @@ impl<T> DialogTrait for Dialog<T>
 where
     T: Display + Eq + Clone + Send + Sync + 'static,
 {
+    fn accepted(&self) -> bool {
+        self.accepted
+    }
+
     fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }
@@ -214,6 +220,7 @@ where
             }
             KeyCode::Enter => {
                 self.should_be_closed = true;
+                self.accepted = true;
             }
             _ => {}
         }
