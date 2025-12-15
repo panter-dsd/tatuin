@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::fmt::{Debug, Display};
 
 pub trait Trait: Debug {
