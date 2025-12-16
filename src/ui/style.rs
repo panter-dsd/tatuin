@@ -64,7 +64,6 @@ enum ColorElement {
     HighPriorityFG,
     HighestPriorityFG,
     FilterPanelBG,
-    FilterPanelFG,
 }
 
 static THEME_MAP: RwLock<Option<HashMap<ColorElement, Color>>> = RwLock::new(None);
@@ -133,7 +132,6 @@ fn element_color(element: ColorElement) -> Color {
         HighPriorityFG => Color::LightRed,
         HighestPriorityFG => Color::Red,
         FilterPanelBG => Color::Yellow,
-        FilterPanelFG => Color::Black,
     }
 }
 
