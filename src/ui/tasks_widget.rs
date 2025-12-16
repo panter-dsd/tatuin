@@ -16,17 +16,18 @@ use crate::{
     filter::Filter,
     project::Project as ProjectTrait,
     provider::Provider,
-    style,
     task::{self, DateTimeUtc, Priority, State, Task as TaskTrait, datetime_to_str, due_group},
+    ui::{dialogs::MultiSelectListDialog, widgets::FilterPanel},
 };
 use async_trait::async_trait;
 use chrono::Local;
 use crossterm::event::{KeyEvent, MouseEvent};
+use itertools::Itertools;
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
     text::Text,
-    widgets::{Block, Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
+    widgets::{Clear, ListState, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
 use std::{any::Any, slice::Iter, slice::IterMut, sync::Arc};
 use tatuin_core::{
@@ -120,11 +121,13 @@ pub struct TasksWidget {
     delete_task_shortcut: Shortcut,
     open_task_link_shortcut: Shortcut,
     duplicate_task_shortcut: Shortcut,
+    filter_by_tag_shortcut: Shortcut,
 
     last_filter: Filter,
 
     dialog: Option<Box<dyn DialogTrait>>,
     is_global_dialog: bool,
+    filter_panel: FilterPanel,
 
     arc_self: Option<ArcRwLock<Self>>,
 }
@@ -148,18 +151,19 @@ impl AppBlockWidget for TasksWidget {
             &mut self.undo_changes_shortcut,
             &mut self.open_task_link_shortcut,
             &mut self.duplicate_task_shortcut,
+            &mut self.filter_by_tag_shortcut,
         ]
     }
 
     async fn select_next(&mut self) {
-        if self.list_state.selected().is_none_or(|i| i < self.tasks.len() - 1) {
+        if !self.tasks.is_empty() && self.list_state.selected().is_none_or(|i| i < self.tasks.len() - 1) {
             self.list_state.select_next();
             self.update_task_info_view().await;
         }
     }
 
     async fn select_previous(&mut self) {
-        if self.list_state.selected().is_some_and(|i| i > 0) {
+        if !self.tasks.is_empty() && self.list_state.selected().is_some_and(|i| i > 0) {
             self.list_state.select_previous();
             self.update_task_info_view().await;
         }
@@ -222,10 +226,14 @@ impl TasksWidget {
             delete_task_shortcut: Shortcut::new("Delete the task", &['d']).with_short_name("Delete task"),
             open_task_link_shortcut: Shortcut::new("Open the task's link", &['o']),
             duplicate_task_shortcut: Shortcut::new("Duplicate the task", &['m', 'c']),
+            filter_by_tag_shortcut: Shortcut::new("Filter by tag", &['f', 't'])
+                .with_short_name("Filter by tag")
+                .global(),
 
             last_filter: Filter::default(),
             dialog: None,
             is_global_dialog: true,
+            filter_panel: FilterPanel::new(),
             arc_self: None,
         }));
         s.write().await.arc_self = Some(s.clone());
@@ -244,7 +252,9 @@ impl TasksWidget {
                 let mut delete_task_rx = s_guard.delete_task_shortcut.subscribe_to_accepted();
                 let mut open_task_link_rx = s_guard.open_task_link_shortcut.subscribe_to_accepted();
                 let mut duplicate_task_rx = s_guard.duplicate_task_shortcut.subscribe_to_accepted();
+                let mut filter_by_tag_rx = s_guard.filter_by_tag_shortcut.subscribe_to_accepted();
                 drop(s_guard);
+
                 loop {
                     tokio::select! {
                         _ = commit_changes_rx.recv() => {
@@ -306,6 +316,9 @@ impl TasksWidget {
                                 s.show_duplicate_task_dialog(t.as_ref()).await;
                             }
                         },
+                        _ = filter_by_tag_rx.recv() => {
+                            s.write().await.show_filter_by_tag_dialog().await;
+                        },
                     }
 
                     s.write().await.update_task_info_view().await;
@@ -337,34 +350,32 @@ impl TasksWidget {
             .all_tasks
             .iter()
             .filter(|t| {
-                let mut result = true;
                 if !self.providers_filter.is_empty() && !self.providers_filter.contains(&t.provider()) {
-                    result = false;
+                    return false;
                 }
                 if let Some(tp) = t.project()
                     && !self.projects_filter.is_empty()
                     && !self.projects_filter.contains(&tp.name())
                 {
-                    result = false;
+                    return false;
                 }
-                result
+
+                let tag_filter = self.filter_panel.tag_filter();
+                if !(tag_filter.is_empty() || t.labels().iter().any(|t| tag_filter.contains(t))) {
+                    return false;
+                }
+                true
             })
             .map(|t| TaskRow::new(t.as_ref(), &self.changed_tasks))
             .collect();
 
-        self.list_state = if self.all_tasks.is_empty() {
+        self.list_state = if self.tasks.is_empty() {
             ListState::default()
         } else {
             let selected_idx = self
                 .list_state
                 .selected()
-                .map(|i| {
-                    if i >= self.all_tasks.len() {
-                        self.all_tasks.len() - 1
-                    } else {
-                        i
-                    }
-                })
+                .map(|i| if i >= self.tasks.len() { self.tasks.len() - 1 } else { i })
                 .unwrap_or_else(|| 0);
             ListState::default().with_selected(Some(selected_idx))
         };
@@ -404,7 +415,7 @@ impl TasksWidget {
         !self.changed_tasks.is_empty()
     }
 
-    pub async fn commit_changes(&mut self) {
+    async fn commit_changes(&mut self) {
         for p in self.providers_storage.write().await.iter_mut() {
             let name = &p.name;
             let patches = self
@@ -856,6 +867,22 @@ impl TasksWidget {
 
         self.async_command = None;
     }
+
+    fn available_tags(&self) -> Vec<String> {
+        self.all_tasks
+            .iter()
+            .flat_map(|t| t.labels())
+            .unique()
+            .sorted()
+            .collect_vec()
+    }
+
+    async fn show_filter_by_tag_dialog(&mut self) {
+        let mut d = MultiSelectListDialog::new(&self.available_tags());
+        d.set_selected(&self.filter_panel.tag_filter());
+        self.dialog = Some(Box::new(d));
+        self.is_global_dialog = true;
+    }
 }
 
 #[async_trait]
@@ -878,12 +905,15 @@ impl KeyboardHandler for TasksWidget {
         let mut patch = Patch::default();
         let mut add_another_one_task = false;
         let mut create_task_dialog_state = None;
+        let mut tag_filter = None;
 
         if let Some(d) = &mut self.dialog {
             need_to_update_view = true;
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DuePatchItem>>() {
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DuePatchItem>>()
+                    && d.accepted()
+                {
                     new_due = d.selected().map(|p| match p {
                         DuePatchItem::Custom(_) => {
                             let w = d.selected_custom_widget().unwrap();
@@ -896,11 +926,15 @@ impl KeyboardHandler for TasksWidget {
                         _ => *p,
                     });
                 }
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<Priority>>() {
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<Priority>>()
+                    && d.accepted()
+                {
                     new_priority = d.selected().cloned();
                 }
 
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<CreateUpdateTaskDialog>() {
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<CreateUpdateTaskDialog>()
+                    && d.accepted()
+                {
                     patch.provider_name = d.provider_name().await;
                     patch.project_id = d.project_id().await;
                     patch.task_patch = d.task_patch().await;
@@ -908,11 +942,18 @@ impl KeyboardHandler for TasksWidget {
                     create_task_dialog_state = Some(d.save().await);
                 }
 
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<MultiSelectListDialog<String>>()
+                    && d.accepted()
+                {
+                    tag_filter = Some(d.selected().iter().cloned().collect_vec());
+                }
+
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ConfirmationDialog>()
-                    && d.is_confirmed()
+                    && d.accepted()
                 {
                     self.on_async_command_confirmed().await;
                 }
+
                 self.dialog = None;
 
                 if let Some(dh) = &self.draw_helper {
@@ -941,7 +982,76 @@ impl KeyboardHandler for TasksWidget {
             self.show_add_task_dialog(None, create_task_dialog_state).await;
         }
 
+        if let Some(f) = &tag_filter {
+            self.filter_panel.set_tag_filter(f);
+            self.filter_tasks();
+        }
+
         handled
+    }
+}
+
+impl TasksWidget {
+    // rendering
+    async fn render_scrollbar(&mut self, area: Rect, buf: &mut Buffer, pos: usize) {
+        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓"));
+        let mut scrollbar_state = ScrollbarState::new(self.tasks.len()).position(pos);
+        scrollbar.render(
+            Rect {
+                x: area.x,
+                y: area.y, // header
+                width: area.width,
+                height: area.height - 1,
+            },
+            buf,
+            &mut scrollbar_state,
+        );
+    }
+
+    async fn render_tasks(&mut self, area: Rect, buf: &mut Buffer, selected: usize) {
+        let skip_count = {
+            let mut selected = selected;
+            let mut height = area.y;
+            while selected != 0 && height < area.height {
+                height += self.tasks[selected].size().height;
+                selected -= 1;
+            }
+
+            selected
+        };
+
+        let mut y = area.y;
+
+        for (i, w) in self.tasks.iter_mut().enumerate() {
+            if i < skip_count || y > area.height {
+                w.set_visible(false);
+                continue;
+            }
+
+            w.set_visible(true);
+
+            let is_row_selected = selected == i;
+            w.set_selected(is_row_selected);
+
+            Text::from(if is_row_selected { ">" } else { " " })
+                .style(default_style())
+                .render(
+                    Rect {
+                        x: area.x,
+                        y,
+                        width: 1,
+                        height: 1,
+                    },
+                    buf,
+                );
+            w.set_pos(Position::new(area.x + 1, y));
+            w.render(area, buf).await;
+
+            let size = w.size();
+            y += size.height;
+        }
     }
 }
 
@@ -962,72 +1072,36 @@ impl WidgetTrait for TasksWidget {
         let h = Header::new(title.as_str(), self.is_active(), Some(&self.activate_shortcut));
         h.block().render(area, buf);
 
-        let mut y = area.y + 1;
+        let mut list_area = area;
+        list_area.y += 1;
 
-        let mut selected = self.list_state.selected();
-        if selected.is_some_and(|idx| idx >= self.tasks.len()) {
-            selected = Some(0);
+        if !self.filter_panel.is_empty() {
+            list_area.height -= self.filter_panel.size().height;
         }
 
-        let skip_count = selected
-            .map(|mut idx| {
-                let mut height = y;
-                while idx != 0 && height < area.height {
-                    height += self.tasks[idx].size().height;
-                    idx -= 1;
-                }
-
-                idx
-            })
+        let selected = self
+            .list_state
+            .selected()
+            .map(|idx| if idx >= self.tasks.len() { 0 } else { idx })
             .unwrap_or_default();
 
-        for (i, w) in self.tasks.iter_mut().enumerate() {
-            if i < skip_count || y > area.height {
-                w.set_visible(false);
-                continue;
-            }
+        self.render_tasks(list_area, buf, selected).await;
+        self.render_scrollbar(list_area, buf, selected).await;
 
-            w.set_visible(true);
-
-            let is_row_selected = selected.is_some_and(|idx| idx == i);
-            w.set_selected(is_row_selected);
-
-            Text::from(if is_row_selected { ">" } else { " " })
-                .style(default_style())
+        if !self.filter_panel.is_empty() {
+            let height = self.filter_panel.size().height;
+            self.filter_panel
                 .render(
                     Rect {
-                        x: area.x,
-                        y,
-                        width: 1,
-                        height: 1,
+                        x: list_area.x,
+                        y: area.y + area.height - height,
+                        width: list_area.width,
+                        height,
                     },
                     buf,
-                );
-            w.set_pos(Position::new(area.x + 1, y));
-            w.render(area, buf).await;
-
-            let size = w.size();
-            y += size.height;
+                )
+                .await;
         }
-
-        Block::new()
-            .style(style::default_style())
-            .render(Rect::new(area.x, y, area.width, area.height + 1 - y), buf);
-
-        let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
-            .begin_symbol(Some("↑"))
-            .end_symbol(Some("↓"));
-        let mut scrollbar_state = ScrollbarState::new(self.tasks.len()).position(selected.unwrap_or_default());
-        scrollbar.render(
-            Rect {
-                x: area.x,
-                y: area.y + 1, // header
-                width: area.width,
-                height: area.height - 1,
-            },
-            buf,
-            &mut scrollbar_state,
-        );
 
         if self.dialog.is_some() {
             self.render_dialog(area, buf).await;

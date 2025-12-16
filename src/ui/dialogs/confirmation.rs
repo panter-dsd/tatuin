@@ -82,18 +82,6 @@ impl Dialog {
         self
     }
 
-    pub fn is_confirmed(&self) -> bool {
-        if self.choice.is_none() {
-            return false;
-        }
-        match self.choice.unwrap() {
-            StandardButton::Ok => true,
-            StandardButton::Yes => true,
-            StandardButton::No => false,
-            StandardButton::Cancel => false,
-        }
-    }
-
     fn order_calculator(&mut self) -> OrderChanger<'_> {
         OrderChanger::new(
             self.buttons
@@ -187,6 +175,18 @@ impl WidgetTrait for Dialog {
 
 #[async_trait]
 impl DialogTrait for Dialog {
+    fn accepted(&self) -> bool {
+        if self.choice.is_none() {
+            return false;
+        }
+        match self.choice.unwrap() {
+            StandardButton::Ok => true,
+            StandardButton::Yes => true,
+            StandardButton::No => false,
+            StandardButton::Cancel => false,
+        }
+    }
+
     fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }

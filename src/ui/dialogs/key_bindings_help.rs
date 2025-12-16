@@ -151,6 +151,9 @@ impl WidgetTrait for Dialog {
 
 #[async_trait]
 impl DialogTrait for Dialog {
+    fn accepted(&self) -> bool {
+        false
+    }
     fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }

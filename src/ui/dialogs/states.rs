@@ -74,6 +74,9 @@ impl WidgetTrait for Dialog {
 
 #[async_trait]
 impl DialogTrait for Dialog {
+    fn accepted(&self) -> bool {
+        self.selected_state.is_some()
+    }
     fn should_be_closed(&self) -> bool {
         self.should_be_closed
     }
