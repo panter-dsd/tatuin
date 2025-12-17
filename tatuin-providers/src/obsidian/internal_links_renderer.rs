@@ -40,7 +40,7 @@ impl InternalLinksRenderer {
 
     pub fn set_vault_path(&mut self, p: &Path) {
         if self.vault_path.is_none() {
-            self.display = fix_refular_links(self.display.as_str(), p);
+            self.display = fix_regular_links(self.display.as_str(), p);
             self.display = fix_wiki_links(self.display.as_str(), p);
             self.vault_path = Some(p.to_path_buf());
         }
@@ -78,7 +78,7 @@ fn fix_wiki_links(text: &str, vault_path: &Path) -> String {
     result
 }
 
-fn fix_refular_links(text: &str, vault_path: &Path) -> String {
+fn fix_regular_links(text: &str, vault_path: &Path) -> String {
     let mut result = text.to_string();
 
     for l in markdown::find_regular_links(text).iter().rev() {
