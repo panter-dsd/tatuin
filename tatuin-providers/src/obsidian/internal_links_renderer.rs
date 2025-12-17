@@ -3,11 +3,15 @@
 use std::{
     fmt::Display,
     path::{Path, PathBuf},
+    sync::LazyLock,
 };
 
+use regex::Regex;
 use tatuin_core::RichStringTrait;
 
 use crate::obsidian::{fs, markdown, md_file::TAG_RE};
+
+static URL_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\w+:\/\/[^\s]+").unwrap());
 
 #[derive(Debug, Clone, Default)]
 pub struct InternalLinksRenderer {
@@ -42,6 +46,7 @@ impl InternalLinksRenderer {
         if self.vault_path.is_none() {
             self.display = fix_regular_links(self.display.as_str(), p);
             self.display = fix_wiki_links(self.display.as_str(), p);
+            self.display = fix_raw_links(self.display.as_str());
             self.vault_path = Some(p.to_path_buf());
         }
     }
@@ -92,6 +97,29 @@ fn fix_regular_links(text: &str, vault_path: &Path) -> String {
         }
     }
 
+    result
+}
+
+fn fix_raw_links(text: &str) -> String {
+    let mut result = String::new();
+
+    let mut last_end: usize = 0;
+
+    for m in URL_RE.find_iter(text) {
+        // check correctness of the url because the regexp is very simple
+        if url::Url::parse(m.as_str()).is_err() {
+            continue;
+        }
+
+        result.push_str(&text[last_end..m.start()]);
+        result.push('[');
+        result.push_str(m.as_str());
+        result.push_str("](");
+        result.push_str(m.as_str());
+        result.push(')');
+        last_end = m.end();
+    }
+    result.push_str(&text[last_end..]);
     result
 }
 
