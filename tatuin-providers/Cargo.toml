@@ -14,12 +14,12 @@ chrono = "0.4.42"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.143"
 tokio = { version = "1.48.0", features = ["full"] }
-reqwest = { version = "0.12.25", features = ["json"] }
+reqwest = { version = "0.12.26", features = ["json"] }
 reqwest_dav = "0.2.1"
 url = "2.5.7"
 url-builder = "0.1.1"
 urlencoding = "2.1.3"
-tracing = { version = "0.1.41", features = ["async-await", "log"] }
+tracing = { version = "0.1.44", features = ["async-await", "log"] }
 itertools = "0.14.0"
 sha256 = "1.6.0"
 regex = "1.12.2"
@@ -27,7 +27,7 @@ ical = "0.11.0"
 strum = { version = "0.27.2", features = ["derive"] }
 chrono-tz = "0.10.4"
 iso8601-duration = { version = "0.2.0", features = ["chrono"] }
-toml = "0.9.8"
+toml = "0.9.10"
 uuid = { version = "1.19.0", features = ["serde", "v4"] }
 tempfile = "3.23.0"
 redb = "3.1.0"
