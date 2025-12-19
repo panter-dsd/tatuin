@@ -8,7 +8,6 @@ use std::path::Path;
 use std::sync::LazyLock;
 use std::{error::Error, path::PathBuf};
 use tatuin_core::{
-    RichStringTrait,
     task::{DateTimeUtc, Priority},
     task_patch::ValuePatch,
 };
@@ -221,7 +220,7 @@ impl File {
 
 pub fn task_to_string(t: &Task, indent: &str) -> String {
     let state_char: char = t.state.into();
-    let mut elements = vec![format!("- [{state_char}]"), t.name.raw()];
+    let mut elements = vec![format!("- [{state_char}]"), t.name.clone()];
     if let Some(due) = &t.due {
         elements.push(format!("{DUE_EMOJI} {}", due.format("%Y-%m-%d")))
     }
@@ -415,11 +414,8 @@ some another text
         assert!(task.is_some());
         let mut task = task.unwrap();
         task.set_vault_path(Path::new("."));
-        assert_eq!(
-            task.name.raw(),
-            "Some #tag task #группа/имя_tag-name123 text #tag_at_end"
-        );
-        assert_eq!(task.name.display(), "Some task text");
+        assert_eq!(task.name, "Some #tag task #группа/имя_tag-name123 text #tag_at_end");
+        assert_eq!(task.name, "Some task text");
         assert_eq!(task.state, State::Completed);
         assert!(task.due.is_some());
         assert_eq!(task.due.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
@@ -444,7 +440,7 @@ End of content
         let tasks = p.tasks_from_content(text).unwrap();
         assert_eq!(tasks.len(), 1);
         let task = &tasks[0];
-        assert_eq!(task.name.raw(), "Some task");
+        assert_eq!(task.name, "Some task");
         assert!(task.description.is_some());
         assert_eq!(
             task.description.as_ref().unwrap().text,

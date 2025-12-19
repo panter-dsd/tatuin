@@ -6,7 +6,7 @@ use super::github::{client::Client, structs};
 use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use std::any::Any;
 use tatuin_core::{
-    RichString, RichStringTrait, StringError, filter,
+    RichString, StringError, filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
@@ -45,8 +45,8 @@ impl TaskTrait for Task {
         self.issue.id.to_string()
     }
 
-    fn name(&self) -> Box<dyn RichStringTrait> {
-        RichString::new_boxed(&self.issue.title)
+    fn name(&self) -> RichString {
+        RichString::new(&self.issue.title)
     }
 
     fn created_at(&self) -> Option<DateTimeUtc> {

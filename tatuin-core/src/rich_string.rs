@@ -1,42 +1,39 @@
 // SPDX-License-Identifier: MIT
 
-use std::fmt::{Debug, Display};
+use crate::RawLinkTransformer;
 
-pub trait Trait: Debug {
-    fn raw(&self) -> String;
-    fn display(&self) -> String {
-        self.raw()
-    }
+pub trait Transformer: std::fmt::Debug {
+    fn transform(&self, s: &str) -> String;
 }
 
-#[derive(PartialEq, Eq, Clone)]
-pub struct DefaultImpl {
+#[derive(Debug)]
+pub struct RichString {
     s: String,
+    transformers: Vec<Box<dyn Transformer>>,
 }
 
-impl DefaultImpl {
-    pub fn new_boxed(s: &str) -> Box<dyn Trait> {
-        Box::new(Self { s: s.to_string() })
+impl RichString {
+    pub fn new(s: &str) -> Self {
+        Self {
+            s: s.to_string(),
+            transformers: vec![Box::new(RawLinkTransformer {})],
+        }
     }
-}
 
-impl<T> From<T> for DefaultImpl
-where
-    T: Display,
-{
-    fn from(value: T) -> Self {
-        Self { s: value.to_string() }
+    pub fn with_transformer(mut self, t: Box<dyn Transformer>) -> Self {
+        self.transformers.push(t);
+        self
     }
-}
 
-impl Trait for DefaultImpl {
-    fn raw(&self) -> String {
+    pub fn raw(&self) -> String {
         self.s.clone()
     }
-}
 
-impl std::fmt::Debug for DefaultImpl {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "RichString (s={})", self.s)
+    pub fn display(&self) -> String {
+        let mut s = self.raw();
+        for t in &self.transformers {
+            s = t.transform(&s);
+        }
+        s
     }
 }

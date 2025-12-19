@@ -7,7 +7,7 @@ use ical::property::Property;
 
 use super::priority::TaskPriority;
 use tatuin_core::{
-    RichString, RichStringTrait,
+    RichString,
     project::Project as ProjectTrait,
     task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
 };
@@ -125,8 +125,8 @@ impl TaskTrait for Task {
         self.uid.clone()
     }
 
-    fn name(&self) -> Box<dyn RichStringTrait> {
-        RichString::new_boxed(&self.name)
+    fn name(&self) -> RichString {
+        RichString::new(&self.name)
     }
 
     fn state(&self) -> State {
@@ -171,8 +171,8 @@ impl TaskTrait for Task {
         self.patch_policy.clone()
     }
 
-    fn description(&self) -> Option<Box<dyn RichStringTrait>> {
-        self.description.as_ref().map(|s| RichString::new_boxed(s))
+    fn description(&self) -> Option<RichString> {
+        self.description.as_ref().map(|s| RichString::new(s))
     }
 
     fn created_at(&self) -> Option<DateTimeUtc> {

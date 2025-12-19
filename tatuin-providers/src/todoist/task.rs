@@ -4,7 +4,7 @@ use chrono::{DateTime, NaiveDate, NaiveDateTime, Utc};
 use serde::Deserialize;
 use std::any::Any;
 use tatuin_core::{
-    RichString, RichStringTrait,
+    RichString,
     project::Project as ProjectTrait,
     task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait},
     task_patch::DuePatchItem,
@@ -85,12 +85,12 @@ impl TaskTrait for Task {
         self.id.to_string()
     }
 
-    fn name(&self) -> Box<dyn RichStringTrait> {
-        RichString::new_boxed(&self.content)
+    fn name(&self) -> RichString {
+        RichString::new(&self.content)
     }
 
-    fn description(&self) -> Option<Box<dyn RichStringTrait>> {
-        self.description.as_ref().map(|s| RichString::new_boxed(s))
+    fn description(&self) -> Option<RichString> {
+        self.description.as_ref().map(|s| RichString::new(s))
     }
 
     fn state(&self) -> TaskState {
