@@ -115,6 +115,7 @@ fn fix_raw_links(text: &str) -> String {
         let mut end = m.end();
         // check correctness of the url because the regexp is very simple
         if url::Url::parse(s).is_err() {
+            // try one more time without the last symbol
             if url::Url::parse(&s[..s.len() - 1]).is_ok() {
                 end -= 1;
                 s = &s[..s.len() - 1];
