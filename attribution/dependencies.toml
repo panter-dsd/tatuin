@@ -164,7 +164,7 @@ repository = "https://github.com/RustCrypto/utils"
 
 [[dependencies]]
 name = "bumpalo"
-version = "3.19.0"
+version = "3.19.1"
 description = "A fast bump allocation arena for Rust."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2019 Nick Fitzgerald"]
@@ -208,7 +208,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.49"
+version = "1.2.50"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -1283,7 +1283,7 @@ repository = "https://github.com/rust-lang/libc"
 
 [[dependencies]]
 name = "libredox"
-version = "0.1.10"
+version = "0.1.11"
 description = "Redox stable ABI"
 license = "MIT"
 notices = ["Copyright (c) 2023 4lDO2"]
@@ -1925,7 +1925,7 @@ homepage = "https://github.com/rust-lang/regex/tree/master/regex-syntax"
 
 [[dependencies]]
 name = "reqwest"
-version = "0.12.25"
+version = "0.12.26"
 description = "higher level HTTP client library"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -2032,7 +2032,7 @@ repository = "https://github.com/rustls/rustls"
 
 [[dependencies]]
 name = "rustls-pki-types"
-version = "1.13.1"
+version = "1.13.2"
 description = "Shared types for the rustls PKI ecosystem"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -2194,7 +2194,7 @@ repository = "https://github.com/serde-rs/json"
 
 [[dependencies]]
 name = "serde_spanned"
-version = "1.0.3"
+version = "1.0.4"
 description = "Serde-compatible spanned Value"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -2674,7 +2674,7 @@ homepage = "https://tokio.rs"
 
 [[dependencies]]
 name = "toml"
-version = "0.9.8"
+version = "0.9.10+spec-1.1.0"
 description = """
 A native Rust encoder and decoder of TOML-formatted files and streams. Provides
 implementations of the standard Serialize/Deserialize traits for TOML data to
@@ -2686,7 +2686,7 @@ repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
 name = "toml_datetime"
-version = "0.7.3"
+version = "0.7.5+spec-1.1.0"
 description = "A TOML-compatible datetime type"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -2694,7 +2694,7 @@ repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
 name = "toml_parser"
-version = "1.0.4"
+version = "1.0.6+spec-1.1.0"
 description = "Yet another format-preserving TOML parser."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -2702,7 +2702,7 @@ repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
 name = "toml_writer"
-version = "1.0.4"
+version = "1.0.6+spec-1.1.0"
 description = """
 A low-level interface for writing out TOML
 """
@@ -2755,7 +2755,7 @@ repository = "https://github.com/tower-rs/tower"
 
 [[dependencies]]
 name = "tracing"
-version = "0.1.43"
+version = "0.1.44"
 description = """
 Application-level tracing for Rust.
 """
@@ -2801,7 +2801,7 @@ homepage = "https://tokio.rs"
 
 [[dependencies]]
 name = "tracing-core"
-version = "0.1.35"
+version = "0.1.36"
 description = """
 Core primitives for application-level tracing.
 """
