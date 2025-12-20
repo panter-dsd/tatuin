@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::any::Any;
 
 use crate::ui::style;
