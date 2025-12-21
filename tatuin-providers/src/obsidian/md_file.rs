@@ -328,6 +328,7 @@ fn extract_priority(text: &str) -> (String, Priority) {
 mod tests {
 
     use super::*;
+    use tatuin_core::task::Task as TaskTrait;
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
@@ -414,8 +415,10 @@ some another text
         assert!(task.is_some());
         let mut task = task.unwrap();
         task.set_vault_path(Path::new("."));
+
+        let task_trait: &dyn TaskTrait = &task;
         assert_eq!(task.name, "Some #tag task #группа/имя_tag-name123 text #tag_at_end");
-        assert_eq!(task.name, "Some task text");
+        assert_eq!(task_trait.name().display(), "Some task text");
         assert_eq!(task.state, State::Completed);
         assert!(task.due.is_some());
         assert_eq!(task.due.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
