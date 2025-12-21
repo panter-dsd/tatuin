@@ -82,7 +82,7 @@ impl TaskProviderTrait for Provider {
 
     async fn create(&mut self, _project_id: &str, tp: &TaskPatch) -> Result<(), StringError> {
         let t = task::Task {
-            name: tp.name.value().unwrap().into(),
+            name: tp.name.value().unwrap(),
             description: tp.description.value().map(|s| Description::from_str(s.as_str())),
             state: State::Uncompleted,
             due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),

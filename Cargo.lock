@@ -2369,9 +2369,11 @@ dependencies = [
  "clap",
  "colored",
  "dirs",
+ "regex",
  "serde",
  "serde_json",
  "tokio",
+ "url",
 ]
 
 [[package]]

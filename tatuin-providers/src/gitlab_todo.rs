@@ -10,7 +10,7 @@ use crate::{
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use std::{any::Any, collections::HashMap, error::Error};
 use tatuin_core::{
-    RichString, RichStringTrait, StringError, filter,
+    RichString, StringError, filter,
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
@@ -101,8 +101,8 @@ impl TaskTrait for Task {
         self.todo.id.to_string()
     }
 
-    fn name(&self) -> Box<dyn RichStringTrait> {
-        RichString::new_boxed(&self.todo.body)
+    fn name(&self) -> RichString {
+        RichString::new(&self.todo.body)
     }
 
     fn created_at(&self) -> Option<DateTimeUtc> {

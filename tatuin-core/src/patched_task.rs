@@ -2,7 +2,7 @@
 
 use std::any::Any;
 
-use crate::{RichString, RichStringTrait};
+use crate::RichString;
 
 use super::project::Project as ProjectTrait;
 use super::{
@@ -30,21 +30,21 @@ impl TaskTrait for PatchedTask {
         self.task.id()
     }
 
-    fn name(&self) -> Box<dyn RichStringTrait> {
+    fn name(&self) -> RichString {
         if let Some(p) = &self.patch
             && let Some(name) = &p.name.value()
         {
-            RichString::new_boxed(name)
+            RichString::new(name)
         } else {
             self.task.name()
         }
     }
 
-    fn description(&self) -> Option<Box<dyn RichStringTrait>> {
+    fn description(&self) -> Option<RichString> {
         if let Some(p) = &self.patch
             && p.description.is_set()
         {
-            return p.description.value().map(|s| RichString::new_boxed(&s));
+            return p.description.value().map(|s| RichString::new(&s));
         }
 
         self.task.description()

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::obsidian::internal_links_renderer::InternalLinksRenderer;
+use crate::obsidian::internal_links_renderer::InternalLinksTransformer;
 
 use super::{description::Description, fs, project::Project, state::State};
 use std::{
@@ -8,7 +8,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use tatuin_core::{
-    RichStringTrait,
+    RichString,
     project::Project as ProjectTrait,
     task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait},
     task_patch::DuePatchItem,
@@ -19,7 +19,7 @@ pub struct Task {
     pub vault_path: PathBuf,
     pub provider: String,
 
-    pub name: InternalLinksRenderer,
+    pub name: String,
     pub file_path: PathBuf,
     pub start_pos: usize,
     pub end_pos: usize,
@@ -49,8 +49,6 @@ impl Eq for Task {}
 impl Task {
     pub fn set_vault_path(&mut self, p: &Path) {
         self.vault_path = p.to_path_buf();
-        self.name.set_vault_path(p);
-        self.name.remove_tags();
     }
 
     pub fn set_provider(&mut self, p: String) {
@@ -62,24 +60,19 @@ impl TaskTrait for Task {
     fn id(&self) -> String {
         sha256::digest(format!(
             "{:?}:{}:{}:{}:{}",
-            self.file_path,
-            self.start_pos,
-            self.end_pos,
-            self.state,
-            self.name.raw()
+            self.file_path, self.start_pos, self.end_pos, self.state, self.name
         ))
     }
 
-    fn name(&self) -> Box<dyn RichStringTrait> {
-        Box::new(self.name.clone())
+    fn name(&self) -> RichString {
+        RichString::new(&self.name).with_transformer(Box::new(
+            InternalLinksTransformer::new(&self.vault_path).with_remove_tags(),
+        ))
     }
 
-    fn description(&self) -> Option<Box<dyn RichStringTrait>> {
+    fn description(&self) -> Option<RichString> {
         self.description.clone().map(|d| {
-            let mut renderer = InternalLinksRenderer::new(&d.text);
-            renderer.set_vault_path(&self.vault_path);
-            let result: Box<dyn RichStringTrait> = Box::new(renderer);
-            result
+            RichString::new(&d.text).with_transformer(Box::new(InternalLinksTransformer::new(&self.vault_path)))
         })
     }
 

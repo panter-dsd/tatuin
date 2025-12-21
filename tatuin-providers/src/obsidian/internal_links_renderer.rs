@@ -1,49 +1,41 @@
 // SPDX-License-Identifier: MIT
 
-use std::{
-    fmt::Display,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
-use tatuin_core::RichStringTrait;
+use tatuin_core::RichStringTransformerTrait;
 
 use crate::obsidian::{fs, markdown, md_file::TAG_RE};
 
 #[derive(Debug, Clone, Default)]
-pub struct InternalLinksRenderer {
-    raw: String,
-    display: String,
-
-    vault_path: Option<PathBuf>,
+pub struct InternalLinksTransformer {
+    vault_path: PathBuf,
+    remove_tags: bool,
 }
 
-impl PartialEq for InternalLinksRenderer {
-    fn eq(&self, other: &Self) -> bool {
-        self.raw == other.raw
-    }
-}
-
-impl Eq for InternalLinksRenderer {}
-
-impl InternalLinksRenderer {
-    pub fn new(s: &str) -> Self {
+impl InternalLinksTransformer {
+    pub fn new(vault_path: &Path) -> Self {
         Self {
-            raw: s.to_string(),
-            display: s.to_string(),
-            vault_path: None,
+            vault_path: vault_path.to_path_buf(),
+            remove_tags: false,
         }
     }
 
-    pub fn remove_tags(&mut self) {
-        self.display = clear_tags(&self.display);
+    pub fn with_remove_tags(mut self) -> Self {
+        self.remove_tags = true;
+        self
     }
+}
 
-    pub fn set_vault_path(&mut self, p: &Path) {
-        if self.vault_path.is_none() {
-            self.display = fix_refular_links(self.display.as_str(), p);
-            self.display = fix_wiki_links(self.display.as_str(), p);
-            self.vault_path = Some(p.to_path_buf());
+impl RichStringTransformerTrait for InternalLinksTransformer {
+    fn transform(&self, s: &str) -> String {
+        let mut s = s.to_string();
+
+        if self.remove_tags {
+            s = clear_tags(&s);
         }
+        s = fix_regular_links(&s, &self.vault_path);
+        s = fix_wiki_links(&s, &self.vault_path);
+        s
     }
 }
 
@@ -78,7 +70,7 @@ fn fix_wiki_links(text: &str, vault_path: &Path) -> String {
     result
 }
 
-fn fix_refular_links(text: &str, vault_path: &Path) -> String {
+fn fix_regular_links(text: &str, vault_path: &Path) -> String {
     let mut result = text.to_string();
 
     for l in markdown::find_regular_links(text).iter().rev() {
@@ -93,23 +85,4 @@ fn fix_refular_links(text: &str, vault_path: &Path) -> String {
     }
 
     result
-}
-
-impl<T> From<T> for InternalLinksRenderer
-where
-    T: Display,
-{
-    fn from(value: T) -> Self {
-        Self::new(value.to_string().as_str())
-    }
-}
-
-impl RichStringTrait for InternalLinksRenderer {
-    fn raw(&self) -> String {
-        self.raw.clone()
-    }
-
-    fn display(&self) -> String {
-        self.display.clone()
-    }
 }
