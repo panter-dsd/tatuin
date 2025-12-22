@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use crate::RawLinkTransformer;
+use crate::{EmojiTransformer, RawLinkTransformer};
 
 pub trait Transformer: std::fmt::Debug {
     fn transform(&self, s: &str) -> String;
@@ -16,7 +16,7 @@ impl RichString {
     pub fn new(s: &str) -> Self {
         Self {
             s: s.to_string(),
-            transformers: vec![Box::new(RawLinkTransformer {})],
+            transformers: vec![Box::new(RawLinkTransformer {}), Box::new(EmojiTransformer {})],
         }
     }
 

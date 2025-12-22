@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 
+mod emoji_transformer;
 pub mod filter;
 pub mod folders;
 pub mod patched_task;
@@ -14,6 +15,7 @@ pub mod task_patch;
 pub mod time;
 pub mod types;
 pub mod utils;
+pub use emoji_transformer::EmojiTransformer;
 pub use raw_link_transformer::RawLinkTransformer;
 pub use rich_string::{RichString, Transformer as RichStringTransformerTrait};
 pub use string_error::StringError;
