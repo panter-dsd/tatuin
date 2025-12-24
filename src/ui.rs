@@ -688,13 +688,18 @@ impl App {
         self.tasks_widget
             .write()
             .await
-            .set_providers_filter(&selected_providers);
+            .set_providers_filter(&selected_providers)
+            .await;
 
         let mut selected_projects = Vec::new();
         if let Some(p) = self.projects.read().await.selected() {
             selected_projects.push(p.name());
         }
-        self.tasks_widget.write().await.set_projects_filter(&selected_projects);
+        self.tasks_widget
+            .write()
+            .await
+            .set_projects_filter(&selected_projects)
+            .await;
 
         if self.current_block != AppBlock::Projects {
             self.load_projects().await;

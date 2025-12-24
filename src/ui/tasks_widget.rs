@@ -331,21 +331,21 @@ impl TasksWidget {
         s
     }
 
-    pub fn set_providers_filter(&mut self, providers: &[String]) {
+    pub async fn set_providers_filter(&mut self, providers: &[String]) {
         self.providers_filter = providers.to_vec();
-        self.filter_tasks();
+        self.filter_tasks().await;
     }
 
-    pub fn set_projects_filter(&mut self, projects: &[String]) {
+    pub async fn set_projects_filter(&mut self, projects: &[String]) {
         self.projects_filter = projects.to_vec();
-        self.filter_tasks();
+        self.filter_tasks().await;
     }
 
     pub fn subscribe_on_changes(&self) -> broadcast::Receiver<()> {
         self.on_changes_broadcast.subscribe()
     }
 
-    fn filter_tasks(&mut self) {
+    async fn filter_tasks(&mut self) {
         self.tasks = self
             .all_tasks
             .iter()
@@ -379,6 +379,8 @@ impl TasksWidget {
                 .unwrap_or_else(|| 0);
             ListState::default().with_selected(Some(selected_idx))
         };
+
+        self.update_task_info_view().await;
     }
 
     pub fn tasks_projects(&self) -> Vec<Box<dyn ProjectTrait>> {
@@ -543,8 +545,7 @@ impl TasksWidget {
                             });
 
                             s.remove_changed_tasks_that_are_not_exists_anymore();
-                            s.filter_tasks();
-                            s.update_task_info_view().await;
+                            s.filter_tasks().await;
                             let _ = s.on_changes_broadcast.send(());
                         }
                         Err(err) => {
@@ -984,7 +985,7 @@ impl KeyboardHandler for TasksWidget {
 
         if let Some(f) = &tag_filter {
             self.filter_panel.set_tag_filter(f);
-            self.filter_tasks();
+            self.filter_tasks().await;
         }
 
         handled
