@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use crate::RichStringTransformerTrait;
 use regex::Regex;
 use std::sync::LazyLock;

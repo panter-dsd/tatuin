@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::sync::LazyLock;
 
 use regex::Regex;
