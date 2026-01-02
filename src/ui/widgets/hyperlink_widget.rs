@@ -7,7 +7,7 @@ use crossterm::event::{KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
-    style::{Style, Stylize},
+    style::Style,
     text::Text,
     widgets::{Clear, Paragraph, Widget, Wrap},
 };
