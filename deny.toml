@@ -18,6 +18,8 @@ allow = [
   "Zlib",
   "BSD-3-Clause",
   "MPL-2.0",
+  "CDLA-Permissive-2.0",
+  "OpenSSL",
 ]
 confidence-threshold = 0.8
 exceptions = []
