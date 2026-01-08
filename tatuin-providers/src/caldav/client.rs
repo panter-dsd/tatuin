@@ -7,7 +7,7 @@ use reqwest::{
     StatusCode,
     header::{HeaderMap, HeaderValue},
 };
-use reqwest_dav::{Client as WebDavClient, ClientBuilder, Depth, list_cmd::ListEntity, re_exports::reqwest};
+use reqwest_dav::{Client as WebDavClient, ClientBuilder, Depth, list_cmd::ListEntity};
 use serde::{Deserialize, Serialize};
 use std::{
     error::Error,

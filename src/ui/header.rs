@@ -2,6 +2,7 @@
 
 use super::shortcut::Shortcut;
 use super::style;
+use ratatui::style::Stylize;
 use ratatui::symbols;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders};

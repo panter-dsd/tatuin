@@ -14,6 +14,7 @@ use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Layout, Rect, Size},
+    style::Stylize,
     text::{Line, Span},
     widgets::{Block, Borders, List, Paragraph, Widget},
 };
