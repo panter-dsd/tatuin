@@ -265,8 +265,9 @@ impl Client {
     }
 
     pub async fn delete_task(&self, task_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{BASE_URL}/tasks/{task_id}");
         self.client
-            .delete(format!("{BASE_URL}/tasks/{task_id}"))
+            .delete(url)
             .headers(self.default_header.clone())
             .send()
             .await?
