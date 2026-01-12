@@ -265,6 +265,10 @@ impl Client {
     }
 
     pub async fn delete_task(&self, task_id: &str) -> Result<(), Box<dyn Error>> {
+        if task_id.is_empty() || !task_id.chars().all(|c| c.is_ascii_alphanumeric()) {
+            return Err("Invalid task ID format".into());
+        }
+
         let url = format!("{BASE_URL}/tasks/{task_id}");
         self.client
             .delete(url)
