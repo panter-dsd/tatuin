@@ -188,6 +188,10 @@ impl File {
             new_task.due = p.due.value();
         }
 
+        if p.scheduled.is_set() {
+            new_task.scheduled = p.scheduled.value();
+        }
+
         let indent = content
             .chars()
             .skip(current_task.start_pos)
@@ -678,6 +682,7 @@ some text
                         description: ValuePatch::NotSet,
                         state: ValuePatch::Value(State::Completed),
                         due: ValuePatch::NotSet,
+                        scheduled: ValuePatch::NotSet,
                         priority: ValuePatch::NotSet,
                     },
                     result.as_str(),
@@ -774,6 +779,7 @@ some another text
                         task: &tasks[i],
                         state: ValuePatch::Value(State::Uncompleted),
                         due: ValuePatch::NotSet,
+                        scheduled: ValuePatch::NotSet,
                         priority: ValuePatch::NotSet,
                     },
                     result.as_str(),
@@ -942,6 +948,7 @@ Some another text";
                         description: ValuePatch::NotSet,
                         state: ValuePatch::NotSet,
                         due: ValuePatch::NotSet,
+                        scheduled: ValuePatch::NotSet,
                         priority: ValuePatch::Value(c.priority),
                     },
                     result.as_str(),
@@ -974,6 +981,7 @@ Some another text";
                     description: ValuePatch::NotSet,
                     state: ValuePatch::NotSet,
                     due: ValuePatch::NotSet,
+                    scheduled: ValuePatch::NotSet,
                     priority: ValuePatch::NotSet,
                 },
             },
@@ -987,18 +995,19 @@ Some another text";
                     description: ValuePatch::NotSet,
                     state: ValuePatch::NotSet,
                     due: ValuePatch::NotSet,
+                    scheduled: ValuePatch::NotSet,
                     priority: ValuePatch::NotSet,
                 },
             },
             Case {
                 name: "change all",
                 file_content_before: format!(
-                    "  - [ ] Some text #tag #другой.тег {DUE_EMOJI} 2025-03-01 ⏫ #tag3
+                    "  - [ ] Some text #tag #другой.тег {DUE_EMOJI} 2025-03-01 {SCHEDULED_EMOJI} 2025-04-02 ⏫ #tag3
   task description
   on two lines"
                 ),
                 file_content_after: format!(
-                    "  - [/] Some another text {DUE_EMOJI} 2025-01-27 🔺
+                    "  - [/] Some another text {DUE_EMOJI} 2025-01-27 {SCHEDULED_EMOJI} 2025-03-23 🔺
       the task description"
                 ),
                 patch: TaskPatch {
@@ -1008,6 +1017,13 @@ Some another text";
                     state: ValuePatch::Value(State::InProgress),
                     due: ValuePatch::Value(DateTimeUtc::from_naive_utc_and_offset(
                         NaiveDate::parse_from_str("2025-01-27", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                        Utc,
+                    )),
+                    scheduled: ValuePatch::Value(DateTimeUtc::from_naive_utc_and_offset(
+                        NaiveDate::parse_from_str("2025-03-23", "%Y-%m-%d")
                             .unwrap()
                             .and_hms_opt(0, 0, 0)
                             .unwrap(),
@@ -1044,6 +1060,7 @@ Some another text";
                     ),
                     state: ValuePatch::NotSet,
                     due: ValuePatch::NotSet,
+                    scheduled: ValuePatch::NotSet,
                     priority: ValuePatch::NotSet,
                 },
             },
@@ -1075,6 +1092,7 @@ Some another text";
                     ),
                     state: ValuePatch::NotSet,
                     due: ValuePatch::NotSet,
+                    scheduled: ValuePatch::NotSet,
                     priority: ValuePatch::NotSet,
                 },
             },

@@ -98,6 +98,22 @@ impl<T> From<Option<T>> for ValuePatch<T> {
     }
 }
 
+impl From<ValuePatch<DatePatchItem>> for ValuePatch<DateTimeUtc> {
+    fn from(value: ValuePatch<DatePatchItem>) -> Self {
+        match value {
+            ValuePatch::NotSet => ValuePatch::NotSet,
+            ValuePatch::Empty => ValuePatch::Empty,
+            ValuePatch::Value(due) => {
+                if let Some(d) = due.into() {
+                    ValuePatch::Value(d)
+                } else {
+                    ValuePatch::Empty
+                }
+            }
+        }
+    }
+}
+
 impl<T> ValuePatch<T>
 where
     T: Clone,

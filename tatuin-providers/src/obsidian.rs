@@ -24,7 +24,7 @@ use tatuin_core::{
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{Priority, Task as TaskTrait},
-    task_patch::{DatePatchItem, PatchError, TaskPatch, ValuePatch},
+    task_patch::{DatePatchItem, PatchError, TaskPatch},
 };
 
 use crate::config::Config;
@@ -154,17 +154,8 @@ fn patch_to_internal<'a>(t: &'a task::Task, tp: &TaskPatch) -> patch::TaskPatch<
         name: tp.name.clone(),
         description: tp.description.clone(),
         state: tp.state.clone().map(|s| s.into()),
-        due: match tp.due {
-            ValuePatch::NotSet => ValuePatch::NotSet,
-            ValuePatch::Empty => ValuePatch::Empty,
-            ValuePatch::Value(due) => {
-                if let Some(d) = due.into() {
-                    ValuePatch::Value(d)
-                } else {
-                    ValuePatch::Empty
-                }
-            }
-        },
+        due: tp.due.clone().into(),
+        scheduled: tp.scheduled.clone().into(),
         priority: tp.priority.clone(),
     }
 }
