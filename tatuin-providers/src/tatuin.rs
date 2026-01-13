@@ -15,7 +15,7 @@ use tatuin_core::{
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{Priority, Task as TaskTrait},
-    task_patch::{DuePatchItem, PatchError, TaskPatch},
+    task_patch::{DatePatchItem, PatchError, TaskPatch},
 };
 
 use crate::config::Config;
@@ -97,7 +97,7 @@ impl TaskProviderTrait for Provider {
         t.id = uuid::Uuid::new_v4();
         t.name = tp.name.value().unwrap();
         t.description = tp.description.value();
-        t.due = tp.due.value().unwrap_or(DuePatchItem::NoDate).into();
+        t.due = tp.due.value().unwrap_or(DatePatchItem::NoDate).into();
         t.priority = tp.priority.value().unwrap_or(Priority::Normal);
         t.project_id = parse_uuid(project_id)?;
         t.created_at = Utc::now();
@@ -187,7 +187,7 @@ mod test {
         project::Project,
         provider::{ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
         task::{Priority, State},
-        task_patch::{DuePatchItem, TaskPatch, ValuePatch},
+        task_patch::{DatePatchItem, TaskPatch, ValuePatch},
     };
 
     use crate::{config::Config, tatuin::project::inbox_project};
@@ -253,7 +253,7 @@ mod test {
                 ValuePatch::NotSet
             },
             due: if i.is_multiple_of(3) {
-                ValuePatch::Value(DuePatchItem::Today)
+                ValuePatch::Value(DatePatchItem::Today)
             } else {
                 ValuePatch::NotSet
             },

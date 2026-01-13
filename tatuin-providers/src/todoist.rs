@@ -10,7 +10,7 @@ use tatuin_core::{
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{Priority, State, Task as TaskTrait},
-    task_patch::{DuePatchItem, PatchError, TaskPatch},
+    task_patch::{DatePatchItem, PatchError, TaskPatch},
 };
 
 use async_trait::async_trait;
@@ -160,12 +160,12 @@ impl TaskProviderTrait for Provider {
             description: description.as_deref(),
             project_id: Some(project_id),
             due_string: tp.due.value().map(|due| match due {
-                DuePatchItem::NoDate => "no date",
-                DuePatchItem::Today => "today",
-                DuePatchItem::Tomorrow => "tomorrow",
-                DuePatchItem::ThisWeekend => "weekend",
-                DuePatchItem::NextWeek => "next week",
-                DuePatchItem::Custom(dt) => {
+                DatePatchItem::NoDate => "no date",
+                DatePatchItem::Today => "today",
+                DatePatchItem::Tomorrow => "tomorrow",
+                DatePatchItem::ThisWeekend => "weekend",
+                DatePatchItem::NextWeek => "next week",
+                DatePatchItem::Custom(dt) => {
                     due_custom_dt = dt.format("%Y-%m-%d").to_string();
                     &due_custom_dt
                 }
@@ -213,12 +213,12 @@ impl TaskProviderTrait for Provider {
                     content: name.as_deref(),
                     description: description.as_deref(),
                     due_string: p.due.value().map(|due| match due {
-                        DuePatchItem::NoDate => "no date",
-                        DuePatchItem::Today => "today",
-                        DuePatchItem::Tomorrow => "tomorrow",
-                        DuePatchItem::ThisWeekend => "weekend",
-                        DuePatchItem::NextWeek => "next week",
-                        DuePatchItem::Custom(dt) => {
+                        DatePatchItem::NoDate => "no date",
+                        DatePatchItem::Today => "today",
+                        DatePatchItem::Tomorrow => "tomorrow",
+                        DatePatchItem::ThisWeekend => "weekend",
+                        DatePatchItem::NextWeek => "next week",
+                        DatePatchItem::Custom(dt) => {
                             due_custom_dt = dt.format("%Y-%m-%d").to_string();
                             &due_custom_dt
                         }

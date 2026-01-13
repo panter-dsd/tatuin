@@ -34,7 +34,7 @@ use tatuin_core::{
     patched_task::PatchedTask,
     provider::TaskProviderTrait,
     state::{State as ObjectState, StatefulObject},
-    task_patch::{DuePatchItem, PatchError, TaskPatch, ValuePatch},
+    task_patch::{DatePatchItem, PatchError, TaskPatch, ValuePatch},
     types::ArcRwLock,
 };
 use tokio::sync::{RwLock, broadcast};
@@ -574,7 +574,7 @@ impl TasksWidget {
                 datetime_to_str(t.due(), &Local::now().timezone()).as_str(),
             );
             d.add_custom_widget(
-                DuePatchItem::Custom(DateTimeUtc::default()),
+                DatePatchItem::Custom(DateTimeUtc::default()),
                 Arc::new(DateEditor::new(t.due())),
             );
             self.dialog = Some(Box::new(d));
@@ -653,7 +653,7 @@ impl TasksWidget {
         self.recreate_current_task_row().await;
     }
 
-    async fn change_due_date(&mut self, due: &DuePatchItem) {
+    async fn change_due_date(&mut self, due: &DatePatchItem) {
         if self.async_command.is_none() {
             return;
         }
@@ -848,6 +848,7 @@ impl TasksWidget {
                     name: ValuePatch::Value(t.name().raw()),
                     description: t.description().map(|d| d.raw()).into(),
                     due: t.due().map(|d| d.into()).into(),
+                    scheduled: t.scheduled().map(|d| d.into()).into(),
                     priority: ValuePatch::Value(t.priority()),
                     state: ValuePatch::Value(State::Uncompleted),
                 };
@@ -912,14 +913,14 @@ impl KeyboardHandler for TasksWidget {
             need_to_update_view = true;
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DuePatchItem>>()
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DatePatchItem>>()
                     && d.accepted()
                 {
                     new_due = d.selected().map(|p| match p {
-                        DuePatchItem::Custom(_) => {
+                        DatePatchItem::Custom(_) => {
                             let w = d.selected_custom_widget().unwrap();
                             if let Some(w) = w.as_any().downcast_ref::<DateEditor>() {
-                                DuePatchItem::Custom(w.value())
+                                DatePatchItem::Custom(w.value())
                             } else {
                                 panic!("Unexpected custom widget type")
                             }

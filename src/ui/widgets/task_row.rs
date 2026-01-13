@@ -55,6 +55,8 @@ impl TaskRow {
         let mut name = t.name().display();
         let mut state = t.state();
         let mut due = task::datetime_to_str(t.due(), &tz);
+        let mut scheduled = task::datetime_to_str(t.scheduled(), &tz);
+        let mut scheduled_exists = t.scheduled().is_some();
         let mut priority = t.priority();
         let mut description = t.description().map(|d| d.display());
         let mut uncommitted = false;
@@ -68,6 +70,10 @@ impl TaskRow {
             }
             if let Some(d) = &patch.due.value() {
                 due = d.to_string();
+            }
+            if let Some(d) = &patch.scheduled.value() {
+                scheduled = d.to_string();
+                scheduled_exists = true;
             }
             if let Some(p) = &patch.priority.value() {
                 priority = *p;
@@ -84,14 +90,22 @@ impl TaskRow {
                     .style(style::default_style().fg(fg_color)),
             ),
             Box::new(Text::new(format!(" (due: {due})").as_str()).style(style::default_style().fg(style::due_color()))),
-            Box::new(
-                Text::new(format!(" (Priority: {priority})").as_str())
-                    .style(style::default_style().fg(style::priority_color(&priority))),
-            ),
-            Box::new(
-                Text::new(format!(" ({})", t.place()).as_str()).style(style::default_style().fg(style::place_color())),
-            ),
         ];
+
+        if scheduled_exists {
+            children.push(Box::new(
+                Text::new(format!(" (scheduled: {scheduled})").as_str())
+                    .style(style::default_style().fg(style::scheduled_color())),
+            ));
+        }
+
+        children.push(Box::new(
+            Text::new(format!(" (Priority: {priority})").as_str())
+                .style(style::default_style().fg(style::priority_color(&priority))),
+        ));
+        children.push(Box::new(
+            Text::new(format!(" ({})", t.place()).as_str()).style(style::default_style().fg(style::place_color())),
+        ));
 
         for l in t.labels() {
             children.push(Box::new(Text::new(" ")));

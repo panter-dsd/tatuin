@@ -7,7 +7,7 @@ use tatuin_core::{
     RichString,
     project::Project as ProjectTrait,
     task::{DateTimeUtc, PatchPolicy, Priority, State, Task as TaskTrait},
-    task_patch::DuePatchItem,
+    task_patch::DatePatchItem,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
@@ -99,7 +99,7 @@ impl TaskTrait for Task {
             is_removable: true,
             available_states: vec![State::Uncompleted, State::Completed, State::InProgress],
             available_priorities: Priority::values(),
-            available_due_items: DuePatchItem::values(),
+            available_due_items: DatePatchItem::values(),
         }
     }
 

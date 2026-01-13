@@ -24,7 +24,7 @@ use tatuin_core::{
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{Priority, Task as TaskTrait},
-    task_patch::{DuePatchItem, PatchError, TaskPatch, ValuePatch},
+    task_patch::{DatePatchItem, PatchError, TaskPatch, ValuePatch},
 };
 
 use crate::config::Config;
@@ -85,7 +85,7 @@ impl TaskProviderTrait for Provider {
             name: tp.name.value().unwrap(),
             description: tp.description.value().map(|s| Description::from_str(s.as_str())),
             state: State::Uncompleted,
-            due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
+            due: tp.due.value().unwrap_or(DatePatchItem::NoDate).into(),
             priority: tp.priority.value().unwrap_or(Priority::Normal),
             ..task::Task::default()
         };

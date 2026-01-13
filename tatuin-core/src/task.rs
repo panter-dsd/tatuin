@@ -2,7 +2,7 @@
 
 use crate::RichString;
 
-use super::{filter, project::Project as ProjectTrait, task_patch::DuePatchItem};
+use super::{filter, project::Project as ProjectTrait, task_patch::DatePatchItem};
 use chrono::{DateTime, prelude::*};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
@@ -70,7 +70,7 @@ pub struct PatchPolicy {
     pub is_removable: bool,
     pub available_states: Vec<State>,
     pub available_priorities: Vec<Priority>,
-    pub available_due_items: Vec<DuePatchItem>,
+    pub available_due_items: Vec<DatePatchItem>,
 }
 
 #[allow(dead_code)]
@@ -99,6 +99,9 @@ pub trait Task: Send + Sync {
     fn due(&self) -> Option<DateTimeUtc> {
         None
     }
+    fn scheduled(&self) -> Option<DateTimeUtc> {
+        None
+    }
     fn place(&self) -> String {
         String::new()
     }
@@ -125,7 +128,7 @@ pub trait Task: Send + Sync {
             is_removable: false,
             available_states: vec![State::Uncompleted, State::Completed, State::InProgress],
             available_priorities: Priority::values(),
-            available_due_items: DuePatchItem::values(),
+            available_due_items: DatePatchItem::values(),
         }
     }
 

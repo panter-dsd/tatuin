@@ -13,7 +13,7 @@ use tatuin_core::{
     provider::ProjectProviderTrait,
     state::{State, StatefulObject, state_from_str},
     task::{DateTimeUtc, Priority, Task as TaskTrait},
-    task_patch::{DuePatchItem, TaskPatch, ValuePatch},
+    task_patch::{DatePatchItem, TaskPatch, ValuePatch},
     types::ArcRwLock,
 };
 
@@ -36,10 +36,10 @@ const CUSTOM_DUE_TEXT: &str = "Custom";
 
 struct ComboBoxItemUpdater {}
 
-impl CustomWidgetItemUpdater<DuePatchItem> for ComboBoxItemUpdater {
-    fn update(&self, w: Arc<dyn WidgetTrait>, item: &mut ComboBoxItem<DuePatchItem>) {
+impl CustomWidgetItemUpdater<DatePatchItem> for ComboBoxItemUpdater {
+    fn update(&self, w: Arc<dyn WidgetTrait>, item: &mut ComboBoxItem<DatePatchItem>) {
         let editor = w.as_any().downcast_ref::<DateEditor>().unwrap();
-        let due = DuePatchItem::Custom(editor.value());
+        let due = DatePatchItem::Custom(editor.value());
         item.set_data(&due);
         item.set_display_text(&due.to_string());
     }
@@ -65,7 +65,7 @@ pub struct Dialog {
     task_description_editor: TextEdit,
 
     priority_selector: ComboBox<Priority>,
-    due_date_selector: ComboBox<DuePatchItem>,
+    due_date_selector: ComboBox<DatePatchItem>,
 
     create_task_button: Button,
     create_task_and_another_one: Button,
@@ -84,20 +84,20 @@ impl Dialog {
 
         let mut due_date_selector = ComboBox::new(
             "Due date",
-            &DuePatchItem::values()
+            &DatePatchItem::values()
                 .iter()
                 .map(|d| ComboBoxItem::new(d.to_string().as_str(), *d))
-                .collect::<Vec<ComboBoxItem<DuePatchItem>>>(),
+                .collect::<Vec<ComboBoxItem<DatePatchItem>>>(),
         )
         .current_item(&ComboBoxItem::new(
-            DuePatchItem::Today.to_string().as_str(),
-            DuePatchItem::Today,
+            DatePatchItem::Today.to_string().as_str(),
+            DatePatchItem::Today,
         ))
         .await;
 
         due_date_selector
             .add_custom_widget(
-                ComboBoxItem::new(CUSTOM_DUE_TEXT, DuePatchItem::Custom(DateTimeUtc::default())),
+                ComboBoxItem::new(CUSTOM_DUE_TEXT, DatePatchItem::Custom(DateTimeUtc::default())),
                 Arc::new(DateEditor::new(None)),
                 Arc::new(ComboBoxItemUpdater {}),
             )
@@ -187,10 +187,10 @@ impl Dialog {
             .await;
 
         let task_due = task.due();
-        let due: DuePatchItem = task_due.map_or(DuePatchItem::NoDate, |d| d.into());
+        let due: DatePatchItem = task_due.map_or(DatePatchItem::NoDate, |d| d.into());
         if let Some(dt) = task_due {
             self.due_date_selector.remove_all_custom_widgets().await;
-            let custom_due = DuePatchItem::Custom(dt);
+            let custom_due = DatePatchItem::Custom(dt);
             self.due_date_selector
                 .add_custom_widget(
                     ComboBoxItem::new(CUSTOM_DUE_TEXT, custom_due).display(custom_due.to_string().as_str()),
@@ -202,7 +202,7 @@ impl Dialog {
         self.due_date_selector
             .set_current_item(&ComboBoxItem::new(
                 match due {
-                    DuePatchItem::Custom(_) => CUSTOM_DUE_TEXT.to_string(),
+                    DatePatchItem::Custom(_) => CUSTOM_DUE_TEXT.to_string(),
                     _ => due.to_string(),
                 }
                 .as_str(),
@@ -247,6 +247,7 @@ impl Dialog {
                 ValuePatch::Value(description)
             },
             due: self.due_date_selector.value().await.map(|item| *item.data()).into(),
+            scheduled: ValuePatch::NotSet, // scheduled can be set only via specific dialog
             priority: self.priority_selector.value().await.map(|item| *item.data()).into(),
             state: ValuePatch::NotSet,
         })
