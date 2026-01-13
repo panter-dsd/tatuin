@@ -26,6 +26,7 @@ pub struct Task {
     pub state: State,
     pub description: Option<Description>,
     pub due: Option<DateTimeUtc>,
+    pub scheduled: Option<DateTimeUtc>,
     pub completed_at: Option<DateTimeUtc>,
     pub priority: Priority,
     pub tags: Vec<String>,
@@ -39,6 +40,7 @@ impl PartialEq for Task {
             && self.name == o.name
             && self.description == o.description
             && self.due == o.due
+            && self.scheduled == o.scheduled
             && self.priority == o.priority
             && self.tags == o.tags
     }
@@ -90,6 +92,10 @@ impl TaskTrait for Task {
 
     fn due(&self) -> Option<DateTimeUtc> {
         self.due
+    }
+
+    fn scheduled(&self) -> Option<DateTimeUtc> {
+        self.scheduled
     }
 
     fn completed_at(&self) -> Option<DateTimeUtc> {
