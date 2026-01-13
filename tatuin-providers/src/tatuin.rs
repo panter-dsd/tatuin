@@ -257,6 +257,11 @@ mod test {
             } else {
                 ValuePatch::NotSet
             },
+            scheduled: if i.is_multiple_of(6) {
+                ValuePatch::Value(DatePatchItem::Today)
+            } else {
+                ValuePatch::NotSet
+            },
             priority: if i.is_multiple_of(5) {
                 ValuePatch::Value(Priority::Low)
             } else {
@@ -346,6 +351,7 @@ mod test {
                 name: ValuePatch::NotSet,
                 description: ValuePatch::NotSet,
                 due: ValuePatch::NotSet,
+                scheduled: ValuePatch::NotSet,
                 priority: ValuePatch::NotSet,
                 state: ValuePatch::Value(State::Completed),
             })
