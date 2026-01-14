@@ -102,6 +102,11 @@ pub trait Task: Send + Sync {
     fn scheduled(&self) -> Option<DateTimeUtc> {
         None
     }
+
+    fn planned_date(&self) -> Option<DateTimeUtc> {
+        *planned_date(&self.scheduled(), &self.due())
+    }
+
     fn place(&self) -> String {
         String::new()
     }
@@ -180,4 +185,14 @@ pub fn due_group(due: &Option<DateTimeUtc>) -> filter::Due {
         }
         None => filter::Due::NoDate,
     }
+}
+
+pub fn planned_date<'a>(scheduled: &'a Option<DateTimeUtc>, due: &'a Option<DateTimeUtc>) -> &'a Option<DateTimeUtc> {
+    // TODO: check here if scheduled > due and return due in this case
+
+    if scheduled.is_some() {
+        return scheduled;
+    }
+
+    due
 }

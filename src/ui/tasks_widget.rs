@@ -536,8 +536,8 @@ impl TasksWidget {
                             s.all_tasks
                                 .append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>());
                             s.all_tasks.sort_by(|l, r| {
-                                due_group(&l.due())
-                                    .cmp(&due_group(&r.due()))
+                                due_group(&l.planned_date())
+                                    .cmp(&due_group(&r.planned_date()))
                                     .then_with(|| r.priority().cmp(&l.priority()))
                                     .then_with(|| l.due().cmp(&r.due()))
                                     .then_with(|| project_name(l.as_ref()).cmp(&project_name(r.as_ref())))
