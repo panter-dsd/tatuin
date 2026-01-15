@@ -101,6 +101,7 @@ impl TaskTrait for Task {
             available_states: Vec::new(),
             available_priorities: Vec::new(),
             available_due_items: Vec::new(),
+            available_scheduled_items: Vec::new(),
         }
     }
 }

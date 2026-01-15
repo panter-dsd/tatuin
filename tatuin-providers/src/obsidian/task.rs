@@ -133,6 +133,7 @@ impl TaskTrait for Task {
             available_states: vec![TaskState::Uncompleted, TaskState::Completed, TaskState::InProgress],
             available_priorities: Priority::values(),
             available_due_items: DatePatchItem::values(),
+            available_scheduled_items: DatePatchItem::values(),
         }
     }
 

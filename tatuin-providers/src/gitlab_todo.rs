@@ -174,6 +174,7 @@ impl TaskTrait for Task {
             } else {
                 Vec::new()
             },
+            available_scheduled_items: Vec::new(),
         }
     }
 }

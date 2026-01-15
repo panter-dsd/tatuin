@@ -71,6 +71,7 @@ pub struct PatchPolicy {
     pub available_states: Vec<State>,
     pub available_priorities: Vec<Priority>,
     pub available_due_items: Vec<DatePatchItem>,
+    pub available_scheduled_items: Vec<DatePatchItem>,
 }
 
 #[allow(dead_code)]
@@ -134,6 +135,7 @@ pub trait Task: Send + Sync {
             available_states: vec![State::Uncompleted, State::Completed, State::InProgress],
             available_priorities: Priority::values(),
             available_due_items: DatePatchItem::values(),
+            available_scheduled_items: DatePatchItem::values(),
         }
     }
 
