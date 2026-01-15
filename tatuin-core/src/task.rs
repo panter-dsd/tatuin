@@ -190,11 +190,40 @@ pub fn due_group(due: &Option<DateTimeUtc>) -> filter::Due {
 }
 
 pub fn planned_date<'a>(scheduled: &'a Option<DateTimeUtc>, due: &'a Option<DateTimeUtc>) -> &'a Option<DateTimeUtc> {
-    // TODO: check here if scheduled > due and return due in this case
-
-    if scheduled.is_some() {
+    if let Some(s) = scheduled
+        && (due.is_none() || s < due.as_ref().unwrap())
+    // scheduled date can't be more than due date
+    {
         return scheduled;
     }
 
     due
+}
+
+#[cfg(test)]
+mod test {
+    use chrono::{NaiveDate, Utc};
+
+    use crate::task::DateTimeUtc;
+
+    use super::planned_date;
+
+    fn dt(year: u16, month: u8, day: u8) -> Option<DateTimeUtc> {
+        Some(DateTimeUtc::from_naive_utc_and_offset(
+            NaiveDate::from_ymd_opt(year as i32, month as u32, day as u32)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
+            Utc,
+        ))
+    }
+
+    #[test]
+    fn planned_date_test() {
+        assert_eq!(&None, planned_date(&None, &None));
+        assert_eq!(&dt(2026, 1, 1), planned_date(&None, &dt(2026, 1, 1)));
+        assert_eq!(&dt(2026, 1, 1), planned_date(&dt(2026, 1, 1), &None));
+        assert_eq!(&dt(2026, 1, 1), planned_date(&dt(2026, 1, 1), &dt(2026, 1, 2)));
+        assert_eq!(&dt(2026, 1, 1), planned_date(&dt(2026, 1, 2), &dt(2026, 1, 1)));
+    }
 }
