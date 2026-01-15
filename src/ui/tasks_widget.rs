@@ -701,17 +701,17 @@ impl TasksWidget {
         self.recreate_current_task_row().await;
     }
 
-    async fn change_scheduled_date(&mut self, due: &DatePatchItem) {
+    async fn change_scheduled_date(&mut self, date: &DatePatchItem) {
         if self.async_command.is_none() {
             return;
         }
 
         let t = self.async_command.as_ref().unwrap().task.as_ref();
         match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
-            Some(p) => p.scheduled = ValuePatch::Value(*due),
+            Some(p) => p.scheduled = ValuePatch::Value(*date),
             None => self.changed_tasks.push(TaskPatch {
                 task: Some(t.clone_boxed()),
-                scheduled: ValuePatch::Value(*due),
+                scheduled: ValuePatch::Value(*date),
                 ..TaskPatch::default()
             }),
         }
