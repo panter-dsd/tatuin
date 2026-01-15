@@ -27,15 +27,15 @@ crate::impl_widget_state_trait!(TaskRow);
 
 impl TaskRow {
     pub fn new(t: &dyn TaskTrait, changed_tasks: &[TaskPatch]) -> Self {
-        let tz = Local::now().timezone();
-
         let mut name = t.name().display();
         let mut state = t.state();
         let mut due = t.due();
         let mut scheduled = t.scheduled();
         let mut priority = t.priority();
         let mut description = t.description().map(|d| d.display());
+
         let mut uncommitted = false;
+
         if let Some(patch) = changed_tasks.iter().find(|c| c.is_task(t)) {
             uncommitted = !patch.is_empty();
             if let Some(n) = &patch.name.value() {
@@ -81,6 +81,8 @@ impl TaskRow {
                 None => style::no_date_task_fg(),
             }
         };
+
+        let tz = Local::now().timezone();
 
         let mut children: Vec<Box<dyn WidgetTrait>> = vec![
             Box::new(Text::new(format!("[{state}] ").as_str())),
