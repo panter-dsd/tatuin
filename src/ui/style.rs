@@ -15,6 +15,7 @@ enum ColorElement {
     DefaultBG,
     DefaultFG,
     TaskRowDueFG,
+    TaskRowScheduledFG,
     TaskRowPlaceFG,
     UrlFG,
     UrlUnderMouseFG,
@@ -83,6 +84,7 @@ fn element_color(element: ColorElement) -> Color {
         DefaultBG => DEFAULT_BG,
         DefaultFG => DEFAULT_FG,
         TaskRowDueFG => Color::Blue,
+        TaskRowScheduledFG => Color::Magenta,
         TaskRowPlaceFG => Color::Yellow,
         UrlFG => DEFAULT_FG,
         UrlUnderMouseFG => Color::Blue,
@@ -162,6 +164,10 @@ pub fn load_theme(file_path: &std::path::PathBuf) -> Result<(), Box<dyn std::err
 
 pub fn due_color() -> Color {
     element_color(ColorElement::TaskRowDueFG)
+}
+
+pub fn scheduled_color() -> Color {
+    element_color(ColorElement::TaskRowScheduledFG)
 }
 
 pub fn place_color() -> Color {

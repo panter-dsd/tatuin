@@ -2,7 +2,7 @@
 
 use crate::RichString;
 
-use super::{filter, project::Project as ProjectTrait, task_patch::DuePatchItem};
+use super::{filter, project::Project as ProjectTrait, task_patch::DatePatchItem};
 use chrono::{DateTime, prelude::*};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
@@ -70,7 +70,8 @@ pub struct PatchPolicy {
     pub is_removable: bool,
     pub available_states: Vec<State>,
     pub available_priorities: Vec<Priority>,
-    pub available_due_items: Vec<DuePatchItem>,
+    pub available_due_items: Vec<DatePatchItem>,
+    pub available_scheduled_items: Vec<DatePatchItem>,
 }
 
 #[allow(dead_code)]
@@ -99,6 +100,14 @@ pub trait Task: Send + Sync {
     fn due(&self) -> Option<DateTimeUtc> {
         None
     }
+    fn scheduled(&self) -> Option<DateTimeUtc> {
+        None
+    }
+
+    fn planned_date(&self) -> Option<DateTimeUtc> {
+        *planned_date(&self.scheduled(), &self.due())
+    }
+
     fn place(&self) -> String {
         String::new()
     }
@@ -125,7 +134,8 @@ pub trait Task: Send + Sync {
             is_removable: false,
             available_states: vec![State::Uncompleted, State::Completed, State::InProgress],
             available_priorities: Priority::values(),
-            available_due_items: DuePatchItem::values(),
+            available_due_items: DatePatchItem::values(),
+            available_scheduled_items: DatePatchItem::values(),
         }
     }
 
@@ -176,5 +186,44 @@ pub fn due_group(due: &Option<DateTimeUtc>) -> filter::Due {
             }
         }
         None => filter::Due::NoDate,
+    }
+}
+
+pub fn planned_date<'a>(scheduled: &'a Option<DateTimeUtc>, due: &'a Option<DateTimeUtc>) -> &'a Option<DateTimeUtc> {
+    if let Some(s) = scheduled
+        && (due.is_none() || s < due.as_ref().unwrap())
+    // scheduled date can't be more than due date
+    {
+        return scheduled;
+    }
+
+    due
+}
+
+#[cfg(test)]
+mod test {
+    use chrono::{NaiveDate, Utc};
+
+    use crate::task::DateTimeUtc;
+
+    use super::planned_date;
+
+    fn dt(year: u16, month: u8, day: u8) -> Option<DateTimeUtc> {
+        Some(DateTimeUtc::from_naive_utc_and_offset(
+            NaiveDate::from_ymd_opt(year as i32, month as u32, day as u32)
+                .unwrap()
+                .and_hms_opt(0, 0, 0)
+                .unwrap(),
+            Utc,
+        ))
+    }
+
+    #[test]
+    fn planned_date_test() {
+        assert_eq!(&None, planned_date(&None, &None));
+        assert_eq!(&dt(2026, 1, 1), planned_date(&None, &dt(2026, 1, 1)));
+        assert_eq!(&dt(2026, 1, 1), planned_date(&dt(2026, 1, 1), &None));
+        assert_eq!(&dt(2026, 1, 1), planned_date(&dt(2026, 1, 1), &dt(2026, 1, 2)));
+        assert_eq!(&dt(2026, 1, 1), planned_date(&dt(2026, 1, 2), &dt(2026, 1, 1)));
     }
 }

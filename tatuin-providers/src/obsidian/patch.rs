@@ -15,6 +15,7 @@ pub struct TaskPatch<'a> {
     pub description: ValuePatch<String>,
     pub state: ValuePatch<State>,
     pub due: ValuePatch<DateTimeUtc>,
+    pub scheduled: ValuePatch<DateTimeUtc>,
     pub priority: ValuePatch<Priority>,
 }
 

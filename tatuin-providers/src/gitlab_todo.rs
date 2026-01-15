@@ -14,7 +14,7 @@ use tatuin_core::{
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{DateTimeUtc, PatchPolicy, State, Task as TaskTrait, due_group},
-    task_patch::{DuePatchItem, PatchError, TaskPatch},
+    task_patch::{DatePatchItem, PatchError, TaskPatch},
 };
 
 use async_trait::async_trait;
@@ -170,10 +170,11 @@ impl TaskTrait for Task {
             available_states: vec![State::Uncompleted, State::Completed],
             available_priorities: Vec::new(),
             available_due_items: if self.issue.is_some() {
-                DuePatchItem::values()
+                DatePatchItem::values()
             } else {
                 Vec::new()
             },
+            available_scheduled_items: Vec::new(),
         }
     }
 }
@@ -238,7 +239,7 @@ impl Provider {
             }),
         }
     }
-    async fn patch_task_due(&mut self, t: &Task, due: &DuePatchItem) -> Result<(), PatchError> {
+    async fn patch_task_due(&mut self, t: &Task, due: &DatePatchItem) -> Result<(), PatchError> {
         let issue = t.issue.as_ref().ok_or(PatchError {
             task: t.clone_boxed(),
             error: "The task doesn't support due changing".to_string(),

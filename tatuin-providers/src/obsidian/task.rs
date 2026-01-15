@@ -11,7 +11,7 @@ use tatuin_core::{
     RichString,
     project::Project as ProjectTrait,
     task::{DateTimeUtc, PatchPolicy, Priority, State as TaskState, Task as TaskTrait},
-    task_patch::DuePatchItem,
+    task_patch::DatePatchItem,
 };
 
 #[derive(Debug, Clone, Default)]
@@ -26,6 +26,7 @@ pub struct Task {
     pub state: State,
     pub description: Option<Description>,
     pub due: Option<DateTimeUtc>,
+    pub scheduled: Option<DateTimeUtc>,
     pub completed_at: Option<DateTimeUtc>,
     pub priority: Priority,
     pub tags: Vec<String>,
@@ -39,6 +40,7 @@ impl PartialEq for Task {
             && self.name == o.name
             && self.description == o.description
             && self.due == o.due
+            && self.scheduled == o.scheduled
             && self.priority == o.priority
             && self.tags == o.tags
     }
@@ -92,6 +94,10 @@ impl TaskTrait for Task {
         self.due
     }
 
+    fn scheduled(&self) -> Option<DateTimeUtc> {
+        self.scheduled
+    }
+
     fn completed_at(&self) -> Option<DateTimeUtc> {
         self.completed_at
     }
@@ -126,7 +132,8 @@ impl TaskTrait for Task {
             is_removable: true,
             available_states: vec![TaskState::Uncompleted, TaskState::Completed, TaskState::InProgress],
             available_priorities: Priority::values(),
-            available_due_items: DuePatchItem::values(),
+            available_due_items: DatePatchItem::values(),
+            available_scheduled_items: DatePatchItem::values(),
         }
     }
 

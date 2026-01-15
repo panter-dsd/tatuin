@@ -16,7 +16,7 @@ use std::{
 use tatuin_core::{
     StringError,
     task::{DateTimeUtc, PatchPolicy, Priority, State},
-    task_patch::DuePatchItem,
+    task_patch::DatePatchItem,
 };
 use tokio::io::AsyncWriteExt;
 
@@ -126,7 +126,8 @@ impl Client {
                     is_removable: true,
                     available_states: vec![State::Uncompleted, State::Completed, State::InProgress],
                     available_priorities: Priority::values(),
-                    available_due_items: DuePatchItem::values(),
+                    available_due_items: DatePatchItem::values(),
+                    available_scheduled_items: Vec::new(),
                 };
             });
             result.append(&mut tasks);

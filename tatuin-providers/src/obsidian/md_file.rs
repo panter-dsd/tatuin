@@ -19,6 +19,7 @@ pub(crate) static TAG_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"( #((?:[^\x00-\x7F]|\w)(?:[^\x00-\x7F]|\w|-|_|\/)+))").unwrap());
 
 const DUE_EMOJI: char = '📅';
+const SCHEDULED_EMOJI: char = '⏳';
 const COMPLETED_EMOJI: char = '✅';
 
 pub struct File {
@@ -66,6 +67,7 @@ impl File {
 
         let text = String::from(&caps[2]);
         let (text, due) = extract_date_after_emoji(text.as_str(), DUE_EMOJI);
+        let (text, scheduled) = extract_date_after_emoji(text.as_str(), SCHEDULED_EMOJI);
         let (text, completed_at) = extract_date_after_emoji(text.as_str(), COMPLETED_EMOJI);
         let (text, priority) = extract_priority(text.as_str());
 
@@ -89,6 +91,7 @@ impl File {
             },
             name: text.trim().into(),
             due,
+            scheduled,
             priority,
             completed_at,
             tags,
@@ -185,6 +188,10 @@ impl File {
             new_task.due = p.due.value();
         }
 
+        if p.scheduled.is_set() {
+            new_task.scheduled = p.scheduled.value();
+        }
+
         let indent = content
             .chars()
             .skip(current_task.start_pos)
@@ -221,8 +228,11 @@ impl File {
 pub fn task_to_string(t: &Task, indent: &str) -> String {
     let state_char: char = t.state.into();
     let mut elements = vec![format!("- [{state_char}]"), t.name.clone()];
-    if let Some(due) = &t.due {
-        elements.push(format!("{DUE_EMOJI} {}", due.format("%Y-%m-%d")))
+    if let Some(d) = &t.due {
+        elements.push(format!("{DUE_EMOJI} {}", d.format("%Y-%m-%d")))
+    }
+    if let Some(d) = &t.scheduled {
+        elements.push(format!("{SCHEDULED_EMOJI} {}", d.format("%Y-%m-%d")))
     }
     let priority_str = priority_to_str(&t.priority).to_string();
     if !priority_str.is_empty() {
@@ -407,7 +417,7 @@ some another text
     #[test]
     fn check_all_fields_parsed_test() {
         let text = format!(
-            "- [x] Some #tag task #группа/имя_tag-name123 text ⏫ {DUE_EMOJI} 2025-01-01 {COMPLETED_EMOJI} 2025-01-01 #tag_at_end"
+            "- [x] Some #tag task #группа/имя_tag-name123 text ⏫ {DUE_EMOJI} 2025-01-01 {SCHEDULED_EMOJI} 2025-02-02 {COMPLETED_EMOJI} 2025-01-01 #tag_at_end"
         );
 
         let p = File::new(Path::new(""));
@@ -422,6 +432,8 @@ some another text
         assert_eq!(task.state, State::Completed);
         assert!(task.due.is_some());
         assert_eq!(task.due.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
+        assert!(task.scheduled.is_some());
+        assert_eq!(task.scheduled.unwrap().format("%Y-%m-%d").to_string(), "2025-02-02");
         assert!(task.completed_at.is_some());
         assert_eq!(task.completed_at.unwrap().format("%Y-%m-%d").to_string(), "2025-01-01");
         assert_eq!(task.tags, vec!["tag", "группа/имя_tag-name123", "tag_at_end"]);
@@ -499,6 +511,54 @@ return indent back"
 
         for c in cases {
             let (_, dt) = extract_date_after_emoji(c.line, DUE_EMOJI);
+            assert_eq!(dt, c.expected, "Test {} was failed", c.name);
+        }
+    }
+
+    #[test]
+    fn parse_scheduled_test() {
+        struct Case<'a> {
+            name: &'a str,
+            line: String,
+            expected: Option<DateTimeUtc>,
+        }
+        let cases: &[Case] = &[
+            Case {
+                name: "empty string",
+                line: String::default(),
+                expected: None,
+            },
+            Case {
+                name: "correct string",
+                line: format!("Some text ⏫ {SCHEDULED_EMOJI} 2025-01-27"),
+                expected: Some(DateTimeUtc::from_naive_utc_and_offset(
+                    NaiveDate::parse_from_str("2025-01-27", "%Y-%m-%d")
+                        .unwrap()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap(),
+                    Utc,
+                )),
+            },
+            Case {
+                name: "spaces after date",
+                line: format!("Some text ⏫ {SCHEDULED_EMOJI} 2025-01-27  "),
+                expected: Some(DateTimeUtc::from_naive_utc_and_offset(
+                    NaiveDate::parse_from_str("2025-01-27", "%Y-%m-%d")
+                        .unwrap()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap(),
+                    Utc,
+                )),
+            },
+            Case {
+                name: "broken date",
+                line: format!("Some text ⏫ {SCHEDULED_EMOJI} 2025-"),
+                expected: None,
+            },
+        ];
+
+        for c in cases {
+            let (_, dt) = extract_date_after_emoji(&c.line, SCHEDULED_EMOJI);
             assert_eq!(dt, c.expected, "Test {} was failed", c.name);
         }
     }
@@ -622,6 +682,7 @@ some text
                         description: ValuePatch::NotSet,
                         state: ValuePatch::Value(State::Completed),
                         due: ValuePatch::NotSet,
+                        scheduled: ValuePatch::NotSet,
                         priority: ValuePatch::NotSet,
                     },
                     result.as_str(),
@@ -718,6 +779,7 @@ some another text
                         task: &tasks[i],
                         state: ValuePatch::Value(State::Uncompleted),
                         due: ValuePatch::NotSet,
+                        scheduled: ValuePatch::NotSet,
                         priority: ValuePatch::NotSet,
                     },
                     result.as_str(),
@@ -886,6 +948,7 @@ Some another text";
                         description: ValuePatch::NotSet,
                         state: ValuePatch::NotSet,
                         due: ValuePatch::NotSet,
+                        scheduled: ValuePatch::NotSet,
                         priority: ValuePatch::Value(c.priority),
                     },
                     result.as_str(),
@@ -918,6 +981,7 @@ Some another text";
                     description: ValuePatch::NotSet,
                     state: ValuePatch::NotSet,
                     due: ValuePatch::NotSet,
+                    scheduled: ValuePatch::NotSet,
                     priority: ValuePatch::NotSet,
                 },
             },
@@ -931,18 +995,19 @@ Some another text";
                     description: ValuePatch::NotSet,
                     state: ValuePatch::NotSet,
                     due: ValuePatch::NotSet,
+                    scheduled: ValuePatch::NotSet,
                     priority: ValuePatch::NotSet,
                 },
             },
             Case {
                 name: "change all",
                 file_content_before: format!(
-                    "  - [ ] Some text #tag #другой.тег {DUE_EMOJI} 2025-03-01 ⏫ #tag3
+                    "  - [ ] Some text #tag #другой.тег {DUE_EMOJI} 2025-03-01 {SCHEDULED_EMOJI} 2025-04-02 ⏫ #tag3
   task description
   on two lines"
                 ),
                 file_content_after: format!(
-                    "  - [/] Some another text {DUE_EMOJI} 2025-01-27 🔺
+                    "  - [/] Some another text {DUE_EMOJI} 2025-01-27 {SCHEDULED_EMOJI} 2025-03-23 🔺
       the task description"
                 ),
                 patch: TaskPatch {
@@ -952,6 +1017,13 @@ Some another text";
                     state: ValuePatch::Value(State::InProgress),
                     due: ValuePatch::Value(DateTimeUtc::from_naive_utc_and_offset(
                         NaiveDate::parse_from_str("2025-01-27", "%Y-%m-%d")
+                            .unwrap()
+                            .and_hms_opt(0, 0, 0)
+                            .unwrap(),
+                        Utc,
+                    )),
+                    scheduled: ValuePatch::Value(DateTimeUtc::from_naive_utc_and_offset(
+                        NaiveDate::parse_from_str("2025-03-23", "%Y-%m-%d")
                             .unwrap()
                             .and_hms_opt(0, 0, 0)
                             .unwrap(),
@@ -988,6 +1060,7 @@ Some another text";
                     ),
                     state: ValuePatch::NotSet,
                     due: ValuePatch::NotSet,
+                    scheduled: ValuePatch::NotSet,
                     priority: ValuePatch::NotSet,
                 },
             },
@@ -1019,6 +1092,7 @@ Some another text";
                     ),
                     state: ValuePatch::NotSet,
                     due: ValuePatch::NotSet,
+                    scheduled: ValuePatch::NotSet,
                     priority: ValuePatch::NotSet,
                 },
             },

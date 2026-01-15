@@ -1,6 +1,7 @@
 default_bg=#282828
 default_fg=#d4be98
 task_row_due_fg=#7daea3
+task_row_scheduled_fg=#d3869b
 task_row_place_fg=#d8a657
 url_fg=#d4be98
 url_under_mouse_fg=#7daea3

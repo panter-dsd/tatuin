@@ -34,7 +34,7 @@ use tatuin_core::{
     patched_task::PatchedTask,
     provider::TaskProviderTrait,
     state::{State as ObjectState, StatefulObject},
-    task_patch::{DuePatchItem, PatchError, TaskPatch, ValuePatch},
+    task_patch::{DatePatchItem, PatchError, TaskPatch, ValuePatch},
     types::ArcRwLock,
 };
 use tokio::sync::{RwLock, broadcast};
@@ -71,9 +71,11 @@ pub trait TaskInfoViewerTrait: Send + Sync {
 
 type TaskInfoViewer = ArcRwLock<dyn TaskInfoViewerTrait>;
 
+#[derive(Debug)]
 enum AsyncCommandType {
     ChangePriority,
     ChangeDueDate,
+    ChangeScheduledDate,
     EditTask,
     DeleteTask,
     DuplicateTask,
@@ -114,6 +116,7 @@ pub struct TasksWidget {
     swap_completed_state_shortcut: Shortcut,
     in_progress_shortcut: Shortcut,
     change_due_shortcut: Shortcut,
+    change_scheduled_shortcut: Shortcut,
     change_priority_shortcut: Shortcut,
     undo_changes_shortcut: Shortcut,
     add_task_shortcut: Shortcut,
@@ -147,6 +150,7 @@ impl AppBlockWidget for TasksWidget {
             &mut self.swap_completed_state_shortcut,
             &mut self.in_progress_shortcut,
             &mut self.change_due_shortcut,
+            &mut self.change_scheduled_shortcut,
             &mut self.change_priority_shortcut,
             &mut self.undo_changes_shortcut,
             &mut self.open_task_link_shortcut,
@@ -216,6 +220,8 @@ impl TasksWidget {
             in_progress_shortcut: Shortcut::new("Move the task in progress", &['p']),
             change_due_shortcut: Shortcut::new("Change due date of the task", &['c', 'd'])
                 .with_short_name("Change due"),
+            change_scheduled_shortcut: Shortcut::new("Change scheduled date of the task", &['c', 's'])
+                .with_short_name("Change scheduled"),
             change_priority_shortcut: Shortcut::new("Change priority of the task", &['c', 'p'])
                 .with_short_name("Change priority"),
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']).with_short_name("Undo"),
@@ -245,6 +251,7 @@ impl TasksWidget {
                 let mut swap_completed_state_rx = s_guard.swap_completed_state_shortcut.subscribe_to_accepted();
                 let mut in_progress_rx = s_guard.in_progress_shortcut.subscribe_to_accepted();
                 let mut change_due_rx = s_guard.change_due_shortcut.subscribe_to_accepted();
+                let mut change_scheduled_rx = s_guard.change_scheduled_shortcut.subscribe_to_accepted();
                 let mut change_priority_rx = s_guard.change_priority_shortcut.subscribe_to_accepted();
                 let mut undo_changes_rx = s_guard.undo_changes_shortcut.subscribe_to_accepted();
                 let mut add_task_rx = s_guard.add_task_shortcut.subscribe_to_accepted();
@@ -275,6 +282,13 @@ impl TasksWidget {
                                 if let Some(t) = s.selected_task() {
                                     s.async_command = Some(AsyncCommand::new(AsyncCommandType::ChangeDueDate, t.as_ref()));
                                     s.show_change_due_date_dialog().await
+                                }
+                            },
+                        _ = change_scheduled_rx.recv() => {
+                                let mut s = s.write().await;
+                                if let Some(t) = s.selected_task() {
+                                    s.async_command = Some(AsyncCommand::new(AsyncCommandType::ChangeScheduledDate, t.as_ref()));
+                                    s.show_change_scheduled_date_dialog().await
                                 }
                             },
                         _ = change_priority_rx.recv() => {
@@ -536,8 +550,8 @@ impl TasksWidget {
                             s.all_tasks
                                 .append(&mut t.iter().map(|t| t.clone_boxed()).collect::<Vec<Box<dyn TaskTrait>>>());
                             s.all_tasks.sort_by(|l, r| {
-                                due_group(&l.due())
-                                    .cmp(&due_group(&r.due()))
+                                due_group(&l.planned_date())
+                                    .cmp(&due_group(&r.planned_date()))
                                     .then_with(|| r.priority().cmp(&l.priority()))
                                     .then_with(|| l.due().cmp(&r.due()))
                                     .then_with(|| project_name(l.as_ref()).cmp(&project_name(r.as_ref())))
@@ -567,15 +581,32 @@ impl TasksWidget {
 
     async fn show_change_due_date_dialog(&mut self) {
         let t = self.async_command.as_ref().unwrap().task.as_ref();
-        let available_due_items = t.patch_policy().available_due_items;
-        if !available_due_items.is_empty() {
+        let available_items = t.patch_policy().available_due_items;
+        if !available_items.is_empty() {
             let mut d = ListDialog::new(
-                &available_due_items,
+                &available_items,
                 datetime_to_str(t.due(), &Local::now().timezone()).as_str(),
             );
             d.add_custom_widget(
-                DuePatchItem::Custom(DateTimeUtc::default()),
+                DatePatchItem::Custom(DateTimeUtc::default()),
                 Arc::new(DateEditor::new(t.due())),
+            );
+            self.dialog = Some(Box::new(d));
+            self.is_global_dialog = false;
+        }
+    }
+
+    async fn show_change_scheduled_date_dialog(&mut self) {
+        let t = self.async_command.as_ref().unwrap().task.as_ref();
+        let available_items = t.patch_policy().available_scheduled_items;
+        if !available_items.is_empty() {
+            let mut d = ListDialog::new(
+                &available_items,
+                datetime_to_str(t.scheduled(), &Local::now().timezone()).as_str(),
+            );
+            d.add_custom_widget(
+                DatePatchItem::Custom(DateTimeUtc::default()),
+                Arc::new(DateEditor::new(t.scheduled())),
             );
             self.dialog = Some(Box::new(d));
             self.is_global_dialog = false;
@@ -653,7 +684,7 @@ impl TasksWidget {
         self.recreate_current_task_row().await;
     }
 
-    async fn change_due_date(&mut self, due: &DuePatchItem) {
+    async fn change_due_date(&mut self, due: &DatePatchItem) {
         if self.async_command.is_none() {
             return;
         }
@@ -664,6 +695,23 @@ impl TasksWidget {
             None => self.changed_tasks.push(TaskPatch {
                 task: Some(t.clone_boxed()),
                 due: ValuePatch::Value(*due),
+                ..TaskPatch::default()
+            }),
+        }
+        self.recreate_current_task_row().await;
+    }
+
+    async fn change_scheduled_date(&mut self, date: &DatePatchItem) {
+        if self.async_command.is_none() {
+            return;
+        }
+
+        let t = self.async_command.as_ref().unwrap().task.as_ref();
+        match self.changed_tasks.iter_mut().find(|p| p.is_task(t)) {
+            Some(p) => p.scheduled = ValuePatch::Value(*date),
+            None => self.changed_tasks.push(TaskPatch {
+                task: Some(t.clone_boxed()),
+                scheduled: ValuePatch::Value(*date),
                 ..TaskPatch::default()
             }),
         }
@@ -848,6 +896,7 @@ impl TasksWidget {
                     name: ValuePatch::Value(t.name().raw()),
                     description: t.description().map(|d| d.raw()).into(),
                     due: t.due().map(|d| d.into()).into(),
+                    scheduled: t.scheduled().map(|d| d.into()).into(),
                     priority: ValuePatch::Value(t.priority()),
                     state: ValuePatch::Value(State::Uncompleted),
                 };
@@ -902,6 +951,7 @@ impl KeyboardHandler for TasksWidget {
 
         let mut need_to_update_view = false;
         let mut new_due = None;
+        let mut new_scheduled = None;
         let mut new_priority = None;
         let mut patch = Patch::default();
         let mut add_another_one_task = false;
@@ -912,14 +962,19 @@ impl KeyboardHandler for TasksWidget {
             need_to_update_view = true;
             handled = d.handle_key(key).await;
             if handled && d.should_be_closed() {
-                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DuePatchItem>>()
+                if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<ListDialog<DatePatchItem>>()
                     && d.accepted()
                 {
-                    new_due = d.selected().map(|p| match p {
-                        DuePatchItem::Custom(_) => {
+                    let value = match &self.async_command.as_ref().unwrap().command_type {
+                        AsyncCommandType::ChangeDueDate => &mut new_due,
+                        AsyncCommandType::ChangeScheduledDate => &mut new_scheduled,
+                        t => panic!("Wrong async command type {:?}", t),
+                    };
+                    *value = d.selected().map(|p| match p {
+                        DatePatchItem::Custom(_) => {
                             let w = d.selected_custom_widget().unwrap();
                             if let Some(w) = w.as_any().downcast_ref::<DateEditor>() {
-                                DuePatchItem::Custom(w.value())
+                                DatePatchItem::Custom(w.value())
                             } else {
                                 panic!("Unexpected custom widget type")
                             }
@@ -963,8 +1018,12 @@ impl KeyboardHandler for TasksWidget {
             }
         };
 
-        if let Some(due) = new_due {
-            self.change_due_date(&due).await;
+        if let Some(d) = new_due {
+            self.change_due_date(&d).await;
+        }
+
+        if let Some(d) = new_scheduled {
+            self.change_scheduled_date(&d).await;
         }
 
         if let Some(p) = new_priority {

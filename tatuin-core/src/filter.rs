@@ -72,7 +72,7 @@ impl Filter {
             return false;
         }
 
-        if !self.due.contains(&due_group(&t.due())) {
+        if !self.due.contains(&due_group(&t.due())) && !self.due.contains(&due_group(&t.scheduled())) {
             return false;
         }
 

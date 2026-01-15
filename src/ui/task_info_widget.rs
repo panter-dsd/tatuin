@@ -117,6 +117,13 @@ impl TaskInfoWidget {
                 });
             }
 
+            if let Some(d) = t.scheduled() {
+                entries.push(Entry {
+                    title: "Scheduled".to_string(),
+                    widget: Box::new(Text::new(task::datetime_to_str(Some(d), &tz).as_str())),
+                });
+            }
+
             if let Some(d) = t.completed_at() {
                 entries.push(Entry {
                     title: "Completed at".to_string(),

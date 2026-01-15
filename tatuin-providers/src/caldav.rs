@@ -17,7 +17,7 @@ use tatuin_core::{
     project::Project as ProjectTrait,
     provider::{Capabilities, ProjectProviderTrait, ProviderTrait, TaskProviderTrait},
     task::{Priority, State, Task as TaskTrait},
-    task_patch::{DuePatchItem, PatchError, TaskPatch},
+    task_patch::{DatePatchItem, PatchError, TaskPatch},
 };
 
 pub const PROVIDER_NAME: &str = "CalDav";
@@ -98,7 +98,7 @@ impl TaskProviderTrait for Provider {
             properties: Vec::new(),
             name: tp.name.value().unwrap(),
             description: tp.description.value(),
-            due: tp.due.value().unwrap_or(DuePatchItem::NoDate).into(),
+            due: tp.due.value().unwrap_or(DatePatchItem::NoDate).into(),
             priority: tp.priority.value().unwrap_or(Priority::Normal).into(),
             ..Task::default()
         };

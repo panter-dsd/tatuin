@@ -7,7 +7,7 @@ use crate::task::{DateTimeUtc, Priority, State, Task as TaskTrait, datetime_to_s
 use crate::time::{add_days, clear_time};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize)]
-pub enum DuePatchItem {
+pub enum DatePatchItem {
     Today,
     Tomorrow,
     ThisWeekend,
@@ -16,15 +16,15 @@ pub enum DuePatchItem {
     Custom(DateTimeUtc),
 }
 
-impl std::fmt::Display for DuePatchItem {
+impl std::fmt::Display for DatePatchItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DuePatchItem::Today => write!(f, "Today"),
-            DuePatchItem::Tomorrow => write!(f, "Tomorrow"),
-            DuePatchItem::ThisWeekend => write!(f, "This weekend"),
-            DuePatchItem::NextWeek => write!(f, "Next week (Monday)"),
-            DuePatchItem::NoDate => write!(f, "No date"),
-            DuePatchItem::Custom(d) => {
+            DatePatchItem::Today => write!(f, "Today"),
+            DatePatchItem::Tomorrow => write!(f, "Tomorrow"),
+            DatePatchItem::ThisWeekend => write!(f, "This weekend"),
+            DatePatchItem::NextWeek => write!(f, "Next week (Monday)"),
+            DatePatchItem::NoDate => write!(f, "No date"),
+            DatePatchItem::Custom(d) => {
                 if d == &DateTimeUtc::default() {
                     write!(f, "Custom")
                 } else {
@@ -36,47 +36,47 @@ impl std::fmt::Display for DuePatchItem {
     }
 }
 
-impl DuePatchItem {
+impl DatePatchItem {
     fn to_date(self, current_dt: &DateTimeUtc) -> Option<DateTimeUtc> {
         let result = match self {
-            DuePatchItem::Today => Some(*current_dt),
-            DuePatchItem::Tomorrow => Some(add_days(current_dt, 1)),
-            DuePatchItem::ThisWeekend => match current_dt.weekday() {
+            DatePatchItem::Today => Some(*current_dt),
+            DatePatchItem::Tomorrow => Some(add_days(current_dt, 1)),
+            DatePatchItem::ThisWeekend => match current_dt.weekday() {
                 chrono::Weekday::Sat | chrono::Weekday::Sun => Some(*current_dt),
                 wd => Some(add_days(current_dt, 5 - wd as u64)),
             },
-            DuePatchItem::NextWeek => Some(add_days(current_dt, 7 - current_dt.weekday() as u64)),
-            DuePatchItem::NoDate => None,
-            DuePatchItem::Custom(dt) => Some(dt),
+            DatePatchItem::NextWeek => Some(add_days(current_dt, 7 - current_dt.weekday() as u64)),
+            DatePatchItem::NoDate => None,
+            DatePatchItem::Custom(dt) => Some(dt),
         };
 
         result.map(|d| clear_time(&d))
     }
 
-    pub fn values() -> Vec<DuePatchItem> {
+    pub fn values() -> Vec<DatePatchItem> {
         vec![
-            DuePatchItem::Today,
-            DuePatchItem::Tomorrow,
-            DuePatchItem::ThisWeekend,
-            DuePatchItem::NextWeek,
-            DuePatchItem::NoDate,
+            DatePatchItem::Today,
+            DatePatchItem::Tomorrow,
+            DatePatchItem::ThisWeekend,
+            DatePatchItem::NextWeek,
+            DatePatchItem::NoDate,
         ]
     }
 }
 
-impl From<DuePatchItem> for Option<DateTimeUtc> {
-    fn from(value: DuePatchItem) -> Option<DateTimeUtc> {
+impl From<DatePatchItem> for Option<DateTimeUtc> {
+    fn from(value: DatePatchItem) -> Option<DateTimeUtc> {
         value.to_date(&chrono::Utc::now())
     }
 }
 
-impl From<DateTimeUtc> for DuePatchItem {
+impl From<DateTimeUtc> for DatePatchItem {
     fn from(dt: DateTimeUtc) -> Self {
         let now = clear_time(&chrono::Utc::now());
         match (dt - now).num_days() {
-            0 => DuePatchItem::Today,
-            1 => DuePatchItem::Tomorrow,
-            _ => DuePatchItem::Custom(dt),
+            0 => DatePatchItem::Today,
+            1 => DatePatchItem::Tomorrow,
+            _ => DatePatchItem::Custom(dt),
         }
     }
 }
@@ -94,6 +94,22 @@ impl<T> From<Option<T>> for ValuePatch<T> {
         match v {
             Some(v) => Self::Value(v),
             None => Self::NotSet,
+        }
+    }
+}
+
+impl From<ValuePatch<DatePatchItem>> for ValuePatch<DateTimeUtc> {
+    fn from(value: ValuePatch<DatePatchItem>) -> Self {
+        match value {
+            ValuePatch::NotSet => ValuePatch::NotSet,
+            ValuePatch::Empty => ValuePatch::Empty,
+            ValuePatch::Value(due) => {
+                if let Some(d) = due.into() {
+                    ValuePatch::Value(d)
+                } else {
+                    ValuePatch::Empty
+                }
+            }
         }
     }
 }
@@ -150,7 +166,8 @@ pub struct TaskPatch {
     pub task: Option<Box<dyn TaskTrait>>,
     pub name: ValuePatch<String>,
     pub description: ValuePatch<String>,
-    pub due: ValuePatch<DuePatchItem>,
+    pub due: ValuePatch<DatePatchItem>,
+    pub scheduled: ValuePatch<DatePatchItem>,
     pub priority: ValuePatch<Priority>,
     pub state: ValuePatch<State>,
 }
@@ -158,11 +175,12 @@ pub struct TaskPatch {
 impl std::fmt::Display for TaskPatch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
-            "TaskPatch {{ task_id: {}, task_title: {} state: {:?}, due: {:?}, priority: {:?}, name: {:?}, description: {:?}",
+            "TaskPatch {{ task_id: {}, task_title: {} state: {:?}, due: {:?}, scheduled: {:?}, priority: {:?}, name: {:?}, description: {:?}",
             self.task.as_ref().map(|t| t.id()).unwrap_or("-".to_string()),
             self.task.as_ref().map(|t| t.name().display()).unwrap_or("-".to_string()),
             self.state,
             self.due,
+            self.scheduled,
             self.priority,
             self.name,
             self.description,
@@ -181,6 +199,7 @@ impl TaskPatch {
         !(self.name.is_set()
             || self.description.is_set()
             || self.due.is_set()
+            || self.scheduled.is_set()
             || self.priority.is_set()
             || self.state.is_set())
     }
@@ -203,6 +222,7 @@ impl Clone for TaskPatch {
             name: self.name.clone(),
             description: self.description.clone(),
             due: self.due.clone(),
+            scheduled: self.scheduled.clone(),
             priority: self.priority.clone(),
             state: self.state.clone(),
         }
@@ -248,74 +268,74 @@ mod tests {
     fn test_patch_due_to_date() {
         struct Case<'a> {
             name: &'a str,
-            due: DuePatchItem,
+            due: DatePatchItem,
             now: DateTimeUtc,
             result: Option<DateTimeUtc>,
         }
         let cases: &[Case] = &[
             Case {
                 name: "no date",
-                due: DuePatchItem::NoDate,
+                due: DatePatchItem::NoDate,
                 now: clear_time(&chrono::Utc::now()),
                 result: None,
             },
             Case {
                 name: "today",
-                due: DuePatchItem::Today,
+                due: DatePatchItem::Today,
                 now: clear_time(&chrono::Utc::now()),
                 result: Some(clear_time(&chrono::Utc::now())),
             },
             Case {
                 name: "tomorrow",
-                due: DuePatchItem::Tomorrow,
+                due: DatePatchItem::Tomorrow,
                 now: dt_from_unixtime(1749254400),
                 result: Some(dt_from_unixtime(1749340800)),
             },
             Case {
                 name: "this weekend for Monday",
-                due: DuePatchItem::ThisWeekend,
+                due: DatePatchItem::ThisWeekend,
                 now: dt_from_unixtime(1748822400),
                 result: Some(dt_from_unixtime(1749254400)),
             },
             Case {
                 name: "this weekend for Friday",
-                due: DuePatchItem::ThisWeekend,
+                due: DatePatchItem::ThisWeekend,
                 now: dt_from_unixtime(1749168000),
                 result: Some(dt_from_unixtime(1749254400)),
             },
             Case {
                 name: "this weekend for Saturday",
-                due: DuePatchItem::ThisWeekend,
+                due: DatePatchItem::ThisWeekend,
                 now: dt_from_unixtime(1749254400),
                 result: Some(dt_from_unixtime(1749254400)),
             },
             Case {
                 name: "this weekend for Sunday",
-                due: DuePatchItem::ThisWeekend,
+                due: DatePatchItem::ThisWeekend,
                 now: dt_from_unixtime(1749340800),
                 result: Some(dt_from_unixtime(1749340800)),
             },
             Case {
                 name: "next week for Monday",
-                due: DuePatchItem::NextWeek,
+                due: DatePatchItem::NextWeek,
                 now: dt_from_unixtime(1748822400),
                 result: Some(dt_from_unixtime(1749427200)),
             },
             Case {
                 name: "next week for Friday",
-                due: DuePatchItem::NextWeek,
+                due: DatePatchItem::NextWeek,
                 now: dt_from_unixtime(1749168000),
                 result: Some(dt_from_unixtime(1749427200)),
             },
             Case {
                 name: "next week for Saturday",
-                due: DuePatchItem::NextWeek,
+                due: DatePatchItem::NextWeek,
                 now: dt_from_unixtime(1749254400),
                 result: Some(dt_from_unixtime(1749427200)),
             },
             Case {
                 name: "next week for Sunday",
-                due: DuePatchItem::NextWeek,
+                due: DatePatchItem::NextWeek,
                 now: dt_from_unixtime(1749340800),
                 result: Some(dt_from_unixtime(1749427200)),
             },

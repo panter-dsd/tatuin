@@ -27,10 +27,39 @@ crate::impl_widget_state_trait!(TaskRow);
 
 impl TaskRow {
     pub fn new(t: &dyn TaskTrait, changed_tasks: &[TaskPatch]) -> Self {
-        let tz = Local::now().timezone();
+        let mut name = t.name().display();
+        let mut state = t.state();
+        let mut due = t.due();
+        let mut scheduled = t.scheduled();
+        let mut priority = t.priority();
+        let mut description = t.description().map(|d| d.display());
+
+        let mut uncommitted = false;
+
+        if let Some(patch) = changed_tasks.iter().find(|c| c.is_task(t)) {
+            uncommitted = !patch.is_empty();
+            if let Some(n) = &patch.name.value() {
+                name = n.to_string();
+            }
+            if let Some(s) = &patch.state.value() {
+                state = *s;
+            }
+            if let Some(d) = &patch.due.value() {
+                due = (*d).into();
+            }
+            if let Some(d) = &patch.scheduled.value() {
+                scheduled = (*d).into();
+            }
+            if let Some(p) = &patch.priority.value() {
+                priority = *p;
+            }
+            if patch.description.is_set() {
+                description = patch.description.value();
+            }
+        }
 
         let fg_color = {
-            match t.due() {
+            match task::planned_date(&scheduled, &due) {
                 Some(d) => {
                     let now = chrono::Utc::now();
                     match d.date_naive().cmp(&now.date_naive()) {
@@ -52,30 +81,8 @@ impl TaskRow {
                 None => style::no_date_task_fg(),
             }
         };
-        let mut name = t.name().display();
-        let mut state = t.state();
-        let mut due = task::datetime_to_str(t.due(), &tz);
-        let mut priority = t.priority();
-        let mut description = t.description().map(|d| d.display());
-        let mut uncommitted = false;
-        if let Some(patch) = changed_tasks.iter().find(|c| c.is_task(t)) {
-            uncommitted = !patch.is_empty();
-            if let Some(n) = &patch.name.value() {
-                name = n.to_string();
-            }
-            if let Some(s) = &patch.state.value() {
-                state = *s;
-            }
-            if let Some(d) = &patch.due.value() {
-                due = d.to_string();
-            }
-            if let Some(p) = &patch.priority.value() {
-                priority = *p;
-            }
-            if patch.description.is_set() {
-                description = patch.description.value();
-            }
-        }
+
+        let tz = Local::now().timezone();
 
         let mut children: Vec<Box<dyn WidgetTrait>> = vec![
             Box::new(Text::new(format!("[{state}] ").as_str())),
@@ -83,15 +90,26 @@ impl TaskRow {
                 MarkdownView::new(name.as_str(), MarkdownViewConfig::default())
                     .style(style::default_style().fg(fg_color)),
             ),
-            Box::new(Text::new(format!(" (due: {due})").as_str()).style(style::default_style().fg(style::due_color()))),
             Box::new(
-                Text::new(format!(" (Priority: {priority})").as_str())
-                    .style(style::default_style().fg(style::priority_color(&priority))),
-            ),
-            Box::new(
-                Text::new(format!(" ({})", t.place()).as_str()).style(style::default_style().fg(style::place_color())),
+                Text::new(format!(" (due: {})", task::datetime_to_str(due, &tz)).as_str())
+                    .style(style::default_style().fg(style::due_color())),
             ),
         ];
+
+        if scheduled.is_some() {
+            children.push(Box::new(
+                Text::new(format!(" (scheduled: {})", task::datetime_to_str(scheduled, &tz)).as_str())
+                    .style(style::default_style().fg(style::scheduled_color())),
+            ));
+        }
+
+        children.push(Box::new(
+            Text::new(format!(" (Priority: {priority})").as_str())
+                .style(style::default_style().fg(style::priority_color(&priority))),
+        ));
+        children.push(Box::new(
+            Text::new(format!(" ({})", t.place()).as_str()).style(style::default_style().fg(style::place_color())),
+        ));
 
         for l in t.labels() {
             children.push(Box::new(Text::new(" ")));
