@@ -84,7 +84,7 @@ fn element_color(element: ColorElement) -> Color {
         DefaultBG => DEFAULT_BG,
         DefaultFG => DEFAULT_FG,
         TaskRowDueFG => Color::Blue,
-        TaskRowScheduledFG => Color::Magenta, // TODO: add to all styles
+        TaskRowScheduledFG => Color::Magenta,
         TaskRowPlaceFG => Color::Yellow,
         UrlFG => DEFAULT_FG,
         UrlUnderMouseFG => Color::Blue,
