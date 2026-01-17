@@ -124,7 +124,7 @@ repository = "https://github.com/cuviper/autocfg"
 
 [[dependencies]]
 name = "aws-lc-rs"
-version = "1.15.2"
+version = "1.15.3"
 description = "aws-lc-rs is a cryptographic library using AWS-LC for its cryptographic operations. This library strives to be API-compatible with the popular Rust library named ring."
 license = "ISC AND (Apache-2.0 OR ISC)"
 authors = ["AWS-LibCrypto"]
@@ -132,7 +132,7 @@ repository = "https://github.com/aws/aws-lc-rs"
 
 [[dependencies]]
 name = "aws-lc-sys"
-version = "0.35.0"
+version = "0.36.0"
 description = "AWS-LC is a general-purpose cryptographic library maintained by the AWS Cryptography team for AWS and their customers. It іs based on code from the Google BoringSSL project and the OpenSSL project."
 license = "ISC AND (Apache-2.0 OR ISC) AND OpenSSL"
 notices = [
@@ -233,7 +233,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.52"
+version = "1.2.53"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -276,11 +276,11 @@ repository = "https://github.com/katharostech/cfg_aliases"
 
 [[dependencies]]
 name = "chrono"
-version = "0.4.42"
+version = "0.4.43"
 description = "Date and time library for Rust"
 license = "MIT OR Apache-2.0"
 notices = [
-  "Apache 2.0 License [2]. Copyright (c) 2014--2025, Kang Seonghoon and",
+  "Apache 2.0 License [2]. Copyright (c) 2014--2026, Kang Seonghoon and",
   "Copyright (c) 2014, Kang Seonghoon.",
 ]
 repository = "https://github.com/chronotope/chrono"
@@ -322,7 +322,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_lex"
-version = "0.7.6"
+version = "0.7.7"
 description = "Minimal, flexible command line parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -365,7 +365,7 @@ repository = "https://github.com/rust-cli/anstyle.git"
 
 [[dependencies]]
 name = "colored"
-version = "3.0.0"
+version = "3.1.1"
 description = "The most simple way to add colors in your terminal"
 license = "MPL-2.0"
 authors = ["Thomas Wickham <mackwic@gmail.com>"]
@@ -761,7 +761,7 @@ repository = "https://github.com/smol-rs/fastrand"
 
 [[dependencies]]
 name = "find-msvc-tools"
-version = "0.1.7"
+version = "0.1.8"
 description = "Find windows-specific tools, read MSVC versions from the registry and from COM interfaces"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -905,7 +905,7 @@ repository = "https://github.com/fizyk20/generic-array.git"
 
 [[dependencies]]
 name = "getrandom"
-version = "0.2.16"
+version = "0.2.17"
 description = "A small cross-platform library for retrieving random data from system source"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -1370,7 +1370,7 @@ repository = "https://github.com/rust-lang/jobserver-rs"
 
 [[dependencies]]
 name = "js-sys"
-version = "0.3.83"
+version = "0.3.85"
 description = """
 Bindings for all JS global objects and functions in all JS environments like
 Node.js and browsers, built on `#[wasm_bindgen]` using the `wasm-bindgen` crate.
@@ -2071,7 +2071,7 @@ homepage = "https://rust-random.github.io/book"
 
 [[dependencies]]
 name = "rand_core"
-version = "0.9.3"
+version = "0.9.5"
 description = """
 Core random number generator traits and tools for implementation.
 """
@@ -2229,7 +2229,7 @@ repository = "https://github.com/zonyitoo/rust-ini"
 
 [[dependencies]]
 name = "rustc-demangle"
-version = "0.1.26"
+version = "0.1.27"
 description = """
 Rust compiler symbol demangling.
 """
@@ -2300,7 +2300,7 @@ repository = "https://github.com/rustls/rustls-native-certs"
 
 [[dependencies]]
 name = "rustls-pki-types"
-version = "1.13.2"
+version = "1.14.0"
 description = "Shared types for the rustls PKI ecosystem"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -2326,7 +2326,7 @@ repository = "https://github.com/rustls/rustls-platform-verifier"
 
 [[dependencies]]
 name = "rustls-webpki"
-version = "0.103.8"
+version = "0.103.9"
 description = "Web PKI X.509 Certificate Verification."
 license = "ISC"
 notices = ["Copyright 2015 Brian Smith."]
@@ -2860,7 +2860,7 @@ repository = "https://github.com/Amanieu/thread_local-rs"
 
 [[dependencies]]
 name = "time"
-version = "0.3.44"
+version = "0.3.45"
 description = "Date and time library. Fully interoperable with the standard library. Mostly compatible with #![no_std]."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Jacob Pratt et al."]
@@ -2870,7 +2870,7 @@ homepage = "https://time-rs.github.io"
 
 [[dependencies]]
 name = "time-core"
-version = "0.1.6"
+version = "0.1.7"
 description = "This crate is an implementation detail and should not be relied upon directly."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Jacob Pratt et al."]
@@ -2879,7 +2879,7 @@ repository = "https://github.com/time-rs/time"
 
 [[dependencies]]
 name = "time-macros"
-version = "0.2.24"
+version = "0.2.25"
 description = """
     Procedural macros for the time crate.
     This crate is an implementation detail and should not be relied upon directly.
@@ -3037,7 +3037,7 @@ repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
 name = "tower"
-version = "0.5.2"
+version = "0.5.3"
 description = """
 Tower is a library of modular and reusable components for building robust
 clients and servers.
@@ -3445,14 +3445,14 @@ repository = "https://github.com/bytecodealliance/wasi"
 
 [[dependencies]]
 name = "wasip2"
-version = "1.0.1+wasi-0.2.4"
+version = "1.0.2+wasi-0.2.9"
 description = "WASIp2 API bindings for Rust"
 license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
 repository = "https://github.com/bytecodealliance/wasi-rs"
 
 [[dependencies]]
 name = "wasm-bindgen"
-version = "0.2.106"
+version = "0.2.108"
 description = """
 Easy support for interacting between JS and Rust.
 """
@@ -3464,7 +3464,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen"
 
 [[dependencies]]
 name = "wasm-bindgen-futures"
-version = "0.4.56"
+version = "0.4.58"
 description = "Bridging the gap between Rust Futures and JavaScript Promises"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -3474,7 +3474,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro"
-version = "0.2.106"
+version = "0.2.108"
 description = """
 Definition of the `#[wasm_bindgen]` attribute, an internal dependency
 """
@@ -3486,7 +3486,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.106"
+version = "0.2.108"
 description = "Implementation APIs for the `#[wasm_bindgen]` attribute"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -3496,7 +3496,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-shared"
-version = "0.2.106"
+version = "0.2.108"
 description = """
 Shared support between wasm-bindgen and wasm-bindgen cli, an internal
 dependency.
@@ -3509,7 +3509,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "web-sys"
-version = "0.3.83"
+version = "0.3.85"
 description = """
 Bindings for all Web APIs, a procedurally generated crate from WebIDL
 """
@@ -3902,7 +3902,7 @@ repository = "https://github.com/winnow-rs/winnow"
 
 [[dependencies]]
 name = "wit-bindgen"
-version = "0.46.0"
+version = "0.51.0"
 description = """
 Rust bindings generator and runtime support for WIT and the component model.
 Used when compiling Rust programs to the component model.
@@ -4067,7 +4067,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "zmij"
-version = "1.0.12"
+version = "1.0.14"
 description = "A double-to-string conversion algorithm based on Schubfach and yy"
 license = "MIT"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
