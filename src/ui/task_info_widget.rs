@@ -95,10 +95,6 @@ impl TaskInfoWidget {
         if let Some(t) = &self.t {
             let tz = Local::now().timezone();
             entries.push(Entry {
-                title: "ID".to_string(),
-                widget: Box::new(Text::new(t.id().as_str())),
-            });
-            entries.push(Entry {
                 title: "Provider".to_string(),
                 widget: Box::new(Text::new(t.provider().as_str())),
             });
