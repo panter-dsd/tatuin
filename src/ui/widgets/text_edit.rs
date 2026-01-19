@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use std::any::Any;
+use std::{any::Any, ops::Sub};
 
 use super::{WidgetState, WidgetStateTrait, WidgetTrait};
 use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
@@ -14,7 +14,9 @@ use ratatui::{
 };
 
 pub struct TextEdit {
-    text: String,
+    lines: Vec<String>,
+    current_line: usize,
+    pos_in_line: usize,
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
     widget_state: WidgetState,
@@ -54,7 +56,9 @@ impl WidgetStateTrait for TextEdit {
 impl TextEdit {
     pub fn new() -> Self {
         Self {
-            text: String::new(),
+            lines: Vec::new(),
+            current_line: 0,
+            pos_in_line: 0,
             draw_helper: None,
             last_cursor_pos: Position::default(),
             widget_state: WidgetState::default(),
@@ -63,15 +67,17 @@ impl TextEdit {
     }
 
     pub fn text(&self) -> String {
-        self.text.clone()
+        self.lines.join("\n")
     }
 
     pub fn set_text(&mut self, text: &str) {
-        self.text = text.to_string()
+        self.lines = text.split('\n').map(|s| s.to_string()).collect::<Vec<String>>();
     }
 
     pub fn clear(&mut self) {
-        self.text.clear();
+        self.lines.clear();
+        self.current_line = 0;
+        self.pos_in_line = 0;
     }
 }
 
@@ -82,17 +88,13 @@ impl WidgetTrait for TextEdit {
 
         let inner_area = b.inner(area);
 
-        let mut lines = self.text.split('\n').collect::<Vec<&str>>();
+        let mut lines = self.lines.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
         let lines_count = lines.len();
         let possible_line_count = inner_area.height;
 
         let not_all_fit = lines_count > possible_line_count as usize;
         if not_all_fit {
-            lines = lines
-                .iter()
-                .skip(lines.len() - possible_line_count as usize)
-                .cloned()
-                .collect::<Vec<&str>>();
+            lines.drain(0..{ lines_count - possible_line_count as usize });
         }
 
         Paragraph::new(lines.join("\n")).block(b).render(area, buf);
@@ -117,10 +119,13 @@ impl WidgetTrait for TextEdit {
         if let Some(dh) = &self.draw_helper
             && self.is_active()
         {
-            let last_line_width = Text::raw(lines[lines.len() - 1]).width() as u16;
+            let last_line_width = Text::raw(*lines.get(lines.len().saturating_sub(1)).unwrap_or(&"")).width() as u16;
             let pos = Position::new(
                 std::cmp::min(inner_area.x + last_line_width, inner_area.x + inner_area.width - 1),
-                std::cmp::min(inner_area.y + lines.len() as u16 - 1, inner_area.y + inner_area.height),
+                std::cmp::min(
+                    inner_area.y + lines.len().saturating_sub(1) as u16,
+                    inner_area.y + inner_area.height,
+                ),
             );
             if pos != self.last_cursor_pos {
                 dh.write().await.set_cursor_pos(pos, None);
@@ -156,10 +161,34 @@ impl WidgetTrait for TextEdit {
 impl KeyboardHandler for TextEdit {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         match key.code {
-            KeyCode::Char(ch) => self.text.push(ch),
-            KeyCode::Enter => self.text.push('\n'),
-            KeyCode::Backspace => {
-                self.text.pop();
+            KeyCode::Char(ch) => {
+                if self.lines.is_empty() {
+                    self.lines.push(String::new());
+                }
+
+                let s = self.lines.get_mut(self.current_line).unwrap();
+                s.push(ch);
+                self.pos_in_line += 1;
+            }
+            KeyCode::Enter => {
+                self.lines.push(String::new());
+                self.current_line = self.lines.len().sub(1);
+                self.pos_in_line = 0;
+            }
+            KeyCode::Backspace if !self.lines.is_empty() => {
+                let s = self.lines.get_mut(self.current_line).unwrap();
+                if s.is_empty() {
+                    self.lines.pop();
+                    self.current_line = self.current_line.saturating_sub(1);
+                    self.pos_in_line = self
+                        .lines
+                        .get(self.current_line)
+                        .map(|l| l.len().saturating_sub(1))
+                        .unwrap_or(0);
+                } else {
+                    s.pop();
+                    self.pos_in_line = self.pos_in_line.saturating_sub(1);
+                }
             }
             _ => {
                 return false;
