@@ -9,7 +9,6 @@ use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
     buffer::Buffer,
     layout::{Position, Rect, Size},
-    text::Text,
     widgets::{Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget},
 };
 
@@ -17,6 +16,7 @@ pub struct TextEdit {
     lines: Vec<String>,
     current_line: usize,
     pos_in_line: usize,
+    top_render_line: usize,
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
     widget_state: WidgetState,
@@ -52,7 +52,6 @@ impl WidgetStateTrait for TextEdit {
     }
 }
 
-#[allow(dead_code)]
 impl TextEdit {
     pub fn new() -> Self {
         Self {
@@ -60,6 +59,7 @@ impl TextEdit {
             current_line: 0,
             pos_in_line: 0,
             draw_helper: None,
+            top_render_line: 0,
             last_cursor_pos: Position::default(),
             widget_state: WidgetState::default(),
             size: Size::default(),
@@ -71,6 +71,7 @@ impl TextEdit {
     }
 
     pub fn set_text(&mut self, text: &str) {
+        self.clear();
         self.lines = text.split('\n').map(|s| s.to_string()).collect::<Vec<String>>();
     }
 
@@ -78,6 +79,23 @@ impl TextEdit {
         self.lines.clear();
         self.current_line = 0;
         self.pos_in_line = 0;
+        self.top_render_line = 0;
+    }
+}
+
+impl TextEdit {
+    fn end_of_current_line(&self) -> usize {
+        self.lines.get(self.current_line).map(|l| l.len()).unwrap_or(0)
+    }
+
+    fn calculate_top_render_line(&mut self, line_count: usize) -> usize {
+        if self.top_render_line > self.current_line {
+            self.top_render_line = self.current_line;
+        } else if self.current_line - self.top_render_line >= line_count {
+            self.top_render_line = self.current_line - line_count + 1;
+        }
+
+        self.top_render_line
     }
 }
 
@@ -88,18 +106,21 @@ impl WidgetTrait for TextEdit {
 
         let inner_area = b.inner(area);
 
-        let mut lines = self.lines.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
-        let lines_count = lines.len();
-        let possible_line_count = inner_area.height;
+        let lines_count = self.lines.len();
+        let possible_line_count = inner_area.height as usize;
 
-        let not_all_fit = lines_count > possible_line_count as usize;
-        if not_all_fit {
-            lines.drain(0..{ lines_count - possible_line_count as usize });
-        }
+        let top_render_line = self.calculate_top_render_line(possible_line_count);
+        let lines = self
+            .lines
+            .iter()
+            .skip(top_render_line)
+            .take(possible_line_count)
+            .map(|s| s.as_str())
+            .collect::<Vec<&str>>();
 
         Paragraph::new(lines.join("\n")).block(b).render(area, buf);
 
-        if not_all_fit {
+        if lines_count != lines.len() {
             let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
                 .begin_symbol(Some("↑"))
                 .end_symbol(Some("↓"));
@@ -119,11 +140,13 @@ impl WidgetTrait for TextEdit {
         if let Some(dh) = &self.draw_helper
             && self.is_active()
         {
-            let last_line_width = Text::raw(*lines.get(lines.len().saturating_sub(1)).unwrap_or(&"")).width() as u16;
             let pos = Position::new(
-                std::cmp::min(inner_area.x + last_line_width, inner_area.x + inner_area.width - 1),
                 std::cmp::min(
-                    inner_area.y + lines.len().saturating_sub(1) as u16,
+                    inner_area.x + self.pos_in_line as u16,
+                    inner_area.x + inner_area.width - 1,
+                ),
+                std::cmp::min(
+                    inner_area.y + self.current_line.saturating_sub(self.top_render_line) as u16,
                     inner_area.y + inner_area.height,
                 ),
             );
@@ -180,14 +203,20 @@ impl KeyboardHandler for TextEdit {
                 if s.is_empty() {
                     self.lines.pop();
                     self.current_line = self.current_line.saturating_sub(1);
-                    self.pos_in_line = self
-                        .lines
-                        .get(self.current_line)
-                        .map(|l| l.len().saturating_sub(1))
-                        .unwrap_or(0);
+                    self.pos_in_line = self.end_of_current_line();
                 } else {
                     s.pop();
                     self.pos_in_line = self.pos_in_line.saturating_sub(1);
+                }
+            }
+            KeyCode::Up => {
+                self.current_line = self.current_line.saturating_sub(1);
+                self.pos_in_line = self.end_of_current_line();
+            }
+            KeyCode::Down => {
+                if self.current_line + 1 != self.lines.len() {
+                    self.current_line += 1;
+                    self.pos_in_line = self.end_of_current_line();
                 }
             }
             _ => {
