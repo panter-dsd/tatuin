@@ -3,7 +3,12 @@
 use std::{any::Any, ops::Sub};
 
 use super::{WidgetState, WidgetStateTrait, WidgetTrait};
-use crate::ui::{draw_helper::DrawHelper, keyboard_handler::KeyboardHandler, mouse_handler::MouseHandler, style};
+use crate::ui::{
+    draw_helper::{CursorStyle, DrawHelper},
+    keyboard_handler::KeyboardHandler,
+    mouse_handler::MouseHandler,
+    style,
+};
 use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent};
 use ratatui::{
@@ -73,6 +78,8 @@ impl TextEdit {
     pub fn set_text(&mut self, text: &str) {
         self.clear();
         self.lines = text.split('\n').map(|s| s.to_string()).collect::<Vec<String>>();
+        self.current_line = self.lines.len().sub(1);
+        self.pos_in_line = self.end_of_current_line();
     }
 
     pub fn clear(&mut self) {
@@ -84,8 +91,16 @@ impl TextEdit {
 }
 
 impl TextEdit {
+    fn current_line(&self) -> Option<&str> {
+        self.lines.get(self.current_line).map(|s| s.as_str())
+    }
+
+    fn current_line_size(&self) -> usize {
+        self.current_line().map(|l| l.chars().count()).unwrap_or(0)
+    }
+
     fn end_of_current_line(&self) -> usize {
-        self.lines.get(self.current_line).map(|l| l.len()).unwrap_or(0)
+        self.current_line_size()
     }
 
     fn calculate_top_render_line(&mut self, line_count: usize) -> usize {
@@ -151,7 +166,12 @@ impl WidgetTrait for TextEdit {
                 ),
             );
             if pos != self.last_cursor_pos {
-                dh.write().await.set_cursor_pos(pos, None);
+                let cursor_style = if self.pos_in_line == self.end_of_current_line() {
+                    CursorStyle::BlinkingBlock
+                } else {
+                    CursorStyle::BlinkingBar
+                };
+                dh.write().await.set_cursor_pos(pos, Some(cursor_style));
                 self.last_cursor_pos = pos;
             }
         }
@@ -189,8 +209,13 @@ impl KeyboardHandler for TextEdit {
                     self.lines.push(String::new());
                 }
 
+                let end_of_current_line = self.end_of_current_line();
                 let s = self.lines.get_mut(self.current_line).unwrap();
-                s.push(ch);
+                if self.pos_in_line == end_of_current_line {
+                    s.push(ch);
+                } else {
+                    s.insert(s.char_indices().nth(self.pos_in_line).unwrap().0, ch);
+                }
                 self.pos_in_line += 1;
             }
             KeyCode::Enter => {
@@ -210,13 +235,30 @@ impl KeyboardHandler for TextEdit {
                 }
             }
             KeyCode::Up => {
+                if self.current_line == 0 {
+                    self.pos_in_line = 0;
+                }
                 self.current_line = self.current_line.saturating_sub(1);
-                self.pos_in_line = self.end_of_current_line();
+                if self.pos_in_line > self.current_line_size() {
+                    self.pos_in_line = self.end_of_current_line();
+                }
             }
             KeyCode::Down => {
                 if self.current_line + 1 != self.lines.len() {
                     self.current_line += 1;
-                    self.pos_in_line = self.end_of_current_line();
+                    if self.pos_in_line > self.current_line_size() {
+                        self.pos_in_line = self.end_of_current_line();
+                    }
+                }
+            }
+            KeyCode::Left => {
+                self.pos_in_line = self.pos_in_line.saturating_sub(1);
+            }
+            KeyCode::Right => {
+                if let Some(l) = self.current_line()
+                    && self.pos_in_line != l.chars().count()
+                {
+                    self.pos_in_line += 1;
                 }
             }
             _ => {
