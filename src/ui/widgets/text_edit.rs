@@ -271,20 +271,50 @@ impl KeyboardHandler for TextEdit {
                 }
                 self.pos_in_line += 1;
             }
-            KeyCode::Enter => {
-                self.lines.push(String::new());
-                self.current_line = self.lines.len().sub(1);
-                self.pos_in_line = 0;
-            }
+            KeyCode::Enter => match self.lines.get_mut(self.current_line) {
+                None => {
+                    self.lines.push(String::new());
+                    self.current_line = self.lines.len().sub(1);
+                    self.pos_in_line = 0;
+                }
+                Some(s) => {
+                    let new_str = if self.pos_in_line == s.chars().count() {
+                        String::new()
+                    } else {
+                        let ss = s.chars().skip(self.pos_in_line).collect();
+                        *s = s.chars().take(self.pos_in_line).collect();
+                        ss
+                    };
+                    self.current_line += 1;
+                    self.lines.insert(self.current_line, new_str);
+                    self.pos_in_line = 0;
+                }
+            },
             KeyCode::Backspace if !self.lines.is_empty() => {
-                let s = self.lines.get_mut(self.current_line).unwrap();
-                if s.is_empty() {
-                    self.lines.pop();
-                    self.current_line = self.current_line.saturating_sub(1);
-                    self.pos_in_line = self.end_of_current_line();
-                } else {
-                    s.pop();
-                    self.pos_in_line = self.pos_in_line.saturating_sub(1);
+                if self.pos_in_line == 0 && self.current_line != 0 {
+                    let current_line = self.current_line().unwrap().to_string();
+                    let previous_line_size = self
+                        .lines
+                        .get(self.current_line - 1)
+                        .map(|l| l.chars().count())
+                        .unwrap_or_default();
+                    self.lines
+                        .get_mut(self.current_line - 1)
+                        .unwrap()
+                        .push_str(&current_line);
+                    self.lines.remove(self.current_line);
+                    self.current_line -= 1;
+                    self.pos_in_line = previous_line_size;
+                } else if self.pos_in_line != 0 {
+                    let s = self.lines.get_mut(self.current_line).unwrap();
+                    if s.is_empty() {
+                        self.lines.pop();
+                        self.current_line = self.current_line.saturating_sub(1);
+                        self.pos_in_line = self.end_of_current_line();
+                    } else {
+                        s.remove(s.char_indices().nth(self.pos_in_line - 1).unwrap().0);
+                        self.pos_in_line = self.pos_in_line.saturating_sub(1);
+                    }
                 }
             }
             KeyCode::Up => {
