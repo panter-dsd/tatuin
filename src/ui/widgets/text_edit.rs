@@ -22,6 +22,7 @@ pub struct TextEdit {
     current_line: usize,
     pos_in_line: usize,
     top_render_line: usize,
+    left_render_symbol: usize,
     last_cursor_pos: Position,
     draw_helper: Option<DrawHelper>,
     widget_state: WidgetState,
@@ -65,6 +66,7 @@ impl TextEdit {
             pos_in_line: 0,
             draw_helper: None,
             top_render_line: 0,
+            left_render_symbol: 0,
             last_cursor_pos: Position::default(),
             widget_state: WidgetState::default(),
             size: Size::default(),
@@ -87,6 +89,7 @@ impl TextEdit {
         self.current_line = 0;
         self.pos_in_line = 0;
         self.top_render_line = 0;
+        self.left_render_symbol = 0;
     }
 }
 
@@ -112,6 +115,18 @@ impl TextEdit {
 
         self.top_render_line
     }
+
+    fn calculate_left_render_symbol(&mut self, max_count: usize) -> usize {
+        if self.left_render_symbol > self.pos_in_line {
+            self.left_render_symbol = self.pos_in_line;
+        } else if self.pos_in_line - self.left_render_symbol >= max_count {
+            self.left_render_symbol = self.pos_in_line - max_count + 1;
+        } else if self.current_line_size() - self.left_render_symbol < max_count {
+            self.left_render_symbol = self.pos_in_line.checked_sub(max_count).map(|v| v + 1).unwrap_or(0);
+        }
+
+        self.left_render_symbol
+    }
 }
 
 #[async_trait]
@@ -125,7 +140,10 @@ impl WidgetTrait for TextEdit {
         let possible_line_count = inner_area.height as usize;
 
         let top_render_line = self.calculate_top_render_line(possible_line_count);
-        let lines = self
+        let max_symbol_count = inner_area.width as usize;
+        let left_render_symbol = self.calculate_left_render_symbol(max_symbol_count);
+
+        let visible_lines = self
             .lines
             .iter()
             .skip(top_render_line)
@@ -133,13 +151,23 @@ impl WidgetTrait for TextEdit {
             .map(|s| s.as_str())
             .collect::<Vec<&str>>();
 
+        let lines = visible_lines
+            .iter()
+            .map(|s| {
+                s.chars()
+                    .skip(left_render_symbol)
+                    .take(max_symbol_count)
+                    .collect::<String>()
+            })
+            .collect::<Vec<String>>();
+
         Paragraph::new(lines.join("\n")).block(b).render(area, buf);
 
         if lines_count != lines.len() {
             let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
                 .begin_symbol(Some("↑"))
                 .end_symbol(Some("↓"));
-            let mut scrollbar_state = ScrollbarState::new(lines_count).position(lines_count);
+            let mut scrollbar_state = ScrollbarState::new(lines_count).position(self.current_line);
             scrollbar.render(
                 Rect {
                     x: area.x,
@@ -152,12 +180,35 @@ impl WidgetTrait for TextEdit {
             );
         }
 
+        let longest_line_size = visible_lines
+            .iter()
+            .map(|s| s.chars().count())
+            .max()
+            .unwrap_or_default();
+
+        if longest_line_size >= max_symbol_count {
+            let scrollbar = Scrollbar::new(ScrollbarOrientation::HorizontalBottom)
+                .begin_symbol(Some("←"))
+                .end_symbol(Some("→"));
+            let mut scrollbar_state = ScrollbarState::new(longest_line_size).position(self.pos_in_line);
+            scrollbar.render(
+                Rect {
+                    x: area.x + 1,
+                    y: area.y,
+                    width: area.width - 2,
+                    height: area.height,
+                },
+                buf,
+                &mut scrollbar_state,
+            );
+        }
+
         if let Some(dh) = &self.draw_helper
             && self.is_active()
         {
             let pos = Position::new(
                 std::cmp::min(
-                    inner_area.x + self.pos_in_line as u16,
+                    inner_area.x + (self.pos_in_line - self.left_render_symbol) as u16,
                     inner_area.x + inner_area.width - 1,
                 ),
                 std::cmp::min(
@@ -203,6 +254,8 @@ impl WidgetTrait for TextEdit {
 #[async_trait]
 impl KeyboardHandler for TextEdit {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
+        let is_at_end_of_current_line = self.pos_in_line == self.end_of_current_line();
+
         match key.code {
             KeyCode::Char(ch) => {
                 if self.lines.is_empty() {
@@ -265,6 +318,12 @@ impl KeyboardHandler for TextEdit {
                 return false;
             }
         }
+
+        if is_at_end_of_current_line != (self.pos_in_line == self.end_of_current_line()) {
+            // we should redraw the cursor style in this case
+            self.last_cursor_pos = Position::default();
+        }
+
         true
     }
 }
