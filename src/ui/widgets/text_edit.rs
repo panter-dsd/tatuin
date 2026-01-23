@@ -109,8 +109,12 @@ impl TextEdit {
     fn calculate_top_render_line(&mut self, line_count: usize) -> usize {
         if self.top_render_line > self.current_line {
             self.top_render_line = self.current_line;
-        } else if self.current_line - self.top_render_line >= line_count {
-            self.top_render_line = self.current_line - line_count + 1;
+        } else {
+            self.top_render_line = self
+                .current_line
+                .checked_sub(line_count)
+                .map(|v| v + 1)
+                .unwrap_or_default();
         }
 
         self.top_render_line
@@ -121,7 +125,7 @@ impl TextEdit {
             self.left_render_symbol = self.pos_in_line;
         } else if self.pos_in_line - self.left_render_symbol >= max_count {
             self.left_render_symbol = self.pos_in_line - max_count + 1;
-        } else if self.current_line_size() - self.left_render_symbol < max_count {
+        } else {
             self.left_render_symbol = self.pos_in_line.checked_sub(max_count).map(|v| v + 1).unwrap_or(0);
         }
 
