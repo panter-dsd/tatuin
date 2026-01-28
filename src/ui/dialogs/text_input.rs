@@ -114,8 +114,10 @@ impl KeyboardHandler for Dialog {
             }
         }
 
-        if self.should_be_closed && self.draw_helper.is_some() {
-            self.draw_helper.as_ref().unwrap().write().await.hide_cursor();
+        if self.should_be_closed
+            && let Some(dh) = self.draw_helper.as_ref()
+        {
+            dh.write().await.hide_cursor();
         }
         true
     }

@@ -214,8 +214,8 @@ impl TaskPatch {
 impl Clone for TaskPatch {
     fn clone(&self) -> Self {
         Self {
-            task: if self.task.is_some() {
-                Some(self.task.as_ref().unwrap().clone_boxed())
+            task: if let Some(t) = self.task.as_ref() {
+                Some(t.clone_boxed())
             } else {
                 None
             },
