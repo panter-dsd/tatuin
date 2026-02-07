@@ -198,7 +198,7 @@ repository = "https://github.com/fitzgen/bumpalo"
 
 [[dependencies]]
 name = "bytes"
-version = "1.11.0"
+version = "1.11.1"
 description = "Types and traits for working with bytes"
 license = "MIT"
 notices = ["Copyright (c) 2018 Carl Lerche"]
@@ -298,7 +298,7 @@ repository = "https://github.com/chronotope/chrono-tz"
 
 [[dependencies]]
 name = "clap"
-version = "4.5.56"
+version = "4.5.57"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -306,7 +306,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_builder"
-version = "4.5.56"
+version = "4.5.57"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -1094,7 +1094,7 @@ repository = "https://github.com/rustls/hyper-rustls"
 
 [[dependencies]]
 name = "hyper-util"
-version = "0.1.19"
+version = "0.1.20"
 description = "hyper utilities"
 license = "MIT"
 notices = ["Copyright (c) 2023-2025 Sean McArthur"]
@@ -1507,7 +1507,7 @@ repository = "https://github.com/RustCrypto/hashes"
 
 [[dependencies]]
 name = "memchr"
-version = "2.7.6"
+version = "2.8.0"
 description = """
 Provides extremely fast (uses SIMD on x86_64, aarch64 and wasm32) routines for
 1, 2 or 3 byte search and single substring search.
@@ -1763,7 +1763,7 @@ repository = "https://github.com/servo/rust-url/"
 
 [[dependencies]]
 name = "pest"
-version = "2.8.5"
+version = "2.8.6"
 description = "The Elegant Parser"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -1772,7 +1772,7 @@ homepage = "https://pest.rs/"
 
 [[dependencies]]
 name = "pest_derive"
-version = "2.8.5"
+version = "2.8.6"
 description = "pest's derive macro"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -1781,7 +1781,7 @@ homepage = "https://pest.rs/"
 
 [[dependencies]]
 name = "pest_generator"
-version = "2.8.5"
+version = "2.8.6"
 description = "pest code generator"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -1790,7 +1790,7 @@ homepage = "https://pest.rs/"
 
 [[dependencies]]
 name = "pest_meta"
-version = "2.8.5"
+version = "2.8.6"
 description = "pest meta language parser and validator"
 license = "MIT OR Apache-2.0"
 authors = ["Dragoș Tiselice <dragostiselice@gmail.com>"]
@@ -2101,7 +2101,7 @@ repository = "https://gitlab.redox-os.org/redox-os/users"
 
 [[dependencies]]
 name = "regex"
-version = "1.12.2"
+version = "1.12.3"
 description = """
 An implementation of regular expressions for Rust. This implementation uses
 finite automata and guarantees linear time matching on all inputs.
@@ -2113,7 +2113,7 @@ repository = "https://github.com/rust-lang/regex"
 
 [[dependencies]]
 name = "regex-automata"
-version = "0.4.13"
+version = "0.4.14"
 description = "Automata construction and matching using regular expressions."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 The Rust Project Developers"]
@@ -2123,7 +2123,7 @@ homepage = "https://github.com/rust-lang/regex/tree/master/regex-automata"
 
 [[dependencies]]
 name = "regex-syntax"
-version = "0.8.8"
+version = "0.8.9"
 description = "A regular expression parser."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 The Rust Project Developers"]
@@ -2133,11 +2133,11 @@ homepage = "https://github.com/rust-lang/regex/tree/master/regex-syntax"
 
 [[dependencies]]
 name = "reqwest"
-version = "0.13.1"
+version = "0.13.2"
 description = "higher level HTTP client library"
 license = "MIT OR Apache-2.0"
 notices = [
-  "Copyright (c) 2016-2025 Sean McArthur",
+  "Copyright (c) 2016-2026 Sean McArthur",
   "Copyright 2016 Sean McArthur",
 ]
 authors = ["Sean McArthur <sean@seanmonstar.com>"]
@@ -2571,7 +2571,7 @@ homepage = "https://docs.rs/siphasher"
 
 [[dependencies]]
 name = "slab"
-version = "0.4.11"
+version = "0.4.12"
 description = "Pre-allocated storage for a uniform data type"
 license = "MIT"
 notices = ["Copyright (c) 2019 Carl Lerche"]
@@ -2718,7 +2718,7 @@ repository = "https://github.com/mystor/synstructure"
 
 [[dependencies]]
 name = "system-configuration"
-version = "0.6.1"
+version = "0.7.0"
 description = "Bindings to SystemConfiguration framework for macOS"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2024 Mullvad VPN AB"]
@@ -2806,7 +2806,7 @@ repository = "https://github.com/Amanieu/thread_local-rs"
 
 [[dependencies]]
 name = "time"
-version = "0.3.46"
+version = "0.3.47"
 description = "Date and time library. Fully interoperable with the standard library. Mostly compatible with #![no_std]."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Jacob Pratt et al."]
@@ -2825,7 +2825,7 @@ repository = "https://github.com/time-rs/time"
 
 [[dependencies]]
 name = "time-macros"
-version = "0.2.26"
+version = "0.2.27"
 description = """
     Procedural macros for the time crate.
     This crate is an implementation detail and should not be relied upon directly.
@@ -3462,7 +3462,7 @@ repository = "https://github.com/daxpedda/web-time"
 
 [[dependencies]]
 name = "webpki-root-certs"
-version = "1.0.5"
+version = "1.0.6"
 description = "Mozilla trusted certificate authorities in self-signed X.509 format for use with crates other than webpki"
 license = "CDLA-Permissive-2.0"
 repository = "https://github.com/rustls/webpki-roots"
@@ -3908,7 +3908,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "zerocopy"
-version = "0.8.37"
+version = "0.8.39"
 description = """Zerocopy makes zero-cost memory manipulation effortless. We write "unsafe" so you don't have to."""
 license = "BSD-2-Clause OR Apache-2.0 OR MIT"
 notices = [
@@ -3923,7 +3923,7 @@ repository = "https://github.com/google/zerocopy"
 
 [[dependencies]]
 name = "zerocopy-derive"
-version = "0.8.37"
+version = "0.8.39"
 description = "Custom derive for traits from the zerocopy crate"
 license = "BSD-2-Clause OR Apache-2.0 OR MIT"
 notices = [
@@ -4000,7 +4000,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "zmij"
-version = "1.0.18"
+version = "1.0.19"
 description = "A double-to-string conversion algorithm based on Schubfach and yy"
 license = "MIT"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
