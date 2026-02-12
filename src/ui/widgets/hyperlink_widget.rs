@@ -66,9 +66,16 @@ impl WidgetTrait for HyperlinkWidget {
         self.area = Rect {
             x: self.pos.x,
             y: self.pos.y,
-            width: std::cmp::min(area.width, Text::from(self.text.as_str()).width() as u16),
+            width: std::cmp::min(
+                area.width.saturating_sub(self.pos.x),
+                Text::from(self.text.as_str()).width() as u16,
+            ),
             height: 1,
         };
+
+        if self.area.width == 0 {
+            return; // there is no place for the widget
+        }
 
         let mut style = self.style.unwrap_or_default().underlined();
         if style.fg.is_none() || self.is_under_mouse {
