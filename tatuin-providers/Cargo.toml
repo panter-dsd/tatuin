@@ -15,7 +15,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 tokio = { version = "1.49.0", features = ["full"] }
 reqwest = { version = "0.13.1", features = ["json"] }
-reqwest_dav = "0.3.1"
+reqwest_dav = "0.3.2"
 url = "2.5.8"
 url-builder = "0.1.1"
 urlencoding = "2.1.3"
