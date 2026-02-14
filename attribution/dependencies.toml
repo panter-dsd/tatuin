@@ -85,6 +85,14 @@ notices = ["Copyright (c) Individual contributors"]
 repository = "https://github.com/rust-cli/anstyle.git"
 
 [[dependencies]]
+name = "anyhow"
+version = "1.0.101"
+description = "Flexible concrete Error type built on std::error::Error"
+license = "MIT OR Apache-2.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+repository = "https://github.com/dtolnay/anyhow"
+
+[[dependencies]]
 name = "arraydeque"
 version = "0.5.1"
 description = "A ring buffer with a fixed capacity, which can be stored on the stack."
@@ -132,7 +140,7 @@ repository = "https://github.com/aws/aws-lc-rs"
 
 [[dependencies]]
 name = "aws-lc-sys"
-version = "0.37.0"
+version = "0.37.1"
 description = "AWS-LC is a general-purpose cryptographic library maintained by the AWS Cryptography team for AWS and their customers. It іs based on code from the Google BoringSSL project and the OpenSSL project."
 license = "ISC AND (Apache-2.0 OR ISC) AND OpenSSL"
 notices = [
@@ -169,7 +177,7 @@ repository = "https://github.com/marshallpierce/rust-base64"
 
 [[dependencies]]
 name = "bitflags"
-version = "2.10.0"
+version = "2.11.0"
 description = """
 A macro to generate structures which behave like bitflags.
 """
@@ -233,7 +241,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.2.55"
+version = "1.2.56"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -298,7 +306,7 @@ repository = "https://github.com/chronotope/chrono-tz"
 
 [[dependencies]]
 name = "clap"
-version = "4.5.57"
+version = "4.5.58"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -306,7 +314,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_builder"
-version = "4.5.57"
+version = "4.5.58"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -322,7 +330,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_lex"
-version = "0.7.7"
+version = "1.0.0"
 description = "Minimal, flexible command line parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -578,7 +586,7 @@ repository = "https://github.com/TedDriggs/darling"
 
 [[dependencies]]
 name = "deranged"
-version = "0.5.5"
+version = "0.5.6"
 description = "Ranged integers"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -928,6 +936,18 @@ authors = ["The Rand Project Developers"]
 repository = "https://github.com/rust-random/getrandom"
 
 [[dependencies]]
+name = "getrandom"
+version = "0.4.1"
+description = "A small cross-platform library for retrieving random data from system source"
+license = "MIT OR Apache-2.0"
+notices = [
+  "Copyright (c) 2014 The Rust Project Developers",
+  "Copyright (c) 2018-2026 The rust-random Project Developers",
+]
+authors = ["The Rand Project Developers"]
+repository = "https://github.com/rust-random/getrandom"
+
+[[dependencies]]
 name = "gimli"
 version = "0.32.3"
 description = "A library for reading and writing the DWARF debugging format."
@@ -1202,6 +1222,18 @@ repository = "https://github.com/unicode-org/icu4x"
 homepage = "https://icu4x.unicode.org"
 
 [[dependencies]]
+name = "id-arena"
+version = "2.3.0"
+description = "A simple, id-based arena."
+license = "MIT/Apache-2.0"
+notices = ["Copyright (c) 2014 Alex Crichton"]
+authors = [
+  "Nick Fitzgerald <fitzgen@gmail.com>",
+  "Aleksey Kladov <aleksey.kladov@gmail.com>",
+]
+repository = "https://github.com/fitzgen/id-arena"
+
+[[dependencies]]
 name = "ident_case"
 version = "1.0.1"
 description = "Utility for applying case rules to Rust identifiers."
@@ -1389,11 +1421,19 @@ authors = ["Marvin Löbel <loebel.marvin@gmail.com>"]
 repository = "https://github.com/rust-lang-nursery/lazy-static.rs"
 
 [[dependencies]]
+name = "leb128fmt"
+version = "0.1.0"
+description = "A library to encode and decode LEB128 compressed integers."
+license = "MIT OR Apache-2.0"
+authors = ["Bryant Luk <code@bryantluk.com>"]
+repository = "https://github.com/bluk/leb128fmt"
+
+[[dependencies]]
 name = "libc"
-version = "0.2.180"
+version = "0.2.182"
 description = "Raw FFI bindings to platform libraries like libc."
 license = "MIT OR Apache-2.0"
-notices = ["Copyright (c) 2014-2020 The Rust Project Developers"]
+notices = ["Copyright (c) The Rust Project Developers"]
 authors = ["The Rust Project Developers"]
 repository = "https://github.com/rust-lang/libc"
 
@@ -1907,6 +1947,14 @@ authors = ["The CryptoCorrosion Contributors"]
 repository = "https://github.com/cryptocorrosion/cryptocorrosion"
 
 [[dependencies]]
+name = "prettyplease"
+version = "0.2.37"
+description = "A minimal `syn` syntax tree pretty-printer"
+license = "MIT OR Apache-2.0"
+authors = ["David Tolnay <dtolnay@gmail.com>"]
+repository = "https://github.com/dtolnay/prettyplease"
+
+[[dependencies]]
 name = "proc-macro2"
 version = "1.0.106"
 description = "A substitute implementation of the compiler's `proc_macro` API to decouple token-based libraries from the procedural macro use case."
@@ -2145,7 +2193,7 @@ repository = "https://github.com/seanmonstar/reqwest"
 
 [[dependencies]]
 name = "reqwest_dav"
-version = "0.3.1"
+version = "0.3.2"
 description = "An async webdav client with tokio and reqwest"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2016 Sean McArthur", "Copyright 2016 Sean McArthur"]
@@ -2301,7 +2349,7 @@ repository = "https://github.com/dtolnay/rustversion"
 
 [[dependencies]]
 name = "ryu"
-version = "1.0.22"
+version = "1.0.23"
 description = "Fast floating point to string conversion"
 license = "Apache-2.0 OR BSL-1.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2349,7 +2397,7 @@ repository = "https://github.com/bluss/scopeguard"
 
 [[dependencies]]
 name = "security-framework"
-version = "3.5.1"
+version = "3.6.0"
 description = "Security.framework bindings for macOS and iOS"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015 Steven Fackler"]
@@ -2362,7 +2410,7 @@ homepage = "https://lib.rs/crates/security_framework"
 
 [[dependencies]]
 name = "security-framework-sys"
-version = "2.15.0"
+version = "2.16.0"
 description = "Apple `Security.framework` low-level FFI bindings"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015 Steven Fackler"]
@@ -2692,7 +2740,7 @@ homepage = "https://dalek.rs/"
 
 [[dependencies]]
 name = "syn"
-version = "2.0.114"
+version = "2.0.115"
 description = "Parser for Rust source code"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2750,7 +2798,7 @@ repository = "https://github.com/panter-dsd/tatuin"
 
 [[dependencies]]
 name = "tempfile"
-version = "3.24.0"
+version = "3.25.0"
 description = "A library for managing temporary files and directories."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015 Steven Allen"]
@@ -2932,7 +2980,19 @@ homepage = "https://tokio.rs"
 
 [[dependencies]]
 name = "toml"
-version = "0.9.11+spec-1.1.0"
+version = "0.9.12+spec-1.1.0"
+description = """
+A native Rust encoder and decoder of TOML-formatted files and streams. Provides
+implementations of the standard Serialize/Deserialize traits for TOML data to
+facilitate deserializing and serializing Rust structures.
+"""
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Individual contributors"]
+repository = "https://github.com/toml-rs/toml"
+
+[[dependencies]]
+name = "toml"
+version = "1.0.1+spec-1.1.0"
 description = """
 A native Rust encoder and decoder of TOML-formatted files and streams. Provides
 implementations of the standard Serialize/Deserialize traits for TOML data to
@@ -2951,8 +3011,16 @@ notices = ["Copyright (c) Individual contributors"]
 repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
+name = "toml_datetime"
+version = "1.0.0+spec-1.1.0"
+description = "A TOML-compatible datetime type"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) Individual contributors"]
+repository = "https://github.com/toml-rs/toml"
+
+[[dependencies]]
 name = "toml_parser"
-version = "1.0.6+spec-1.1.0"
+version = "1.0.8+spec-1.1.0"
 description = "Yet another format-preserving TOML parser."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -3183,7 +3251,7 @@ repository = "https://github.com/Boshen/unicode-id"
 
 [[dependencies]]
 name = "unicode-ident"
-version = "1.0.22"
+version = "1.0.23"
 description = "Determine whether characters have the XID_Start or XID_Continue properties according to Unicode Standard Annex #31"
 license = "(MIT OR Apache-2.0) AND Unicode-3.0"
 notices = ["Copyright © 1991-2023 Unicode, Inc."]
@@ -3247,6 +3315,23 @@ authors = [
 repository = "https://github.com/unicode-rs/unicode-width"
 
 [[dependencies]]
+name = "unicode-xid"
+version = "0.2.6"
+description = """
+Determine whether characters have the XID_Start
+or XID_Continue properties according to
+Unicode Standard Annex #31.
+"""
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2015 The Rust Project Developers"]
+authors = [
+  "erick.tryzelaar <erick.tryzelaar@gmail.com>",
+  "kwantam <kwantam@gmail.com>",
+  "Manish Goregaokar <manishsmail@gmail.com>",
+]
+repository = "https://github.com/unicode-rs/unicode-xid"
+
+[[dependencies]]
 name = "untrusted"
 version = "0.9.0"
 description = "Safe, fast, zero-panic, zero-crashing, zero-allocation parsing of untrusted inputs in Rust."
@@ -3306,7 +3391,7 @@ repository = "https://github.com/alacritty/vte"
 
 [[dependencies]]
 name = "uuid"
-version = "1.20.0"
+version = "1.21.0"
 description = "A library to generate and parse UUIDs."
 license = "Apache-2.0 OR MIT"
 notices = [
@@ -3384,6 +3469,13 @@ license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
 repository = "https://github.com/bytecodealliance/wasi-rs"
 
 [[dependencies]]
+name = "wasip3"
+version = "0.4.0+wasi-0.3.0-rc-2026-01-06"
+description = "WASIp3 API bindings for Rust"
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+repository = "https://github.com/bytecodealliance/wasi-rs"
+
+[[dependencies]]
 name = "wasm-bindgen"
 version = "0.2.108"
 description = """
@@ -3439,6 +3531,33 @@ notices = ["Copyright (c) 2014 Alex Crichton"]
 authors = ["The wasm-bindgen Developers"]
 repository = "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/shared"
 homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
+
+[[dependencies]]
+name = "wasm-encoder"
+version = "0.244.0"
+description = """
+A low-level WebAssembly encoder.
+"""
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+authors = ["Nick Fitzgerald <fitzgen@gmail.com>"]
+repository = "https://github.com/bytecodealliance/wasm-tools/tree/main/crates/wasm-encoder"
+
+[[dependencies]]
+name = "wasm-metadata"
+version = "0.244.0"
+description = "Read and manipulate WebAssembly metadata"
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+repository = "https://github.com/bytecodealliance/wasm-tools/tree/main/crates/wasm-metadata"
+
+[[dependencies]]
+name = "wasmparser"
+version = "0.244.0"
+description = """
+A simple event-driven library for parsing WebAssembly binary files.
+"""
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+authors = ["Yury Delendik <ydelendik@mozilla.com>"]
+repository = "https://github.com/bytecodealliance/wasm-tools/tree/main/crates/wasmparser"
 
 [[dependencies]]
 name = "web-sys"
@@ -3845,6 +3964,58 @@ authors = ["Alex Crichton <alex@alexcrichton.com>"]
 repository = "https://github.com/bytecodealliance/wit-bindgen"
 
 [[dependencies]]
+name = "wit-bindgen-core"
+version = "0.51.0"
+description = """
+Low-level support for bindings generation based on WIT files for use with
+`wit-bindgen-cli` and other languages.
+"""
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+authors = ["Alex Crichton <alex@alexcrichton.com>"]
+repository = "https://github.com/bytecodealliance/wit-bindgen"
+
+[[dependencies]]
+name = "wit-bindgen-rust"
+version = "0.51.0"
+description = """
+Rust bindings generator for WIT and the component model, typically used through
+the `wit-bindgen` crate's `generate!` macro.
+"""
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+authors = ["Alex Crichton <alex@alexcrichton.com>"]
+repository = "https://github.com/bytecodealliance/wit-bindgen"
+
+[[dependencies]]
+name = "wit-bindgen-rust-macro"
+version = "0.51.0"
+description = """
+Procedural macro paired with the `wit-bindgen` crate.
+"""
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+authors = ["Alex Crichton <alex@alexcrichton.com>"]
+repository = "https://github.com/bytecodealliance/wit-bindgen"
+
+[[dependencies]]
+name = "wit-component"
+version = "0.244.0"
+description = """
+Tooling for working with `*.wit` and component files together.
+"""
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+authors = ["Peter Huene <peter@huene.dev>"]
+repository = "https://github.com/bytecodealliance/wasm-tools/tree/main/crates/wit-component"
+
+[[dependencies]]
+name = "wit-parser"
+version = "0.244.0"
+description = """
+Tooling for parsing `*.wit` files and working with their contents.
+"""
+license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
+authors = ["Alex Crichton <alex@alexcrichton.com>"]
+repository = "https://github.com/bytecodealliance/wasm-tools/tree/main/crates/wit-parser"
+
+[[dependencies]]
 name = "writeable"
 version = "0.6.2"
 description = "A more efficient alternative to fmt::Display"
@@ -4000,7 +4171,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "zmij"
-version = "1.0.19"
+version = "1.0.21"
 description = "A double-to-string conversion algorithm based on Schubfach and yy"
 license = "MIT"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
