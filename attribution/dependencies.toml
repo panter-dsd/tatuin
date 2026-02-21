@@ -86,7 +86,7 @@ repository = "https://github.com/rust-cli/anstyle.git"
 
 [[dependencies]]
 name = "anyhow"
-version = "1.0.101"
+version = "1.0.102"
 description = "Flexible concrete Error type built on std::error::Error"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -132,7 +132,7 @@ repository = "https://github.com/cuviper/autocfg"
 
 [[dependencies]]
 name = "aws-lc-rs"
-version = "1.15.4"
+version = "1.16.0"
 description = "aws-lc-rs is a cryptographic library using AWS-LC for its cryptographic operations. This library strives to be API-compatible with the popular Rust library named ring."
 license = "ISC AND (Apache-2.0 OR ISC)"
 authors = ["AWS-LibCrypto"]
@@ -197,7 +197,7 @@ repository = "https://github.com/RustCrypto/utils"
 
 [[dependencies]]
 name = "bumpalo"
-version = "3.19.1"
+version = "3.20.2"
 description = "A fast bump allocation arena for Rust."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2019 Nick Fitzgerald"]
@@ -306,7 +306,7 @@ repository = "https://github.com/chronotope/chrono-tz"
 
 [[dependencies]]
 name = "clap"
-version = "4.5.58"
+version = "4.5.60"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -314,7 +314,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_builder"
-version = "4.5.58"
+version = "4.5.60"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -831,7 +831,7 @@ repository = "https://github.com/webdesus/fs_extra"
 
 [[dependencies]]
 name = "futures-channel"
-version = "0.3.31"
+version = "0.3.32"
 description = """
 Channels for asynchronous communication using futures-rs.
 """
@@ -845,7 +845,7 @@ homepage = "https://rust-lang.github.io/futures-rs"
 
 [[dependencies]]
 name = "futures-core"
-version = "0.3.31"
+version = "0.3.32"
 description = """
 The core traits and types in for the `futures` library.
 """
@@ -859,7 +859,7 @@ homepage = "https://rust-lang.github.io/futures-rs"
 
 [[dependencies]]
 name = "futures-sink"
-version = "0.3.31"
+version = "0.3.32"
 description = """
 The asynchronous `Sink` trait for the futures-rs library.
 """
@@ -873,7 +873,7 @@ homepage = "https://rust-lang.github.io/futures-rs"
 
 [[dependencies]]
 name = "futures-task"
-version = "0.3.31"
+version = "0.3.32"
 description = """
 Tools for working with tasks.
 """
@@ -887,7 +887,7 @@ homepage = "https://rust-lang.github.io/futures-rs"
 
 [[dependencies]]
 name = "futures-util"
-version = "0.3.31"
+version = "0.3.32"
 description = """
 Common utilities and extension traits for the futures-rs library.
 """
@@ -1392,7 +1392,7 @@ repository = "https://github.com/rust-lang/jobserver-rs"
 
 [[dependencies]]
 name = "js-sys"
-version = "0.3.85"
+version = "0.3.87"
 description = """
 Bindings for all JS global objects and functions in all JS environments like
 Node.js and browsers, built on `#[wasm_bindgen]` using the `wasm-bindgen` crate.
@@ -2397,7 +2397,7 @@ repository = "https://github.com/bluss/scopeguard"
 
 [[dependencies]]
 name = "security-framework"
-version = "3.6.0"
+version = "3.7.0"
 description = "Security.framework bindings for macOS and iOS"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015 Steven Fackler"]
@@ -2410,7 +2410,7 @@ homepage = "https://lib.rs/crates/security_framework"
 
 [[dependencies]]
 name = "security-framework-sys"
-version = "2.16.0"
+version = "2.17.0"
 description = "Apple `Security.framework` low-level FFI bindings"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015 Steven Fackler"]
@@ -2740,7 +2740,7 @@ homepage = "https://dalek.rs/"
 
 [[dependencies]]
 name = "syn"
-version = "2.0.115"
+version = "2.0.117"
 description = "Parser for Rust source code"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2992,7 +2992,7 @@ repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
 name = "toml"
-version = "1.0.1+spec-1.1.0"
+version = "1.0.3+spec-1.1.0"
 description = """
 A native Rust encoder and decoder of TOML-formatted files and streams. Provides
 implementations of the standard Serialize/Deserialize traits for TOML data to
@@ -3020,7 +3020,7 @@ repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
 name = "toml_parser"
-version = "1.0.8+spec-1.1.0"
+version = "1.0.9+spec-1.1.0"
 description = "Yet another format-preserving TOML parser."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -3251,7 +3251,7 @@ repository = "https://github.com/Boshen/unicode-id"
 
 [[dependencies]]
 name = "unicode-ident"
-version = "1.0.23"
+version = "1.0.24"
 description = "Determine whether characters have the XID_Start or XID_Continue properties according to Unicode Standard Annex #31"
 license = "(MIT OR Apache-2.0) AND Unicode-3.0"
 notices = ["Copyright © 1991-2023 Unicode, Inc."]
@@ -3477,7 +3477,7 @@ repository = "https://github.com/bytecodealliance/wasi-rs"
 
 [[dependencies]]
 name = "wasm-bindgen"
-version = "0.2.108"
+version = "0.2.110"
 description = """
 Easy support for interacting between JS and Rust.
 """
@@ -3489,7 +3489,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen"
 
 [[dependencies]]
 name = "wasm-bindgen-futures"
-version = "0.4.58"
+version = "0.4.60"
 description = "Bridging the gap between Rust Futures and JavaScript Promises"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -3499,7 +3499,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro"
-version = "0.2.108"
+version = "0.2.110"
 description = """
 Definition of the `#[wasm_bindgen]` attribute, an internal dependency
 """
@@ -3511,7 +3511,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.108"
+version = "0.2.110"
 description = "Implementation APIs for the `#[wasm_bindgen]` attribute"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -3521,7 +3521,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-shared"
-version = "0.2.108"
+version = "0.2.110"
 description = """
 Shared support between wasm-bindgen and wasm-bindgen cli, an internal
 dependency.
@@ -3561,7 +3561,7 @@ repository = "https://github.com/bytecodealliance/wasm-tools/tree/main/crates/wa
 
 [[dependencies]]
 name = "web-sys"
-version = "0.3.85"
+version = "0.3.87"
 description = """
 Bindings for all Web APIs, a procedurally generated crate from WebIDL
 """
