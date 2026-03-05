@@ -9,7 +9,7 @@ use ratatui::{
     layout::{Position, Rect, Size},
     style::Style,
     text::Text,
-    widgets::{Clear, Paragraph, Widget, Wrap},
+    widgets::{Clear, Paragraph, Widget},
 };
 use std::any::Any;
 
@@ -79,10 +79,7 @@ impl WidgetTrait for HyperlinkWidget {
         if style.fg.is_none() || self.is_under_mouse {
             style = style.fg(fg);
         }
-        Paragraph::new(self.text.as_str())
-            .wrap(Wrap { trim: false })
-            .style(style)
-            .render(self.area, buf);
+        Paragraph::new(self.text.as_str()).style(style).render(self.area, buf);
         if self.is_under_mouse {
             let r = self.tool_tip_rect(buf.area);
             Clear {}.render(r, buf);
