@@ -70,7 +70,6 @@ impl WidgetTrait for HyperlinkWidget {
             width: std::cmp::min(area.width, Text::from(self.text.as_str()).width() as u16),
             height: 1,
         };
-        tracing::info!(text=self.text, self_area=?self.area, area=?area, "HERE");
 
         if self.area.width == 0 {
             return; // there is no place for the widget
