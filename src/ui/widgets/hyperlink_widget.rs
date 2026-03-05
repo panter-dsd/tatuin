@@ -37,18 +37,19 @@ impl HyperlinkWidget {
         }
     }
 
-    fn tool_tip_rect(&self, area: Rect) -> Rect {
+    fn tool_tip_rect(&self, global_area: Rect) -> Rect {
         let text_width = Text::from(self.url.as_str()).width() as u16;
         let mut r = Rect {
             x: self.area.x,
             y: self.area.y - 1,
-            width: (area.width - self.area.x).min(text_width),
+            width: text_width,
             height: 1,
         };
 
-        if r.width < text_width {
-            r.x = r.x.saturating_sub(text_width - r.width);
-            r.width = area.width - r.x;
+        let total_width = r.x + r.width;
+        if total_width >= global_area.width {
+            r.x = r.x.saturating_sub(total_width - global_area.width + 2);
+            r.width = global_area.width - r.x;
         }
         r
     }
@@ -66,12 +67,10 @@ impl WidgetTrait for HyperlinkWidget {
         self.area = Rect {
             x: self.pos.x,
             y: self.pos.y,
-            width: std::cmp::min(
-                area.width.saturating_sub(self.pos.x),
-                Text::from(self.text.as_str()).width() as u16,
-            ),
+            width: std::cmp::min(area.width, Text::from(self.text.as_str()).width() as u16),
             height: 1,
         };
+        tracing::info!(text=self.text, self_area=?self.area, area=?area, "HERE");
 
         if self.area.width == 0 {
             return; // there is no place for the widget
@@ -86,7 +85,7 @@ impl WidgetTrait for HyperlinkWidget {
             .style(style)
             .render(self.area, buf);
         if self.is_under_mouse {
-            let r = self.tool_tip_rect(area);
+            let r = self.tool_tip_rect(buf.area);
             Clear {}.render(r, buf);
             Paragraph::new(self.url.as_str())
                 .style(style::url_hover_hint_style())
