@@ -32,13 +32,13 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 strum = { version = "0.28.0", features = ["derive"] }
 time = { version = "0.3.47", features = ["parsing", "formatting"] }
-tokio = { version = "1.49.0", features = ["full"] }
+tokio = { version = "1.50.0", features = ["full"] }
 tokio-stream = "0.1.18"
-toml = "1.0.3"
+toml = "1.0.4"
 tracing = { version = "0.1.44", features = ["async-await", "log"] }
 tracing-appender = "0.2.4"
 tracing-subscriber = "0.3.19"
-uuid = { version = "1.20.0", features = ["v4"] }
+uuid = { version = "1.22.0", features = ["v4"] }
 openssl = { version = "0.10", features = ["vendored"] }
 tatuin-core = { path = "./tatuin-core", version = "0.4.0" }
 tatuin-providers = { path = "./tatuin-providers", version = "0.5.0" }
