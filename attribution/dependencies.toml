@@ -132,7 +132,7 @@ repository = "https://github.com/cuviper/autocfg"
 
 [[dependencies]]
 name = "aws-lc-rs"
-version = "1.16.0"
+version = "1.16.1"
 description = "aws-lc-rs is a cryptographic library using AWS-LC for its cryptographic operations. This library strives to be API-compatible with the popular Rust library named ring."
 license = "ISC AND (Apache-2.0 OR ISC)"
 authors = ["AWS-LibCrypto"]
@@ -140,7 +140,7 @@ repository = "https://github.com/aws/aws-lc-rs"
 
 [[dependencies]]
 name = "aws-lc-sys"
-version = "0.37.1"
+version = "0.38.0"
 description = "AWS-LC is a general-purpose cryptographic library maintained by the AWS Cryptography team for AWS and their customers. It іs based on code from the Google BoringSSL project and the OpenSSL project."
 license = "ISC AND (Apache-2.0 OR ISC) AND OpenSSL"
 notices = [
@@ -730,7 +730,7 @@ repository = "https://github.com/indexmap-rs/equivalent"
 
 [[dependencies]]
 name = "erased-serde"
-version = "0.4.9"
+version = "0.4.10"
 description = "Type-erased Serialize and Serializer traits"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -937,7 +937,7 @@ repository = "https://github.com/rust-random/getrandom"
 
 [[dependencies]]
 name = "getrandom"
-version = "0.4.1"
+version = "0.4.2"
 description = "A small cross-platform library for retrieving random data from system source"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -1303,7 +1303,7 @@ repository = "https://github.com/ratatui/instability"
 
 [[dependencies]]
 name = "ipnet"
-version = "2.11.0"
+version = "2.12.0"
 description = "Provides types and useful methods for working with IPv4 and IPv6 network addresses, commonly called IP prefixes. The new `IpNet`, `Ipv4Net`, and `Ipv6Net` types build on the existing `IpAddr`, `Ipv4Addr`, and `Ipv6Addr` types already provided in Rust's standard library and align to their design to stay consistent. The module also provides useful traits that extend `Ipv4Addr` and `Ipv6Addr` with methods for `Add`, `Sub`, `BitAnd`, and `BitOr` operations. The module only uses stable feature so it is guaranteed to compile using the stable toolchain."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright 2017 Juniper Networks, Inc."]
@@ -1439,7 +1439,7 @@ repository = "https://github.com/rust-lang/libc"
 
 [[dependencies]]
 name = "libredox"
-version = "0.1.12"
+version = "0.1.14"
 description = "Redox stable ABI"
 license = "MIT"
 notices = ["Copyright (c) 2023 4lDO2"]
@@ -1991,7 +1991,7 @@ repository = "https://github.com/quinn-rs/quinn"
 
 [[dependencies]]
 name = "quote"
-version = "1.0.44"
+version = "1.0.45"
 description = "Quasi-quoting macro quote!(...)"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -2000,6 +2000,14 @@ repository = "https://github.com/dtolnay/quote"
 [[dependencies]]
 name = "r-efi"
 version = "5.3.0"
+description = "UEFI Reference Specification Protocol Constants and Definitions"
+license = "MIT OR Apache-2.0 OR LGPL-2.1-or-later"
+repository = "https://github.com/r-efi/r-efi"
+homepage = "https://github.com/r-efi/r-efi/wiki"
+
+[[dependencies]]
+name = "r-efi"
+version = "6.0.0"
 description = "UEFI Reference Specification Protocol Constants and Definitions"
 license = "MIT OR Apache-2.0 OR LGPL-2.1-or-later"
 repository = "https://github.com/r-efi/r-efi"
@@ -2193,7 +2201,7 @@ repository = "https://github.com/seanmonstar/reqwest"
 
 [[dependencies]]
 name = "reqwest_dav"
-version = "0.3.2"
+version = "0.3.3"
 description = "An async webdav client with tokio and reqwest"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2016 Sean McArthur", "Copyright 2016 Sean McArthur"]
@@ -2637,7 +2645,7 @@ repository = "https://github.com/servo/rust-smallvec"
 
 [[dependencies]]
 name = "socket2"
-version = "0.6.2"
+version = "0.6.3"
 description = """
 Utilities for handling networking sockets with a maximal amount of configuration
 possible intended.
@@ -2920,7 +2928,7 @@ repository = "https://github.com/Soveu/tinyvec_macros"
 
 [[dependencies]]
 name = "tokio"
-version = "1.49.0"
+version = "1.50.0"
 description = """
 An event-driven, non-blocking I/O platform for writing asynchronous I/O
 backed applications.
@@ -2933,7 +2941,7 @@ homepage = "https://tokio.rs"
 
 [[dependencies]]
 name = "tokio-macros"
-version = "2.6.0"
+version = "2.6.1"
 description = """
 Tokio's proc macros.
 """
@@ -2992,7 +3000,7 @@ repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
 name = "toml"
-version = "1.0.3+spec-1.1.0"
+version = "1.0.6+spec-1.1.0"
 description = """
 A native Rust encoder and decoder of TOML-formatted files and streams. Provides
 implementations of the standard Serialize/Deserialize traits for TOML data to
@@ -3391,7 +3399,7 @@ repository = "https://github.com/alacritty/vte"
 
 [[dependencies]]
 name = "uuid"
-version = "1.21.0"
+version = "1.22.0"
 description = "A library to generate and parse UUIDs."
 license = "Apache-2.0 OR MIT"
 notices = [
@@ -3947,7 +3955,7 @@ repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "winnow"
-version = "0.7.14"
+version = "0.7.15"
 description = "A byte-oriented, zero-copy, parser combinators library"
 license = "MIT"
 repository = "https://github.com/winnow-rs/winnow"
