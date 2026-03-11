@@ -168,7 +168,12 @@ impl WidgetTrait for TaskRow {
             current_style.sub_modifier = Modifier::default();
             child.set_style(current_style.patch(s));
             child.render(area, buf).await;
-            area.x += child.size().width;
+            let w = child.size().width;
+            area.x += w;
+            area.width = area.width.saturating_sub(w);
+            if area.width == 0 {
+                break;
+            }
         }
     }
 
