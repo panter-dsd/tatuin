@@ -597,10 +597,8 @@ impl App {
             KeyCode::Tab => self.select_next_block().await,
             KeyCode::BackTab => self.select_previous_block().await,
             KeyCode::Char(' ') => self.change_check_state().await,
-            KeyCode::Char('r') => {
-                if key.modifiers.contains(KeyModifiers::CONTROL) {
-                    self.reload().await;
-                }
+            KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                self.reload().await;
             }
             _ => {}
         }
