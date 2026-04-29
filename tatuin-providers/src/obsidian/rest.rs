@@ -71,7 +71,7 @@ impl Client {
 
     #[tracing::instrument(level = "info", target = "obsidian_rest_client")]
     pub async fn add_text_to_daily_note(&self, data: &str) -> Result<(), StringError> {
-        let url = self.url("/periodic/daily")?;
+        let url = self.url("/periodic/daily/")?;
         let token = self.token()?;
 
         if let Ok(r) = self.client.get(&url).bearer_auth(&token).send().await
