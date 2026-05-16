@@ -141,7 +141,7 @@ repository = "https://github.com/cuviper/autocfg"
 
 [[dependencies]]
 name = "aws-lc-rs"
-version = "1.16.3"
+version = "1.17.0"
 description = "aws-lc-rs is a cryptographic library using AWS-LC for its cryptographic operations. This library strives to be API-compatible with the popular Rust library named ring."
 license = "ISC AND (Apache-2.0 OR ISC)"
 authors = ["AWS-LibCrypto"]
@@ -149,7 +149,7 @@ repository = "https://github.com/aws/aws-lc-rs"
 
 [[dependencies]]
 name = "aws-lc-sys"
-version = "0.40.0"
+version = "0.41.0"
 description = "AWS-LC is a general-purpose cryptographic library maintained by the AWS Cryptography team for AWS and their customers. It іs based on code from the Google BoringSSL project and the OpenSSL project."
 license = "ISC AND (Apache-2.0 OR ISC) AND Apache-2.0 AND MIT AND BSD-3-Clause AND (Apache-2.0 OR ISC OR MIT) AND (Apache-2.0 OR ISC OR MIT-0)"
 notices = [
@@ -437,7 +437,7 @@ repository = "https://github.com/ParkMyCar/compact_str"
 
 [[dependencies]]
 name = "config"
-version = "0.15.22"
+version = "0.15.23"
 description = "Layered configuration system for Rust applications."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -755,7 +755,7 @@ repository = "https://github.com/rayon-rs/either"
 
 [[dependencies]]
 name = "emojis"
-version = "0.8.1"
+version = "0.8.2"
 description = "✨ Lookup emoji in *O(1)* time, access metadata and GitHub shortcodes, iterate over all emoji, and more!"
 license = "(MIT OR Apache-2.0) AND Unicode-3.0"
 notices = ["Copyright © 1991-2023 Unicode, Inc."]
@@ -1102,22 +1102,20 @@ repository = "https://github.com/rust-lang/hashbrown"
 
 [[dependencies]]
 name = "hashbrown"
-version = "0.17.0"
+version = "0.17.1"
 description = "A Rust port of Google's SwissTable hash map"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2016 Amanieu d'Antras"]
-authors = ["Amanieu d'Antras <amanieu@gmail.com>"]
 repository = "https://github.com/rust-lang/hashbrown"
 
 [[dependencies]]
 name = "hashlink"
-version = "0.10.0"
+version = "0.11.0"
 description = "HashMap-like containers that hold their key-value pairs in a user controllable order"
 license = "MIT OR Apache-2.0"
 notices = [
   "This work is derived in part from the `linked-hash-map` crate, Copyright (c)",
 ]
-authors = ["kyren <kerriganw@gmail.com>"]
 repository = "https://github.com/kyren/hashlink"
 
 [[dependencies]]
@@ -4223,7 +4221,7 @@ repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "winnow"
-version = "1.0.2"
+version = "1.0.3"
 description = "A byte-oriented, zero-copy, parser combinators library"
 license = "MIT"
 repository = "https://github.com/winnow-rs/winnow"
@@ -4335,7 +4333,7 @@ homepage = "https://lib.rs/crates/xml"
 
 [[dependencies]]
 name = "yaml-rust2"
-version = "0.10.4"
+version = "0.11.0"
 description = "A fully YAML 1.2 compliant YAML parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015 Chen Yuheng", "Copyright (c) 2023 Ethiraric"]
@@ -4396,11 +4394,11 @@ repository = "https://github.com/google/zerocopy"
 
 [[dependencies]]
 name = "zerofrom"
-version = "0.1.7"
+version = "0.1.8"
 description = "ZeroFrom trait for constructing"
 license = "Unicode-3.0"
 notices = ["Copyright © 2020-2024 Unicode, Inc."]
-authors = ["Manish Goregaokar <manishsmail@gmail.com>"]
+authors = ["The ICU4X Project Developers"]
 repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
