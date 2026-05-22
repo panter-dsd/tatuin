@@ -48,7 +48,9 @@ impl CustomWidgetItemUpdater<DatePatchItem> for ComboBoxItemUpdater {
 pub struct Dialog {
     title: String,
     should_be_closed: bool,
+    accepted: bool,
     add_another_one: bool,
+    batch_mode: bool,
     draw_helper: Option<DrawHelper>,
     providers_storage: ArcRwLock<dyn ProvidersStorage>,
     widget_state: WidgetState,
@@ -63,6 +65,8 @@ pub struct Dialog {
 
     task_description_caption: Text,
     task_description_editor: TextEdit,
+
+    batch_name_editor: TextEdit,
 
     priority_selector: ComboBox<Priority>,
     due_date_selector: ComboBox<DatePatchItem>,
@@ -106,7 +110,9 @@ impl Dialog {
         let mut s = Self {
             title: title.to_string(),
             should_be_closed: false,
+            accepted: false,
             add_another_one: false,
+            batch_mode: false,
             draw_helper: None,
             providers_storage,
             provider_selector: ComboBox::new("Provider", &provider_items),
@@ -118,6 +124,7 @@ impl Dialog {
             task_name_editor: LineEdit::new(None),
             task_description_caption: Text::new("Task description"),
             task_description_editor: TextEdit::new(),
+            batch_name_editor: TextEdit::new(),
             priority_selector: ComboBox::new(
                 "Priority",
                 &Priority::values()
@@ -135,6 +142,7 @@ impl Dialog {
             create_task_and_another_one: Button::new("Create a task\nShift+Enter"),
         };
         s.provider_selector.set_active(true);
+        s.batch_name_editor.set_visible(false);
         s.update_enabled_state().await;
         s
     }
@@ -231,36 +239,67 @@ impl Dialog {
         self.project_selector.value().await.map(|item| item.data().to_string())
     }
 
-    pub async fn task_patch(&self) -> Option<TaskPatch> {
-        if !self.can_create_task() {
-            return None;
-        }
-
-        let description = self.task_description_editor.text();
-
-        Some(TaskPatch {
-            task: self.task.as_ref().map(|t| t.clone_boxed()),
-            name: ValuePatch::Value(self.task_name_editor.text()),
-            description: if description.is_empty() {
-                ValuePatch::Empty
-            } else {
-                ValuePatch::Value(description)
-            },
-            due: self.due_date_selector.value().await.map(|item| *item.data()).into(),
-            scheduled: ValuePatch::NotSet, // scheduled can be set only via specific dialog
-            priority: self.priority_selector.value().await.map(|item| *item.data()).into(),
-            state: ValuePatch::NotSet,
-        })
-    }
-
     pub fn add_another_one(&self) -> bool {
         self.add_another_one
+    }
+
+    pub fn set_batch_mode(&mut self) {
+        self.batch_mode = true;
+        self.task_name_caption = Text::new("Task names (one per line)");
+        self.batch_name_editor.set_visible(true);
+        self.task_name_editor.set_visible(false);
+        self.task_description_caption.set_visible(false);
+        self.task_description_editor.set_visible(false);
+        self.create_task_and_another_one.set_visible(false);
+        self.create_task_button.set_title("Create tasks and close\nCtrl+Enter");
+    }
+
+    pub async fn task_patches(&self) -> Vec<TaskPatch> {
+        if !self.can_create_task() {
+            return Vec::new();
+        }
+        let due: ValuePatch<DatePatchItem> = self.due_date_selector.value().await.map(|item| *item.data()).into();
+        let priority: ValuePatch<Priority> = self.priority_selector.value().await.map(|item| *item.data()).into();
+
+        if self.batch_mode {
+            self.batch_name_editor
+                .text()
+                .lines()
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .map(|name| TaskPatch {
+                    task: None,
+                    name: ValuePatch::Value(name),
+                    description: ValuePatch::Empty,
+                    due: due.clone(),
+                    scheduled: ValuePatch::NotSet,
+                    priority: priority.clone(),
+                    state: ValuePatch::NotSet,
+                })
+                .collect()
+        } else {
+            let description = self.task_description_editor.text();
+            vec![TaskPatch {
+                task: self.task.as_ref().map(|t| t.clone_boxed()),
+                name: ValuePatch::Value(self.task_name_editor.text()),
+                description: if description.is_empty() {
+                    ValuePatch::Empty
+                } else {
+                    ValuePatch::Value(description)
+                },
+                due,
+                scheduled: ValuePatch::NotSet,
+                priority,
+                state: ValuePatch::NotSet,
+            }]
+        }
     }
 
     fn order_calculator(&mut self) -> OrderChanger<'_> {
         OrderChanger::new(vec![
             &mut self.provider_selector,
             &mut self.project_selector,
+            &mut self.batch_name_editor,
             &mut self.task_name_editor,
             &mut self.task_description_editor,
             &mut self.priority_selector,
@@ -287,7 +326,11 @@ impl Dialog {
     }
 
     fn can_create_task(&self) -> bool {
-        self.task_name_editor.is_enabled() && !self.task_name_editor.text().is_empty()
+        if self.batch_mode {
+            self.batch_name_editor.is_enabled() && !self.batch_name_editor.text().is_empty()
+        } else {
+            self.task_name_editor.is_enabled() && !self.task_name_editor.text().is_empty()
+        }
     }
 
     async fn update_enabled_state(&mut self) {
@@ -297,15 +340,19 @@ impl Dialog {
         self.project_selector
             .set_enabled(self.is_task_creation() && provider_selected);
 
-        self.task_name_editor.set_enabled(provider_selected && project_selected);
+        let can_input_name = provider_selected && project_selected;
+        let can_create = self.can_create_task();
 
-        let can_create_task = self.can_create_task();
-        self.task_description_editor.set_enabled(can_create_task);
-        self.priority_selector.set_enabled(self.task_name_editor.is_enabled());
-        self.due_date_selector.set_enabled(self.task_name_editor.is_enabled());
+        self.batch_name_editor.set_enabled(can_input_name);
+        self.task_name_editor.set_enabled(can_input_name);
+        self.task_description_editor.set_enabled(can_create);
 
-        self.create_task_button.set_enabled(can_create_task);
-        self.create_task_and_another_one.set_enabled(can_create_task);
+        self.priority_selector.set_enabled(can_input_name);
+        self.due_date_selector.set_enabled(can_input_name);
+
+        self.create_task_button.set_enabled(can_create);
+        self.create_task_and_another_one
+            .set_enabled(!self.batch_mode && can_create);
     }
 
     async fn fill_project_selector_items(&mut self) {
@@ -368,7 +415,7 @@ impl Dialog {
 #[async_trait]
 impl DialogTrait for Dialog {
     fn accepted(&self) -> bool {
-        self.can_create_task()
+        self.accepted
     }
     fn should_be_closed(&self) -> bool {
         self.should_be_closed
@@ -394,6 +441,7 @@ impl WidgetTrait for Dialog {
         self.task_name_caption.set_size(inner_area.as_size());
         self.task_description_caption.set_size(inner_area.as_size());
         self.task_description_editor.set_size(Size::new(inner_area.width, 5));
+        self.batch_name_editor.set_size(Size::new(inner_area.width, 8));
 
         let [
             provider_and_project_area,
@@ -407,9 +455,21 @@ impl WidgetTrait for Dialog {
         ] = Layout::vertical([
             Constraint::Length(self.provider_selector.size().height),
             Constraint::Length(self.task_name_caption.size().height),
-            Constraint::Length(self.task_name_editor.size().height),
-            Constraint::Length(self.task_description_caption.size().height),
-            Constraint::Length(self.task_description_editor.size().height),
+            Constraint::Length(if self.batch_mode {
+                self.batch_name_editor.size().height
+            } else {
+                self.task_name_editor.size().height
+            }),
+            Constraint::Length(if self.batch_mode {
+                0
+            } else {
+                self.task_description_caption.size().height
+            }),
+            Constraint::Length(if self.batch_mode {
+                0
+            } else {
+                self.task_description_editor.size().height
+            }),
             Constraint::Length(self.priority_selector.size().height),
             Constraint::Fill(1),
             Constraint::Length(self.create_task_button.size().height),
@@ -435,7 +495,7 @@ impl WidgetTrait for Dialog {
             _,
             create_task_and_another_one_button_area,
             _,
-        ] = if self.is_task_creation() {
+        ] = if self.is_task_creation() && !self.batch_mode {
             Layout::horizontal([
                 Constraint::Fill(1),
                 Constraint::Length(max_buttons_width),
@@ -465,6 +525,7 @@ impl WidgetTrait for Dialog {
             (&mut self.project_selector, project_area),
             (&mut self.task_name_caption, task_name_caption_area),
             (&mut self.task_name_editor, task_name_editor_area),
+            (&mut self.batch_name_editor, task_name_editor_area),
             (&mut self.task_description_caption, task_description_caption_area),
             (&mut self.task_description_editor, task_description_editor_area),
             (&mut self.priority_selector, priority_area),
@@ -493,6 +554,7 @@ impl WidgetTrait for Dialog {
         self.project_selector.set_draw_helper(dh.clone());
         self.task_name_editor.set_draw_helper(dh.clone());
         self.task_description_editor.set_draw_helper(dh.clone());
+        self.batch_name_editor.set_draw_helper(dh.clone());
         self.draw_helper = Some(dh);
     }
 
@@ -517,6 +579,7 @@ impl WidgetTrait for Dialog {
 impl KeyboardHandler for Dialog {
     async fn handle_key(&mut self, key: KeyEvent) -> bool {
         if self.create_task_button.handle_key(key).await {
+            self.accepted = true;
             self.should_be_closed = true;
             return true;
         }
@@ -524,15 +587,20 @@ impl KeyboardHandler for Dialog {
         if self.create_task_and_another_one.handle_key(key).await {
             self.should_be_closed = true;
             self.add_another_one = true;
+            self.accepted = true;
             return true;
         }
 
         if self.can_create_task() && key.code == KeyCode::Enter {
             let mut handled = true;
             match key.modifiers {
-                KeyModifiers::CONTROL => self.should_be_closed = true,
-                KeyModifiers::SHIFT => {
+                KeyModifiers::CONTROL => {
                     self.should_be_closed = true;
+                    self.accepted = true;
+                }
+                KeyModifiers::SHIFT if !self.batch_mode => {
+                    self.should_be_closed = true;
+                    self.accepted = true;
                     self.add_another_one = true;
                 }
                 _ => handled = false,
@@ -580,6 +648,11 @@ impl KeyboardHandler for Dialog {
         }
 
         if self.task_description_editor.is_active() && self.task_description_editor.handle_key(key).await {
+            self.update_enabled_state().await;
+            return true;
+        }
+
+        if self.batch_name_editor.is_active() && self.batch_name_editor.handle_key(key).await {
             self.update_enabled_state().await;
             return true;
         }

@@ -120,6 +120,7 @@ pub struct TasksWidget {
     change_priority_shortcut: Shortcut,
     undo_changes_shortcut: Shortcut,
     add_task_shortcut: Shortcut,
+    add_tasks_shortcut: Shortcut,
     edit_task_shortcut: Shortcut,
     delete_task_shortcut: Shortcut,
     open_task_link_shortcut: Shortcut,
@@ -144,6 +145,7 @@ impl AppBlockWidget for TasksWidget {
     fn shortcuts(&mut self) -> Vec<&mut Shortcut> {
         vec![
             &mut self.add_task_shortcut,
+            &mut self.add_tasks_shortcut,
             &mut self.edit_task_shortcut,
             &mut self.delete_task_shortcut,
             &mut self.commit_changes_shortcut,
@@ -227,7 +229,10 @@ impl TasksWidget {
             undo_changes_shortcut: Shortcut::new("Undo changes", &['u']).with_short_name("Undo"),
             add_task_shortcut: Shortcut::new("Create a task", &['a'])
                 .global()
-                .with_short_name("Create task"),
+                .with_short_name("Create a task"),
+            add_tasks_shortcut: Shortcut::new("Create tasks", &['A'])
+                .global()
+                .with_short_name("Create tasks"),
             edit_task_shortcut: Shortcut::new("Edit the task", &['e']).with_short_name("Edit task"),
             delete_task_shortcut: Shortcut::new("Delete the task", &['d']).with_short_name("Delete task"),
             open_task_link_shortcut: Shortcut::new("Open the task's link", &['o']),
@@ -255,6 +260,7 @@ impl TasksWidget {
                 let mut change_priority_rx = s_guard.change_priority_shortcut.subscribe_to_accepted();
                 let mut undo_changes_rx = s_guard.undo_changes_shortcut.subscribe_to_accepted();
                 let mut add_task_rx = s_guard.add_task_shortcut.subscribe_to_accepted();
+                let mut add_tasks_rx = s_guard.add_tasks_shortcut.subscribe_to_accepted();
                 let mut edit_task_rx = s_guard.edit_task_shortcut.subscribe_to_accepted();
                 let mut delete_task_rx = s_guard.delete_task_shortcut.subscribe_to_accepted();
                 let mut open_task_link_rx = s_guard.open_task_link_shortcut.subscribe_to_accepted();
@@ -299,13 +305,14 @@ impl TasksWidget {
                                 }
                             },
                         _ = undo_changes_rx.recv() => s.write().await.undo_changes().await,
-                        _ = add_task_rx.recv() => s.write().await.show_add_task_dialog(None, None).await,
+                        _ = add_task_rx.recv() => s.write().await.show_add_task_dialog(None, None, false).await,
+                        _ = add_tasks_rx.recv() => s.write().await.show_add_task_dialog(None, None, true).await,
                         _ = edit_task_rx.recv() => {
                             let mut s = s.write().await;
                             if let Some(t) = s.selected_task()
                                 && t.patch_policy().is_editable {
                                 s.async_command = Some(AsyncCommand::new(AsyncCommandType::EditTask, t.as_ref()));
-                                s.show_add_task_dialog(Some(t), None).await;
+                                s.show_add_task_dialog(Some(t), None, false).await;
                             }
                         },
                         _ = delete_task_rx.recv() => {
@@ -764,14 +771,25 @@ impl TasksWidget {
         self.task_info_viewer.write().await.set_task(self.selected_task()).await;
     }
 
-    async fn show_add_task_dialog(&mut self, task: Option<Box<dyn TaskTrait>>, state: Option<ObjectState>) {
+    pub async fn show_add_task_dialog(
+        &mut self,
+        task: Option<Box<dyn TaskTrait>>,
+        state: Option<ObjectState>,
+        batch_mode: bool,
+    ) {
         let title = if task.is_some() {
             "Update the task"
+        } else if batch_mode {
+            "Create tasks (batch)"
         } else {
             "Create a task"
         };
 
         let mut d = CreateUpdateTaskDialog::new(title, self.providers_storage.clone()).await;
+
+        if batch_mode {
+            d.set_batch_mode();
+        }
 
         if let Some(t) = task {
             d.set_task(t.as_ref()).await;
@@ -953,7 +971,7 @@ impl KeyboardHandler for TasksWidget {
         let mut new_due = None;
         let mut new_scheduled = None;
         let mut new_priority = None;
-        let mut patch = Patch::default();
+        let mut patches: Vec<Patch> = Vec::new();
         let mut add_another_one_task = false;
         let mut create_task_dialog_state = None;
         let mut tag_filter = None;
@@ -991,9 +1009,18 @@ impl KeyboardHandler for TasksWidget {
                 if let Some(d) = DialogTrait::as_any(d.as_ref()).downcast_ref::<CreateUpdateTaskDialog>()
                     && d.accepted()
                 {
-                    patch.provider_name = d.provider_name().await;
-                    patch.project_id = d.project_id().await;
-                    patch.task_patch = d.task_patch().await;
+                    let provider_name = d.provider_name().await;
+                    let project_id = d.project_id().await;
+                    patches = d
+                        .task_patches()
+                        .await
+                        .into_iter()
+                        .map(|tp| Patch {
+                            provider_name: provider_name.clone(),
+                            project_id: project_id.clone(),
+                            task_patch: Some(tp),
+                        })
+                        .collect();
                     add_another_one_task = d.add_another_one();
                     create_task_dialog_state = Some(d.save().await);
                 }
@@ -1030,8 +1057,10 @@ impl KeyboardHandler for TasksWidget {
             self.change_priority(&p).await;
         }
 
-        if patch.is_valid() {
-            self.create_or_update_task(&patch).await;
+        for p in &patches {
+            if p.is_valid() {
+                self.create_or_update_task(p).await;
+            }
         }
 
         if need_to_update_view {
@@ -1039,7 +1068,7 @@ impl KeyboardHandler for TasksWidget {
         }
 
         if add_another_one_task {
-            self.show_add_task_dialog(None, create_task_dialog_state).await;
+            self.show_add_task_dialog(None, create_task_dialog_state, false).await;
         }
 
         if let Some(f) = &tag_filter {
