@@ -132,7 +132,7 @@ repository = "https://github.com/smol-rs/atomic-waker"
 
 [[dependencies]]
 name = "autocfg"
-version = "1.5.0"
+version = "1.5.1"
 description = "Automatic cfg for Rust compiler features"
 license = "Apache-2.0 OR MIT"
 notices = ["Copyright (c) 2018 Josh Stone"]
@@ -245,7 +245,7 @@ repository = "https://github.com/RustCrypto/utils"
 
 [[dependencies]]
 name = "bumpalo"
-version = "3.20.2"
+version = "3.20.3"
 description = "A fast bump allocation arena for Rust."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2019 Nick Fitzgerald"]
@@ -744,13 +744,12 @@ homepage = "https://lib.rs/crates/dunce"
 
 [[dependencies]]
 name = "either"
-version = "1.15.0"
+version = "1.16.0"
 description = """
 The enum `Either` with variants `Left` and `Right` is a general purpose sum type with two cases.
 """
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2015"]
-authors = ["bluss"]
 repository = "https://github.com/rayon-rs/either"
 
 [[dependencies]]
@@ -1504,7 +1503,7 @@ repository = "https://github.com/rust-lang/jobserver-rs"
 
 [[dependencies]]
 name = "js-sys"
-version = "0.3.98"
+version = "0.3.99"
 description = """
 Bindings for all JS global objects and functions in all JS environments like
 Node.js and browsers, built on `#[wasm_bindgen]` using the `wasm-bindgen` crate.
@@ -1809,7 +1808,7 @@ repository = "https://github.com/nushell/nu-ansi-term"
 
 [[dependencies]]
 name = "num-conv"
-version = "0.2.1"
+version = "0.2.2"
 description = """
 `num_conv` is a crate to convert between integer types without using `as` casts. This provides
 better certainty when refactoring, makes the exact behavior of code more explicit, and allows using
@@ -1873,7 +1872,7 @@ repository = "https://github.com/polyfill-rs/once_cell_polyfill"
 
 [[dependencies]]
 name = "openssl"
-version = "0.10.79"
+version = "0.10.80"
 description = "OpenSSL bindings"
 license = "Apache-2.0"
 notices = ["Copyright 2011-2017 Google Inc."]
@@ -1912,7 +1911,7 @@ repository = "https://github.com/alexcrichton/openssl-src-rs"
 
 [[dependencies]]
 name = "openssl-sys"
-version = "0.9.115"
+version = "0.9.116"
 description = "FFI bindings to OpenSSL"
 license = "MIT"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -2764,7 +2763,7 @@ homepage = "https://serde.rs"
 
 [[dependencies]]
 name = "serde_json"
-version = "1.0.149"
+version = "1.0.150"
 description = "A JSON serialization file format"
 license = "MIT OR Apache-2.0"
 authors = [
@@ -3369,7 +3368,7 @@ repository = "https://github.com/tower-rs/tower"
 
 [[dependencies]]
 name = "tower-http"
-version = "0.6.10"
+version = "0.6.11"
 description = "Tower middleware and utilities for HTTP clients and servers"
 license = "MIT"
 notices = ["Copyright (c) 2019-2021 Tower Contributors"]
@@ -3789,7 +3788,7 @@ repository = "https://github.com/bytecodealliance/wasi-rs"
 
 [[dependencies]]
 name = "wasm-bindgen"
-version = "0.2.121"
+version = "0.2.122"
 description = """
 Easy support for interacting between JS and Rust.
 """
@@ -3801,7 +3800,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen"
 
 [[dependencies]]
 name = "wasm-bindgen-futures"
-version = "0.4.71"
+version = "0.4.72"
 description = "Bridging the gap between Rust Futures and JavaScript Promises"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -3811,7 +3810,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro"
-version = "0.2.121"
+version = "0.2.122"
 description = """
 Definition of the `#[wasm_bindgen]` attribute, an internal dependency
 """
@@ -3823,7 +3822,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.121"
+version = "0.2.122"
 description = "Implementation APIs for the `#[wasm_bindgen]` attribute"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -3833,7 +3832,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-shared"
-version = "0.2.121"
+version = "0.2.122"
 description = """
 Shared support between wasm-bindgen and wasm-bindgen cli, an internal
 dependency.
@@ -3873,7 +3872,7 @@ repository = "https://github.com/bytecodealliance/wasm-tools/tree/main/crates/wa
 
 [[dependencies]]
 name = "web-sys"
-version = "0.3.98"
+version = "0.3.99"
 description = """
 Bindings for all Web APIs, a procedurally generated crate from WebIDL
 """
