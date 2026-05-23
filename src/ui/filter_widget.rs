@@ -23,7 +23,7 @@ use super::{
 
 const POSSIBLE_STATES: [FilterState; 4] = [
     FilterState::Completed,
-    FilterState::Uncompleted,
+    FilterState::Todo,
     FilterState::InProgress,
     FilterState::Unknown,
 ];

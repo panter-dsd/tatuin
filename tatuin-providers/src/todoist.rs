@@ -115,7 +115,7 @@ impl TaskProviderTrait for Provider {
         }
 
         if self.tasks.is_empty() {
-            if f.states.contains(&filter::FilterState::Uncompleted) {
+            if f.states.contains(&filter::FilterState::Todo) {
                 match self.c.tasks_by_filter(&project, f).await {
                     Ok(mut t) => self.tasks.append(&mut t),
                     Err(e) => {

@@ -44,7 +44,7 @@ impl Client {
                 .iter()
                 .map(|s| match s {
                     FilterState::Completed => "state=closed".to_string(),
-                    FilterState::Uncompleted => "state=open".to_string(),
+                    FilterState::Todo => "state=open".to_string(),
                     _ => String::new(),
                 })
                 .filter(|s| !s.is_empty())
