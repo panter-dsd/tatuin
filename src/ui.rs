@@ -250,7 +250,7 @@ impl App {
             )),
             async_jobs: Arc::new(RwLock::new(SelectableList::new(Vec::new(), None))),
             filter_widget: filter_widget::FilterWidget::new(filter::Filter {
-                states: vec![filter::FilterState::Uncompleted],
+                states: vec![filter::FilterState::Todo],
                 due: vec![filter::Due::Today, filter::Due::Overdue],
             }),
             tasks_widget: tasks_widget::TasksWidget::new(

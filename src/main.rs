@@ -91,7 +91,7 @@ fn print_projects(projects: &[Box<dyn project::Project>]) {
 fn state_to_filter(state: &Option<Vec<filter::FilterState>>) -> Vec<filter::FilterState> {
     match state {
         Some(st) => st.to_vec(),
-        None => vec![filter::FilterState::Uncompleted],
+        None => vec![filter::FilterState::Todo],
     }
 }
 

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, PartialEq, Eq, ValueEnum, Debug, Serialize, Deserialize)]
 pub enum FilterState {
     Completed,
-    Uncompleted,
+    Todo,
     InProgress,
     Unknown,
 }
@@ -16,7 +16,7 @@ impl FilterState {
     pub fn values() -> Vec<Self> {
         vec![
             FilterState::Completed,
-            FilterState::Uncompleted,
+            FilterState::Todo,
             FilterState::InProgress,
             FilterState::Unknown,
         ]
@@ -33,7 +33,7 @@ impl From<State> for FilterState {
     fn from(s: State) -> Self {
         match s {
             State::Completed => FilterState::Completed,
-            State::Uncompleted => FilterState::Uncompleted,
+            State::Uncompleted => FilterState::Todo,
             State::InProgress => FilterState::InProgress,
             State::Unknown(_) => FilterState::Unknown,
         }

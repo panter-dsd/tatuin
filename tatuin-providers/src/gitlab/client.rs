@@ -43,7 +43,7 @@ impl Client {
 
         let state_query = match state {
             FilterState::Completed => "state=done".to_string(),
-            FilterState::Uncompleted => "state=pending".to_string(),
+            FilterState::Todo => "state=pending".to_string(),
             _ => return Ok(Vec::new()),
         };
 
