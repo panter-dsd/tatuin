@@ -36,8 +36,10 @@ jobs:
           tool: jql
       - name: Current versions
         id: get_baseline_hash
+        env:
+          BUMP_VERSION: ${{ inputs.bump-version }}
         run: |
-          bump_version=${{ inputs.bump-version }}
+          bump_version="$BUMP_VERSION"
           echo "bump_version: $bump_version"
           tag=v$bump_version
 
@@ -99,4 +101,7 @@ jobs:
         with:
           tool: cargo-edit
       - name: Run cargo edit
-        run: cargo set-version -p tatuin ${{ inputs.bump-version || inputs.release_type }}
+        env:
+          BUMP_VERSION: ${{ inputs.bump-version }}
+          RELEASE_TYPE: ${{ inputs.release_type }}
+        run: cargo set-version -p tatuin "${BUMP_VERSION:-$RELEASE_TYPE}"

@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: cargo build
@@ -27,6 +29,8 @@ jobs:
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -39,6 +43,8 @@ jobs:
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -51,6 +57,8 @@ jobs:
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Cargo doc test
@@ -65,6 +73,8 @@ jobs:
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Cargo test doc
@@ -75,6 +85,8 @@ jobs:
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Install cargo-nextest
@@ -89,6 +101,8 @@ jobs:
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Typos
         uses: taiki-e/install-action@v2
         with:
@@ -101,6 +115,8 @@ jobs:
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Taplo
         uses: taiki-e/install-action@v2
         with:
@@ -113,6 +129,8 @@ jobs:
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: markdownlint-cli2-action
         uses: DavidAnson/markdownlint-cli2-action@v23
         with:
@@ -122,6 +140,8 @@ jobs:
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-go@v6
         with:
           go-version: stable

@@ -45,7 +45,9 @@ jobs:
           files: ${{ inputs.notice_path || './NOTICE' }}
       - name: print if skip add-notice
         if: steps.check-files.outputs.files_exists
-        run: echo "add-notice needs a ${{ inputs.notice_path || './NOTICE'}} file"
+        env:
+          NOTICE_PATH: ${{ inputs.notice_path || './NOTICE' }}
+        run: echo "add-notice needs a $NOTICE_PATH file"
     outputs:
       notice_exist: ${{ steps.check-files.outputs.files_exists }}
   add-notice:
@@ -64,10 +66,19 @@ jobs:
           tool: add-notice
       - name: Run add-notice
         if: ${{ inputs.message == '' }}
-        run: add-notice --notice ${{ inputs.notice_path || './NOTICE' }} -e ${{ inputs.extensions || 'rs' }} -c ${{ inputs.comment_styles || '//' }}
+        env:
+          NOTICE_PATH: ${{ inputs.notice_path || './NOTICE' }}
+          EXTENSIONS: ${{ inputs.extensions || 'rs' }}
+          COMMENT_STYLES: ${{ inputs.comment_styles || '//' }}
+        run: add-notice --notice "$NOTICE_PATH" -e "$EXTENSIONS" -c "$COMMENT_STYLES"
       - name: Replace notice
         if: ${{ inputs.message }}
-        run: add-notice --notice ${{ inputs.notice_path || './NOTICE' }} --replace-with-string ${{ inputs.message }} -e ${{ inputs.extensions || 'rs' }} -c ${{ inputs.comment_styles || '//' }}
+        env:
+          NOTICE_PATH: ${{ inputs.notice_path || './NOTICE' }}
+          MESSAGE: ${{ inputs.message }}
+          EXTENSIONS: ${{ inputs.extensions || 'rs' }}
+          COMMENT_STYLES: ${{ inputs.comment_styles || '//' }}
+        run: add-notice --notice "$NOTICE_PATH" --replace-with-string "$MESSAGE" -e "$EXTENSIONS" -c "$COMMENT_STYLES"
       - name: Commit and Push
         uses: stefanzweifel/git-auto-commit-action@v7
         with:

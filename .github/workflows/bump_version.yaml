@@ -28,7 +28,9 @@ jobs:
         with:
           tool: cargo-edit
       - name: Run cargo edit
-        run: cargo set-version -p tatuin ${{ inputs.crate-version }}
+        env:
+          CRATE_VERSION: ${{ inputs.crate-version }}
+        run: cargo set-version -p tatuin "$CRATE_VERSION"
       - name: Commit and Push
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
