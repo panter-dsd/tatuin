@@ -10,7 +10,7 @@ rust-version = "1.89"
 
 [dependencies]
 async-trait = "0.1.89"
-chrono = "0.4.44"
+chrono = "0.4.45"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 tokio = { version = "1.52.2", features = ["full"] }
@@ -28,7 +28,7 @@ strum = { version = "0.28.0", features = ["derive"] }
 chrono-tz = "0.10.4"
 iso8601-duration = { version = "0.2.0", features = ["chrono"] }
 toml = "1.1.2"
-uuid = { version = "1.23.1", features = ["serde", "v4"] }
+uuid = { version = "1.23.2", features = ["serde", "v4"] }
 tempfile = "3.27.0"
 redb = "4.1.0"
 tatuin-core = { path = "../tatuin-core", version = "0.5.0" }
