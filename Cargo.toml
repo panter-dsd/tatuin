@@ -14,7 +14,7 @@ members = ["tatuin-core", "tatuin-providers"]
 
 [dependencies]
 async-trait = "0.1.89"
-chrono = "0.4.44"
+chrono = "0.4.45"
 clap = { version = "4.6.1", features = ["derive"] }
 color-eyre = "0.6.4"
 config = "0.15.23"
@@ -38,7 +38,7 @@ toml = "1.1.2"
 tracing = { version = "0.1.44", features = ["async-await", "log"] }
 tracing-appender = "0.2.5"
 tracing-subscriber = "0.3.19"
-uuid = { version = "1.23.1", features = ["v4"] }
+uuid = { version = "1.23.2", features = ["v4"] }
 openssl = { version = "0.10", features = ["vendored"] }
 tatuin-core = { path = "./tatuin-core", version = "0.5.0" }
 tatuin-providers = { path = "./tatuin-providers", version = "0.6.0" }
