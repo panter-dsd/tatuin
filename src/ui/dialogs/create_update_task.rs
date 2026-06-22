@@ -341,10 +341,11 @@ impl Dialog {
             .set_enabled(self.is_task_creation() && provider_selected);
 
         let can_input_name = provider_selected && project_selected;
-        let can_create = self.can_create_task();
 
         self.batch_name_editor.set_enabled(can_input_name);
         self.task_name_editor.set_enabled(can_input_name);
+
+        let can_create = self.can_create_task();
         self.task_description_editor.set_enabled(can_create);
 
         self.priority_selector.set_enabled(can_input_name);
