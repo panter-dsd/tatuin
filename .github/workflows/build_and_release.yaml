@@ -35,7 +35,7 @@ jobs:
   validate-input:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Validate input
         id: regex-match
         env:
@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install jql
         if: ${{ !inputs.version }}
         uses: taiki-e/install-action@v2
@@ -148,7 +148,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - run: git pull
       - uses: mukunku/tag-exists-action@v1.7.0
         if: ${{ inputs.overwrite_tag }}
@@ -181,7 +181,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Fetch Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - uses: taiki-e/create-gh-release-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -241,7 +241,7 @@ jobs:
             cross: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ needs.get-version.outputs.new_tag_version }}
       - name: Build executable
