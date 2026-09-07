@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v7
       - run: git pull
       - name: Install cargo-edit
-        uses: taiki-e/install-action@v2.87.0
+        uses: taiki-e/install-action@v2.87.5
         with:
           tool: cargo-edit
       - name: Run cargo edit

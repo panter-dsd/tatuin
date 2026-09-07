@@ -64,12 +64,12 @@ jobs:
         uses: actions/checkout@v7
       - name: Install jql
         if: ${{ !inputs.version }}
-        uses: taiki-e/install-action@v2.87.0
+        uses: taiki-e/install-action@v2.87.5
         with:
           tool: jql
       - name: Install cargo-bump
         if: ${{ !inputs.version }}
-        uses: taiki-e/install-action@v2.87.0
+        uses: taiki-e/install-action@v2.87.5
         with:
           tool: cargo-bump
       - name: Versions using None
