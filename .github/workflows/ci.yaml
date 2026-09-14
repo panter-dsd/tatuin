@@ -20,7 +20,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v2
       - name: cargo build
         run: cargo b --workspace --all-targets --all-features
   cargo-fmt:
@@ -32,7 +32,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
           components: rustfmt
       - name: Rustfmt Check
@@ -46,7 +46,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
           components: clippy
       - name: Clippy Check
@@ -60,7 +60,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v2
       - name: Cargo doc test
         run: cargo doc --workspace --all-features
   check-crate-type:
@@ -76,7 +76,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v2
       - name: Cargo test doc
         run: cargo test --doc --workspace --all-features
   cargo-next-test:
@@ -88,9 +88,9 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install stable toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v2
       - name: Install cargo-nextest
-        uses: taiki-e/install-action@v2.87.5
+        uses: taiki-e/install-action@v2.87.11
         with:
           tool: cargo-nextest
       - name: Cargo test
@@ -104,7 +104,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Typos
-        uses: taiki-e/install-action@v2.87.5
+        uses: taiki-e/install-action@v2.87.11
         with:
           tool: typos-cli
       - name: run typos
@@ -118,7 +118,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install Taplo
-        uses: taiki-e/install-action@v2.87.5
+        uses: taiki-e/install-action@v2.87.11
         with:
           tool: taplo-cli
       - name: Run Taplo
