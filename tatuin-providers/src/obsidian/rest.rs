@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-use reqwest::StatusCode;
+use reqwest::{StatusCode, header};
 use serde::Deserialize;
 use std::fs;
 use std::path;
@@ -46,7 +46,10 @@ impl Client {
     pub fn new(vault_path: &Path) -> Self {
         Self {
             cfg: read_config(vault_path.join(CONFIG_PATH)),
-            client: reqwest::Client::new(),
+            client: reqwest::Client::builder()
+                .redirect(reqwest::redirect::Policy::none())
+                .build()
+                .expect("Failed to build the HTTP client"),
         }
     }
 
@@ -54,6 +57,30 @@ impl Client {
         self.cfg.is_some()
     }
 
+    #[tracing::instrument(level = "info", target = "obsidian_rest_client")]
+    pub async fn add_text_to_daily_note(&self, data: &str) -> Result<(), StringError> {
+        let url = self.daily_note_url().await.map_err(|e| {
+            tracing::error!(error=?e, "Get the daily note url");
+            StringError::new(&e.to_string())
+        })?;
+        let token = self.token()?;
+
+        self.client
+            .post(&url)
+            .bearer_auth(&token)
+            .header(reqwest::header::CONTENT_TYPE, "text/markdown")
+            .body(reqwest::Body::wrap(data.to_string()))
+            .send()
+            .await
+            .map(|_| ())
+            .map_err(|e| {
+                tracing::error!(target:"obsidian_rest_client", data=?data, cfg=?self.cfg, error=?e, "Add text to daily note");
+                StringError::new(e.to_string().as_str())
+            })
+    }
+}
+
+impl Client {
     fn token(&self) -> Result<String, StringError> {
         let cfg = self.cfg.as_ref().ok_or(not_connected_err())?;
         Ok(cfg.api_key.clone())
@@ -70,43 +97,30 @@ impl Client {
     }
 
     #[tracing::instrument(level = "info", target = "obsidian_rest_client")]
-    pub async fn add_text_to_daily_note(&self, data: &str) -> Result<(), StringError> {
+    async fn daily_note_url(&self) -> Result<String, Box<dyn std::error::Error>> {
         let url = self.url("/periodic/daily/")?;
         let token = self.token()?;
 
-        if let Ok(r) = self.client.get(&url).bearer_auth(&token).send().await
-            && r.status() == StatusCode::NOT_FOUND
-        {
-            // Sometimes, when the user have any templating plugin that rewrites all created files with
-            // template, the daily note creates with no task. So, we create the daily note first
-            // and then add a small delay.
-            tracing::info!("Create daily note");
+        tracing::info!("Create or get daily note");
 
-            self.client
+        let r = self
+            .client
             .post(&url)
             .bearer_auth(&token)
             .header(reqwest::header::CONTENT_TYPE, "text/markdown")
             .send()
             .await
-            .map(|_| ())
             .map_err(|e| {
-                tracing::error!(target:"obsidian_rest_client", data=?data, cfg=?self.cfg, error=?e, "Create daily note");
+                tracing::error!(target:"obsidian_rest_client",  cfg=?self.cfg, error=?e, "Create daily note");
                 StringError::new(e.to_string().as_str())
             })?;
-            tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        match r.status() {
+            StatusCode::OK | StatusCode::CREATED => Ok(url),
+            StatusCode::TEMPORARY_REDIRECT => {
+                let location = r.headers().get(header::LOCATION).ok_or("there is no location header")?;
+                self.url(location.to_str()?).map_err(Into::into)
+            }
+            _ => Err(format!("wrong status code: {:?}", r.status()).into()),
         }
-
-        self.client
-            .post(&url)
-            .bearer_auth(&token)
-            .header(reqwest::header::CONTENT_TYPE, "text/markdown")
-            .body(reqwest::Body::wrap(data.to_string()))
-            .send()
-            .await
-            .map(|_| ())
-            .map_err(|e| {
-                tracing::error!(target:"obsidian_rest_client", data=?data, cfg=?self.cfg, error=?e, "Add text to daily note");
-                StringError::new(e.to_string().as_str())
-            })
     }
 }

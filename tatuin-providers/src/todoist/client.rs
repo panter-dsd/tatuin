@@ -87,7 +87,7 @@ impl Client {
             }
             let mut resp = self
                 .client
-                .get(format!("{BASE_URL}/tasks/completed?{}", &q.join("&")))
+                .get(format!("{BASE_URL}/tasks/completed?{}", q.join("&")))
                 .headers(self.default_header.clone())
                 .send()
                 .await?
