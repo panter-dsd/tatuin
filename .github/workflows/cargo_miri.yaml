@@ -8,6 +8,12 @@ jobs:
   cargo-miri-test:
     name: Cargo miri
     runs-on: ubuntu-latest
+    # cargo-miri's generated sysroot manifest declares an unused `sysroot`
+    # dependency, which trips the new `cargo::unused_dependencies` lint. On
+    # runners that configure `build.warnings = "deny"` this aborts the sysroot
+    # build, so force `warn` for the miri steps.
+    env:
+      CARGO_BUILD_WARNINGS: warn
     steps:
       - name: Fetch Repository
         uses: actions/checkout@v7
