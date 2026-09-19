@@ -203,6 +203,15 @@ authors = ["Marshall Pierce <marshall@mpierce.org>"]
 repository = "https://github.com/marshallpierce/rust-base64"
 
 [[dependencies]]
+name = "base64"
+version = "0.23.1"
+description = "encodes and decodes base64 as bytes or utf8"
+license = "MIT OR Apache-2.0"
+notices = ["Copyright (c) 2025 Alice Maz, Marshall Pierce"]
+authors = ["Marshall Pierce <marshall@mpierce.org>"]
+repository = "https://github.com/marshallpierce/rust-base64"
+
+[[dependencies]]
 name = "bit-set"
 version = "0.5.3"
 description = "A set of bits"
@@ -233,7 +242,7 @@ repository = "https://github.com/bitflags/bitflags"
 
 [[dependencies]]
 name = "bitflags"
-version = "2.13.1"
+version = "2.13.2"
 description = """
 A macro to generate structures which behave like bitflags.
 """
@@ -304,7 +313,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.4.5"
+version = "1.4.7"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -316,7 +325,7 @@ repository = "https://github.com/rust-lang/cc-rs"
 
 [[dependencies]]
 name = "cfg-if"
-version = "1.0.4"
+version = "1.0.5"
 description = """
 A macro to ergonomically define an item depending on a large number of #[cfg]
 parameters. Structured like an if-else chain, the first matching branch is the
@@ -375,7 +384,7 @@ repository = "https://github.com/chronotope/chrono-tz"
 
 [[dependencies]]
 name = "clap"
-version = "4.6.6"
+version = "4.6.7"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -383,7 +392,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_builder"
-version = "4.6.6"
+version = "4.6.7"
 description = "A simple to use, efficient, and full-featured Command Line Argument Parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -391,7 +400,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_derive"
-version = "4.6.4"
+version = "4.6.7"
 description = "Parse command line argument by defining a struct, derive crate."
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -399,7 +408,7 @@ repository = "https://github.com/clap-rs/clap"
 
 [[dependencies]]
 name = "clap_lex"
-version = "1.1.0"
+version = "1.1.1"
 description = "Minimal, flexible command line parser"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -907,7 +916,7 @@ repository = "https://github.com/wezterm/wezterm"
 
 [[dependencies]]
 name = "find-msvc-tools"
-version = "0.1.12"
+version = "0.1.13"
 description = "Find windows-specific tools, read MSVC versions from the registry and from COM interfaces"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -915,7 +924,7 @@ repository = "https://github.com/rust-lang/cc-rs"
 
 [[dependencies]]
 name = "finl_unicode"
-version = "1.4.0"
+version = "1.5.0"
 description = "Library for handling Unicode functionality for finl (categories and grapheme segmentation)"
 license = "(MIT OR Apache-2.0) AND Unicode-DFS-2016"
 notices = ["Copyright © 1991-2023 Unicode, Inc."]
@@ -1542,7 +1551,7 @@ repository = "https://github.com/rust-lang/jobserver-rs"
 
 [[dependencies]]
 name = "js-sys"
-version = "0.3.103"
+version = "0.3.105"
 description = """
 Bindings for all JS global objects and functions in all JS environments like
 Node.js and browsers, built on `#[wasm_bindgen]` using the `wasm-bindgen` crate.
@@ -1628,7 +1637,7 @@ repository = "https://github.com/rust-lang/compiler-builtins"
 
 [[dependencies]]
 name = "libredox"
-version = "0.1.23"
+version = "0.1.24"
 description = "Redox stable ABI"
 license = "MIT"
 notices = ["Copyright (c) 2023 4lDO2"]
@@ -1706,7 +1715,7 @@ homepage = "https://github.com/jeromefroe/lru-rs"
 
 [[dependencies]]
 name = "lru-slab"
-version = "0.1.2"
+version = "0.1.3"
 description = "Pre-allocated storage with constant-time LRU tracking"
 license = "MIT OR Apache-2.0 OR Zlib"
 notices = ["Copyright (c) 2024 The lru-slab Developers"]
@@ -2301,7 +2310,7 @@ repository = "https://github.com/dtolnay/proc-macro2"
 
 [[dependencies]]
 name = "quinn"
-version = "0.11.11"
+version = "0.11.12"
 description = "Versatile QUIC transport protocol implementation"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2018 The quinn Developers"]
@@ -2309,7 +2318,7 @@ repository = "https://github.com/quinn-rs/quinn"
 
 [[dependencies]]
 name = "quinn-proto"
-version = "0.11.17"
+version = "0.11.18"
 description = "State machine for the QUIC transport protocol"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2018 The quinn Developers"]
@@ -2544,7 +2553,7 @@ repository = "https://gitlab.redox-os.org/redox-os/syscall"
 
 [[dependencies]]
 name = "redox_users"
-version = "0.5.2"
+version = "0.5.3"
 description = "A Rust library to access Redox users and groups functionality"
 license = "MIT"
 notices = ["Copyright (c) 2017 Jose Narvaez"]
@@ -2588,7 +2597,7 @@ homepage = "https://github.com/rust-lang/regex/tree/master/regex-syntax"
 
 [[dependencies]]
 name = "reqwest"
-version = "0.13.4"
+version = "0.13.5"
 description = "higher level HTTP client library"
 license = "MIT OR Apache-2.0"
 notices = [
@@ -2670,7 +2679,7 @@ repository = "https://github.com/djc/rustc-version-rs"
 
 [[dependencies]]
 name = "rustix"
-version = "1.1.4"
+version = "1.1.5"
 description = "Safe Rust bindings to POSIX/Unix/Linux/Winsock-like syscalls"
 license = "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT"
 authors = [
@@ -3040,7 +3049,7 @@ repository = "https://github.com/tokio-rs/slab"
 
 [[dependencies]]
 name = "smallvec"
-version = "1.16.0"
+version = "1.16.1"
 description = "'Small vector' optimization: store up to a small number of items on the stack"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2018 The Servo Project Developers"]
@@ -3159,7 +3168,7 @@ repository = "https://github.com/dtolnay/syn"
 
 [[dependencies]]
 name = "syn"
-version = "3.0.5"
+version = "3.0.6"
 description = "Parser for Rust source code"
 license = "MIT OR Apache-2.0"
 authors = ["David Tolnay <dtolnay@gmail.com>"]
@@ -3176,7 +3185,7 @@ homepage = "https://docs.rs/sync_wrapper"
 
 [[dependencies]]
 name = "synstructure"
-version = "0.13.2"
+version = "0.14.0"
 description = "Helper methods and macros for custom derives"
 license = "MIT"
 notices = ["Copyright 2016 Nika Layzell"]
@@ -3356,21 +3365,12 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "tinyvec"
-version = "1.13.2"
+version = "1.13.3"
 description = "`tinyvec` provides 100% safe vec-like data structures."
 license = "Zlib OR Apache-2.0 OR MIT"
 notices = ['Copyright (c) 2019 Daniel "Lokathor" Gee.']
 authors = ["Lokathor <zefria@gmail.com>"]
 repository = "https://github.com/Lokathor/tinyvec"
-
-[[dependencies]]
-name = "tinyvec_macros"
-version = "0.1.1"
-description = "Some macros for tiny containers"
-license = "MIT OR Apache-2.0 OR Zlib"
-notices = ["Copyright (c) 2020 Soveu", 'Copyright 2020 Tomasz "Soveu" Marx']
-authors = ["Soveu <marx.tomasz@gmail.com>"]
-repository = "https://github.com/Soveu/tinyvec_macros"
 
 [[dependencies]]
 name = "tokio"
@@ -3434,7 +3434,7 @@ homepage = "https://tokio.rs"
 
 [[dependencies]]
 name = "toml"
-version = "1.1.5+spec-1.1.0"
+version = "1.1.6+spec-1.1.0"
 description = """
 A native Rust encoder and decoder of TOML-formatted files and streams. Provides
 implementations of the standard Serialize/Deserialize traits for TOML data to
@@ -3663,7 +3663,7 @@ repository = "https://github.com/BurntSushi/ucd-generate"
 
 [[dependencies]]
 name = "unicode-id"
-version = "0.3.6"
+version = "0.3.7"
 description = """
 Determine whether characters have the ID_Start
 or ID_Continue properties according to
@@ -3681,7 +3681,7 @@ repository = "https://github.com/Boshen/unicode-id"
 
 [[dependencies]]
 name = "unicode-ident"
-version = "1.0.24"
+version = "1.0.26"
 description = "Determine whether characters have the XID_Start or XID_Continue properties according to Unicode Standard Annex #31"
 license = "(MIT OR Apache-2.0) AND Unicode-3.0"
 notices = ["Copyright © 1991-2023 Unicode, Inc."]
@@ -3789,7 +3789,7 @@ repository = "https://github.com/alacritty/vte"
 
 [[dependencies]]
 name = "uuid"
-version = "1.26.0"
+version = "1.26.1"
 description = "A library to generate and parse UUIDs."
 license = "Apache-2.0 OR MIT"
 notices = [
@@ -3876,7 +3876,7 @@ repository = "https://github.com/bytecodealliance/wasi-rs"
 
 [[dependencies]]
 name = "wasm-bindgen"
-version = "0.2.126"
+version = "0.2.128"
 description = """
 Easy support for interacting between JS and Rust.
 """
@@ -3888,7 +3888,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen"
 
 [[dependencies]]
 name = "wasm-bindgen-futures"
-version = "0.4.76"
+version = "0.4.78"
 description = "Bridging the gap between Rust Futures and JavaScript Promises"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -3898,7 +3898,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro"
-version = "0.2.126"
+version = "0.2.128"
 description = """
 Definition of the `#[wasm_bindgen]` attribute, an internal dependency
 """
@@ -3910,17 +3910,17 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.126"
+version = "0.2.128"
 description = "Implementation APIs for the `#[wasm_bindgen]` attribute"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Alex Crichton"]
 authors = ["The wasm-bindgen Developers"]
-repository = "https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/macro-support"
+repository = "https://github.com/wasm-bindgen/wasm-bindgen/tree/main/crates/macro-support"
 homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "wasm-bindgen-shared"
-version = "0.2.126"
+version = "0.2.128"
 description = """
 Shared support between wasm-bindgen and wasm-bindgen cli, an internal
 dependency.
@@ -3933,7 +3933,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "web-sys"
-version = "0.3.103"
+version = "0.3.105"
 description = """
 Bindings for all Web APIs, a procedurally generated crate from WebIDL
 """
@@ -4271,7 +4271,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "yoke-derive"
-version = "0.8.2"
+version = "0.8.3"
 description = "Custom derive for the yoke crate"
 license = "Unicode-3.0"
 notices = ["Copyright © 2020-2024 Unicode, Inc."]
@@ -4280,7 +4280,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "zerocopy"
-version = "0.8.56"
+version = "0.8.57"
 description = """Zerocopy makes zero-cost memory manipulation effortless. We write "unsafe" so you don't have to."""
 license = "BSD-2-Clause OR Apache-2.0 OR MIT"
 notices = [
@@ -4291,7 +4291,7 @@ repository = "https://github.com/google/zerocopy"
 
 [[dependencies]]
 name = "zerocopy-derive"
-version = "0.8.56"
+version = "0.8.57"
 description = "Custom derive for traits from the zerocopy crate"
 license = "BSD-2-Clause OR Apache-2.0 OR MIT"
 notices = [
@@ -4311,7 +4311,7 @@ repository = "https://github.com/unicode-org/icu4x"
 
 [[dependencies]]
 name = "zerofrom-derive"
-version = "0.1.7"
+version = "0.1.8"
 description = "Custom derive for the zerofrom crate"
 license = "Unicode-3.0"
 notices = ["Copyright © 2020-2024 Unicode, Inc."]
