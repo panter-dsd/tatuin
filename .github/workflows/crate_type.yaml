@@ -17,7 +17,7 @@ jobs:
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v2
       - name: Install jql
-        uses: taiki-e/install-action@v2.87.20
+        uses: taiki-e/install-action@v2.87.22
         with:
           tool: jql
       - name: Searching for lib

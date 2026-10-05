@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v7
       - name: Install stable toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v2
-      - uses: taiki-e/install-action@v2.87.20
+      - uses: taiki-e/install-action@v2.87.22
         with:
           tool: cargo-audit
       - run: cargo audit
