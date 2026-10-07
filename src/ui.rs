@@ -12,6 +12,7 @@ use super::ui::{
     widgets::{WidgetStateTrait, WidgetTrait},
 };
 use async_trait::async_trait;
+use chrono::Timelike;
 use color_eyre::Result;
 use crossterm::event::{
     DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
@@ -34,7 +35,6 @@ use std::{
     slice::{Iter, IterMut},
     str::FromStr,
     sync::Arc,
-    time::Duration,
 };
 use tasks_widget::ErrorLoggerTrait;
 use tatuin_core::{
@@ -326,10 +326,26 @@ impl App {
         let (redraw_tx, mut redraw_rx) = mpsc::unbounded_channel::<()>();
         let (set_cursor_pos_tx, mut set_cursor_pos_rx) = mpsc::unbounded_channel::<SetCursorPosCmd>();
         let dh = {
-            let mut d: Box<dyn draw_helper::DrawHelperTrait> = Box::new(DrawHelper::new(redraw_tx, set_cursor_pos_tx));
+            let mut d: Box<dyn draw_helper::DrawHelperTrait> =
+                Box::new(DrawHelper::new(redraw_tx.clone(), set_cursor_pos_tx));
             d.set_screen_size(terminal.get_frame().area().as_size());
             Arc::new(RwLock::new(d))
         };
+
+        // redraw every minute changed
+        tokio::spawn(async move {
+            let mut minute = chrono::Utc::now().time().minute();
+            loop {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                let m = chrono::Utc::now().time().minute();
+                if m != minute {
+                    minute = m;
+                    if redraw_tx.send(()).is_err() {
+                        break;
+                    }
+                }
+            }
+        });
 
         self.draw_helper = Some(dh.clone());
 
@@ -337,8 +353,6 @@ impl App {
             b.write().await.set_draw_helper(dh.clone());
         }
 
-        let redraw_period = Duration::from_secs(60); // every minute
-        let mut redraw_interval = tokio::time::interval(redraw_period);
         let mut events = EventStream::new();
 
         let mut select_first_accepted = self.select_first_shortcut.subscribe_to_accepted();
@@ -370,7 +384,6 @@ impl App {
 
             tokio::select! {
                 _ = redraw_rx.recv() => {},
-                _ = redraw_interval.tick() => {},
                 Some(cmd) = set_cursor_pos_rx.recv() => {
                     self.set_cursor_pos_cmd = cmd;
                 },
