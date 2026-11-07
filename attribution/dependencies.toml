@@ -101,6 +101,13 @@ authors = ["Brendan Zabarauskas <bjzaba@yahoo.com.au>"]
 repository = "https://github.com/brendanzab/approx"
 
 [[dependencies]]
+name = "ar_archive_writer"
+version = "0.5.3"
+description = "A writer for object file ar archives"
+license = "Apache-2.0 WITH LLVM-exception"
+repository = "https://github.com/rust-lang/ar_archive_writer"
+
+[[dependencies]]
 name = "arraydeque"
 version = "0.5.1"
 description = "A ring buffer with a fixed capacity, which can be stored on the stack."
@@ -313,7 +320,7 @@ repository = "https://github.com/sagebind/castaway"
 
 [[dependencies]]
 name = "cc"
-version = "1.10.0"
+version = "1.11.1"
 description = """
 A build-time dependency for Cargo build scripts to assist in invoking the native
 C compiler to compile native C code into a static archive to be linked into Rust
@@ -924,7 +931,7 @@ repository = "https://github.com/rust-lang/cc-rs"
 
 [[dependencies]]
 name = "finl_unicode"
-version = "1.5.0"
+version = "1.5.1"
 description = "Library for handling Unicode functionality for finl (categories and grapheme segmentation)"
 license = "(MIT OR Apache-2.0) AND Unicode-DFS-2016"
 notices = ["Copyright © 1991-2023 Unicode, Inc."]
@@ -1564,7 +1571,7 @@ homepage = "https://wasm-bindgen.github.io/wasm-bindgen/"
 
 [[dependencies]]
 name = "json5"
-version = "1.3.6"
+version = "1.3.7"
 description = "A Rust JSON5 serializer and deserializer which speaks Serde."
 license = "MIT"
 notices = ["Copyright (c) 2025 Callum Oakley"]
@@ -1785,7 +1792,7 @@ repository = "https://github.com/Gilnaa/memoffset"
 
 [[dependencies]]
 name = "mime"
-version = "0.3.17"
+version = "0.3.18"
 description = "Strongly Typed Mimes"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2014 Sean McArthur"]
@@ -1927,6 +1934,14 @@ repository = "https://github.com/jhpratt/num_threads"
 
 [[dependencies]]
 name = "object"
+version = "0.39.1"
+description = "A unified interface for reading and writing object file formats."
+license = "Apache-2.0 OR MIT"
+notices = ["Copyright (c) 2015 The Gimli Developers"]
+repository = "https://github.com/gimli-rs/object"
+
+[[dependencies]]
+name = "object"
 version = "0.40.0"
 description = "A unified interface for reading and writing object file formats."
 license = "Apache-2.0 OR MIT"
@@ -1951,7 +1966,7 @@ repository = "https://github.com/polyfill-rs/once_cell_polyfill"
 
 [[dependencies]]
 name = "openssl"
-version = "0.10.81"
+version = "0.10.82"
 description = "OpenSSL bindings"
 license = "Apache-2.0"
 notices = ["Copyright 2011-2017 Google Inc."]
@@ -1990,7 +2005,7 @@ repository = "https://github.com/alexcrichton/openssl-src-rs"
 
 [[dependencies]]
 name = "openssl-sys"
-version = "0.9.117"
+version = "0.9.118"
 description = "FFI bindings to OpenSSL"
 license = "MIT"
 notices = ["Copyright (c) 2014 Alex Crichton"]
@@ -2140,11 +2155,11 @@ homepage = "https://pest.rs/"
 
 [[dependencies]]
 name = "pest_stack_guard"
-version = "1.0.0"
+version = "1.0.1"
 description = "Internal native stack probing for pest"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright 2026 Tomas Tauber"]
-authors = ["DTomas Tauber <me@tomtau.be>"]
+authors = ["Tomas Tauber <me@tomtau.be>"]
 repository = "https://github.com/pest-parser/pest_stack_guard"
 homepage = "https://pest.rs/"
 
@@ -2310,7 +2325,7 @@ repository = "https://github.com/dtolnay/proc-macro2"
 
 [[dependencies]]
 name = "psm"
-version = "0.1.24"
+version = "0.1.32"
 description = "Portable Stack Manipulation: stack manipulation and introspection routines"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright © 2018, Simonas Kazlauskas"]
@@ -2905,7 +2920,7 @@ repository = "https://github.com/serde-rs/json"
 
 [[dependencies]]
 name = "serde_spanned"
-version = "1.1.2"
+version = "1.1.3"
 description = "Serde-compatible spanned Value"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -3054,7 +3069,7 @@ repository = "https://github.com/tokio-rs/slab"
 
 [[dependencies]]
 name = "smallvec"
-version = "1.16.4"
+version = "1.16.5"
 description = "'Small vector' optimization: store up to a small number of items on the stack"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) 2018 The Servo Project Developers"]
@@ -3454,7 +3469,7 @@ homepage = "https://tokio.rs"
 
 [[dependencies]]
 name = "toml"
-version = "1.1.8+spec-1.1.0"
+version = "1.2.1+spec-1.1.0"
 description = """
 A native Rust encoder and decoder of TOML-formatted files and streams. Provides
 implementations of the standard Serialize/Deserialize traits for TOML data to
@@ -3466,7 +3481,7 @@ repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
 name = "toml_datetime"
-version = "1.1.2+spec-1.1.0"
+version = "1.1.3+spec-1.1.0"
 description = "A TOML-compatible datetime type"
 license = "MIT OR Apache-2.0"
 notices = ["Copyright (c) Individual contributors"]
@@ -3482,7 +3497,7 @@ repository = "https://github.com/toml-rs/toml"
 
 [[dependencies]]
 name = "toml_writer"
-version = "1.1.3+spec-1.1.0"
+version = "1.2.0+spec-1.1.0"
 description = """
 A low-level interface for writing out TOML
 """
@@ -3818,17 +3833,12 @@ homepage = "https://docs.rs/utf_types/"
 
 [[dependencies]]
 name = "uuid"
-version = "1.29.0"
+version = "1.29.1"
 description = "A library to generate and parse UUIDs."
 license = "Apache-2.0 OR MIT"
 notices = [
   "Copyright (c) 2014 The Rust Project Developers",
   "Copyright (c) 2018 Ashley Mannix, Christopher Armstrong, Dylan DPC, Hunar Roop Kahlon",
-]
-authors = [
-  "Ashley Mannix<ashleymannix@live.com.au>",
-  "Dylan DPC<dylan.dpc@gmail.com>",
-  "Hunar Roop Kahlon<hunar.roop@gmail.com>",
 ]
 repository = "https://github.com/uuid-rs/uuid"
 
@@ -4229,7 +4239,7 @@ repository = "https://github.com/microsoft/windows-rs"
 
 [[dependencies]]
 name = "winnow"
-version = "1.0.4"
+version = "1.0.5"
 description = "A byte-oriented, zero-copy, parser combinators library"
 license = "MIT"
 repository = "https://github.com/winnow-rs/winnow"
